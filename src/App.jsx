@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, createContext, useContext } from "react";
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid } from "recharts";
+import * as XLSX from "xlsx";
 
 /* ── THEMES ─────────────────────────────────────────────────────────────── */
 const GOLD="#C9A84C";
@@ -289,9 +290,388 @@ function PortfolioStandaloneCalc(){const th=useTh();const[sel,setSel]=useState("
 
 function CalculatorsPage({t}){const th=useTh();const[active,setActive]=useState(null);const calcs=[{id:"retirement",label:"🎯 Retirement Planner",C:RetirementCalc},{id:"portfolio",label:"📈 Portfolio Calculator",C:PortfolioStandaloneCalc},{id:"homeEquity",label:"🏠 Home Equity Loan",C:HomeEquityCalc},{id:"income",label:"💰 Income Calculator",C:IncomeCalc},{id:"debtReduction",label:"📉 Debt Reduction",C:DebtReductionCalc},{id:"carLoan",label:"🚗 Car Loan",C:CarLoanCalc},{id:"affordability",label:"🏡 Affordability",C:AffordabilityCalc},{id:"interest",label:"📊 Interest Calculator",C:InterestCalc},{id:"savings",label:"💎 High Yield Savings",C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc)return null;return<div style={{padding:24}}><button onClick={()=>setActive(null)} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>← {t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:560}}><calc.C t={t}/></div></div>;}return<div style={{padding:24}}><h2 style={{fontSize:18,fontWeight:800,color:th.text,marginBottom:4,marginTop:0}}>🧮 {t.calculators}</h2><p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>Financial calculators for planning.</p><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{calcs.map(c=><div key={c.id} onClick={()=>setActive(c.id)} style={{...mCARD(th),padding:18,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.border=`1px solid ${th.accent}`} onMouseLeave={e=>e.currentTarget.style.border=`1px solid ${th.cardBorder}`}><div style={{fontSize:22,marginBottom:8}}>{c.label.split(" ")[0]}</div><div style={{fontSize:13,fontWeight:700,color:th.text}}>{c.label.substring(c.label.indexOf(" ")+1)}</div></div>)}</div></div>;}
 
+/* ── EXCEL / CSV IMPORTER ────────────────────────────────────────────────── */
+const xFreq=f=>{const s=(f||'').toLowerCase().replace(/[-\s]/g,'');if(s.includes('biweek')||s.includes('byweek'))return'biweekly';if(s.includes('week'))return'weekly';if(s.includes('year')||s.includes('annual'))return'annual';return'monthly2';};
+const SKIP_SH=new Set(['cover','cover page','debt','savings','model-r','model','intro','graphs','summary']);
+const moIdx=n=>{const m={jan:0,january:0,enero:0,feb:1,february:1,febrero:1,mar:2,march:2,marzo:2,apr:3,april:3,abril:3,may:4,mayo:4,jun:5,june:5,junio:5,jul:6,july:6,julio:6,aug:7,august:7,agosto:7,sep:8,september:8,septiembre:8,sept:8,oct:9,october:9,octubre:9,nov:10,november:10,noviembre:10,dec:11,december:11,diciembre:11,dic:11};const k=n.toLowerCase().replace(/[^a-záéíóúñ]/g,'').slice(0,10);for(const[key,v]of Object.entries(m))if(k.startsWith(key.slice(0,4)))return v;return-1;};
+const isMonthSh=n=>{const lc=n.toLowerCase().trim();return!SKIP_SH.has(lc)&&(moIdx(lc)>=0||/\d{4}/.test(lc));};
+const shToLabel=n=>{const t=n.trim();const m=t.match(/^([A-Za-záéíóúñ]+)(\d{4})$/i);if(m){const i=moIdx(m[1]);return i>=0?`${MS[i]} ${m[2]}`:t;}const i=moIdx(t);if(i>=0){const now=new Date();const yr=i>now.getMonth()?now.getFullYear()-1:now.getFullYear();return`${MS[i]} ${yr}`;}return t;};
+
+function parseMonthRows(rows){
+  const r={bills:[],incP1:[],incP2:[],cards:[],tempM:[],annualB:[],p1n:'',p2n:'',p1tot:0,p2tot:0};
+  let st='idle',curIP=null,curDP=null,curSrc='',tc=0;
+  const cv=(row,i)=>row[i]===null||row[i]===undefined?'':String(row[i]).trim();
+  const cn=(row,i)=>parseFloat(row[i])||0;
+  const rT=row=>row.map(v=>(v||'').toString().toLowerCase()).join(' ');
+  for(let i=0;i<rows.length;i++){
+    const row=rows[i]||[];const txt=rT(row);
+    if(!txt.replace(/\s/g,''))continue;
+    const b=cv(row,1),c=cv(row,2);
+    const e=cn(row,4),g=cn(row,6),h=cn(row,7),jv=cn(row,9);
+    // Temp bills (must check before debt/bills)
+    if(txt.includes('temporary bills')&&!txt.includes('total')&&!txt.includes('temp credit')){tc++;st=tc===1?'tm':'ta';curSrc='';continue;}
+    // Debt section header
+    if(!txt.includes('total')&&txt.includes('debt')&&(txt.includes('apr')||txt.includes('$'))&&!txt.includes('interest free')&&!txt.includes('interest debt')&&e===0){st='debt';curDP=null;continue;}
+    if(st==='debt'&&(txt.includes('credit cards')||txt.includes('credito')))continue;
+    // Bills sections
+    if(!txt.includes('total')&&!txt.includes('temporary')&&(txt.includes('bills')||txt.includes('gastos'))&&(txt.includes('1st')||txt.includes('1ra')||txt.includes('primera')||txt.includes('quarter')||st==='idle')){st='b1';continue;}
+    if(!txt.includes('total')&&!txt.includes('temporary')&&(txt.includes('bills')||txt.includes('gastos'))&&(txt.includes('2nd')||txt.includes('segunda'))){st='b2';continue;}
+    if((st==='b1'||st==='b2')&&txt.includes('total cost')){st='ab';continue;}
+    // Income: paycheck style ("Mauricio's Paycheck", "Chabeli's Check")
+    if(txt.match(/[''`]s?\s*(paycheck|check)\b/)&&!txt.includes('total')){
+      const np=(b+' '+c).match(/([A-Za-záéíóúñ]{3,})[''`]s?\s*(paycheck|check)/i);
+      const det=np?np[1]:'';
+      if(!r.p1n||det.toLowerCase()===r.p1n.toLowerCase()){r.p1n=det||r.p1n||'P1';curIP='p1';st='inc';}
+      else{r.p2n=r.p2n||det;curIP='p2';st='inc';}
+      curSrc='';continue;
+    }
+    // Income: "Primera Quincena - Name" style
+    if(!txt.includes('total')&&(txt.includes('primera')||(txt.includes('quincena')&&!txt.includes('segunda')))&&!txt.includes('temporary')){
+      const dm=(b+' '+c).match(/[-–]\s*([A-Za-záéíóúñ]+)/);
+      r.p1n=r.p1n||(dm?dm[1]:'P1');curIP='p1';st='inc';curSrc='';continue;
+    }
+    if(!txt.includes('total')&&(txt.includes('segunda')||(txt.includes('quincena')&&txt.includes('segunda')))&&!txt.includes('temporary')){
+      const dm=(b+' '+c).match(/[-–]\s*([A-Za-záéíóúñ]+)/);
+      r.p2n=r.p2n||(dm?dm[1]:'');curIP='p2';st='inc';curSrc='';continue;
+    }
+    // Total Earnings
+    if(txt.includes('total earnings')){
+      const tot=cn(row,3)||cn(row,4);
+      if(curIP==='p1'&&tot>0)r.p1tot=tot;
+      if(curIP==='p2'&&tot>0)r.p2tot=tot;
+      st='ai';continue;
+    }
+    // === EXTRACT DATA ===
+    // Bills
+    if(st==='b1'||st==='b2'){
+      const nm=b||c;const day=parseInt(cv(row,3))||null;
+      if(nm&&e>0&&!nm.toLowerCase().match(/total|bills|gastos|temp/))
+        r.bills.push({id:gid(),name:nm,assignedTo:'joint',cost:e,type:'regular',freq:'monthly2',dueDay:isNaN(day)?null:day,split:{p1:50,p2:50}});
+    }
+    // Income source label within income section (e.g. "Mediapro", "Victoria's Check")
+    if(st==='inc'&&b&&!c&&e===0&&cn(row,3)===0&&b.length>1&&!b.toLowerCase().match(/total|income|salary|1st|2nd/)){
+      curSrc=b.replace(/[''`]s?\s*(check|paycheck)/i,'').trim();
+    }
+    // Income paystubs
+    if(st==='inc'&&c&&(cn(row,3)>0||cn(row,4)>0)){
+      const actual=cn(row,3),sugg=cn(row,4),amt=actual>0?actual:sugg;
+      if(amt>0&&c.length>1&&!c.toLowerCase().match(/^total|^1st income|^2nd income|^income/i)){
+        const raw=c.replace(/[''`]s?\s*(1st|2nd|3rd|4th)?\s*paystub/i,'').trim();
+        const label=raw||curSrc||'Paycheck';
+        (curIP==='p1'?r.incP1:r.incP2).push({label,amount:amt});
+      }
+    }
+    // Periodic income "Total" (not "Total Earnings") to capture per-person sub-totals
+    if(st==='inc'&&(b.toLowerCase()==='total'||c.toLowerCase()==='total')&&(cn(row,3)>0||cn(row,4)>0)){
+      const tot=cn(row,3)||cn(row,4);
+      if(curIP==='p1'&&tot>r.p1tot)r.p1tot=tot;
+      if(curIP==='p2'&&tot>r.p2tot)r.p2tot=tot;
+    }
+    // Debt cards
+    if(st==='debt'){
+      // Person sub-header (single name, no balance)
+      if(c&&!b&&e===0&&!c.match(/^\d/)&&!txt.match(/credit|loan|card|total|interest/i)&&c.length>1){curDP=c;continue;}
+      if(c&&(e>0||h>0)&&!c.toLowerCase().match(/total|interest|credit cost|free debt/)){
+        const apr=g>1?Math.round(g*10)/10:Math.round(g*1000)/10;
+        r.cards.push({id:gid(),name:c,balance:e,apr,min:h,limit:0,promos:[],owedBy:curDP||'__joint__',dueDay:jv||null});
+      }
+    }
+    // Temp monthly (loans/recurring)
+    if(st==='tm'){
+      const nm=c;const amt=cn(row,8)||h||e;const freq=cv(row,6);
+      if(nm&&amt>0&&!nm.toLowerCase().match(/total|interest|free|debt|credit cost/))
+        r.tempM.push({id:gid(),name:nm,assignedTo:'joint',cost:amt,type:'temporary',freq:xFreq(freq)||'monthly2',dueDay:null,split:{p1:50,p2:50}});
+    }
+    // Annual bills
+    if(st==='ta'){
+      const nm=c;const freq=cv(row,6);
+      if(nm&&e>0&&!nm.toLowerCase().match(/total|paid|cost/)){
+        const biY=freq.toLowerCase().match(/bi.?year|6.?month/);
+        r.annualB.push({id:gid(),name:nm,assignedTo:'joint',cost:biY?e*2:e,type:'annual',freq:'annual',dueDay:null,split:{p1:50,p2:50}});
+      }
+    }
+  }
+  return r;
+}
+
+function buildStreams(pr,p1Name,p2Name){
+  const streams=[];
+  const addP=(incArr,tot,person,name)=>{
+    if(incArr.length>0){
+      const grp={};
+      incArr.forEach(s=>{const k=s.label||'Income';(grp[k]=(grp[k]||0)+s.amount);});
+      const entries=Object.entries(grp).filter(([,v])=>v>0);
+      // If all entries are generic ("Paycheck"/"Income") and we have a total, use total as one stream
+      const allGeneric=entries.every(([k])=>k.match(/^(paycheck|income|paystub)$/i));
+      if(allGeneric&&tot>0){
+        streams.push({id:gid(),person,label:(name||person)+' Income',gross:tot,net:tot,freq:'monthly2'});
+      } else {
+        entries.forEach(([label,net])=>streams.push({id:gid(),person,label,gross:net,net,freq:'monthly2'}));
+      }
+    } else if(tot>0){
+      streams.push({id:gid(),person,label:(name||person)+' Income',gross:tot,net:tot,freq:'monthly2'});
+    }
+  };
+  addP(pr.incP1,pr.p1tot,'p1',p1Name);
+  if(pr.p2n||p2Name)addP(pr.incP2,pr.p2tot,'p2',p2Name||pr.p2n);
+  return streams;
+}
+
+async function parseWorkbook(file){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+        const mSheets=wb.SheetNames.filter(isMonthSh);
+        if(!mSheets.length){rej(new Error('No month sheets found. Expected sheets named after months (e.g. Noviembre, June2025).'));return;}
+        const parsed=mSheets.map(name=>{
+          const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
+          return{name,label:shToLabel(name),pr:parseMonthRows(rows)};
+        });
+        let p1n='',p2n='';
+        for(const{pr}of parsed){if(!p1n&&pr.p1n)p1n=pr.p1n;if(!p2n&&pr.p2n)p2n=pr.p2n;if(p1n&&p2n)break;}
+        const lat=parsed[parsed.length-1].pr;
+        const incomeStreams=buildStreams(lat,p1n,p2n);
+        const bills=[...lat.bills,...lat.tempM,...lat.annualB];
+        const rawCards=lat.cards;
+        const snapshots=parsed.map(({label,pr})=>{
+          const si=buildStreams(pr,p1n,p2n);
+          const sb=[...pr.bills,...pr.tempM,...pr.annualB];
+          const sc=pr.cards;
+          const net=si.reduce((s,i)=>s+toM(i.net,i.freq),0);
+          const bt=sumB(sb);const dt=sc.reduce((s,c)=>s+(+c.balance||0),0);
+          const mt=sc.reduce((s,c)=>s+(+c.min||0),0);
+          const parts=label.split(' ');const moName=parts[0];const yr=parseInt(parts[1])||new Date().getFullYear();
+          const mo=MS.indexOf(moName)+1;
+          return{label,year:yr,month:mo,income:Math.round(net),bills:Math.round(bt),debt:Math.round(dt),savings:0,cashFlow:Math.round(net-bt-mt),savedAt:new Date().toISOString(),previousVersions:[],data:{incomeStreams:si,bills:sb,cards:sc,accounts:[],loans:[],customAssets:[]}};
+        });
+        res({p1n,p2n,isCouple:!!p2n,incomeStreams,bills,rawCards,snapshots,months:parsed.map(p=>p.label)});
+      }catch(err){rej(err);}
+    };
+    reader.onerror=()=>rej(new Error('File read failed.'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function parseCRMCsv(text){
+  const rows=text.split('\n').filter(r=>r.trim());
+  if(rows.length<2)return[];
+  // Parse header
+  const hdr=[];let cur='',inQ=false;
+  for(const ch of rows[0]+','){if(ch==='"')inQ=!inQ;else if(ch===','&&!inQ){hdr.push(cur.trim());cur='';}else cur+=ch;}
+  const clients=[];
+  for(let i=1;i<rows.length;i++){
+    const cols=[];cur='';inQ=false;
+    for(const ch of rows[i]+','){if(ch==='"')inQ=!inQ;else if(ch===','&&!inQ){cols.push(cur.replace(/^"|"$/g,'').trim());cur='';}else cur+=ch;}
+    const row={};hdr.forEach((h,j)=>row[h]=cols[j]||'');
+    if(!row.Name)continue;
+    const parts=row.Name.trim().split(/\s+/);
+    const ph=(row.Phone||'').replace(/[^\d]/g,'');
+    const fmtPhn=ph.length===10?`(${ph.slice(0,3)}) ${ph.slice(3,6)}-${ph.slice(6)}`:row.Phone||'';
+    let dob='';try{const d=new Date(row['Date of Birth']);if(!isNaN(d))dob=d.toISOString().split('T')[0];}catch{}
+    clients.push({id:gid(),firstName:parts[0]||'Unknown',lastName:parts.slice(1).join(' ')||'',email:row.Email||row['Client Email']||'',phone:fmtPhn,address:row.Address||'',dob,social:row['SSN (from Household Members)']||'',clientType:'financeOnly',recommendedBy:row['Referral Source']||''});
+  }
+  return clients;
+}
+
+/* ── IMPORT WIZARD ───────────────────────────────────────────────────────── */
+function ImportWizard({onClose,onImport}){
+  const th=useTh();
+  const[step,setStep]=useState('choose');
+  const[mode,setMode]=useState('');
+  const[xlFile,setXlFile]=useState(null);
+  const[loading,setLoading]=useState(false);
+  const[error,setError]=useState('');
+  const[parsed,setParsed]=useState(null);
+  const[csvClients,setCsvClients]=useState([]);
+  const[selCSV,setSelCSV]=useState(new Set());
+  const[names,setNames]=useState({firstName:'',lastName:'',partnerFirst:'',partnerLast:'',color1:'#4472C4',color2:'#ED7D31'});
+  const[cardOwn,setCardOwn]=useState({});
+  const xlRef=useRef(),csvRef=useRef();
+  const INP=mINP(th);
+
+  const handleXLUpload=async f=>{
+    if(!f)return;
+    setXlFile(f);setLoading(true);setError('');
+    try{
+      const result=await parseWorkbook(f);
+      setParsed(result);
+      setNames(n=>({...n,firstName:result.p1n||'Unnamed',lastName:'Client',partnerFirst:result.p2n||'',color1:'#4472C4',color2:'#ED7D31'}));
+      const owns={};
+      result.rawCards.forEach(c=>{
+        const det=c.owedBy!=='__joint__'?c.owedBy:null;
+        // Default: joint for couples (flag detected person), p1 for single
+        owns[c.id]=result.isCouple?'joint':(det&&det!=='__joint__'?'p1':'p1');
+      });
+      setCardOwn(owns);
+      setLoading(false);
+      setStep('names');
+    }catch(err){setError(err.message);setLoading(false);}
+  };
+
+  const handleCSVUpload=f=>{
+    if(!f)return;
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const clients=parseCRMCsv(e.target.result);
+      setCsvClients(clients);
+      setSelCSV(new Set(clients.map(c=>c.id)));
+      if(mode==='csv')setStep('csv_pick');
+    };
+    reader.readAsText(f);
+  };
+
+  const doImport=()=>{
+    if(mode==='csv'){
+      const toAdd=csvClients.filter(c=>selCSV.has(c.id)).map(c=>mig({...mk(),...c,monthSnapshots:[]}));
+      onImport(toAdd);onClose();return;
+    }
+    // Excel or Both
+    const isCouple=parsed.isCouple&&!!names.partnerFirst;
+    // Apply card ownership
+    const finalCards=parsed.rawCards.map(card=>({...card,owedBy:cardOwn[card.id]||'joint',promos:[]}));
+    const snapshots=parsed.snapshots.map(snap=>({...snap,data:{...snap.data,cards:snap.data.cards.map(c=>({...c,owedBy:cardOwn[c.id]||'joint'}))}}));
+    const allBills=parsed.bills.map(b=>({...b,assignedTo:isCouple?'joint':'p1',split:isCouple?{p1:50,p2:50}:{p1:100,p2:0}}));
+    // CSV profile merge
+    let profileData={};
+    if(mode==='both'&&selCSV.size===1){
+      const cc=csvClients.find(c=>selCSV.has(c.id));
+      if(cc)profileData={email:cc.email,phone:cc.phone,address:cc.address,dob:cc.dob,social:cc.social,recommendedBy:cc.recommendedBy};
+    }
+    const newClient=mig({...mk(),...profileData,firstName:names.firstName||'Unnamed',lastName:names.lastName||'Client',partnerFirst:isCouple?names.partnerFirst:null,partnerLast:isCouple?names.partnerLast:null,color1:names.color1,color2:isCouple?names.color2:null,incomeStreams:parsed.incomeStreams,bills:allBills,cards:finalCards,accounts:[],loans:[],customAssets:[],monthSnapshots:snapshots});
+    onImport([newClient]);onClose();
+  };
+
+  // ── RENDER STEPS ──
+  if(step==='choose')return<Modal title="📥 Import Client Data" onClose={onClose}>
+    <div style={{fontSize:12,color:th.muted,marginBottom:16}}>What would you like to import?</div>
+    {[['excel','📊','Financial Excel File','Import months of income, bills and debt from your Google Sheets export (.xlsx)'],['csv','👤','CRM Client List','Import client profiles from your insurance/health CRM export (.csv)'],['both','🔗','Link Both','Import Excel financial data and link it to a CRM client profile']].map(([m,icon,title,desc])=>
+      <div key={m} onClick={()=>{setMode(m);setStep('upload');}} style={{...mCARD(th),padding:16,marginBottom:10,cursor:'pointer',display:'flex',gap:14,alignItems:'flex-start'}} onMouseEnter={e=>e.currentTarget.style.border=`1px solid ${th.accent}`} onMouseLeave={e=>e.currentTarget.style.border=`1px solid ${th.cardBorder}`}>
+        <div style={{fontSize:28,flexShrink:0}}>{icon}</div>
+        <div><div style={{fontWeight:700,color:th.text,marginBottom:3}}>{title}</div><div style={{fontSize:11,color:th.muted,lineHeight:1.5}}>{desc}</div></div>
+      </div>
+    )}
+  </Modal>;
+
+  if(step==='upload')return<Modal title={`📥 Upload File${mode==='both'?'s':''}`} onClose={onClose}>
+    <input ref={xlRef} type="file" accept=".xlsx" onChange={e=>{if(e.target.files[0])handleXLUpload(e.target.files[0]);}} style={{display:'none'}}/>
+    <input ref={csvRef} type="file" accept=".csv" onChange={e=>{if(e.target.files[0])handleCSVUpload(e.target.files[0]);}} style={{display:'none'}}/>
+    {(mode==='excel'||mode==='both')&&<div style={{marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:6}}>📊 EXCEL FILE (.xlsx)</div>
+      <div onClick={()=>xlRef.current?.click()} style={{...mCARD(th),padding:24,textAlign:'center',cursor:'pointer',border:`2px dashed ${xlFile&&!loading?th.pos:th.cardBorder}`,borderRadius:10}}>
+        {loading?<><div style={{fontSize:14,marginBottom:4}}>⏳</div><div style={{fontSize:12,color:th.muted}}>Parsing months…</div></>:xlFile?<><div style={{fontSize:14,marginBottom:4}}>✅</div><div style={{fontSize:12,color:th.pos,fontWeight:700}}>{xlFile.name}</div>{parsed&&<div style={{fontSize:11,color:th.muted,marginTop:4}}>{parsed.months.length} months found</div>}</>:<><div style={{fontSize:24,marginBottom:4}}>📂</div><div style={{fontSize:12,color:th.muted}}>Click to select .xlsx file<br/><span style={{fontSize:10}}>Google Sheets export</span></div></>}
+      </div>
+      {parsed&&<div style={{...mCARD(th),padding:10,marginTop:8,fontSize:11}}>
+        <div style={{color:th.muted,marginBottom:3}}>📅 {parsed.months.join(' · ')}</div>
+        <div style={{color:th.muted,marginBottom:3}}>👤 {parsed.isCouple?`Couple: ${parsed.p1n||'P1'} & ${parsed.p2n||'P2'}`:`Single: ${parsed.p1n||'P1'}`}</div>
+        <div style={{color:th.muted}}>💳 {parsed.rawCards.length} cards · 📋 {parsed.bills.length} bills · 💼 {parsed.incomeStreams.length} income streams</div>
+      </div>}
+      {error&&<div style={{fontSize:11,color:th.neg,marginTop:8,padding:8,background:th.neg+'11',borderRadius:8}}>⚠️ {error}</div>}
+    </div>}
+    {(mode==='csv'||mode==='both')&&<div style={{marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:6}}>{mode==='both'?'👤 OPTIONAL: CRM CSV FILE':'👤 CRM CSV FILE'}</div>
+      <div onClick={()=>csvRef.current?.click()} style={{...mCARD(th),padding:20,textAlign:'center',cursor:'pointer',border:`2px dashed ${csvClients.length?th.pos:th.cardBorder}`,borderRadius:10}}>
+        {csvClients.length?<><div style={{fontSize:14,marginBottom:4}}>✅</div><div style={{fontSize:12,color:th.pos,fontWeight:700}}>{csvClients.length} clients found</div></>:<><div style={{fontSize:24,marginBottom:4}}>📂</div><div style={{fontSize:12,color:th.muted}}>Click to select .csv file</div></>}
+      </div>
+    </div>}
+    <div style={{display:'flex',gap:8,justifyContent:'space-between',marginTop:8}}>
+      <Btn onClick={()=>setStep('choose')}>← Back</Btn>
+      <div style={{display:'flex',gap:8}}>
+        {mode==='excel'&&parsed&&!loading&&<BSolid onClick={()=>setStep('names')}>Continue →</BSolid>}
+        {mode==='csv'&&csvClients.length>0&&<BSolid onClick={()=>setStep('csv_pick')}>Continue →</BSolid>}
+        {mode==='both'&&parsed&&!loading&&<BSolid onClick={()=>setStep('names')}>{csvClients.length?'Continue →':'Skip CSV →'}</BSolid>}
+      </div>
+    </div>
+  </Modal>;
+
+  if(step==='names')return<Modal title="👤 Client Names" onClose={onClose}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:14}}>Names detected from the file — edit as needed.</div>
+    <Row2><Field label="First Name"><input style={INP} value={names.firstName} onChange={e=>setNames(n=>({...n,firstName:e.target.value}))}/></Field><Field label="Last Name"><input style={INP} value={names.lastName} onChange={e=>setNames(n=>({...n,lastName:e.target.value}))}/></Field></Row2>
+    {parsed?.isCouple&&<><div style={{height:1,background:th.cardBorder,margin:'12px 0'}}/><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>👥 Partner (detected in file)</div><Row2><Field label="Partner First Name"><input style={INP} value={names.partnerFirst} onChange={e=>setNames(n=>({...n,partnerFirst:e.target.value}))}/></Field><Field label="Partner Last Name"><input style={INP} value={names.partnerLast} onChange={e=>setNames(n=>({...n,partnerLast:e.target.value}))}/></Field></Row2></>}
+    <div style={{height:1,background:th.cardBorder,margin:'12px 0'}}/>
+    <div style={{display:'flex',gap:16,marginBottom:4}}>
+      <Field label={`${names.firstName||'P1'} Color`}><input type="color" value={names.color1} onChange={e=>setNames(n=>({...n,color1:e.target.value}))} style={{width:48,height:32,border:'none',cursor:'pointer',background:'none'}}/></Field>
+      {parsed?.isCouple&&names.partnerFirst&&<Field label={`${names.partnerFirst} Color`}><input type="color" value={names.color2} onChange={e=>setNames(n=>({...n,color2:e.target.value}))} style={{width:48,height:32,border:'none',cursor:'pointer',background:'none'}}/></Field>}
+    </div>
+    <div style={{display:'flex',gap:8,justifyContent:'space-between',marginTop:16}}>
+      <Btn onClick={()=>setStep('upload')}>← Back</Btn>
+      <BSolid onClick={()=>setStep(parsed?.rawCards?.length?'cards':mode==='both'&&csvClients.length?'csv_pick':'confirm')}>Continue →</BSolid>
+    </div>
+  </Modal>;
+
+  if(step==='cards')return<Modal title="💳 Assign Card Ownership" onClose={onClose} width={560}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:12}}>
+      {parsed?.isCouple?'Cards default to Joint. ⚑ = originally detected under a specific person.':'Assign each card to the client.'}
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:360,overflowY:'auto',marginBottom:16}}>
+      {parsed?.rawCards.map(card=>{
+        const detectedPerson=card.owedBy!=='__joint__'?card.owedBy:null;
+        const cur=cardOwn[card.id]||'joint';
+        const opts=[['p1',names.firstName||'P1'],parsed?.isCouple&&['joint','Joint'],parsed?.isCouple&&['p2',names.partnerFirst||'P2']].filter(Boolean);
+        return<div key={card.id} style={{...mCARD(th),padding:'10px 14px',display:'flex',alignItems:'center',gap:12}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:12,fontWeight:700,color:th.text}}>{card.name}{detectedPerson&&<span style={{fontSize:10,color:th.warn,marginLeft:6}}>⚑ {detectedPerson}</span>}</div>
+            <div style={{fontSize:11,color:th.dim}}>{fmt(card.balance)}{card.apr>0?` · ${card.apr}% APR`:' · 0% APR'}</div>
+          </div>
+          <div style={{display:'flex',gap:4}}>
+            {opts.map(([v,l])=><button key={v} onClick={()=>setCardOwn(o=>({...o,[card.id]:v}))} style={{fontSize:11,padding:'3px 10px',borderRadius:6,cursor:'pointer',background:cur===v?th.accent+'33':'transparent',color:cur===v?th.accent:th.dim,border:`1px solid ${cur===v?th.accent:th.cardBorder}`,fontWeight:cur===v?700:400}}>{l}</button>)}
+          </div>
+        </div>;
+      })}
+    </div>
+    <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
+      <Btn onClick={()=>setStep('names')}>← Back</Btn>
+      <BSolid onClick={()=>setStep(mode==='both'&&csvClients.length?'csv_pick':'confirm')}>Continue →</BSolid>
+    </div>
+  </Modal>;
+
+  if(step==='csv_pick')return<Modal title="👥 Select Client Profile" onClose={onClose} width={520}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:12}}>{mode==='both'?'Select one CSV client to link as the profile for this import:':'Select which clients to import:'}</div>
+    <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:340,overflowY:'auto',marginBottom:16}}>
+      {csvClients.map(c=>{
+        const sel=selCSV.has(c.id);
+        return<div key={c.id} onClick={()=>{if(mode==='both'){setSelCSV(new Set([c.id]));}else{const ns=new Set(selCSV);sel?ns.delete(c.id):ns.add(c.id);setSelCSV(ns);}}} style={{...mCARD(th),padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:12,border:`1px solid ${sel?th.accent:th.cardBorder}`}}>
+          <div style={{width:18,height:18,borderRadius:4,background:sel?th.accent:th.cardBorder,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,color:'#fff'}}>{sel&&'✓'}</div>
+          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</div><div style={{fontSize:11,color:th.dim}}>{c.email}{c.phone?` · ${c.phone}`:''}{c.dob?` · ${c.dob}`:''}</div></div>
+        </div>;
+      })}
+    </div>
+    <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
+      <Btn onClick={()=>setStep(parsed?'cards':'upload')}>← Back</Btn>
+      <BSolid onClick={()=>mode==='csv'?doImport():setStep('confirm')} style={{opacity:selCSV.size===0?0.5:1}}>
+        {mode==='csv'?`Import ${selCSV.size} Client${selCSV.size!==1?'s':''}`:mode==='both'?'Link & Continue →':'Continue →'}
+      </BSolid>
+    </div>
+  </Modal>;
+
+  if(step==='confirm'){
+    const net=parsed?parsed.incomeStreams.reduce((s,i)=>s+toM(i.net,i.freq),0):0;
+    const linkedCsv=mode==='both'&&selCSV.size===1?csvClients.find(c=>selCSV.has(c.id)):null;
+    return<Modal title="✅ Review & Import" onClose={onClose}>
+      <div style={{...mCARD(th),padding:18,marginBottom:14,background:th.pos+'08',border:`1px solid ${th.pos}33`}}>
+        <div style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:8}}>{names.firstName} {names.lastName}{names.partnerFirst?` & ${names.partnerFirst}`:''}</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,fontSize:12}}>
+          <div style={{color:th.accent,fontWeight:600}}>📅 {parsed?.snapshots?.length||0} months of data</div>
+          <div style={{color:th.neg,fontWeight:600}}>💳 {parsed?.rawCards?.length||0} credit cards</div>
+          <div style={{color:th.warn,fontWeight:600}}>📋 {parsed?.bills?.length||0} bills</div>
+          <div style={{color:th.pos,fontWeight:600}}>💼 {fmt(net)}/mo income</div>
+        </div>
+      </div>
+      {linkedCsv&&<div style={{...mCARD(th),padding:10,marginBottom:14,fontSize:11,color:th.muted}}>📎 Profile linked: {linkedCsv.firstName} {linkedCsv.lastName} · {linkedCsv.email}</div>}
+      <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>Accounts, loans, and physical assets are not in the Excel — add them via the Intake tab after importing.</div>
+      <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
+        <Btn onClick={()=>setStep(parsed?.rawCards?.length?'cards':mode==='both'&&csvClients.length?'csv_pick':'names')}>← Back</Btn>
+        <BSolid onClick={doImport}>✅ Import Client</BSolid>
+      </div>
+    </Modal>;
+  }
+  return null;
+}
+
 /* ── DASHBOARD ───────────────────────────────────────────────────────────── */
 
-function Dashboard({clients,t,settings,onSelect,onAdd,onImport}){const th=useTh();const td=clients.reduce((s,c)=>s+totalL(c),0);const ti=clients.reduce((s,c)=>s+sumN(c.incomeStreams),0);const fO=clients.filter(c=>c.clientType==="financeOnly").length;const fH=clients.filter(c=>c.clientType==="financeAndHealth").length;const impr=clients.filter(c=>{const s=c.monthSnapshots||[];return s.length>=2&&s[s.length-1].debt<s[0].debt;}).length;const trend=["Jan","Feb","Mar","Apr","May"].map(m=>({m,debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label.startsWith(m));return s+(sn?.debt||0);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label.startsWith(m));return s+(sn?.savings||0);},0)}));const fileRef=useRef();return<div style={{padding:24}}><input ref={fileRef} type="file" accept=".csv" onChange={onImport} style={{display:"none"}}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><div><h2 style={{fontSize:18,fontWeight:800,color:th.text,margin:0}}>📊 {t.dashboard}</h2><div style={{fontSize:11,color:th.dim,marginTop:2}}>{clients.length} clients</div></div><div style={{display:"flex",gap:8}}><Btn small onClick={()=>fileRef.current?.click()} color={th.blue}>{t.importClient}</Btn><Btn small onClick={()=>expAllCSV(clients)} color={th.pos}>⬇️ {t.exportAll}</Btn><button onClick={onAdd} style={{fontSize:12,padding:"8px 16px",borderRadius:10,background:th.accent,color:"#fff",fontWeight:700,border:"none",cursor:"pointer"}}>＋ {t.addClient}</button></div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:20}}><SC label="👥 Clients" value={clients.length} color={th.accent}/><SC label={"💼 "+t.totalIncome} value={fmt(ti)} color={th.pos}/><SC label={"🏦 "+t.totalDebt} value={fmt(td)} color={th.neg}/><SC label={"📈 "+t.improving} value={impr} color={impr>0?th.pos:th.warn} sub={`${clients.length-impr} stable`}/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:4}}>{[[{name:t.financeOnly,value:fO,color:th.blue},{name:t.financeAndHealth,value:fH,color:th.pos}],[{name:"Has Debt",value:clients.filter(c=>totalL(c)>0).length,color:th.neg},{name:"Debt Free",value:clients.filter(c=>totalL(c)===0).length,color:th.pos}]].map((data,ci)=><div key={ci} style={{...mCARD(th),padding:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>{ci===0?"👥 CLIENT TYPE":"🏦 DEBT STATUS"}</div><div style={{display:"flex",alignItems:"center",gap:16}}><ResponsiveContainer width={90} height={90} style={{outline:"none"}}><PieChart><Pie data={data} cx="50%" cy="50%" innerRadius={22} outerRadius={40} paddingAngle={3} dataKey="value">{data.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}</Pie></PieChart></ResponsiveContainer><div>{data.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{fontSize:11,color:th.muted}}>{d.name}: <span style={{fontWeight:700,color:d.color}}>{d.value}</span></span></div>)}</div></div></div>)}<div style={{...mCARD(th),padding:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>📈 {t.debtTrend}</div><ResponsiveContainer width="100%" height={100} style={{outline:"none"}}><BarChart data={trend} barGap={2} margin={{top:16,right:0,left:0,bottom:0}}><XAxis dataKey="m" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:10}} formatter={v=>fmt(v)}/><Bar dataKey="debt" name="Debt" fill={th.neg+"88"} radius={[2,2,0,0]}><LabelList dataKey="debt" position="top" formatter={v=>v>0?fmtS(v):""} style={{fontSize:8,fill:th.dim}}/></Bar><Bar dataKey="savings" name="Savings" fill={th.pos+"88"} radius={[2,2,0,0]}><LabelList dataKey="savings" position="top" formatter={v=>v>0?fmtS(v):""} style={{fontSize:8,fill:th.dim}}/></Bar></BarChart></ResponsiveContainer></div></div><RemindersPanel clients={clients} settings={settings} t={t}/><div style={{display:"flex",flexDirection:"column",gap:8,marginTop:16}}>{clients.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}><div style={{width:44,height:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}><span style={{fontSize:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span></div><div style={{fontSize:11,color:th.dim}}>{c.email}</div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>Net/mo</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>Debt</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>Net Worth</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{fmt(tA-tL)}</div></div></div><span style={{color:th.accent,fontSize:18}}>›</span></div>;})} </div></div>;}
+function Dashboard({clients,t,settings,onSelect,onAdd,onImportNew}){const th=useTh();const[importOpen,setImportOpen]=useState(false);const td=clients.reduce((s,c)=>s+totalL(c),0);const ti=clients.reduce((s,c)=>s+sumN(c.incomeStreams),0);const fO=clients.filter(c=>c.clientType==="financeOnly").length;const fH=clients.filter(c=>c.clientType==="financeAndHealth").length;const impr=clients.filter(c=>{const s=c.monthSnapshots||[];return s.length>=2&&s[s.length-1].debt<s[0].debt;}).length;const trend=["Jan","Feb","Mar","Apr","May"].map(m=>({m,debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label.startsWith(m));return s+(sn?.debt||0);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label.startsWith(m));return s+(sn?.savings||0);},0)}));return<div style={{padding:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}}/>}<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><div><h2 style={{fontSize:18,fontWeight:800,color:th.text,margin:0}}>📊 {t.dashboard}</h2><div style={{fontSize:11,color:th.dim,marginTop:2}}>{clients.length} clients</div></div><div style={{display:"flex",gap:8}}><Btn small onClick={()=>setImportOpen(true)} color={th.blue}>📥 {t.importClient}</Btn><Btn small onClick={()=>expAllCSV(clients)} color={th.pos}>⬇️ {t.exportAll}</Btn><button onClick={onAdd} style={{fontSize:12,padding:"8px 16px",borderRadius:10,background:th.accent,color:"#fff",fontWeight:700,border:"none",cursor:"pointer"}}>＋ {t.addClient}</button></div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:20}}><SC label="👥 Clients" value={clients.length} color={th.accent}/><SC label={"💼 "+t.totalIncome} value={fmt(ti)} color={th.pos}/><SC label={"🏦 "+t.totalDebt} value={fmt(td)} color={th.neg}/><SC label={"📈 "+t.improving} value={impr} color={impr>0?th.pos:th.warn} sub={`${clients.length-impr} stable`}/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:4}}>{[[{name:t.financeOnly,value:fO,color:th.blue},{name:t.financeAndHealth,value:fH,color:th.pos}],[{name:"Has Debt",value:clients.filter(c=>totalL(c)>0).length,color:th.neg},{name:"Debt Free",value:clients.filter(c=>totalL(c)===0).length,color:th.pos}]].map((data,ci)=><div key={ci} style={{...mCARD(th),padding:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>{ci===0?"👥 CLIENT TYPE":"🏦 DEBT STATUS"}</div><div style={{display:"flex",alignItems:"center",gap:16}}><ResponsiveContainer width={90} height={90} style={{outline:"none"}}><PieChart><Pie data={data} cx="50%" cy="50%" innerRadius={22} outerRadius={40} paddingAngle={3} dataKey="value">{data.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}</Pie></PieChart></ResponsiveContainer><div>{data.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{fontSize:11,color:th.muted}}>{d.name}: <span style={{fontWeight:700,color:d.color}}>{d.value}</span></span></div>)}</div></div></div>)}<div style={{...mCARD(th),padding:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>📈 {t.debtTrend}</div><ResponsiveContainer width="100%" height={100} style={{outline:"none"}}><BarChart data={trend} barGap={2} margin={{top:16,right:0,left:0,bottom:0}}><XAxis dataKey="m" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:10}} formatter={v=>fmt(v)}/><Bar dataKey="debt" name="Debt" fill={th.neg+"88"} radius={[2,2,0,0]}><LabelList dataKey="debt" position="top" formatter={v=>v>0?fmtS(v):""} style={{fontSize:8,fill:th.dim}}/></Bar><Bar dataKey="savings" name="Savings" fill={th.pos+"88"} radius={[2,2,0,0]}><LabelList dataKey="savings" position="top" formatter={v=>v>0?fmtS(v):""} style={{fontSize:8,fill:th.dim}}/></Bar></BarChart></ResponsiveContainer></div></div><RemindersPanel clients={clients} settings={settings} t={t}/><div style={{display:"flex",flexDirection:"column",gap:8,marginTop:16}}>{clients.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:16}}><div style={{width:44,height:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}><span style={{fontSize:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span></div><div style={{fontSize:11,color:th.dim}}>{c.email}</div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>Net/mo</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>Debt</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>Net Worth</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{fmt(tA-tL)}</div></div></div><span style={{color:th.accent,fontSize:18}}>›</span></div>;})} </div></div>;}
 
 /* ── PAGES ───────────────────────────────────────────────────────────────── */
 function ClientList({clients,t,onSelect,onAdd}){const th=useTh();const[search,setSearch]=useState("");const filtered=clients.filter(c=>`${c.firstName} ${c.lastName} ${c.email}`.toLowerCase().includes(search.toLowerCase()));return<div style={{padding:24}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{fontSize:18,fontWeight:800,color:th.text,margin:0}}>👥 {t.clients}</h2><div style={{display:"flex",gap:8}}><input placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)} style={{...mINP(th),width:180,padding:"6px 12px"}}/><button onClick={onAdd} style={{fontSize:12,padding:"8px 16px",borderRadius:10,background:th.accent,color:"#fff",fontWeight:700,border:"none",cursor:"pointer"}}>＋ {t.addClient}</button></div></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{filtered.map(c=><div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}><div style={{width:36,height:36,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}{c.partnerFirst&&<span style={{color:th.dim,fontWeight:400}}> & {c.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{c.email} · {(c.monthSnapshots||[]).length} snapshots</div></div><span style={{color:th.muted,fontSize:11}}>{fmt(sumN(c.incomeStreams))}/mo</span><span style={{color:th.accent,fontSize:16}}>›</span></div>)}</div></div>;}
@@ -344,7 +724,7 @@ export default function App(){
   },[]);
   const upClient=useCallback(c=>{const mc=mig(c);setClients(p=>p.map(x=>x.id===mc.id?mc:x));setSelected(mc);},[]);
   const addClient=newC=>{const mc=mig(newC);setClients(p=>[...p,mc]);setAddOpen(false);setSelectedTab("intake");setSelected(mc);setNav("clients");};
-  const importFromDash=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{try{const nc=parseCSV(ev.target.result);setClients(p=>[...p,nc]);alert(`Imported: ${nc.firstName} ${nc.lastName}`);}catch{alert("Invalid CSV.");}};reader.readAsText(f);e.target.value="";};
+  const importMultiple=useCallback(cs=>{setClients(prev=>[...prev,...cs.map(mig)]);},[]);
   const splitClient=(p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==selected?.id),p1,p2]);setSelected(null);setNav("clients");};
   const joinClients=(c1,c2)=>{const joined=mig({...c1,id:c1.id,partnerFirst:c2.firstName,partnerLast:c2.lastName,color2:c2.color1,incomeStreams:[...c1.incomeStreams,...c2.incomeStreams.map(s=>({...s,id:gid(),person:"p2"}))],bills:[...c1.bills,...c2.bills.filter(b=>!c1.bills.some(x=>x.name===b.name)).map(b=>({...b,id:gid(),assignedTo:"p2",split:{p1:0,p2:100}}))],cards:[...c1.cards,...c2.cards.map(cc=>({...cc,id:gid(),owedBy:"p2"}))],accounts:[...c1.accounts,...c2.accounts.map(a=>({...a,id:gid(),owner:"p2"}))],loans:[...c1.loans,...c2.loans.map(l=>({...l,id:gid(),owner:"p2"}))]});setClients(prev=>[...prev.filter(x=>x.id!==c1.id&&x.id!==c2.id),joined]);setSelected(joined);setNav("clients");};
   const NAV=[{id:"dashboard",l:"📊 "+t.dashboard},{id:"clients",l:"👥 "+t.clients},{id:"calculators",l:"🧮 "+t.calculators},{id:"forms",l:"📋 "+t.forms},{id:"resources",l:"📚 "+t.resources},{id:"about",l:"⚓ "+t.about}];
@@ -365,7 +745,7 @@ export default function App(){
       </div>
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}><div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients}/>:
-          nav==="dashboard"?<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} onAdd={()=>setAddOpen(true)} onImport={importFromDash}/>:
+          nav==="dashboard"?<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple}/>:
           nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)}/>:
           nav==="calculators"?<CalculatorsPage t={t}/>:
           nav==="forms"?<FormsPage t={t}/>:
