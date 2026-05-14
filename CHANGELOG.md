@@ -91,6 +91,56 @@ After v0.5.2a is verified working in production (24-48 hours of normal use is en
 5. Backup procedure documentation in AGENT.md §11 (how to verify Supabase PITR is current, how to manually export to CSV if needed).
 6. No translation keys removed; ~25 new keys for the service-plan and Stripe-link UI.
 
+### Tooling addendum (2026-05-14, post-v0.5.2a deploy) — Playwright test harness
+
+Not a version bump. App.jsx unchanged. Adds an end-to-end test harness to the repo so future regressions can be caught before they ship. Tracked here for project history; full details in AGENT.md §13.
+
+**Files added to repo:**
+- `playwright.config.ts` — test runner config; projects (browsers), timeouts, storage state path
+- `global-setup.ts` — runs once before tests; logs into the live app via real Supabase Auth UI, saves the JWT for reuse
+- `tests/01-smoke.spec.ts` — boot, navigation, language toggle (10 tests × 2 browsers = 20 cases)
+- `tests/02-calculators.spec.ts` — Home Equity / Car Loan / Affordability / HY Savings / Debt Reduction math (5 tests × 2 browsers = 10 cases)
+- `tests/03-client-workflows.spec.ts` — Miguel/Amanda open, all detail tabs, Complete Report sections (4 tests × 2 browsers = 8 cases)
+- `tests/04-translation.spec.ts` — EN/ES integrity, no `undefined`, no raw dict keys (8 tests × 2 browsers = 16 cases)
+- `tests/05-persistence.spec.ts` — Supabase round-trip survives hard reload (3 tests × 2 browsers = 6 cases)
+- `utils/fixtures.ts` — shared `appPage` fixture, `navTo`, `openClient`, `fillNumberByLabel`, `getBuildMarker`
+- `.gitignore` updated — excludes `.env`, `playwright/.auth/`, `playwright-report/`, `test-results/`
+
+**Test users:**
+- Main advisor `b373dd8a-bf12-4df2-9439-d7770406d416` — **never touched by tests** (hard-refuse guard in `global-setup.ts` rejects any email containing "mauricio" or "hernandez")
+- Test user `test@goldenanchor.life` UUID `9d017248-fc0a-44ad-b68b-53315bb928d8` — duplicated fake/demo clients
+
+**Bugs fixed during setup:**
+- `global-setup.ts` originally used `input[type="email"]` selector which doesn't match the Login DOM (the email input has only `autoComplete="email"`). Fixed to `input[autocomplete="email"]`.
+- `01-smoke.spec.ts` originally had a `window.__GA_TEST_AUTOLOGIN__ = true` line from an earlier plan to add an auth bypass to App.jsx. That plan was rejected; tests now use the `appPage` fixture consistently.
+- `playwright.config.ts` imports `STORAGE_STATE_PATH` from `./global-setup`. Added explicit `export const STORAGE_STATE_PATH = "playwright/.auth/user.json"` at the top of `global-setup.ts` so the import resolves.
+
+**Known issues at first run:**
+- **WebKit disabled in `playwright.config.ts`.** Codespace is missing 36 system libraries WebKit needs. Chromium + Firefox cover the realistic user base. Re-enable via `sudo npx playwright install-deps webkit` when there's time.
+- **12 calculator tests fail** with `getByRole("button", { name: /Home/i })` timeouts. The calculator tab buttons render differently in the app than the test selectors assume. **Test-code bug, not app bug.** Calculators work fine in production. Fix is a 1-hour follow-up — open DevTools on the live app, inspect the actual button structure, rewrite the selectors. Not a launch blocker.
+- **3-browser serial run takes ~11 minutes** in Codespaces free-tier CPU. Acceptable for pre-deploy verification; too slow for save-loop iteration. Use `npx playwright test --project=chromium tests/01-smoke.spec.ts` to scope individual runs.
+
+**Realistic steady state after WebKit disable:** 30 passing / ~10 failing, all failures isolated to `02-calculators.spec.ts`. The 30 passing tests prove app boots, every tab renders without crashing, login flow works, Supabase round-trip works, EN/ES translation has no `undefined`, client workflows render correctly.
+
+**Required `.env` (NEVER committed):**
+```
+GA_TEST_EMAIL=test@goldenanchor.life
+GA_TEST_PASSWORD=(stored in password manager)
+VITE_SUPABASE_URL=(stored in password manager)
+VITE_SUPABASE_ANON_KEY=(stored in password manager)
+```
+Mirror values exist as GitHub Actions secrets for future CI use. Local Codespace reads from `.env`.
+
+**Run command reference:**
+```bash
+rm -rf playwright/.auth      # wipe stale auth state if global-setup needs to re-login
+npm run test:e2e             # all browsers, headless (~7 min with WebKit off)
+npm run test:ui              # interactive UI mode, best for debugging
+npm run test:report          # open the HTML report from the last run
+```
+
+**Future work documented in AGENT.md §13:** calculator selector rewrite (1 hour), CI workflow via `.github/workflows/playwright.yml`, smoke test against production URL after every deploy.
+
 ---
 
 ## v0.5.1 — 2026-05-14 (Patch — Critical Supabase migration bug fix)

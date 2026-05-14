@@ -48,10 +48,18 @@ export default defineConfig({
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
     },
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    // WebKit disabled — the Codespace is missing 36 system libraries that
+    // WebKit needs (libgtk-4, libvulkan, libgstreamer, libflite, etc).
+    // Chromium and Firefox give us good enough coverage for launch.
+    //
+    // To re-enable later, run this once in the Codespace terminal:
+    //   sudo npx playwright install-deps webkit
+    // Then uncomment the block below.
+    //
+    // {
+    //   name: "webkit",
+    //   use: { ...devices["Desktop Safari"] },
+    // },
   ],
 
   webServer: process.env.START_DEV_SERVER
