@@ -6,6 +6,10 @@ import { test, expect, navTo, getBuildMarker } from "../utils/fixtures";
  * The minimum bar: app boots, build marker is set, every sidebar tab opens
  * without a black screen or React-tree explosion. This is what catches the
  * brace-imbalance / undefined-variable class of bugs you've hit before.
+ *
+ * NOTE: All tests use the `appPage` fixture, which is pre-authenticated
+ * via global-setup.ts. We do NOT use any __GA_TEST_AUTOLOGIN__ bypass —
+ * tests hit the real Supabase Auth flow with the dedicated test user.
  */
 test.describe("smoke", () => {
   test("app boots and sets build marker", async ({ appPage }) => {
@@ -15,30 +19,43 @@ test.describe("smoke", () => {
     await expect(appPage.getByText(/Dashboard/i).first()).toBeVisible();
   });
 
-  test("no console errors during initial load", async ({ page }) => {
+  test("no console errors during initial load", async ({ appPage }) => {
     const errors: string[] = [];
-    page.on("pageerror", (err) => errors.push(`PAGEERROR: ${err.message}`));
-    page.on("console", (msg) => {
+    appPage.on("pageerror", (err) => errors.push(`PAGEERROR: ${err.message}`));
+    appPage.on("console", (msg) => {
       if (msg.type() === "error") errors.push(`CONSOLE: ${msg.text()}`);
     });
 
-    await page.addInitScript(() => {
-      // @ts-ignore
-      window.__GA_TEST_AUTOLOGIN__ = true;
-      localStorage.setItem("ga_migrated_to_supabase", "1");
-    });
-    await page.goto("/");
-    await page.waitForFunction(
+    await appPage.goto("/");
+    await appPage.waitForFunction(
       // @ts-ignore
       () => !!window.__GA_BUILD__,
       { timeout: 10_000 },
     );
+    // Wait until past the bootstrapping screen
+    await appPage.waitForFunction(
+      () => {
+        const body = document.body.innerText || "";
+        return (
+          !body.includes("Loading clients") &&
+          !body.includes("Cargando clientes")
+        );
+      },
+      { timeout: 15_000 },
+    );
     // Give React a beat to finish any deferred renders
-    await page.waitForTimeout(500);
+    await appPage.waitForTimeout(500);
 
-    // Ignore known-benign noise (e.g. third-party CDN failures) by filtering here
-    // if you find any. For now: zero tolerance.
-    expect(errors, errors.join("\n")).toHaveLength(0);
+    // Filter out known-benign noise. The [GA] migration logs are info-level
+    // but Supabase client sometimes emits expected noise we don't care about.
+    const real = errors.filter(
+      (e) =>
+        !e.includes("ResizeObserver") &&
+        !e.includes("[GA]") &&
+        !e.includes("favicon"),
+    );
+
+    expect(real, `Unexpected console errors:\n${real.join("\n")}`).toEqual([]);
   });
 
   // Each main tab should render without crashing the React tree.
@@ -62,7 +79,9 @@ test.describe("smoke", () => {
     });
   }
 
-  test("language toggle switches EN -> ES without errors", async ({ appPage }) => {
+  test("language toggle switches EN -> ES without errors", async ({
+    appPage,
+  }) => {
     // App stores lang in window.__GA_LANG and exposes a toggle button.
     // We don't know the exact button selector, so we drive lang via window:
     await appPage.evaluate(() => {

@@ -1,3 +1,6 @@
+export const STORAGE_STATE_PATH = "playwright/.auth/user.json";
+
+import "dotenv/config";
 import { chromium, FullConfig } from "@playwright/test";
 import { existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
@@ -16,9 +19,6 @@ import { dirname } from "path";
  * This re-runs on every `npx playwright test` invocation, which keeps
  * the saved JWT fresh (Supabase JWTs default to 1 hour TTL).
  */
-
-export const STORAGE_STATE_PATH = "playwright/.auth/user.json";
-
 export default async function globalSetup(config: FullConfig) {
   const baseURL =
     config.projects[0]?.use?.baseURL ||
@@ -54,26 +54,76 @@ export default async function globalSetup(config: FullConfig) {
   const context = await browser.newContext();
   const page = await context.newPage();
 
+  // Surface in-app errors if login fails
+  const errorMessages: string[] = [];
+  page.on("pageerror", (err) => errorMessages.push(`[pageerror] ${err.message}`));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errorMessages.push(`[console.error] ${msg.text()}`);
+  });
+
   console.log(`[global-setup] Logging in as ${email} at ${baseURL}…`);
 
-  await page.goto(baseURL);
+  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
 
-  // Wait for the login form to render. Field labels match T.en dict.
-  await page
-    .getByLabel(/Email/i)
-    .first()
-    .waitFor({ state: "visible", timeout: 15_000 });
+  // Selectors that actually match Golden Anchor's Login component:
+  // - email input has ONLY autoComplete="email" (no type, no name, no placeholder)
+  // - password input has type="password"
+  // - submit button text is "Sign In" (EN) or "Entrar" (ES)
+  const emailInput = page.locator('input[autocomplete="email"]').first();
+  const passwordInput = page.locator('input[type="password"]').first();
+  const submitButton = page
+    .getByRole("button", { name: /^(Sign In|Entrar)$/i })
+    .first();
 
-  await page.getByLabel(/Email/i).first().fill(email);
-  await page.getByLabel(/Password/i).first().fill(password);
+  try {
+    await emailInput.waitFor({ state: "visible", timeout: 15_000 });
+  } catch (e) {
+    const html = await page.content();
+    console.error("[global-setup] Login page did not render expected inputs.");
+    console.error("[global-setup] Page title:", await page.title());
+    console.error("[global-setup] First 500 chars of body:", html.slice(0, 500));
+    if (errorMessages.length) {
+      console.error("[global-setup] In-app errors:\n" + errorMessages.join("\n"));
+    }
+    throw e;
+  }
 
-  await page
-    .getByRole("button", { name: /^Sign In$|^Entrar$/i })
-    .first()
-    .click();
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
+  await submitButton.click();
 
-  // After successful login, the build marker should appear and the
-  // login form should be gone. We wait for both.
+  // Wait for either the dashboard to appear or an error banner.
+  const dashboard = page.locator("h2", { hasText: /Dashboard|Tablero/i }).first();
+  const errorBanner = page
+    .locator("div", { hasText: /Invalid|Error|Connection/i })
+    .first();
+
+  const result = await Promise.race([
+    dashboard
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => "dashboard"),
+    errorBanner
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => "error"),
+  ]).catch(() => "timeout");
+
+  if (result === "error") {
+    const errorText = await errorBanner.textContent();
+    console.error("[global-setup] Login rejected by app:", errorText);
+    throw new Error(`Login failed: ${errorText}`);
+  }
+  if (result === "timeout") {
+    console.error(
+      "[global-setup] Timed out waiting for dashboard or error after submit.",
+    );
+    console.error("[global-setup] Current URL:", page.url());
+    if (errorMessages.length) {
+      console.error("[global-setup] In-app errors:\n" + errorMessages.join("\n"));
+    }
+    throw new Error("Login submit did not produce dashboard or error within 30s.");
+  }
+
+  // After successful login, the build marker should appear
   await page.waitForFunction(
     // @ts-ignore
     () => typeof window !== "undefined" && !!window.__GA_BUILD__,
@@ -85,7 +135,9 @@ export default async function globalSetup(config: FullConfig) {
   await page.waitForFunction(
     () => {
       const body = document.body.innerText || "";
-      return !body.includes("Loading clients") && !body.includes("Cargando clientes");
+      return (
+        !body.includes("Loading clients") && !body.includes("Cargando clientes")
+      );
     },
     { timeout: 20_000 },
   );

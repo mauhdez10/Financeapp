@@ -4,6 +4,95 @@ All notable changes to App.jsx and the supporting docs. Newest entries on top. F
 
 ---
 
+## v0.5.2a — 2026-05-14 (Patch — Launch stabilization, part 1 of 2)
+
+First of two patches splitting the original v0.5.2 scope. Part 1 (this patch) covers security + UX with zero schema changes — small blast radius if it breaks. Part 2 (v0.5.2b, coming next) covers client-data shape changes (service plan fields, Stripe Payment Link fields, backup settings). Splitting per the audit of the v0.5.0/v0.5.1 regression history (UUID cast bug in v0.5.0 + line-number drift in v0.4.x) — pattern shows that "one big patch" has a track record of catching bugs only on second review.
+
+### Added
+
+- **30-minute idle auto-logout with 1-minute warning.** App component now arms two timers when `authUser && !bootstrapping`: a 29-minute warning timer that shows a centered modal ("⏰ You'll be signed out soon" / "Stay Signed In" button), and a 30-minute hard logout timer that signs the user out via `supabase.auth.signOut()`. Both timers reset on `mousemove`, `keydown`, `touchstart`, `click`, `scroll` (passive listeners). Constants `IDLE_TIMEOUT_MS = 30*60*1000` and `IDLE_WARN_MS = 29*60*1000` defined at the top of App() for easy adjustment.
+
+- **Draft preservation before auto-logout.** Just before `signOut()` fires, if a client is currently selected in the UI, the auto-logout effect saves `localStorage.setItem("ga_session_draft", JSON.stringify({clientId, data: selectedClient, savedAt}))`. The bootstrap effect (after the user re-logs-in and Supabase loads finish) checks for `ga_session_draft`, restores the client into `selected` state with the Intake tab open, dispatches an info toast: "Restored your in-flight edits from your previous session. Save when ready." Draft is then `removeItem`'d to prevent re-restoration on subsequent logins.
+
+- **Mauricio-only password reset flow.** Login component now has a "Forgot password?" link below the Sign In button (EN: `t.forgotPassword`, ES: `¿Olvidaste tu contraseña?`). Clicking it switches the component to "forgot" mode:
+  - Email field stays, password field hides, button text changes to "Send Reset Link"
+  - On submit, calls `supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.origin })`
+  - Shows success message: "If that email exists in our system, a reset link has been sent. Check your inbox." (intentionally non-disclosing per security best practice)
+  - "← Back to Sign In" link returns to normal mode
+
+  When Supabase's reset email link returns the user to the app with `#type=recovery` in the URL hash, a new `useEffect` in Login detects it and switches to "setNew" mode:
+  - Email field hides, password field shows with `autoComplete="new-password"` and label "New Password"
+  - Button text changes to "Update Password"
+  - On submit, validates password >= 8 chars, then calls `supabase.auth.updateUser({password})`
+  - On success, clears the URL hash and signs the user in automatically with a 700ms delay so the success toast is visible
+
+  **No public signup added.** The "Need an account? Contact Mauricio." text stays as-is per the audit decision that client portal users are future architecture, not launch.
+
+- **Save-failure toast.** Both `gaSaveClient` and `gaSaveSettings` now dispatch a `ga-save-failed` CustomEvent on every error path (including the catch block in `gaSaveClient`). The App component subscribes via `window.addEventListener("ga-save-failed", ...)` and surfaces a red 6-second toast in the bottom-right corner: "Couldn't save {x} — your changes are local only. Reload and try again." with `{x}` filled in as `"client"` or `"settings"`. Toast auto-dismisses after 6 seconds; user can manually dismiss via the ✕ button.
+
+- **17 new bilingual translation keys** in T.en (line 89) and T.es (line 90), fully synced. EN and ES dicts now sit at **1,060 keys per side** (was 1,043). New keys: `forgotPassword`, `resetPassword`, `sendResetLink`, `resetEmailSent`, `setNewPassword`, `newPassword`, `resetSetNewIntro`, `updatePassword`, `resetDone`, `passwordMin8`, `emailRequired`, `backToSignIn`, `idleWarnTitle`, `idleWarnBody`, `stayLoggedIn`, `saveFailedToast`, `draftRestoredToast`.
+
+- **AGENT.md §5: Four new open decisions** — **O-12** (auto-logout duration, locked at 30 min idle + 1 min warning), **O-13** (PDF generation deferred to post-launch), **O-14** (ToS/PP acceptance gate + engagement letter signature flow deferred to v0.6+), **O-15** (Supabase PITR backups + manual monthly verification, column-level encryption deferred). O-numbering now runs O-5 through O-15 (no gaps).
+
+### Changed
+
+- **`gaSaveClient` (line 11)** — on every error path (find error, save error, exception), now dispatches `window.dispatchEvent(new CustomEvent("ga-save-failed", {detail:{which:"client"}}))` before returning `false`. Return value semantics unchanged.
+- **`gaSaveSettings` (line 14)** — on save error, dispatches `window.dispatchEvent(new CustomEvent("ga-save-failed", {detail:{which:"settings"}}))`. Otherwise unchanged.
+- **`Login` component (line 2109)** — full rewrite to add `mode` state (`signin` / `forgot` / `setNew`), `info` state for green success messages, mode-switch buttons, and the URL-hash detection effect. Email/password input rendering is now conditional on mode. The `t.advisorPortal` label in the header is replaced by a dynamic `title` that reflects the current mode. The "Need an account?" footer text is unchanged.
+- **`App` component (line 2128)** — added 6 new state variables (`toast`, `idleWarn`, `justRestoredDraft`), 2 new refs (`_idleTimerRef`, `_idleWarnTimerRef`), 2 new constants (`IDLE_TIMEOUT_MS`, `IDLE_WARN_MS`), 3 new effects (save-failure event listener, toast auto-dismiss, idle timer arm/reset). Bootstrap effect now restores `ga_session_draft` after successful Supabase load. Authenticated app tree now renders the idle warning modal and toast at the top, both as fixed-position overlays with high z-index.
+- **Build marker (line 2127)** bumped from `2026-05-14-localid-migration-v051` to `2026-05-14-autologout-passreset-v052a`.
+
+### Decision changes
+
+- **O-12 closed at 30 min / 1 min warning.** Industry default of 15 min considered but rejected as too aggressive for an advisor working through long reports. Revisit if real-world feedback shows users getting logged out mid-call.
+- **O-13 closed: PDF generation deferred.** `window.print()` is fine for the current manual-attach flow. Real PDF generation becomes a blocker only when Resend automation activates.
+- **O-14 closed: ToS/engagement letter deferred to v0.6+.** First 1-2 paying clients handle ToS/PP acceptance and engagement letter signing out-of-band via email + DocuSign / paper signature. In-app gating gets added after that path is proven.
+- **O-15 closed: Supabase PITR + manual verification.** No custom export pipeline. Column-level encryption of SSN/phone/DOB via pgsodium considered but deferred until client count exceeds 25 or regulatory requirements force it.
+- No D-numbers added, removed, or renumbered. D-2 (no localStorage for sensitive PII) and D-22 (Supabase Auth single advisor) remain locked.
+
+### Required actions to deploy this patch
+
+**Before deploying:**
+- No Supabase SQL changes required (this patch has zero schema changes).
+- Confirm Supabase Dashboard → Authentication → URL Configuration → "Redirect URLs" includes `https://finance.goldenanchor.life` so the password reset email link can return the user to the app. Add it if missing.
+
+**After deploying:**
+- Test the four new flows in production once. Don't wait for a real client to surface a regression:
+  1. **Auto-logout:** Open the app, do not touch it for 29 minutes, confirm the warning modal appears. Click "Stay Signed In" — modal closes, timers reset. Wait another 29 minutes, do not interact, confirm at 30 minutes the app returns to the login screen.
+  2. **Draft preservation:** Sign in, open any client, start typing into the Intake form notes (do not save), do not touch the app for 30 minutes, get auto-logged-out, sign back in. The client should re-open on the Intake tab with the typed notes intact, and an info toast should appear.
+  3. **Password reset:** Click "Forgot password?", enter email, click "Send Reset Link", check inbox, click the email link, set a new password, confirm auto-login after success.
+  4. **Save-failure toast:** Open DevTools, set Network panel to "Offline", edit a client, watch for the red toast in bottom-right.
+
+### Verification
+
+- Brace/paren/bracket balance: 11,125 / 11,125 curly, 7,503 / 7,503 paren, 1,533 / 1,533 square. Clean.
+- TypeScript syntax check: no errors.
+- EN and ES dict key counts match at 1,060 each. All 17 new keys present in both languages.
+- No destructive `{t.X||"Y"}` patterns leaked into either dict body (pitfall #11 check passes).
+- Build marker confirmed bumped on line 2127.
+- File grew from 2,254 lines / ~590 KB → 2,333 lines / ~600 KB.
+
+### Files updated in this commit
+- `App.jsx` (lines 11, 14, 89, 90, 2109-2122 rewritten, 2128-2178 wired with new state/effects, 2245-2247 new modal+toast renders, build marker on line 2127)
+- `AGENT.md` (§1 database row unchanged, §2 line count, §3 version block rewritten, §5 added O-12 through O-15, §10 ref, footer)
+- `CHANGELOG.md` (this entry)
+
+### Files NOT changed
+- `SKILL.md` — procedure unchanged.
+- `how-to-use.md` — no workflow changes.
+
+### What's next (v0.5.2b)
+
+After v0.5.2a is verified working in production (24-48 hours of normal use is enough), v0.5.2b adds:
+1. Service plan/category tracking fields on the client `data` blob: `servicePlan`, `serviceCategory`, `serviceStartDate`, `serviceStatus` (Active/Paused/Completed/Cancelled), `nextChargeDate`, `paymentMethod`, `paymentLinkUrl`, `serviceNotes`, `lastPaidAt`.
+2. Manual Stripe Payment Link fields in `settings.stripeLinks`: a JSON map keyed by service ID (`initialCheckup`, `quarterly`, `annualBundle`, `monthlyLite`, `strategySession`) with the Stripe-hosted Payment Link URL as the value.
+3. "Pay Now" buttons on About/Services page that read from `settings.stripeLinks` and open the link in a new tab.
+4. `settings.lastBackupVerified` date field in the Settings panel, with helper text reminding Mauricio to update monthly.
+5. Backup procedure documentation in AGENT.md §11 (how to verify Supabase PITR is current, how to manually export to CSV if needed).
+6. No translation keys removed; ~25 new keys for the service-plan and Stripe-link UI.
+
+---
+
 ## v0.5.1 — 2026-05-14 (Patch — Critical Supabase migration bug fix)
 
 The v0.5.0 Supabase wiring shipped with a UUID-vs-numeric-ID mismatch that broke client migration silently. This patch corrects three functions and adds a migration safety guard. Build marker bumped from `2026-05-14-i18nplus-supabase-v050` to `2026-05-14-localid-migration-v051`.
