@@ -1,1 +1,6 @@
+.env
 .env.local
+playwright/.auth/
+playwright-report/
+test-results/
+node_modules/
