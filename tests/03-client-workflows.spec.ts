@@ -40,8 +40,22 @@ test.describe("client workflows", () => {
     ];
 
     for (const tab of tabs) {
-      const btn = appPage.getByRole("button", { name: tab }).first();
-      if (await btn.isVisible().catch(() => false)) {
+      // Two of these labels collide with sidebar nav buttons (Calculators
+      // and Clients are in <nav>; Strategy Plan / Notes etc. are not).
+      // .first() returns DOM-order — which on collisions is the sidebar
+      // button, navigating away from ClientDetail and breaking the Back
+      // assertion. Filter the candidate buttons down to those NOT inside
+      // <nav>.
+      const candidates = await appPage.getByRole("button", { name: tab }).all();
+      let btn = null;
+      for (const c of candidates) {
+        const inNav = await c.evaluate((el) => !!el.closest("nav"));
+        if (!inNav) {
+          btn = c;
+          break;
+        }
+      }
+      if (btn && (await btn.isVisible().catch(() => false))) {
         await btn.click();
         // Each tab change shouldn't blank the page. Check the back button
         // is still visible (it's always rendered in ClientDetail).

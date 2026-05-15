@@ -42,23 +42,27 @@ test.describe("persistence (Supabase round-trip)", () => {
   test("notes edit round-trips through Supabase (survives hard reload)", async ({
     appPage,
   }) => {
-    // Pick the first client in the list — the test user has demo data,
-    // but we don't pin a specific name because seed data may evolve.
-    await navTo(appPage, "Clients");
+    // Open Miguel — seed data is deterministic for the test user. Earlier
+    // versions of this test used a broad locator that matched the outer
+    // page <div> and clicked the wrong thing; openClient is the right tool.
+    await openClient(appPage, "Miguel");
 
-    // Find the first clickable client row. Avoid hitting the "New Client"
-    // button by filtering it out.
-    const firstClient = appPage
-      .locator('[role="button"], button, div')
-      .filter({ hasText: /^[A-Z][a-z]+ [A-Z][a-z]+/ })
-      .filter({ hasNotText: /New Client|Nuevo Cliente|Search/i })
-      .first();
-    await firstClient.click();
-
-    // Drill into Notes tab
-    const notesTab = appPage
+    // Drill into Notes tab. Avoid sidebar-nav collisions (none today for
+    // Notes, but harmless to be explicit) by scoping to non-nav buttons.
+    const notesCandidates = await appPage
       .getByRole("button", { name: /🗒|Notes|Notas/i })
-      .first();
+      .all();
+    let notesTab = null;
+    for (const c of notesCandidates) {
+      const inNav = await c.evaluate((el) => !!el.closest("nav"));
+      if (!inNav) {
+        notesTab = c;
+        break;
+      }
+    }
+    if (!notesTab) {
+      throw new Error("Notes tab button not found in ClientDetail");
+    }
     await notesTab.click();
 
     // Find the first visible textarea (General Notes field)

@@ -1,129 +1,153 @@
-import { test, expect, navTo, fillNumberByLabel } from "../utils/fixtures";
+import { test, expect, openCalculator, fillNumberByLabel } from "../utils/fixtures";
 
 /**
- * CALCULATOR CORRECTNESS
+ * Calculator math correctness tests.
  *
- * These tests do not depend on exact pixel layout. They drive the inputs the
- * way an advisor would, then assert that the computed output is in the
- * expected range. This protects against:
- *  - Logic regressions (e.g. the RSR formula bug fixed in v0.4.0)
- *  - Translation pass touching a computed string by mistake
- *  - Refactors that accidentally remove a calculator's output row
+ * The CalculatorsPage (line 1551 of App.jsx) renders 9 calculator entries
+ * as a 3x3 grid of <div onClick> cards — NOT buttons. Each card shows the
+ * emoji on top and the label below. Clicking a card opens that calculator
+ * in-place; a Back button returns to the gallery.
  *
- * Tolerance: results use `fmt()` formatting ($X,XXX) so we assert against the
- * rendered string range, not the exact number, to avoid penny-rounding flakes.
+ * We test 5 calculators that drive most of the client-facing value:
+ *   1. Home Calculator (Equity / HELOC / Refi / Amortization sub-tabs)
+ *   2. Car Loan
+ *   3. Affordability (max home price from income + debt)
+ *   4. Debt Reduction (standalone: Payoff + CC-vs-Loan modes)
+ *   5. High Yield Savings (compound growth)
+ *
+ * These are smoke + math assertions, not deep validation. Goal: catch
+ * the "calculator rendered but math is wrong" regression — a class of
+ * bug we've shipped twice (RSR formula, Liquidity rename).
+ *
+ * NOTE: The text labels on inputs change with t.calc<Foo>Lbl translations,
+ * so we match labels with case-insensitive partial regex against the EN
+ * dictionary entries from `T.en`. Tests assume language=EN. If you want
+ * ES coverage of the same flows, that's a separate spec.
  */
 
-test.describe("calculators — math correctness", () => {
-  test.beforeEach(async ({ appPage }) => {
-    await navTo(appPage, "Calculators");
-  });
-
-  /**
-   * Home Equity — $500k home, $200k mortgage balance, 80% LTV
-   * Expected: max borrowable = $500k * 0.80 - $200k = $200k
-   * Current equity = $500k - $200k = $300k
-   */
-  test("Home Equity calculator: $500k home, $200k mortgage, 80% LTV", async ({
+test.describe("calculator math correctness (EN)", () => {
+  test("Home Calculator — Equity/HELOC tab computes available equity", async ({
     appPage,
   }) => {
-    // Click into the Home calculator tab
-    await appPage.getByRole("button", { name: /Home/i }).first().click();
+    const page = appPage;
+    await openCalculator(page, "Home Calculator");
 
-    // The Equity/HELOC sub-tab is the default. Fill the inputs.
-    // Field labels come from the t dictionary, so we match by label text.
-    await fillNumberByLabel(appPage, /Home Value/i, "500000");
-    await fillNumberByLabel(appPage, /1st Mortgage/i, "200000");
-    await fillNumberByLabel(appPage, /Max LTV/i, "80");
+    // Home Calc opens on the 🏦 Equity/HELOC sub-tab by default.
+    // Inputs: Home Value, 1st Mortgage, 2nd Mortgage, Other Liens, Max LTV.
+    // Expected: equity = homeValue - sum(mortgages + liens).
+    //
+    // Home Value 500000, 1st 300000, 2nd 0, Other 0, LTV 80%
+    //   → Current Equity = 200,000
+    //   → Max Borrowable = 500000 * 0.80 - 300000 = 100,000
+    await fillNumberByLabel(page, /Home Value/i, "500000");
+    await fillNumberByLabel(page, /1st Mortgage/i, "300000");
 
-    // Computed Current Equity should be $300,000 and Max Borrowable $200,000.
-    await expect(appPage.getByText(/\$300,000/).first()).toBeVisible();
-    await expect(appPage.getByText(/\$200,000/).first()).toBeVisible();
+    // The result panel shows the computed Current Equity and Max Borrowable
+    // values formatted as `$200,000` etc. We assert those strings exist.
+    await expect(page.getByText(/Current Equity/i).first()).toBeVisible();
+    await expect(page.getByText("$200,000").first()).toBeVisible();
+    // Max Borrowable: 500000 * 0.8 = 400000, minus 300000 owed = 100000.
+    await expect(page.getByText("$100,000").first()).toBeVisible();
   });
 
-  /**
-   * Car Loan — $30k vehicle, $5k down, 7% APR, 60 months
-   * Expected monthly payment ≈ $495 (off-the-shelf amortization)
-   * Tolerant assertion: $4XX–$5XX range, no fraction
-   */
-  test("Car Loan: $30k vehicle, $5k down, 7% APR, 60mo -> ~$495/mo", async ({
+  test("Car Loan — monthly payment from price + APR + term", async ({
     appPage,
   }) => {
-    await appPage.getByRole("button", { name: /Car Loan/i }).first().click();
+    const page = appPage;
+    await openCalculator(page, "Car Loan");
 
-    await fillNumberByLabel(appPage, /Vehicle Price/i, "30000");
-    await fillNumberByLabel(appPage, /Down Payment/i, "5000");
-    await fillNumberByLabel(appPage, /APR/i, "7");
+    // CarLoanCalc defaults: tax 7%, title&tag $450, dealer $899, doc $299,
+    // GAP $600. The test wants a clean "Amount Financed = price - down"
+    // assertion, so we zero out tax and all fees before filling.
+    //
+    // Vehicle price 25000, down 5000, APR 6%, term 60 mo, tax 0, fees 0
+    //   → Amount financed = 20000
+    //   → Monthly payment ≈ 386.66
+    await fillNumberByLabel(page, /Sales Tax Rate/i, "0");
+    await fillNumberByLabel(page, /Title.*Tag/i, "0");
+    await fillNumberByLabel(page, /Dealer Fee/i, "0");
+    await fillNumberByLabel(page, /Doc Fee/i, "0");
+    await fillNumberByLabel(page, /GAP/i, "0");
+    await fillNumberByLabel(page, /Vehicle Price/i, "25000");
+    await fillNumberByLabel(page, /Down Payment/i, "5000");
+    await fillNumberByLabel(page, /APR/i, "6");
+    // Term is in months for Car Loan (carMonthsLbl = "months").
+    await fillNumberByLabel(page, /Term/i, "60");
 
-    // Monthly Payment row should render in the $4XX or $5XX range.
-    // We don't pin the exact value because tax/fee defaults shift it.
-    const body = await appPage.locator("body").innerText();
-    expect(body).toMatch(/\$(4|5)\d{2}/);
+    // Amount Financed should show $20,000 somewhere.
+    await expect(page.getByText("$20,000").first()).toBeVisible();
+    // Monthly payment is around $386. Check the dollar sign + 38 prefix.
+    // Use a loose regex because the app's `fmt()` may render it as
+    // "$386" (no cents) or "$386.66" depending on fmtD/fmt rules.
+    await expect(page.getByText(/\$38[6-7]/).first()).toBeVisible();
   });
 
-  /**
-   * Affordability — $8k/mo income, $500 existing debt, 36% DTI
-   * Max housing payment = $8k * 0.36 - $500 = $2,380/mo
-   */
-  test("Affordability: $8k income / $500 debt / 36% DTI -> $2,380 max housing", async ({
+  test("Affordability — max home price from income + DTI", async ({
     appPage,
   }) => {
-    await appPage.getByRole("button", { name: /Affordability/i }).first().click();
+    const page = appPage;
+    await openCalculator(page, "Affordability");
 
-    await fillNumberByLabel(appPage, /Gross Monthly Income/i, "8000");
-    await fillNumberByLabel(appPage, /Existing Monthly Debt/i, "500");
-    // DTI default is 36% — verify by checking the conservative/typical toggle is on 36
+    // AffordabilityCalc default DTI is 43 (FHA-friendly), not 36. We
+    // explicitly set 36 to match the conservative housing-payment math
+    // the test asserts.
+    //
+    // Gross monthly income 10000, existing debt 500, DTI 36%
+    //   → Max housing payment = 10000 * 0.36 - 500 = $3,100/mo (PITI cap)
+    await fillNumberByLabel(page, /Gross Monthly Income/i, "10000");
+    await fillNumberByLabel(page, /Existing Monthly Debt/i, "500");
+    await fillNumberByLabel(page, /DTI/i, "36");
 
-    await expect(appPage.getByText(/\$2,380/).first()).toBeVisible({
+    // The Max Total Housing Payment cell shows the DTI cap (gross * 0.36
+    // - existing debt). With our inputs that's $3,100.
+    await expect(page.getByText("$3,100").first()).toBeVisible();
+    // Max Home Price should render — just confirm the label is shown.
+    await expect(page.getByText(/Max Home Price/i).first()).toBeVisible();
+  });
+
+  test("Debt Reduction — standalone mode picker renders", async ({
+    appPage,
+  }) => {
+    const page = appPage;
+    await openCalculator(page, "Debt Reduction");
+
+    // The standalone DebtReductionCalc (line 1447 of App.jsx) renders two
+    // modes — "📉 Payoff" and "⚖️ CC vs Loan" — NOT the Avalanche/Snowball
+    // strategy radios. Those live on the client-bound ClientDebtCalc
+    // because they need real debt data to rank.
+    //
+    // Smoke check: we're on the calc page and one of the two modes is
+    // visible.
+    await expect(
+      page.getByRole("heading", { name: /Debt Reduction/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Payoff|CC vs Loan/i).first(),
+    ).toBeVisible();
+  });
+
+  test("High Yield Savings — compound interest growth", async ({ appPage }) => {
+    const page = appPage;
+    await openCalculator(page, "High Yield Savings");
+
+    // Initial 10000, monthly deposit 500, APY 4%, term 10 years.
+    // After 10 years with monthly compounding:
+    //   FV(initial)   = 10000 * (1.003333...)^120  ≈ 14,908
+    //   FV(deposits)  = 500 * (((1.003333)^120 - 1)/0.003333) ≈ 73,624
+    //   Total         ≈ $88,500 (rough)
+    // We assert the result is above $80,000 and below $100,000 — wide
+    // enough to tolerate small formula variations (annual vs monthly
+    // compounding edge cases) but tight enough to catch a broken calc.
+    await fillNumberByLabel(page, /Initial (Deposit|Investment)/i, "10000");
+    await fillNumberByLabel(page, /Monthly Deposit/i, "500");
+    await fillNumberByLabel(page, /APY/i, "4");
+    await fillNumberByLabel(page, /Years|Term/i, "10");
+
+    // The Total Amount or Future Value result should be in the $80-100k
+    // range. Match against a $8 or $9 prefix followed by a 5-digit
+    // number formatted with thousands separator.
+    await expect(page.getByText(/\$[89]\d,\d{3}/).first()).toBeVisible({
       timeout: 5_000,
     });
-  });
-
-  /**
-   * Interest Calculator (HY Savings) — $10k initial, 4% APY, monthly,
-   * 5 years, $0 deposit -> compounded total ≈ $12,200
-   */
-  test("HY Savings: $10k @ 4% APY, 5 years -> total ~$12.2k", async ({
-    appPage,
-  }) => {
-    await appPage
-      .getByRole("button", { name: /High Yield Savings|HY Savings/i })
-      .first()
-      .click();
-
-    await fillNumberByLabel(appPage, /Initial Deposit/i, "10000");
-    await fillNumberByLabel(appPage, /APY/i, "4");
-
-    const body = await appPage.locator("body").innerText();
-    // Should land in $12,XXX range
-    expect(body).toMatch(/\$12,\d{3}/);
-  });
-
-  /**
-   * Debt Reduction — Confirm the CC vs Loan comparison tab renders
-   * and that adding a hypothetical scenario produces a payoff projection.
-   * This is structural, not exact-math: the bug we want to catch is the
-   * "black screen on Debt Reduction tab" class.
-   */
-  test("Debt Reduction tab opens and shows scope/strategy controls", async ({
-    appPage,
-  }) => {
-    await appPage
-      .getByRole("button", { name: /Debt Reduction|Reducción/i })
-      .first()
-      .click();
-
-    // At least one of these should always be present on this tab
-    const sentinels = [/Avalanche/i, /Snowball/i, /CC vs Loan/i, /Total Balance/i];
-    let found = false;
-    for (const re of sentinels) {
-      if (await appPage.getByText(re).first().isVisible().catch(() => false)) {
-        found = true;
-        break;
-      }
-    }
-    expect(found, "Expected at least one Debt Reduction control to be visible").toBe(
-      true,
-    );
   });
 });
