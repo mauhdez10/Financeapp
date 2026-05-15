@@ -161,21 +161,26 @@ export async function openCalculator(page: Page, label: string | RegExp): Promis
 /* ── form filling ─────────────────────────────────────────────────────── */
 
 /**
- * Fill a numeric input whose surrounding Field wrapper has data-cf matching
- * `label`. Use this everywhere instead of getByLabel — the Field UI atom does
- * NOT pair its <label> with the <input> via htmlFor, so getByLabel times out.
+ * Fill a numeric input whose surrounding Field wrapper has a label matching
+ * `label`. Accepts both strings (substring match) and RegExps. Use this
+ * everywhere instead of getByLabel — the Field UI atom does NOT pair its
+ * <label> with the <input> via htmlFor, so getByLabel times out.
  *
- * `label` is matched as a substring of the data-cf attribute (CSS *= operator),
- * which tolerates the "($)" / "(%)" / "(years)" suffixes that decorate most
- * numeric labels in the app.
+ * Strategy: locate every `[data-cf]` wrapper, filter by visible text (the
+ * Field's <label> child renders the same text as the data-cf attribute, and
+ * Playwright's `hasText` filter accepts both strings and RegExps), then drill
+ * into the input. Tolerates "($)" / "(%)" / "(years)" suffixes naturally.
  */
 export async function fillNumberByLabel(
   page: Page,
-  label: string,
+  label: string | RegExp,
   value: number | string
 ): Promise<void> {
-  const escaped = label.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const input = page.locator(`[data-cf*="${escaped}"] input`).first();
+  const input = page
+    .locator("[data-cf]")
+    .filter({ hasText: label })
+    .locator("input")
+    .first();
   await input.waitFor({ timeout: 10_000 });
   await input.fill(String(value));
 }
