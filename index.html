@@ -2,12 +2,57 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" />
+
     <title>Golden Anchor Finance</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #060D1A; }
-    </style>
+    <meta name="description" content="Personal financial advisory portal — Golden Anchor Financial Advisory." />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0D1B2A" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- iOS / Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Golden Anchor" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+
+    <!-- Service worker registration. Wrapped in a try/catch so a SW failure never
+         blocks the app from booting. Re-checks for updates on every load. -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker
+            .register("/sw.js", { scope: "/" })
+            .then(function (reg) {
+              // Force update check on each load so post-deploy fetches the new SW.
+              reg.update().catch(function () {});
+              // When a new SW is waiting, kick it active immediately on next navigation.
+              if (reg.waiting) {
+                reg.waiting.postMessage({ type: "SKIP_WAITING" });
+              }
+              reg.addEventListener("updatefound", function () {
+                var sw = reg.installing;
+                if (sw) {
+                  sw.addEventListener("statechange", function () {
+                    if (sw.state === "installed" && navigator.serviceWorker.controller) {
+                      sw.postMessage({ type: "SKIP_WAITING" });
+                    }
+                  });
+                }
+              });
+            })
+            .catch(function (err) {
+              console.warn("[ga] SW register failed:", err);
+            });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

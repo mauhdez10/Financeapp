@@ -25,7 +25,7 @@
 
 ## 2. Source of truth
 
-The actual app is a **single React file**: `src/App.jsx` (~2,333 lines, ~600 KB as of v0.5.2a / 2026-05-14).
+The actual app is a **single React file**: `src/App.jsx` (~2,562 lines, ~627 KB as of v0.6.0 / 2026-05-15). PWA static assets (`public/manifest.json`, `public/sw.js`, `public/icon-*.png`, `public/apple-touch-icon.png`, `public/favicon-32.png`) sit alongside in the repo root + `public/`. The reference `index.html` was updated to register the service worker and link the manifest.
 
 Everything else is supporting infrastructure (build config, deploy config, this doc, the changelog). When the user asks "update the app," they mean App.jsx.
 
@@ -35,7 +35,36 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.5.2b** — established 2026-05-15. **Second half of the launch-stabilization patch series.** v0.5.2a (the prior patch) handled security + UX with zero schema changes. v0.5.2b is the revenue-plumbing half: per-client service plan tracking, settings-level Stripe Payment Link map, Pay Now buttons on the public services grid, and backup-verification helper closing the O-15 implementation gap.
+**v0.6.0** — established 2026-05-15. **First Minor bump since v0.5.0.** Three bundled changes (full responsive mobile shell, PWA install, Tier-3 public intake form). Big blast radius accepted at the user's explicit direction after the v0.5.2 a/b split pattern was proposed and declined.
+
+What v0.6.0 ships:
+
+1. **Mobile responsive shell.** New `useViewport()` hook (line 157) drives layout branching at a 720px breakpoint. On mobile: the sidebar becomes an off-canvas drawer (`position:fixed`, `translateX(-100%)` when closed, `0` when open) with a dim overlay that closes on tap. A new sticky top app-bar (52px tall, gold ⚓ + current page title) carries a `☰` hamburger button to open the drawer. `Row2` collapses to single-column. `Modal` becomes a bottom-sheet (rounded top corners only, slides up, uses `100dvh` and `env(safe-area-inset-bottom)` so iOS address-bar doesn't cut content). Tap targets bumped to 40–44px on primary buttons. Desktop layout is **byte-identical** to v0.5.2b — mobile is an additive code path keyed on `vp.isMobile`, intended to keep Playwright selectors stable.
+
+2. **PWA install + service worker.** Closes **O-5** as merged-**D-27**. New static files: `public/manifest.json` (name, short_name, theme/background `#0D1B2A`, icons in 192/512/512-maskable), `public/sw.js` (cache-first for static assets, network-first for app shell, **pass-through with no caching for any URL containing `supabase`/`stripe`/`resend` per D-2**), `public/icon-*.png` (placeholder gold ⚓ on navy generated 2026-05-15 — Mauricio can swap for branded versions later), `public/apple-touch-icon.png`, `public/favicon-32.png`. The reference `index.html` adds `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, and a SW registration script that runs an immediate `reg.update()` on every page load to avoid stale-bundle issues post-deploy.
+
+3. **Tier-3 public intake form.** New `/intake?advisor=<uuid>&lang=<en|es>` public route renders a bilingual standalone form (`PublicIntake` component, ~80 lines, dark fixed theme so it works without the advisor's settings). Posts to a new Supabase `intake_submissions` table (see §11.6 / `sql/v0.6.0_intake_submissions.sql`). Schema: `(id uuid pk, advisor_id uuid, submission_token text, lang, status, data jsonb, client_local_id, ip_hash, user_agent, created_at, reviewed_at, converted_at)` with a status CHECK constraint and tiered RLS (anonymous INSERT allowed, advisor SELECT/UPDATE/DELETE gated by `advisor_id = auth.uid()`). New advisor-side `IntakeSubmissionsPage` shows the pending queue, lets Mauricio view submission data, mark reviewed, reject, or **Convert to Client** (prefills a new Client with name/contact/income/goals/notes, marks the submission `converted` and stores the resulting `client_local_id` for traceability). Public URL with EN/ES copy buttons rendered at the top of the page. Added to NAV as `📥 Intake` between Clients and Calculators.
+
+4. **42 new bilingual translation keys** for the public intake + advisor review (T.en and T.es both go from 1,093 → 1,135 keys, symmetry-verified by build script). 12 additional keys for mobile-shell + PWA chrome (`menu`, `closeMenu`, `installApp`, `installIosTip`, `installAndroidTip`, `appBarTitle`, `navTitleSection`, `intakeSubmissions`, `newSubmission`, `pendingSubmissions`, `submissionConverted`, `publicIntakeUrl`) had already been added during Phase 2 setup, so the total v0.6.0 added is 54 keys per side.
+
+5. **One new locked decision (D-27).** PWA install + mobile-first responsive shell using Vite/React (no Capacitor, no Expo, no separate native repo). Web-only per D-5, but installable.
+
+6. **One new pitfall (#13).** URL-based routing inside the single App component must guard *after* all hooks are declared (hooks rule). The `isPublicIntakeRoute` check is computed during state setup; the early `return <PublicIntake/>` happens after all `useEffect`/`useState` lines, before the auth gate.
+
+No App.jsx structural refactor outside the additions above. `mig`, `mk`, `gid`, `vEmail`, `Pill`, `Btn`, `BSolid`, `SaveBar`, `Modal`, `useTh`, `mCARD`, and `useViewport` are all the in-scope symbols the new components use. Backward-compatible with all pre-v0.6.0 saved client and settings shape.
+
+**Build marker:** `2026-05-15-v060-mobile-pwa-intake`.
+
+**Out-of-app actions required before this build runs in production:**
+- Run `sql/v0.6.0_intake_submissions.sql` in Supabase SQL Editor (creates the table + RLS).
+- Upload all files in `public/` to GitHub repo's `public/` directory.
+- Replace `index.html` at repo root with the updated reference (preserves the existing Vite entry while adding PWA registration).
+- Commit + push. Vercel auto-deploys.
+- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-15-v060-mobile-pwa-intake"`.
+- Verify PWA: in Chrome DevTools → Application → Manifest, confirm "Golden Anchor Finance" loaded; install via the ⊕ icon in the URL bar.
+- Verify public intake: visit `https://finance.goldenanchor.life/intake?advisor=<your-uuid>` — should render the standalone form on a dark navy background. Submit a test entry, then sign in to the advisor app, navigate to `📥 Intake`, confirm the submission appears, convert it, confirm the new client is created with the submitted data, then delete the test client.
+
+**Prior version (v0.5.2b, 2026-05-15)** — **Second half of the launch-stabilization patch series.** v0.5.2a (the prior patch) handled security + UX with zero schema changes. v0.5.2b is the revenue-plumbing half: per-client service plan tracking, settings-level Stripe Payment Link map, Pay Now buttons on the public services grid, and backup-verification helper closing the O-15 implementation gap.
 
 What v0.5.2b ships:
 
@@ -189,13 +218,17 @@ Decisions in this section have been agreed and should NOT be changed without the
   - On or after 2026-07-15 (60 days post-Porkbun transfer), transfer registration Porkbun → Cloudflare. ~$10/yr renewals at cost after. Optional but recommended.
   - Reasoning: Cloudflare DNS panel is best-in-class, supports MX/TXT on subdomains (the thing Wix did not), unlocks Resend domain verification, provides CDN/WAF/analytics at $0 if ever needed. Vercel registrar was considered but eventual consolidation at Cloudflare is the lower-total-cost path. The Wix-only registrar restriction forced this two-hop because Wix doesn't allow direct moves to Cloudflare.
 
+- **D-27 — Mobile-first responsive shell + PWA install (closes O-5, v0.6.0, 2026-05-15).** The advisor app responds to viewports < 720px by collapsing the sidebar into an off-canvas drawer with overlay, exposing a hamburger app-bar, stacking `Row2` to single column, and switching modals to bottom-sheet layout with `100dvh` + `env(safe-area-inset-bottom)`. Detection via a single `useViewport()` hook with `resize` + `orientationchange` listeners debounced through `requestAnimationFrame`. Desktop layout is unchanged when `width >= 720`. PWA install enabled via `public/manifest.json` + `public/sw.js`; SW caches static assets cache-first, app shell network-first, and explicitly bypasses any URL containing `supabase`/`stripe`/`resend` so D-2 (no caching of sensitive PII) is preserved. Reasoning: mobile prospects + Mauricio's own phone usage make the responsive shell the most direct conversion-rate improvement before launch; PWA "Add to Home Screen" gives an app-like feel without the cost of a native build (D-5). Stays inside the single-file architecture (D-1) — manifest/SW/icons are static files, not React modules. Forward note: when v0.7+ adds offline data caching, do NOT extend the SW to cache Supabase responses — that path requires per-user encryption that's deferred per O-15.
+
+- **D-28 — Public intake form via `/intake` URL + anonymous-INSERT RLS (v0.6.0, 2026-05-15).** New `intake_submissions` table accepts unauthenticated POSTs from prospects who fill out the public `/intake?advisor=<uuid>&lang=<en|es>` URL. RLS policy `intake_anon_insert` grants `to anon` role `INSERT` with `check (true)` — the `advisor_id` flows in from the URL, not from `auth.uid()`, because by definition the submitter has no auth context. SELECT/UPDATE/DELETE remain gated by `advisor_id = auth.uid()`. The advisor's UUID is NOT secret (it's an identifier, not a credential) and exposing it in URLs is acceptable. Future: if rate-limiting becomes necessary, add a Postgres trigger that rejects inserts when the same `ip_hash` (SHA-256 of IP) has > N inserts in the last hour. For v1, manual moderation in the IntakeSubmissionsPage is sufficient. Forward note: when multi-tenant launches (D-23), the public URL becomes `/intake?agency=<slug>&advisor=<uuid>` and the table picks up `agency_id` — both new columns get RLS conditions extended.
+
 ---
 
 ## 5. Open decisions (not yet locked)
 
 These are things being actively discussed. If the user weighs in on one, move it to Locked Decisions and update the version.
 
-- **O-5 — Mobile install (PWA) flow.** Worth doing at launch or wait? Leaning wait.
+- ~~**O-5 — Mobile install (PWA) flow**~~ — *Closed v0.6.0, locked as **D-27** (mobile-first responsive shell + PWA install).*
 - **O-6 — Marketing landing for `goldenanchor.life` apex.** Currently no site published (Wix subscription dropped). After DNS lands at Cloudflare, decide between: (a) dedicated Vercel project for the apex marketing site, separate from the Finance and Health apps (recommended); (b) Carrd one-pager; (c) keep apex parked and use subdomains only. Includes related routing question if the Finance app ever co-hosts a landing page.
 - **O-7 — Referral attribution automation.** Manual via Google Form + cross-check for v1. When to automate inside App.jsx (capture referrer name → auto-issue $25 credit) is open.
 - **O-8 — Snapshot data hygiene UX.** v0.3.0 added a stale-snapshot warning when debt scale changes >5x between snapshots. Open question: should the app proactively prompt to delete or refresh old snapshots that look scale-inconsistent, or just warn and let the advisor decide? Currently: warn only.
@@ -206,6 +239,11 @@ These are things being actively discussed. If the user weighs in on one, move it
 - **O-13 — PDF generation timing for launch.** Decided v0.5.2a: **deferred to post-launch** alongside Resend email automation. Current `window.print()` is fine for the manual flow (advisor saves PDF, attaches to email). Real PDF generation becomes a blocker only when Resend automation activates. Track O-11 for the implementation choice; this O-number tracks the launch-vs-defer decision specifically. If a paying client demands automated emailed reports before Mauricio can manually attach them, revisit.
 - **O-14 — Terms of Service / Privacy Policy acceptance gate + Engagement Letter signature flow.** Legal docs are reviewed by counsel and on file (D-17). The app does not yet enforce one-time ToS click-through on first login, and does not track per-client engagement-letter signature dates. Deferred to v0.6+ (post-launch). For the first 1-2 paying clients, ToS/PP acceptance and engagement letter signing happen out-of-band via email + DocuSign / paper signature. Once that path proves the workflow, in-app gating gets added with: (a) ToS checkbox on first login (stored in `settings.tosAcceptedAt`, `settings.tosVersion`); (b) per-client `engagementLetter: {signedAt, signedBy, ipHash}` field; (c) optional Mauricio-side UI to upload his agent-specific PDF template (the agent-uploaded-form pattern Mauricio mentioned in the audit, which becomes the multi-agent default in D-23 later).
 - **O-15 — Supabase data backup cadence + mechanism.** Decided v0.5.2a: **rely on Supabase's built-in Point-in-Time-Recovery (PITR) backups + a manual verification cadence**. Supabase free tier retains 7 days of PITR backups automatically — no custom export pipeline needed. Once Mauricio upgrades to a paid Supabase tier (likely Pro at $25/mo when client count grows), PITR retention extends to 14 or 30 days. v0.5.2b adds a `settings.lastBackupVerified` date field that Mauricio updates monthly after confirming he can see his clients in the Supabase Dashboard. Backup recovery procedure documented in §11 (v0.5.2b). Column-level encryption of SSN/phone/DOB via pgsodium considered but **deferred** — re-evaluate when (a) client count exceeds 25, or (b) regulatory requirements force HIPAA-shaped handling. Also rejected for launch: custom CSV-export-to-email pipeline — adds operational complexity, breaks if Resend fails, and PITR already covers the disaster-recovery case.
+
+### Closed in v0.6.0 (2026-05-15)
+
+- ~~O-5 (Mobile install / PWA flow)~~ → locked as **D-27**.
+- *New:* **D-28** added (Public intake `/intake` route + RLS). No prior O-number — this was a feature additionally proposed and approved in the same chat that decided D-27.
 
 ### Closed in v0.4.0 merge (2026-05-13)
 
@@ -280,6 +318,8 @@ These are mistakes we've made and learned from. **Don't repeat them.**
 11. **Global `text.replace("WORD", "{t.key||\"WORD\"}")` is destructive.** A bare-word global replace ALSO matches that word inside dictionary string values. v0.3.0 hit this twice: replacing `TOTAL CURRENT ASSETS` overwrote the EN dict entry, and replacing `DATOS` corrupted the Spanish dict. Rule: when wrapping a JSX literal, anchor the replacement to JSX context (`>WORD</div>`, `label="WORD"`, etc.) — never to the bare word. Verify dict integrity after every patch: `python3 -c "import re; ..."` checking both EN/ES key counts and absence of `{t\.\w+\|\|"[^"]+"}` patterns INSIDE the dict body.
 12. **Supabase UUID columns vs app numeric IDs.** `gid()` on line 94 returns numbers like `1747200000123456`. Supabase `clients.id` is a UUID column. Upserting `{id: <number>, ...}` fails the PostgreSQL cast silently — the error appears in console but the migration loop can mark itself "done" anyway, locking the app into a half-migrated state. **Rule:** never use `clientObj.id` (or any `gid()`-generated ID) as a Supabase UUID primary key. Use a separate `local_id text` column for app IDs, let Supabase generate UUIDs for `id`. Mirror this for any new table that needs to map an app entity to a Postgres row. **Also:** never let a migration loop set its "completed" flag without verifying every save actually succeeded — count successes, compare to total, only flag-complete on full match. Hit and fixed in v0.5.1.
 
+13. **URL-based routing inside a single React function component.** The hooks rule says all hooks must be called in the same order on every render. So a route check like `if (path.startsWith("/intake")) return <PublicIntake/>` MUST come AFTER all `useState`/`useEffect`/`useViewport` declarations, not before. In v0.6.0 the `isPublicIntakeRoute` constant is computed inline with the state declarations (acceptable — no hook order changes), and the early return sits after all hooks and before the auth-state-machine gates (`!authReady` → `…`, `!authUser` → `<Login/>`, `bootstrapping` → ⚓ spinner). A consequence: the bootstrap useEffect still *registers* on the /intake route — it just doesn't matter because the early return runs before any of the rendered tree depends on its results. Don't try to "optimize" this by moving the route check up — it WILL break the rules of hooks the moment another hook gets added below it.
+
 ---
 
 ## 8. Build & deploy workflow
@@ -331,7 +371,7 @@ Should return the build marker string (current: `"2026-05-14-i18nplus-supabase-v
 
 ---
 
-## 11. External services baseline (v0.5.2a)
+## 11. External services baseline (v0.6.0)
 
 Status snapshot of every external service the project depends on. Update when status changes.
 
@@ -345,7 +385,7 @@ Status snapshot of every external service the project depends on. Update when st
 | **Porkbun (Registrar)** | Standard | ⏳ Wix → Porkbun transfer **in flight** (initiated 2026-05-13). Status: "pending transfer from losing registrar (002)." ICANN 5-day clock running. Expected completion 2026-05-18 to 2026-05-20. | ~$15.62/yr | Domain registration for `goldenanchor.life`. Intermediate stop before Cloudflare. |
 | **Cloudflare (DNS)** | Free | 🚫 Blocked on Porkbun transfer completion. Cannot change nameservers until Porkbun finalizes. | $0 | DNS hosting (replaces Wix DNS), free CDN/WAF/analytics if/when needed. |
 | **Cloudflare (Registrar)** | Standard | ⏳ Deferred to 2026-07-15+ (60-day Porkbun lock from transfer completion date) | ~$10/yr at-cost | Optional final registrar. Lower renewals than Porkbun. |
-| **Stripe** | Standard | ✅ Account active. **9 hosted Payment Links live** (2026-05-12 dashboard export). In-app integration: **wired in v0.5.2b** — `settings.stripeLinks[service-id]` map holds URLs, About/Services page renders 💳 Pay Now buttons that open hosted Checkout in new tab. Webhook integration for `lastPaidAt` auto-updates is deferred (manual marking in Service Plan UI for now). | $0 base, 2.9% + $0.30/txn | Payment for each service. |
+| **Stripe** | Standard | ✅ Account active. **9 hosted Payment Links live** (2026-05-12 dashboard export). In-app integration: **wired in v0.6.0** — `settings.stripeLinks[service-id]` map holds URLs, About/Services page renders 💳 Pay Now buttons that open hosted Checkout in new tab. Webhook integration for `lastPaidAt` auto-updates is deferred (manual marking in Service Plan UI for now). | $0 base, 2.9% + $0.30/txn | Payment for each service. |
 | **Calendly** | Free | ✅ Live — "Free Discovery Call 20 min" event type connected to Google Calendar. Public booking link saved. | $0 | Single event type. Paid upgrade deferred until volume justifies $12/mo. |
 | **Resend** | Free | 🚫 Domain verification blocked on Cloudflare DNS, which is blocked on Porkbun transfer. Account exists; DNS records held in the AGENT.md DNS list ready to paste once Cloudflare is active. | $0 (3k emails/mo) | Transactional emails: monthly reports, receipts, reminders. App.jsx integration also pending. |
 | **Google Business Profile** | Free | ✅ Live — listing complete with services, hours, photos | $0 | Local SEO + reviews. |
@@ -394,7 +434,7 @@ All service credentials (passwords, API keys, recovery codes) live in user's pas
 
 ---
 
-## 11.5. Pending work + sync map (v0.5.2a)
+## 11.5. Pending work + sync map (v0.6.0)
 
 This section is the single source of truth for "where are we in the launch path." Update on every meaningful state change.
 
@@ -621,4 +661,4 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-15 — v0.5.2b (Patch — launch stabilization part 2: revenue plumbing). Ships the 9-service Stripe-aligned `SVCS` array (each with stable `id`, EN+ES name/desc, price), `settings.stripeLinks` map pre-populated from the 2026-05-12 Stripe CSV export (8 URLs; insurance-consult left empty), 💳 Pay Now buttons on About/Services page next to existing 📋 Request Service, `client.servicePlan` nested object (plan/category/status/startDate/nextChargeDate/lastPaidAt/paymentMethod/paymentLinkUrl/serviceNotes) tracked in the 🗒 Notes & Goals tab with independent Save button, `settings.lastBackupVerified` ISO date with collapsible UI in Profile & Settings closing O-15 implementation gap, AGENT.md §11 monthly backup-verification procedure + recovery troubleshooting subsection. 33 new bilingual translation keys (T.en and T.es both 1,060 → 1,093, AST-verified equal). No schema changes — `client.servicePlan`, `settings.stripeLinks`, `settings.lastBackupVerified` ride along inside existing JSON columns; backward-compatible with all pre-v0.5.2b client rows. Build marker `2026-05-15-v052b-service-plans-stripe-links`. **Prior:** v0.5.2a (2026-05-14) shipped 30-min idle auto-logout with 1-min warning + draft preservation, Mauricio-only password reset, save-failure toast. Open decisions O-12 through O-14 closed under v0.5.2a; O-15 closed under v0.5.2b. Playwright harness landed post-v0.5.2a, took three selector-fix passes (24/60 → 56/60 → 60/60) for steady state. Detailed in §13. Next: post-launch revisit of Resend integration (blocked on Porkbun→Cloudflare DNS), webhook-driven `lastPaidAt` auto-update from Stripe (deferred to a future minor — requires Edge Function), and v0.6+ for ToS click-through gate + engagement-letter signature flow per O-14.*
+*Last updated: 2026-05-15 — v0.6.0 (Minor — mobile responsive shell + PWA install + Tier-3 public intake form). One bundled minor at user's explicit direction. App.jsx grew from 2,382 lines / 593 KB → 2,562 lines / 627 KB. New static assets in `public/`: `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`, `favicon-32.png`. New SQL migration in `sql/v0.6.0_intake_submissions.sql` (one CREATE TABLE + five RLS policies + two indexes). Reference `index.html` updated for SW registration and PWA meta tags. Two new decisions locked: **D-27** (mobile-first responsive + PWA install, closes O-5) and **D-28** (public intake route + anonymous-INSERT RLS). New pitfall #13 (URL routing must come after hooks). 54 new bilingual translation keys (T.en and T.es both 1,093 → 1,147 — symmetry-verified by build script). Build marker `2026-05-15-v060-mobile-pwa-intake`. Open decisions remaining: O-6 (apex marketing), O-7 (referral automation), O-8 (snapshot hygiene), O-9 (roadmap narrative translation), O-10 (Spanish review pass), O-11 (PDF generation for email automation). Next: deploy v0.6.0 to production, run the SQL migration, test the public intake flow end-to-end with a fake submission, then revisit O-6 marketing landing once Porkbun → Cloudflare DNS propagation completes.*

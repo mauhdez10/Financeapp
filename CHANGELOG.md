@@ -72,6 +72,112 @@ Roughly 60 / 60 passing once the new specs run (was ~30 / ~30 passing / failing)
 
 ---
 
+## v0.6.0 — 2026-05-15 (Minor — Mobile responsive + PWA install + Tier-3 public intake)
+
+First **Minor** bump since v0.5.0. Mauricio explicitly declined the proposed v0.6.0 / v0.7.0 split and accepted the larger blast radius to land all three workstreams together. Build marker bumped to `2026-05-15-v060-mobile-pwa-intake`. App.jsx grew +180 lines (2,382 → 2,562).
+
+### Added
+
+- **Mobile responsive shell.** New `useViewport()` hook (line 157, defined before Row2) reads window size, listens for resize + orientationchange, debounces through `requestAnimationFrame`, and returns `{w, h, isMobile, isTablet, isDesktop}` with a 720px mobile breakpoint. On `vp.isMobile`:
+  - Sidebar becomes `position:fixed`, `transform:translateX(-100%)` when closed → `translateX(0)` open, with a `0.25s ease-out` transition and a 4px x 32px gold-black shadow when open. Width 260px (vs 222 expanded / 62 collapsed on desktop). `visibility:hidden` when closed so it doesn't trap touches.
+  - New `<div id="ga-drawer-overlay">` sibling: `position:fixed`, full-inset, `background:#000a`, z-index 90, `touchAction:none`. Tapping closes the drawer.
+  - New `<div id="ga-appbar">`: sticky top, z-index 50, 52px min-height, holds the `☰` hamburger (44x44 tap target, aria-label `t.menu`), the ⚓ logo, and a single-line page title (either the selected client's name or `NAV.find(n => n.id === nav)?.l`).
+  - `Row2` collapses `gridTemplateColumns` from `repeat(N,1fr)` to `1fr` (controllable via new `forceMobileStack` prop, default `true` so all existing call sites get the collapse).
+  - `Modal` switches to bottom-sheet: `alignItems:flex-end`, `padding:0`, `borderRadius:16px 16px 0 0`, `maxHeight:92dvh`, and `padding-bottom` is `calc(18px + env(safe-area-inset-bottom))` for iOS notch safety. Close button bumped to 36x36 with `touchAction:manipulation`.
+  - The existing style-injection useEffect now also writes `*{-webkit-tap-highlight-color:transparent}`, `html,body{overscroll-behavior-y:none}`, a body-level safe-area-inset padding rule, and a `@media(max-width:719px){table{font-size:11px}; button{touch-action:manipulation}}` block.
+
+- **PWA install (closes O-5 as D-27).** New files in `public/`:
+  - `manifest.json` — `name`, `short_name`, `description`, `id`/`start_url`/`scope`, `display:standalone`, `theme_color`/`background_color:#0D1B2A`, three icon entries (`icon-192.png` any-purpose, `icon-512.png` any-purpose, `icon-512-maskable.png` maskable-purpose). `lang:"en"`, `orientation:"portrait-primary"`, `categories:["finance","business","productivity"]`.
+  - `sw.js` — minimal cache-first SW. `SW_VERSION = "ga-sw-v0.6.0-2026-05-15"`. Static assets pre-cached on install. Activates with `skipWaiting()` + `clients.claim()`. `fetch` handler is layered: pass-through for non-GET; pass-through for any URL containing `supabase`/`stripe`/`resend` (preserves D-2 — never cache sensitive PII or third-party API responses); pass-through for cross-origin; cache-first for `/assets/*` + image/font extensions; network-first for HTML navigation requests with cache fallback. `message` handler responds to `{type:"SKIP_WAITING"}` for post-deploy refresh.
+  - `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`, `favicon-32.png` — placeholder icons generated 2026-05-15 (gold ⚓ on `#0D1B2A` navy via PIL). Mauricio can replace with branded design assets later — only the file paths matter to `manifest.json`.
+  - Reference `index.html` at repo root rewritten with: `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">`, `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, apple-touch-icon link, favicon link, and an inline SW registration script that calls `reg.update()` on every load + auto-posts `SKIP_WAITING` to any newly-installed worker to dodge stale-bundle issues.
+
+- **Tier-3 public intake form (locks D-28).** Two new App.jsx components:
+  - **`PublicIntake`** (line 2193, ~80 source-equivalent lines) — standalone, no-auth, fixed dark theme (`#0D1B2A` bg, `#fff` text, gold accents). Renders only when `/intake` route is detected. Reads `?advisor=<uuid>&lang=<en|es>` from `window.location.search`. Has its own EN/ES toggle. Form sections: **About You** (name, email, phone, dob, address, optional partner with own name/email), **Financial Overview** (monthly net income, total debt, monthly debt payments), **Your Goals** (textarea), **Contact & Service** (preferred service dropdown from `SVCS`, contact method as 3-button group, "how did you hear about us", general notes). Single full-width submit button (48px tall) with disabled/submitting state. Three end states: invalid-link (no `advisor` param), submitted (✓ thank-you page), or active form. On submit, calls `gaSubmitIntake()` helper → Supabase anonymous INSERT → success.
+  - **`IntakeSubmissionsPage`** (line 2285, ~75 source-equivalent lines) — advisor view. Loads via `gaLoadIntakeSubmissions(authUser.id)` on mount. Top section: collapsible public-intake URL card with EN/ES copy buttons (uses `navigator.clipboard.writeText`). Middle: list of submissions sorted newest first, with name, email, timestamp, and a status pill (Pending / Reviewed / Converted / Rejected). Tap a row to expand a detail panel showing all `data` fields. Detail panel actions: **Convert to Client** (opens confirmation modal → builds a new `mig()`'d client with prefilled name/contact/income/goals/notes, calls `onConvert(newClient)` which routes through App's `addClient`, marks submission `converted` with `client_local_id`), **Mark Reviewed** (only on pending), **Reject** (with `window.confirm`). Mobile-aware via `useViewport()` for padding and grid layout.
+
+- **Three new Supabase helpers** (lines 15–17):
+  - `gaLoadIntakeSubmissions(advisorId)` — SELECT all, scoped by `advisor_id`, ordered desc, limit 200.
+  - `gaSubmitIntake(advisorId, lang, formData)` — generates a `tok_<random>` submission_token, INSERTs (anonymous role allowed by RLS), captures `navigator.userAgent` truncated to 200 chars.
+  - `gaUpdateIntakeStatus(id, patch)` — UPDATE by id; the advisor's `auth.uid()` is implied by RLS so we don't pass it.
+
+- **New SQL migration** in `sql/v0.6.0_intake_submissions.sql`:
+  - `CREATE TABLE intake_submissions` with the schema described in AGENT.md §4 D-28.
+  - Two indexes: `(advisor_id, status, created_at DESC)` for the advisor's queue, and `(submission_token)` for token lookups.
+  - `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.
+  - Five policies: `intake_anon_insert` (to anon, INSERT with check true), `intake_auth_insert` (same for authenticated), `intake_advisor_select` / `_update` / `_delete` (to authenticated, USING `advisor_id = auth.uid()`).
+  - Includes a CHECK constraint `status in ('pending','reviewed','converted','rejected')`.
+  - Idempotent — safe to re-run.
+
+- **URL routing in App component.** A new `isPublicIntakeRoute` constant on the same line as the state declarations, computed from `window.location.pathname + .search` against `/\/intake\/?(\?|$)/`. The early `return <PublicIntake/>` sits AFTER all hooks are declared but BEFORE the auth-state gates, satisfying the rules of hooks (see new pitfall #13).
+
+- **NAV array updated.** New `{id:"intake-submissions", l:"📥 " + (t.intakeSubmissions || "Intake")}` entry between `clients` and `calculators`.
+
+- **54 new bilingual translation keys per side** — 12 from Phase-2 (mobile shell + install hints) and 42 from Phase-3 (intake form + advisor review). Both T.en and T.es symmetry-verified by build-time set comparison (key sets must match exactly or script fails).
+
+### Changed
+
+- **`Row2` signature** — now accepts an optional `forceMobileStack` prop (default `true`). All existing call sites get the mobile collapse for free; any call site that wants the desktop-style side-by-side layout *even on mobile* can pass `forceMobileStack={false}`. None do today.
+- **`Modal` signature** — unchanged in props, but the rendered DOM now branches on `useViewport().isMobile` for layout. All existing modal callers (NewClientModal, ClientForm, ProfileModal, DuplicateResolverModal, AlertsSettingsModal, the new IntakeSubmissionsPage convert modal, etc.) get the bottom-sheet behavior on mobile automatically.
+- **App component** — added `drawerOpen` state, `vp = useViewport()` hook call, `isPublicIntakeRoute` route check, two new JSX nodes (overlay + appbar) wrapping the existing sidebar + main column, and `setDrawerOpen(false)` on nav-button and profile-button onClicks so picking a destination from the drawer closes it.
+- **Build marker** bumped from `2026-05-15-v052b-service-plans-stripe-links` to `2026-05-15-v060-mobile-pwa-intake`.
+
+### Decision changes
+
+- **O-5 closed → merged-D-27.** Mobile-first responsive shell + PWA install.
+- **New D-28.** Public intake `/intake` route + anonymous-INSERT RLS on `intake_submissions` table.
+- No D-numbers renumbered. D-1 through D-26 unchanged.
+
+### Verification
+
+- Brace/paren/bracket balance: 11,731 / 11,731 curly, 7,877 / 7,877 paren, 1,595 / 1,595 square. Clean.
+- TypeScript dry-run (`tsc --jsx preserve --noLib --allowJs --noResolve --noEmit`): no syntax errors (only the expected TS2318 missing-globals which come from `--noLib`).
+- EN and ES dict key counts equal (both gained 54).
+- No destructive `{t.X||"Y"}` patterns leaked into either dict body (pitfall #11 check passes).
+- All new components reference only in-scope symbols (`useState`, `useEffect`, `useViewport`, `gid`, `mig`, `vEmail`, `Pill`, `Btn`, `BSolid`, `Modal`, `SaveBar`, `useTh`, `mCARD`, `GOLD`, `SVCS`, `T`).
+
+### Required actions to deploy this patch
+
+1. **Run the SQL migration:** open Supabase SQL Editor → paste `sql/v0.6.0_intake_submissions.sql` → execute.
+2. **Upload files to GitHub:**
+   - `src/App.jsx` (replace existing)
+   - `public/manifest.json` (new)
+   - `public/sw.js` (new)
+   - `public/icon-192.png` (new)
+   - `public/icon-512.png` (new)
+   - `public/icon-512-maskable.png` (new)
+   - `public/apple-touch-icon.png` (new)
+   - `public/favicon-32.png` (new)
+   - `index.html` at repo root (replace existing)
+3. **Commit + push.** Vercel auto-deploys.
+4. **Hard refresh** production.
+5. **Verify build:** DevTools console → `window.__GA_BUILD__` should equal `"2026-05-15-v060-mobile-pwa-intake"`.
+6. **Verify SW:** DevTools → Application → Service Workers — should show one active worker, version `ga-sw-v0.6.0-2026-05-15`.
+7. **Verify manifest:** DevTools → Application → Manifest — should show "Golden Anchor Finance". On Chrome desktop, install via the ⊕ icon in the URL bar.
+8. **Verify mobile layout:** DevTools → device toolbar (Ctrl+Shift+M) → iPhone 14 Pro preset. Refresh. Sidebar should be hidden, ☰ button visible top-left. Tap ☰ — drawer slides in. Tap a nav item — drawer closes, page changes. Open Settings — modal slides up from the bottom.
+9. **Verify public intake:** open an incognito tab → navigate to `https://finance.goldenanchor.life/intake?advisor=<your-supabase-uuid>` → should render the form on dark navy. Add `&lang=es` → form switches to Spanish. Fill it out with test data, submit. Sign in to the advisor app (regular tab), navigate to 📥 Intake — your test submission should appear within seconds. Click it, click **Convert to Client**, confirm — you should see a new client created with the submitted name/contact/income/goals. Delete the test client afterward.
+10. **Run Playwright:** `rm -rf playwright/.auth && npm run test:e2e`. Expected: 60/60 still passing — desktop selectors are unaffected by the mobile-shell additive code path. If any test fails, capture the spec and report; do NOT roll back v0.6.0.
+
+### Risk notes
+
+- **First time the app has a public, unauthenticated database write.** RLS policies are the only thing preventing abuse. The smoke test in the SQL file at the bottom uses a fake `advisor_id` — copy your real UUID before testing.
+- **Service worker can mask post-deploy bugs.** If something is broken after deploy and a hard refresh doesn't fix it, open DevTools → Application → Service Workers → Unregister, then refresh again.
+- **iOS Safari PWA quirks:** the install prompt does not auto-appear (Apple disabled this years ago). Users must tap Share → Add to Home Screen. The `apple-mobile-web-app-status-bar-style:black-translucent` setting paints the iOS status bar over the app, which is why the body has top/left/right safe-area-inset padding.
+
+### Files updated in this commit
+- `src/App.jsx` — Phases 2 and 3 changes consolidated.
+- `index.html` — repo root, PWA registration + meta tags.
+- `public/manifest.json` (new), `public/sw.js` (new), `public/icon-192.png` (new), `public/icon-512.png` (new), `public/icon-512-maskable.png` (new), `public/apple-touch-icon.png` (new), `public/favicon-32.png` (new).
+- `sql/v0.6.0_intake_submissions.sql` (new).
+- `AGENT.md` — §2 size, §3 v0.6.0 block (v0.5.2b demoted to "Prior version"), §4 D-27 + D-28 added, §5 O-5 closed and new "Closed in v0.6.0" section, §7 pitfall #13, §10 ref bump, §11/§11.5 version labels, footer.
+- `CHANGELOG.md` (this entry).
+
+### Files NOT changed
+- `SKILL.md` — procedure unchanged. The atomic-write rule and verification gates worked fine for this minor.
+- `how-to-use.md` — workflow unchanged.
+
+---
+
 ## v0.5.2b — 2026-05-15 (Patch — Launch stabilization, part 2 of 2: revenue plumbing)
 
 Second of two patches splitting the original v0.5.2 scope. Part 1 (v0.5.2a) shipped security + UX with zero schema changes. This part adds the **revenue plumbing**: per-client service plan tracking, settings-level Stripe Payment Link map, Pay Now buttons on the public services grid, and backup verification helper. Closes the O-15 backup-verification implementation gap from v0.5.2a.
