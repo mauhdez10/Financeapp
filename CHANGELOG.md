@@ -4,6 +4,60 @@ All notable changes to App.jsx and the supporting docs. Newest entries on top. F
 
 ---
 
+## v0.6.1 — 2026-05-15 (Patch)
+
+Four small fixes Mauricio caught in the v0.6.0 walkthrough. No schema changes, no new locked decisions, no version-marker drift past patch.
+
+**FIX 1 — Light/Dark mode and EN/ES toggle now persist across page refresh.**
+- **Root cause:** `lang` and `isDark` were initialized with hard-coded literals (`useState("en")`, `useState(true)`) in the App component (App.jsx ~line 2367), so every reload reverted them. The `settings` state already persisted to `localStorage` (`ga_settings`) and to Supabase via `gaSaveSettings`, but neither `lang` nor `isDark` was a field on `settings`.
+- **Fix:** added `lang:"en"` and `isDark:true` defaults to `DEF_SETTINGS`; replaced the hard-coded `useState("en")` / `useState(true)` with reads from a freshly-computed `_gaInitSettings` (same shape as the existing settings initializer); added a `useEffect([lang,isDark], …)` that mirrors changes back into `settings` so the existing settings-persistence pipeline carries them. Both prefs now ride along inside the `ga_settings` JSON column (D-10 stays satisfied — no new top-level localStorage key). When the advisor logs in on another device, language and theme follow them via the Supabase settings row.
+- **Behavior:** on first load with no prior preference, dark + EN remain the defaults (matches prior behavior). Subsequent toggles persist. Migration is automatic; old settings rows that don't have `lang`/`isDark` get the defaults filled in by the `{...DEF_SETTINGS, ...persisted}` spread.
+
+**FIX 2 — About Us: Free advisory no longer shows a Pay Now button.**
+- **Root cause:** the SVCS service grid (`AboutPage`, App.jsx ~line 2140) rendered a Pay Now anchor for every service. For `insurance-consult` (price `"Free"`) the URL was empty, so the button rendered in a disabled gray state with a tooltip pointing to Stripe Links. Visually noisy and confusing — there's no payment to make.
+- **Fix:** wrapped the Pay Now `<a>` in a `{s.price!=="Free" && …}` guard. The Request Service button on the free-service card now stretches to full width via its existing `flex:1`. The card layout otherwise unchanged.
+- **Scope:** today this only affects `insurance-consult`. Any future free service that uses `price:"Free"` exactly will inherit the same behavior. The string match is exact (case-sensitive) so the `"Any amount"` donation still gets a Pay Now button.
+
+**FIX 3 — Resources guides now link to authoritative external sources.**
+- **Root cause:** each guide card's "Open Guide →" link was a `mailto:` to `mauricio@goldenanchor.life`, which forced the prospect to email Mauricio just to read about credit scores. Wasted touchpoint; broke the "education first" positioning.
+- **Fix:** each entry in the `ResourcesPage` `guides` array gained a `url` field. The card's link became a plain `<a target="_blank" rel="noopener noreferrer">` to that URL. Six URLs picked for stability and authority:
+  - **Understanding Your Credit Score** → `https://www.experian.com/blogs/ask-experian/credit-education/score-basics/understanding-credit-scores/` (Mauricio's example URL)
+  - **Debt Payoff Strategies** → `https://www.nerdwallet.com/article/finance/debt-snowball-vs-avalanche`
+  - **Building an Emergency Fund** → `https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/`
+  - **Retirement Savings 101** → `https://www.investor.gov/additional-resources/retirement-toolkit`
+  - **First-Time Homebuyer Guide** → `https://www.consumerfinance.gov/owning-a-home/`
+  - **Investment Allocation Basics** → `https://www.investor.gov/introduction-investing/getting-started/asset-allocation`
+- **Forward note:** URLs are hardcoded inside the component. If any source moves or rebrands, this is a one-line patch — no migration. CFPB and Investor.gov (SEC) URLs have been stable for years; Experian and NerdWallet less so but the slugs are descriptive enough that 301s usually catch them.
+
+**FIX 4 — Intake Submissions: EN/ES Copy buttons and URL display all work now.**
+- **Root cause (Copy):** the `copyUrl` function used `navigator.clipboard.writeText(...).then(...).catch(()=>{})` — silently swallowed every failure. In non-secure contexts, in some iframes, in iOS Safari under specific conditions, and when the document doesn't have focus, that promise rejects. The user got zero feedback and the button looked broken.
+- **Root cause (URL display):** the URL panel showed only the EN URL in the input field; the ES Copy button copied `publicUrlEs` (which has `&lang=es`) but the field still showed `publicBase`. So even when Copy succeeded the user couldn't see what got copied. With Fix 1's clipboard fallback silent, this read as "ES Copy is broken too."
+- **Root cause (URL itself "didn't work"):** very likely the `/intake?advisor=<uuid>` URL itself returned a Vercel 404 page when visited directly. Vite SPAs need a catch-all rewrite to `/index.html` so client-side routing can take over. There was no `vercel.json` shipped with v0.6.0 to do this; that's a deployment-side oversight from the v0.6.0 ship list.
+- **Fix:**
+  - `copyUrl` rewritten as `async`: tries `navigator.clipboard.writeText` first (only if `window.isSecureContext`); on failure or unavailability, falls back to a hidden `<textarea>` + `document.execCommand("copy")`; on a second failure, opens `window.prompt(...)` with the URL pre-selected so the user can copy manually. Either way they get feedback.
+  - URL panel now shows two rows — one for EN, one for ES — each with a language tag, the exact URL its button copies, and an independent Copy button that turns green and reads "✓ URL copied" on success.
+  - Input fields became fully selectable (click selects all, focus selects all, normal text-cursor) so Cmd/Ctrl-C still works without the button.
+  - **Out-of-app:** a new `vercel.json` is included at repo root with `{ "rewrites": [{ "source": "/(.*)", "destination": "/" }] }`. Drop it next to `package.json`, commit, push. After Vercel redeploys, `https://finance.goldenanchor.life/intake?advisor=<uuid>` loads the SPA, the `isPublicIntakeRoute` check in App.jsx fires, and `PublicIntake` renders. No App.jsx change for the routing fix itself — the existing route detection was already correct.
+
+**CHANGED:**
+- `src/App.jsx` — five touchpoints (DEF_SETTINGS, App state init, sync useEffect, AboutPage grid, ResourcesPage, IntakeSubmissionsPage copyUrl + URL block). +2,475 bytes net. 2,580 lines (was 2,562). No new top-level localStorage keys (lang+isDark ride inside `ga_settings`). No new translation keys (existing keys cover the new EN/ES tag prefixes since "EN"/"ES" are universal). No SQL migration.
+- `vercel.json` (new file at repo root) — SPA rewrite for the public intake route. Doesn't change anything that already worked.
+
+**Build marker:** `2026-05-15-v061-prefs-and-intake-ux`.
+
+**Deploy:**
+1. Replace `src/App.jsx` with the new file.
+2. Drop `vercel.json` at the repo root (next to `package.json`).
+3. Commit, push to `main`. Vercel auto-deploys.
+4. Hard refresh `https://finance.goldenanchor.life`. Confirm `window.__GA_BUILD__` reads `2026-05-15-v061-prefs-and-intake-ux` in DevTools console.
+5. Toggle light/dark and EN/ES, refresh — both should persist.
+6. Open About Us → confirm "Insurance Advisory (Free Consult)" card has only the Request Service button, no Pay Now.
+7. Open Resources → click any guide → confirm it opens an external site in a new tab.
+8. Open Intake Submissions → click EN Copy → paste somewhere → confirm `…/intake?advisor=<uuid>` URL. Click ES Copy → paste → confirm `…/intake?advisor=<uuid>&lang=es`.
+9. Visit the EN URL directly in a clean browser tab → confirm the dark-themed public intake form renders. (If you still get a Vercel 404, the `vercel.json` didn't deploy — check the repo root.)
+
+---
+
 ## Tooling addendum (2026-05-15) — Playwright selector fix, second pass
 
 Not a version bump. App.jsx unchanged. Test-harness only. This is the second test-harness correction in 24 hours. The previous "later same day" pass on 2026-05-14 (entry below) rewrote `utils/fixtures.ts` and the spec files with correct theory but landed three live bugs that only showed up when the suite was actually run end-to-end. The first end-to-end run after that fix returned 24 passed / 36 failed across Chromium + Firefox. The three bugs:

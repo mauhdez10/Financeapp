@@ -35,7 +35,28 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.6.0** — established 2026-05-15. **First Minor bump since v0.5.0.** Three bundled changes (full responsive mobile shell, PWA install, Tier-3 public intake form). Big blast radius accepted at the user's explicit direction after the v0.5.2 a/b split pattern was proposed and declined.
+**v0.6.1** — established 2026-05-15 (Patch). Four small fixes Mauricio caught walking through v0.6.0:
+
+1. **Light/dark and EN/ES toggles now survive page refresh.** Root cause was that `lang` and `isDark` were `useState("en")` / `useState(true)` literals in App, while `settings` already persisted to localStorage + Supabase. Fix added `lang`+`isDark` to `DEF_SETTINGS`, initialized the state from settings, and added a `useEffect` mirror so toggles flow back into the persisted settings object. No new top-level localStorage key (D-10 preserved).
+
+2. **About Us — Pay Now button removed from the free Insurance Advisory card.** The button was previously rendered in a disabled gray state because `insurance-consult` has an empty Stripe Links entry by design. Wrapped the `<a>` in a `{s.price!=="Free"&&...}` guard; the Request Service button now stretches to full width on that one card.
+
+3. **Resources guides link to authoritative external sites instead of opening the user's email client.** Each entry in `ResourcesPage.guides` gained a `url` field; the card link became a plain `target="_blank"` external link. URLs: Experian for credit, NerdWallet for debt strategies, CFPB for emergency fund and homebuyer, Investor.gov for retirement and asset allocation.
+
+4. **Intake Submissions: EN/ES Copy buttons and URL display fixed.** Three bugs in one panel: silent clipboard failures (no feedback), the URL field showed only the EN URL even when ES Copy was clicked (confusing), and the `/intake?advisor=…` URL returned a Vercel 404 when visited directly. Fixes: `copyUrl` rewritten as an async function with a `document.execCommand("copy")` textarea fallback and a final `window.prompt` fallback; URL panel split into two rows (EN row + ES row, each with its own input + Copy); new `vercel.json` at repo root with a `{"source":"/(.*)","destination":"/"}` SPA rewrite to make the public intake route resolve.
+
+**Build marker:** `2026-05-15-v061-prefs-and-intake-ux`. App.jsx is now 2,580 lines / ~635 KB (was 2,562 / 627 KB). No SQL migration. No new translation keys (the EN/ES tag prefixes are language-neutral). No new locked decisions, no closed open decisions — this is bookkeeping-light.
+
+**Out-of-app actions required before this build runs in production:**
+- Drop `vercel.json` at the repo root (next to `package.json`). It contains one rewrite rule and is otherwise inert.
+- Replace `src/App.jsx`.
+- Commit + push. Vercel auto-deploys.
+- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-15-v061-prefs-and-intake-ux"`.
+- Spot-check each fix: toggle lang+theme then reload; About Us free-service card has no Pay Now; Resources cards open external URLs in new tabs; Intake Submissions EN and ES Copy buttons each turn green on click and produce the correct URL.
+
+---
+
+**Prior version (v0.6.0, 2026-05-15)** — **First Minor bump since v0.5.0.** Three bundled changes (full responsive mobile shell, PWA install, Tier-3 public intake form). Big blast radius accepted at the user's explicit direction after the v0.5.2 a/b split pattern was proposed and declined.
 
 What v0.6.0 ships:
 
@@ -661,4 +682,6 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-15 — v0.6.0 (Minor — mobile responsive shell + PWA install + Tier-3 public intake form). One bundled minor at user's explicit direction. App.jsx grew from 2,382 lines / 593 KB → 2,562 lines / 627 KB. New static assets in `public/`: `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`, `favicon-32.png`. New SQL migration in `sql/v0.6.0_intake_submissions.sql` (one CREATE TABLE + five RLS policies + two indexes). Reference `index.html` updated for SW registration and PWA meta tags. Two new decisions locked: **D-27** (mobile-first responsive + PWA install, closes O-5) and **D-28** (public intake route + anonymous-INSERT RLS). New pitfall #13 (URL routing must come after hooks). 54 new bilingual translation keys (T.en and T.es both 1,093 → 1,147 — symmetry-verified by build script). Build marker `2026-05-15-v060-mobile-pwa-intake`. Open decisions remaining: O-6 (apex marketing), O-7 (referral automation), O-8 (snapshot hygiene), O-9 (roadmap narrative translation), O-10 (Spanish review pass), O-11 (PDF generation for email automation). Next: deploy v0.6.0 to production, run the SQL migration, test the public intake flow end-to-end with a fake submission, then revisit O-6 marketing landing once Porkbun → Cloudflare DNS propagation completes.*
+*Last updated: 2026-05-15 — v0.6.1 (Patch — persist lang+theme across refresh, hide Pay Now on free Insurance Advisory card, link Resources guides to external authoritative sources, fix Intake Submissions EN/ES Copy + URL display + add `vercel.json` SPA rewrite so the public intake route resolves). Five touchpoints in App.jsx (DEF_SETTINGS, App state init, sync useEffect, AboutPage SVCS grid, ResourcesPage guides array, IntakeSubmissionsPage copyUrl + URL block). App.jsx grew from 2,562 lines / 627 KB → 2,580 lines / ~635 KB. New deployment file: `vercel.json` at repo root (catch-all rewrite to `/`). No SQL migration. No new translation keys. No new locked decisions, no closed open decisions. Build marker `2026-05-15-v061-prefs-and-intake-ux`. Open decisions remaining unchanged: O-6, O-7, O-8, O-9, O-10, O-11. Next: confirm Mauricio sees all four fixes working in production, then revisit O-6 marketing landing once Porkbun → Cloudflare DNS propagation completes.*
+
+*Prior update: 2026-05-15 — v0.6.0 (Minor — mobile responsive shell + PWA install + Tier-3 public intake form). One bundled minor at user's explicit direction. App.jsx grew from 2,382 lines / 593 KB → 2,562 lines / 627 KB. New static assets in `public/`: `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`, `favicon-32.png`. New SQL migration in `sql/v0.6.0_intake_submissions.sql` (one CREATE TABLE + five RLS policies + two indexes). Reference `index.html` updated for SW registration and PWA meta tags. Two new decisions locked: **D-27** (mobile-first responsive + PWA install, closes O-5) and **D-28** (public intake route + anonymous-INSERT RLS). New pitfall #13 (URL routing must come after hooks). 54 new bilingual translation keys (T.en and T.es both 1,093 → 1,147 — symmetry-verified by build script). Build marker `2026-05-15-v060-mobile-pwa-intake`.*
