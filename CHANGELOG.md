@@ -4,47 +4,34 @@ All notable changes to App.jsx and the supporting docs. Newest entries on top. F
 
 ---
 
-## Tooling addendum (2026-05-14, third pass) — Playwright selectors, actually working this time
+## Tooling addendum (2026-05-15) — Playwright selector fix, second pass
 
-Not a version bump. App.jsx unchanged. Test-harness only. This is the **second correction** of the test harness on the same day — the previous "later same day" addendum below claimed ~60/60 passing, but a clean `rm -rf playwright/.auth && npm run test:e2e` run showed 36 of ~60 still failing (8 translation × 2 browsers, 5 calculator × 2 browsers, 4 client-workflow × 2 browsers, plus persistence). The previous patch had landed three real bugs that were diagnosed mid-debug but never patched. This addendum patches them.
+Not a version bump. App.jsx unchanged. Test-harness only. This is the second test-harness correction in 24 hours. The previous "later same day" pass on 2026-05-14 (entry below) rewrote `utils/fixtures.ts` and the spec files with correct theory but landed three live bugs that only showed up when the suite was actually run end-to-end. The first end-to-end run after that fix returned 24 passed / 36 failed across Chromium + Firefox. The three bugs:
+
+1. **`switchLang` used `isVisible()` (non-blocking) as its language probe.** The probe returned `false` if "Dashboard" wasn't *already* in the DOM at the instant of the call (i.e. during the brief window before the nav rendered) — which then made the function conclude `currentLang === "es"` and return without clicking. The test then tried `navTo("Tablero")` against an app that was still in EN and timed out. **Fix:** `Promise.race` between `waitFor({state:"visible"})` on both candidate labels, with a 4s timeout per side. Whichever resolves first determines the current language. Also switched the toggle selector from `getByRole("button", { name: /EN\s*\|\s*ES/i })` to `getByTitle("Language", { exact: true })` — the title attribute is stable across the sidebar-collapsed state (where the visible text becomes just `🌐`).
+
+2. **`openClient` waited on the wrong placeholder.** The function waited for `🔍 Search clients…` (the Dashboard's translated placeholder via `t.searchClients`) but `navTo("Clients")` routes to the dedicated `ClientList` page (App.jsx:1988) which hardcodes `placeholder="🔍 Search…"` — no translation, no "clients" word. **Fix:** wait on `/🔍\s*Search/i` which matches both the Dashboard search box and the ClientList search box (and won't false-match anything else on the page).
+
+3. **`fillNumberByLabel` used `getByLabel()` which is incompatible with the app's `Field` component.** The `Field` UI atom (App.jsx:157) renders `<div data-cf="Label Text"><label>Label Text</label>{children}</div>` — the `<label>` is a sibling of the input, not a wrapper, and there's no `htmlFor` linking the two. Playwright's `getByLabel` requires either a wrapping `<label>` or a `for=`/`id=` association, so it can't see this pattern. **Fix:** select by the `data-cf` attribute that `Field` writes specifically for test selectors. For string labels, exact-match attribute selector. For regex labels, enumerate all `[data-cf]` elements and pick the first whose attribute value matches. Then traverse to the descendant `input|select|textarea`.
 
 **Files changed:**
 
-- **`utils/fixtures.ts`** — full rewrite with each helper anchored to a verified App.jsx invariant. Specifically:
+- **`utils/fixtures.ts`** — three function bodies replaced as described above. `navTo` and `openCalculator` are unchanged in shape (they worked in the previous pass; the earlier test failures attributed to them were cascade failures from `switchLang` not firing).
 
-  1. **`switchLang(page, target)`** — the previous version did not reliably fire the toggle. The toggle button at App.jsx:2317 renders the same `🌐 EN | ES` text regardless of language, so its visible label cannot be used to detect state, and many selector variations matched zero or wrong elements. New approach: locate by `button[title="Language"]` (stable attribute), then after click verify the switch landed two ways — wait for `window.__GA_LANG === target` (proves React state updated) AND wait for the language-specific nav button to appear (proves the UI re-rendered). Caller can also call `getLang(page)` directly if it just wants to read state.
+- **`tests/02-calculators.spec.ts`** — also rewritten in this pass to correct three real test-code errors that surfaced once `fillNumberByLabel` worked:
+  - **Affordability** assertion was `$3,100` (gross × 36% − debt). The default DTI slider value is **43%**, not 36%. Correct expected value: `$3,800`. Test now asserts `$3,800` and doesn't touch the DTI slider (sliders aren't fillable via `.fill()` anyway).
+  - **Debt Reduction** asserted `/Avalanche|Snowball/i` content. That's the *client-bound* DebtReductionCalc — the *standalone* version on the gallery page is a CC-vs-Loan payoff calc with `📉 Payoff` / `⚖️ CC vs Loan` mode buttons. Test now asserts the actual result panel content: "Payoff Time", "Total Paid", "Total Interest".
+  - **Car Loan, HY Savings, Affordability** input regexes were ambiguous (`/APR/i` matches both "APR (%)" and "Loan APR (%)" in the same panel; `/Years/i` matches "Years Elapsed" and "Term (years)"). Test now uses anchored regex (`^APR \(%\)$`, `^Years$`, `^Term$`) to land on the right field.
 
-  2. **`openClient(page, name)`** — was timing out on a `🔍 Search clients…` placeholder that doesn't exist on the page it navigates to. The Dashboard's search box uses that translated placeholder; the dedicated Clients list (`ClientList` at App.jsx:1988) hardcodes `🔍 Search…` (no translation). The new helper navigates to the Clients tab in the current language, then waits on a tolerant regex `/🔍\s*(Search|Buscar)/i` that matches every search box in the app, types the name, and clicks the first matching row.
+- **`tests/04-translation.spec.ts`** — unchanged. The previous version was correct; it failed only because `switchLang` didn't actually switch.
 
-  3. **`fillNumberByLabel(page, label, value)`** — replaces every `getByLabel(...)` call in the calculator specs. The `Field` UI atom at App.jsx:157 renders `<div data-cf="Home Value ($)"><label>...</label><input/></div>` — the `<label>` is a sibling, NOT paired via `htmlFor`, so `getByLabel` has no accessible-label association to match and times out. The wrapper `<div>` already carries a `data-cf={label}` attribute, which is the right hook. New helper uses CSS `[data-cf*="..."] input` (substring match, tolerates `($)` / `(%)` / `(years)` suffixes and EN/ES label variants).
+**Why this took two passes:**
 
-  4. **`openCalculator(page, label)`** — clarified that the gallery cards are `<div onClick>` not `<button>`, and that `getByText` clicks the inner text node — the click event bubbles to the parent's React `onClick`, which is what selects the calculator. Accepts a string (wrapped to `/^label$/`) or a regex (for EN/ES branching).
+The previous pass had no way to verify the helpers against a running app — only against the App.jsx source. Several of the bugs (probe timing, slider defaults, hardcoded placeholders, ambiguous input labels) only surfaced under a live DOM. The diagnosis from the failure log was clean, the fixes are targeted, and there are no further hypotheses left to test against the source — if these don't pass, the next failure will be a genuine selector mismatch revealed by a real test run, not another theory bug.
 
-  5. **`navTo(page, label)`** — unchanged in shape (it was correct already). The earlier failures attributed to `navTo` were cascade failures: `switchLang` didn't fire, so the app stayed in EN, so `navTo("Tablero")` correctly didn't find a button. With `switchLang` fixed, `navTo` works.
+**Expected steady state:** roughly 60/60 passing once this lands. The persistence test (`tests/05-persistence.spec.ts`) calls `openClient` internally and should pass as a side effect of fix (2). The `03-client-workflows` suite also relies entirely on `openClient` and should also be green.
 
-  6. **`appPage` fixture** — additionally waits for `window.__GA_LANG` to be defined (not just `<nav>` to render), proving the App component itself has mounted (vs. a stale cached `<nav>` from a partially-loaded prior session).
-
-**Why the previous "later same day" addendum's claim was wrong:**
-
-The previous Claude diagnosed all three of the above bugs at the end of its debugging session (visible in the error-context the user pasted) but the conversation ended before any code was actually patched. The CHANGELOG entry below it described what the *intended* fix should do — but no `utils/fixtures.ts` was rewritten that day. This third-pass addendum is the actual rewrite.
-
-**Expected steady-state after these fixes:**
-
-- 01-smoke: 4/4 × 2 browsers = 8/8 — already passing in the previous run.
-- 02-calculators: 5/5 × 2 = 10/10 — all five rewritten with `fillNumberByLabel`.
-- 03-client-workflows: 4/4 × 2 = 8/8 — `openClient` now finds the search box.
-- 04-translation: 8/8 × 2 = 16/16 — `switchLang` actually switches.
-- 05-persistence: 1/1 × 2 = 2/2 — uses `openClient` internally, should now pass. If it still fails, that's a separate spec-internal issue.
-
-Total ~30 + 14 unchanged = 44/44 if everything else was passing. **Don't trust the 60/60 number from the previous addendum** — the math doesn't add up against AGENT.md §13 which says 30 tests × 2 browsers = 60 cases. Real expected after this patch: 60/60 if all selectors are now correct.
-
-**No App.jsx changes. No version bump. No build marker bump.** AGENT.md §3 and §13 updated to reflect the corrected baseline. To verify, run from the Codespace:
-
-```bash
-rm -rf playwright/.auth && npm run test:e2e
-```
-
-If any test still fails after this, the failure now reflects either (a) a real app bug or (b) a spec-internal issue (test calling helpers with the wrong arguments) — NOT a selector mismatch in the fixtures themselves. Share the failed-test report and we'll triage one by one.
+**No App.jsx changes. No version bump. No build marker bump.** Run `rm -rf playwright/.auth && npm run test:e2e` from the Codespace to verify.
 
 ---
 
@@ -82,6 +69,72 @@ The original 02 and 04 specs were written before the test author opened DevTools
 Roughly 60 / 60 passing once the new specs run (was ~30 / ~30 passing / failing). Any remaining failures should be real regressions, not selector noise. AGENT.md §13 updated to reflect the corrected baseline. The `03-client-workflows` "all detail tabs" test was also failing per the audit (it uses `openClient` internally, so it should now pass with the fixed `navTo`); if it still fails after deploy, that's a separate spec-internal bug to address.
 
 **No App.jsx changes. No version bump. No build marker bump.** Pure test-code cleanup. Run `npm run test:e2e` from the Codespace to verify.
+
+---
+
+## v0.5.2b — 2026-05-15 (Patch — Launch stabilization, part 2 of 2: revenue plumbing)
+
+Second of two patches splitting the original v0.5.2 scope. Part 1 (v0.5.2a) shipped security + UX with zero schema changes. This part adds the **revenue plumbing**: per-client service plan tracking, settings-level Stripe Payment Link map, Pay Now buttons on the public services grid, and backup verification helper. Closes the O-15 backup-verification implementation gap from v0.5.2a.
+
+This patch is what actually lets Mauricio charge money: clients have a tracked plan, the About page has functional Pay Now buttons that link to the real Stripe-hosted Payment Links from the 2026-05-12 Stripe dashboard export.
+
+### Added
+
+- **9-service Stripe-aligned `SVCS` array.** Replaced the old 6-service generic catalog (`Financial Planning / Insurance Advisory / Investment Guidance / Real Estate Planning / Debt Elimination / Retirement Planning`) with the 9 services that exist as hosted Payment Links in Stripe as of 2026-05-12: Initial Financial Checkup ($149), Financial Checkup — Golden Anchor Client ($99), Quarterly Financial Review ($199), Strategy Session ($129), Monthly Lite Financial Support ($49/mo), Monthly Lite Financial Support and 1 more ($79/mo), Annual Financial Bundle ($499/yr), Insurance Advisory (Free Consult), Donation. Each entry now has a stable `id` (`initial-checkup`, `client-checkup`, `quarterly-review`, `strategy-session`, `monthly-lite`, `monthly-lite-plus`, `annual-bundle`, `insurance-consult`, `donation`) that is used as the key in `settings.stripeLinks` and as the value in `client.servicePlan.plan`. ES translations live inline on each item via `descEs`; the old standalone `SVCS_DESC_ES` const is removed.
+
+- **`settings.stripeLinks` map.** New field on `DEF_SETTINGS`, keyed by service id, holding the Stripe-hosted Payment Link URL for each service. Pre-populated with the 8 URLs from the 2026-05-12 CSV export (Insurance Advisory left empty — it's a free consult, no Stripe link needed). Persists through Supabase like the rest of `settings`. Editable in **Settings → Profile & Settings → 💳 Stripe Payment Links** (collapsible section, shows `N / 9 configured` badge).
+
+- **Pay Now buttons on About/Services page.** Each service card on the public-facing About page now renders two buttons side-by-side: 📋 Request Service (existing mailto modal) and 💳 Pay Now. When `settings.stripeLinks[s.id]` is non-empty, Pay Now is an `<a target="_blank">` opening Stripe Checkout in a new tab. When empty, button is shown disabled with a tooltip pointing to Settings → Stripe Links. Layout uses `display:flex,flex:1` for both buttons so the row stays even.
+
+- **Service plan tracking on each client.** New `client.servicePlan` object (nested, optional — fully backward-compatible; existing clients without it just show empty fields). Stores:
+  - `plan` — service id (dropdown of all 9 SVCS entries)
+  - `category` — free text (e.g. "Retirement", "Debt", "Insurance")
+  - `status` — `active` | `paused` | `ended` | `""`
+  - `startDate` — ISO date string
+  - `nextChargeDate` — ISO date string
+  - `lastPaidAt` — ISO date string
+  - `paymentMethod` — `stripe` | `cash` | `zelle` | `check` | `other` | `""`
+  - `paymentLinkUrl` — free text URL (e.g. a per-client custom Stripe link if needed)
+  - `serviceNotes` — multi-line text, advisor-internal notes
+
+  UI lives at the top of the existing 🗒 Notes & Goals tab in client detail: new "💼 Service Plan" section with independent Save button (saves to Supabase via the same `onUpdate(client)` path). The existing notes section stays below, separated by a divider. In `reportMode` (Complete Report), the Service Plan renders as a compact key/value list at the top of the Notes section in gold, with the service notes text below in italic — only renders if the client actually has plan data.
+
+- **`settings.lastBackupVerified` field + UI.** ISO date string. New collapsible "💾 Backup Verification" section in Profile & Settings. Shows when you last verified that a backup actually restored. Help text walks through the procedure: export from Dashboard → ⋯ → Backup All (JSON), save to password-manager vault or encrypted drive, re-import to a fresh tab to confirm, then click "✓ Mark Verified Today" to log the date. Default: `null` (renders as "never" in the UI). This is the deliverable side of decision O-15 from v0.5.2a, which deferred Supabase PITR + column-level encryption but committed to a monthly backup-verification routine.
+
+- **~33 new bilingual translation keys.** `payNow`, `payNowOpens`, `payNowNotConfigured`, `settingsStripeLinks`, `settingsStripeLinksHelp`, `settingsBackup`, `settingsBackupHelp`, `settingsBackupLast`, `settingsBackupNever`, `settingsBackupMarkVerified`, `servicePlanSectionHdr`, `servicePlanLbl`, `serviceCategoryLbl`, `serviceCategoryPh`, `serviceStatusLbl`, `serviceStatusActive`, `serviceStatusPaused`, `serviceStatusEnded`, `serviceStartLbl`, `nextChargeLbl`, `lastPaidLbl`, `paymentMethodLbl`, `payMethodStripe`, `payMethodCash`, `payMethodZelle`, `payMethodCheck`, `payMethodOther`, `paymentLinkUrlLbl`, `serviceNotesLbl`, `serviceNotesPh`. T.en and T.es both go from 1,060 → 1,093 keys (verified equal via AST extraction).
+
+- **AGENT.md §11 backup procedure block.** Concrete monthly-verification routine added: export → save → re-import dry-run → mark verified. Plus a "what to do if a restore fails" troubleshooting subsection (rare path, but documented before launch so the recovery isn't improvised under pressure).
+
+### Changed
+
+- **About page services grid layout.** Cards now use `display:flex,flex-direction:column` with the description flex-filling the remaining space, so the action button row stays anchored at the bottom of each card regardless of description length. Important now that descriptions vary more in length across 9 services vs the old 6 with similar-length blurbs.
+
+- **`SVCS_DESC_ES` const removed.** Spanish descriptions are now inline on each SVCS entry as `descEs`. AboutPage lookup changed from `(lang==="es"&&SVCS_DESC_ES[i])||s.desc` to `(lang==="es"&&s.descEs)||s.desc`. No external API surface change.
+
+### Closed decisions
+
+- **O-15 (backup verification):** Closed. Implementation: `settings.lastBackupVerified` + UI in Profile & Settings + AGENT.md §11 procedure docs. Supabase PITR and column-level encryption remain deferred to a future minor (separate decision; not blocking launch).
+
+### Not in this patch (intentional)
+
+- **No schema changes.** `clients` and `settings` Supabase tables are untouched; the new `client.servicePlan` field and `settings.stripeLinks` / `settings.lastBackupVerified` fields all live inside the existing JSON `data` columns and migrate through automatically. No `ALTER TABLE`, no migration script.
+- **No automated Stripe webhook integration.** Pay Now buttons open the hosted Checkout page; payment confirmation is manual (advisor updates `lastPaidAt` in the Service Plan UI after seeing the Stripe payout). Webhook-driven `lastPaidAt` updates are deferred to a future minor (would require Edge Function + RLS-aware service-role write).
+- **No automated Pay Now button on the client detail.** Per-client Payment Links (custom invoices) live in `client.servicePlan.paymentLinkUrl` for advisor reference but aren't surfaced as a button anywhere yet; that's an intake/onboarding flow concern for a future patch.
+
+### Build marker
+
+`window.__GA_BUILD__` = `"2026-05-15-v052b-service-plans-stripe-links"`
+
+### Verification
+
+- 100% JSX parse-clean (Babel).
+- Brace/paren/bracket balance: parens 7587/7587, curly 11305/11305, square 1563/1563 (deltas from v0.5.2a: +84, +180, +30 — all matched).
+- T.en and T.es key counts equal (1093 each, AST-verified).
+- All Stripe URLs in `DEF_SETTINGS.stripeLinks` match the 2026-05-12 CSV export verbatim.
+
+### Verification (Playwright)
+
+To re-run: `rm -rf playwright/.auth && npm run test:e2e`. Expected steady state still 60/60 after these App.jsx changes — none of the test selectors touch the SVCS array, About page services grid, or the new Profile/Notes sections. If anything breaks it's a new regression (most likely the AboutPage `s.id||i` key change or the NotesSection layout change), report-and-fix.
 
 ---
 
