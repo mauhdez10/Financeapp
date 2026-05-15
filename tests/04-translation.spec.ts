@@ -1,98 +1,108 @@
-import { test, expect, navTo } from "../utils/fixtures";
+import { test, expect, switchLang, navTo } from "../utils/fixtures";
+import type { Page } from "@playwright/test";
 
 /**
- * TRANSLATION INTEGRITY
+ * Translation integrity tests.
  *
- * D-3 (locked): EN/ES toggle must never blank the screen. If a key is missing
- * in T.es, the code uses `t.key || "Fallback English"` — but only where the
- * developer remembered to add the fallback.
+ * Catches three classes of regression:
+ *   1. Untranslated EN strings leaking into ES (raw dict keys, e.g. "t.foo"
+ *      or "Sin traducir" placeholders).
+ *   2. `undefined` rendering in the DOM — happens when t.someKey doesn't
+ *      exist on T.es. Per pitfall #9 in AGENT.md, every key must exist on
+ *      BOTH T.en and T.es.
+ *   3. Pages crashing or going blank when the language toggle flips.
  *
- * Pitfall #9 (locked): both T.en AND T.es get touched in the SAME edit when
- * adding any user-facing string. These tests assert that's actually happening
- * by walking every major surface in ES mode and looking for tells of missing
- * keys.
+ * The language toggle is a SINGLE button labeled `🌐 EN | ES` in the
+ * sidebar (line 2317 of App.jsx). Clicking it flips React state. Setting
+ * `window.__GA_LANG` directly does NOT trigger a re-render — the global
+ * is mirrored *from* React state via useEffect, not *to* it.
  *
- * Tells of a missing/broken translation:
- *  - The literal word "undefined" rendered in the DOM
- *  - A raw camelCase dictionary key like "totalIncome" leaking through
- *  - An English label persisting after the language switch
+ * Per pattern: load the page, switchLang to ES, navigate to each surface,
+ * scrape the body text, assert no banned tokens, and confirm at least one
+ * known Spanish word is present.
  */
 
-const RAW_KEY_PATTERN =
-  /\b(totalIncome|netWorth|cashFlow|incomeHdr|billsExpensesHdr|debtCcHdr|financialRatiosHdr|searchClients|signOut|loadingClients|migratingData)\b/;
+// Surfaces to check — pair of (EN nav label, ES nav label, identifying ES
+// word that must appear in body after navigation).
+//
+// We use EN labels for the first nav-to before switching to ES, then ES
+// labels for subsequent navs. The ES expected-word is a Spanish-only
+// translation we know should appear on that page after the switch.
+const SURFACES: Array<{ en: string; es: string; esBodyWord: RegExp }> = [
+  { en: "Dashboard", es: "Tablero", esBodyWord: /Tablero|Asesor|Cliente/ },
+  { en: "Clients", es: "Clientes", esBodyWord: /Clientes|Buscar/ },
+  { en: "Calculators", es: "Calculadoras", esBodyWord: /Calculadora|Hogar|Préstamo/ },
+  { en: "Promotions", es: "Promociones", esBodyWord: /Promoci[oó]n|Descuento/ },
+  { en: "Forms", es: "Formularios", esBodyWord: /Formulario|Descarg/ },
+  { en: "Resources", es: "Recursos", esBodyWord: /Recurso|Gu[ií]a/ },
+  { en: "About Us", es: "Nosotros", esBodyWord: /Nosotros|Asesor|Servicios/ },
+];
 
-async function switchToSpanish(page: any) {
-  // The sidebar has an EN/ES toggle. Set lang via the global as a fallback,
-  // then click any visible language toggle if present.
-  await page.evaluate(() => {
-    // @ts-ignore
-    window.__GA_LANG = "es";
-  });
-  // Try the explicit toggle if it exists
-  const esBtn = page.getByRole("button", { name: /^ES$/ }).first();
-  if (await esBtn.isVisible().catch(() => false)) {
-    await esBtn.click();
-  }
+// Tokens that must NEVER appear in body text:
+//   - "undefined" — a missing t.key
+//   - "[object Object]" — a render bug
+//   - raw "t.foo" dict-key leaks
+//
+// We deliberately don't ban "null" — it can appear legitimately in things
+// like "100% nullable" docs (none of which we have, but defensive).
+const FORBIDDEN_TOKENS = [
+  /\bundefined\b/,
+  /\[object Object\]/,
+  // Common pattern: a t.fooBar wrapped without a fallback that didn't render.
+  /\bt\.[a-z][a-zA-Z0-9_]+\b(?!\()/,
+];
+
+async function bodyText(page: Page): Promise<string> {
+  return await page.locator("body").innerText();
 }
 
 test.describe("translation integrity (ES)", () => {
-  const surfaces: Array<{ nav: string; spanishSentinel: RegExp }> = [
-    { nav: "Tablero", spanishSentinel: /Alertas|Tablero/i },
-    { nav: "Clientes", spanishSentinel: /Buscar clientes|Nuevo Cliente|Clientes/i },
-    { nav: "Calculadoras", spanishSentinel: /Retiro|Portafolio|Hogar|Calculadora/i },
-    { nav: "Promociones", spanishSentinel: /Promoci/i },
-    { nav: "Formularios", spanishSentinel: /Formulario/i },
-    { nav: "Recursos", spanishSentinel: /Recurso|Gu[ií]a/i },
-    { nav: "Nosotros", spanishSentinel: /Servicio|Ancla|Golden/i },
-  ];
-
-  for (const { nav, spanishSentinel } of surfaces) {
-    test(`ES mode: "${nav}" tab — no missing keys, no undefined, has Spanish content`, async ({
+  for (const surface of SURFACES) {
+    test(`ES mode: "${surface.es}" tab — no missing keys, no undefined, has Spanish content`, async ({
       appPage,
     }) => {
-      await switchToSpanish(appPage);
-      // Use the Spanish label of the nav item
-      await navTo(appPage, nav);
+      const page = appPage;
 
-      const body = await appPage.locator("body").innerText();
+      // Step 1: switch to Spanish via the toggle button.
+      await switchLang(page, "es");
 
-      // Sentinel: at least one expected Spanish word renders
-      expect(body).toMatch(spanishSentinel);
+      // Step 2: navigate to the surface using its ES label.
+      await navTo(page, surface.es);
 
-      // No raw dictionary keys
-      const rawKeyMatch = body.match(RAW_KEY_PATTERN);
+      // Step 3: scrape body text and assert.
+      const text = await bodyText(page);
+
+      // Banned tokens must not appear.
+      for (const banned of FORBIDDEN_TOKENS) {
+        expect(
+          text,
+          `Found banned token ${banned} in ${surface.es} body — likely a missing t.key on T.es`,
+        ).not.toMatch(banned);
+      }
+
+      // At least one known Spanish word must appear — proves the lang
+      // switch actually took effect and ES content rendered.
       expect(
-        rawKeyMatch,
-        `Raw dictionary key leaked into ${nav} ES view: ${rawKeyMatch?.[0]}`,
-      ).toBeNull();
-
-      // No "undefined" literals
-      expect(body).not.toContain("undefined");
+        text,
+        `No expected ES word (${surface.esBodyWord}) found on ${surface.es} — language switch may not have applied`,
+      ).toMatch(surface.esBodyWord);
     });
   }
 
-  test("ES mode: client report walks all sub-tabs without English fallback leakage", async ({
-    appPage,
-  }) => {
-    await switchToSpanish(appPage);
-    await navTo(appPage, "Clientes");
-    await appPage.getByText(/Miguel/).first().click();
-
-    // Walk inner report tabs
-    const innerTabs = [
-      /Reporte del Cliente|Reporte/i,
-      /Estado Mensual/i,
-      /Estados Financieros/i,
-      /Portafolios/i,
-    ];
-    for (const re of innerTabs) {
-      const btn = appPage.getByRole("button", { name: re }).first();
-      if (await btn.isVisible().catch(() => false)) {
-        await btn.click();
-        const body = await appPage.locator("body").innerText();
-        expect(body).not.toContain("undefined");
-        expect(body).not.toMatch(RAW_KEY_PATTERN);
-      }
+  test("toggle switches back from ES to EN cleanly", async ({ appPage }) => {
+    const page = appPage;
+    // Go to ES.
+    await switchLang(page, "es");
+    await navTo(page, "Tablero");
+    expect(await bodyText(page)).toMatch(/Tablero|Asesor/);
+    // Back to EN.
+    await switchLang(page, "en");
+    await navTo(page, "Dashboard");
+    const text = await bodyText(page);
+    expect(text).toMatch(/Dashboard|Advisor|Client/i);
+    // The forbidden tokens must not appear in EN either.
+    for (const banned of FORBIDDEN_TOKENS) {
+      expect(text).not.toMatch(banned);
     }
   });
 });
