@@ -2,6 +2,39 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.9.0 — 2026-05-16 (Minor)
+
+Mobile / responsive redesign of every primary surface. Layout primitives only — no data shape, no behavior, no new components, zero new translation keys. Chat 5 of the parallel-chat workplan.
+
+**Top bar**
+- Dropped the ⚓ from the mobile app bar to reclaim title width — the desktop sidebar brand row is unchanged. Title (or selected client name) now fits a ~360px viewport without truncation.
+
+**Dashboard**
+- KPI grid is now `repeat(2,1fr)` on mobile and `repeat(auto-fit,minmax(140px,1fr))` on desktop — six KPIs become a clean 3×2 on a phone instead of a long ribbon.
+- Donut-charts row stacks vertically on mobile.
+- Header title font drops a size step on mobile; the four header action buttons wrap.
+- Search input goes full-width on mobile.
+- "Active Clients" row stacks name+email on top and snapshot tiles + net/mo below on mobile; the `›` chevron is hidden.
+
+**Clients tab (ClientList — Chat 4 surface)**
+- Header row: search becomes full-width on mobile; 📥 / ⋮ overflow action buttons drop below it; "+ Add" grows to share the row.
+- Chat 4 bulk-action coloured bar `flex-wrap`s on mobile so the action label, the live selected-count, and the Cancel + apply buttons all stay readable instead of horizontally clipping.
+- Active and archived client rows stack name+email on top, figures below.
+
+**Client detail**
+- 4-up KPI row → 2-up on mobile.
+- Charts row stacks vertically on mobile.
+- The 8-tab strip (📊 / 📅 / 📋 / 💹 / 📋 / 🧮 / 🔧 / 🗒) on mobile gets `overflowX:auto` inside its own region — no more page-level horizontal scroll.
+
+**Other surfaces**
+- `CalculatorsPage` switched to `repeat(auto-fill,minmax(160px,1fr))`.
+- `ResourcesPage` switched to `repeat(auto-fill,minmax(220px,1fr))`.
+- `AboutPage` advisor-card and services grids switched to `auto-fit`.
+- v0.8.1 Appearance preview tile re-sized 128 → 120 with `flex:"0 0 auto"`, and the BgPicker column is `flex:"1 1 200px"` with `minWidth:0` — the pair fits beside each other at narrow widths without horizontal scroll.
+- App main content column got `maxWidth:"100%"` as a final overflow-safety belt.
+
+**Build marker:** `2026-05-16-v090-mobile-responsive`. App.jsx 2,856 → 2,858 lines. `src/translations.js` unchanged at 1,192 keys/side. No SQL migration. D-1, D-7, D-10, D-18, D-27 preserved; D-27 (mobile-first + PWA) meaningfully advanced.
+
 ## v0.8.1 — 2026-05-16
 
 ### Added — Customizable background colors
