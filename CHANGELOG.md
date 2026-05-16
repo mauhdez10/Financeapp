@@ -2,6 +2,19 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.8.1 — 2026-05-16
+
+### Added — Customizable background colors
+- New "Background Colors" section in Profile & Settings. Set the page
+  background and card background separately for light mode and dark mode.
+- Each color offers preset shade swatches plus a custom color picker and
+  a hex field. A live preview tile shows the combination before you save.
+- Per-mode "Reset" returns that mode's colors to the defaults.
+- 6 new English/Spanish translation strings (1,186 → 1,192 per language).
+
+No database changes. No breaking changes.
+Build marker: 2026-05-16-v081-appearance-bg-settings
+
 ## v0.8.0 — 2026-05-16
 
 ### Added — Bulk actions on the Clients tab
