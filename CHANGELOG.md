@@ -2,6 +2,17 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.7.3 — 2026-05-16 (Patch — intake form bundle)
+
+- **FIXED:** Browser autofill bug — advisor's own Gmail and saved-password values were bleeding into the public intake form when opened in the advisor's logged-in Chrome. Root cause: `autoComplete="email"` triggered Chrome autofill; `SSNInput`'s `type="password"` triggered saved-password autofill. Every input in `IntakeFormBody` now has `autoComplete="off"` + `data-lpignore="true"` + `data-1p-ignore="true"` + unique app-specific `name` attributes. SSN fields (main, P1, P2) switched from `<SSNInput type="password">` to inline `<input type="text">` with inline `fmtSSN` helper (same auto-format-to-`XXX-XX-XXXX` behavior). No Show/Hide toggle for the prospect (they're entering their own SSN on their own device — masking is unnecessary).
+- **REMOVED:** Client Type + Recommended By fields from the public intake form. Both were vestigial — `clientType` defaults to `"financeOnly"` and can be changed by the advisor via the existing Edit Client modal; `recommendedBy` overlapped with `howHeard`. SSN row now pairs with "How did you hear about us?" for a clean 2-column layout.
+- **ADDED:** Light/dark toggle on the public intake page (☀️/🌙 button next to EN/ES). New light palette uses slate-on-white with a muted gold accent. Preference persists in `localStorage["ga_intake_mode"]`. Reused editor sub-components (IncomeSection / BillsSection / DebtSection / CustomAssetsSection) follow the theme switch because `ThemeCtx.Provider` value rebuilds when `mode` changes.
+- **ADDED:** MVP send-intake-link feature on `IntakeSubmissionsPage`. Collapsible "Send link to a prospect" panel under the existing Public Intake URL card. Inputs: prospect name (optional) + email + phone + EN/ES language toggle. Three action buttons: ✉️ Send Email (opens `mailto:` with bilingual subject + body), 💬 Send SMS (opens `sms:` with shorter body), 📋 Copy message (clipboard). No server, no DNS dependency — advisor sends from their own email/SMS account.
+- **ADDED:** 11 translation keys × 2 languages = 22 entries — `intakeSendTitle`, `intakeSendHelp`, `intakeSendName`, `intakeSendEmail`, `intakeSendPhone`, `intakeSendLang`, `intakeSendEmailBtn`, `intakeSendSmsBtn`, `intakeSendCopyBtn`, `intakeSendEmailReq`, `intakeSendPhoneReq`. Dictionary 1,147 → **1,158 per side**, symmetry verified.
+- **DEFERRED:** Server-side email/SMS delivery via Resend/Twilio remains backlog under "Server-side intake delivery (future)" — blocked on Porkbun→Cloudflare DNS migration. WhatsApp Business API delivery explicitly deferred to long-term backlog per advisor decision.
+- **BUILD MARKER:** `2026-05-16-v073-intake-polish-and-send-mvp`.
+- **CHANGED:** App.jsx 2,696 → 2,743 lines. `src/translations.js` 1,147 → 1,158 keys/side. `tsc --noEmit` clean. No schema change.
+
 ## v0.7.2 — 2026-05-16 (Patch — UI polish on top of v0.7.1)
 
 - **FIXED:** SSN fields in the public intake form (main, P1, P2) now use the existing `SSNInput` component instead of a raw `<input>`. Auto-formats to `XXX-XX-XXXX` as the user types, masked by default with a Show/Hide toggle. The `*` on the main SSN label was misleading — the `submit()` validator never enforced it, so dropped.
