@@ -2177,7 +2177,7 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-16-v072-intake-polish";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-16-v073-intake-polish-and-send-mvp";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
@@ -2189,8 +2189,17 @@ function PublicIntake(){
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
   const[err,setErr]=useState("");
-  const TH={bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6"};
-  useEffect(()=>{if(typeof document!=="undefined"){document.documentElement.style.background=TH.bg;document.body.style.background=TH.bg;document.body.style.margin="0";}},[]);
+  // v0.7.3 — light/dark toggle on public intake.  Persist choice in localStorage
+  // so a prospect who comes back doesn't lose their preference mid-fill.
+  const[mode,setMode]=useState(()=>{
+    if(typeof window==="undefined")return "dark";
+    try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}
+  });
+  const isDark=mode==="dark";
+  const TH=isDark
+    ?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}
+    :{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
+  useEffect(()=>{if(typeof document!=="undefined"){document.documentElement.style.background=TH.bg;document.body.style.background=TH.bg;document.body.style.margin="0";}try{window.localStorage.setItem("ga_intake_mode",mode);}catch(e){}},[mode,TH.bg]);
   if(!advisorId){
     return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}>
       <div style={{fontSize:48,color:GOLD}}>⚓</div>
@@ -2224,7 +2233,8 @@ function PublicIntake(){
   return<ThemeCtx.Provider value={synthTheme}>
     <div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"system-ui,sans-serif",padding:"20px 14px",lineHeight:1.45,WebkitTextSizeAdjust:"100%"}}>
       <div style={{maxWidth:760,margin:"0 auto"}}>
-        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6,gap:6}}>
+          <button onClick={()=>setMode(m=>m==="dark"?"light":"dark")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>{isDark?"☀️ "+(t.lightMode||"Light"):"🌙 "+(t.darkMode||"Dark")}</button>
           <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 EN | ES</button>
         </div>
         <div style={{textAlign:"center",marginBottom:24}}>
@@ -2257,31 +2267,25 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
   const isNarrow=typeof window!=="undefined"&&window.innerWidth<560;
   const ROW2={display:"grid",gridTemplateColumns:isNarrow?"1fr":"1fr 1fr",gap:12};
   const Div=()=><div style={{height:1,background:TH.cardBorder,margin:"22px 0"}}/>;
+  // v0.7.3 — inline SSN format helper.  Avoids <SSNInput> here because its type="password"
+  // triggers Chrome's saved-password autofill which dumps garbage into the field.
+  const fmtSSN=v=>{const d=String(v||"").replace(/\D/g,"").slice(0,9);if(d.length<=3)return d;if(d.length<=5)return d.slice(0,3)+"-"+d.slice(3);return d.slice(0,3)+"-"+d.slice(3,5)+"-"+d.slice(5);};
   const onUpdate=c=>setDraft(c);
   return<div>
     <div style={HDR}>{t.intakePersonalSection||"About You"}</div>
     <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.firstName} *</label><input style={INP} value={draft.firstName} onChange={up("firstName")} autoComplete="given-name"/></div>
-      <div style={FW}><label style={LBL}>{t.lastName} *</label><input style={INP} value={draft.lastName} onChange={up("lastName")} autoComplete="family-name"/></div>
+      <div style={FW}><label style={LBL}>{t.firstName} *</label><input style={INP} value={draft.firstName} onChange={up("firstName")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
+      <div style={FW}><label style={LBL}>{t.lastName} *</label><input style={INP} value={draft.lastName} onChange={up("lastName")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
     </div>
-    <div style={FW}><label style={LBL}>{t.email} *</label><input type="email" style={INP} value={draft.email} onChange={up("email")} autoComplete="email" inputMode="email"/></div>
+    <div style={FW}><label style={LBL}>{t.email} *</label><input type="email" style={INP} value={draft.email} onChange={up("email")} autoComplete="off" data-lpignore="true" data-1p-ignore="true" inputMode="email"/></div>
     <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.phone}</label><input type="tel" style={INP} value={draft.phone} onChange={e=>upRaw("phone",fmtPh(e.target.value))} autoComplete="tel" inputMode="tel" placeholder="(305) 555-0000"/></div>
-      <div style={FW}><label style={LBL}>{t.dob}</label><input type="date" style={INP} value={draft.dob} onChange={up("dob")} autoComplete="bday"/></div>
+      <div style={FW}><label style={LBL}>{t.phone}</label><input type="tel" style={INP} value={draft.phone} onChange={e=>upRaw("phone",fmtPh(e.target.value))} autoComplete="off" data-lpignore="true" data-1p-ignore="true" inputMode="tel" placeholder="(305) 555-0000"/></div>
+      <div style={FW}><label style={LBL}>{t.dob}</label><input type="date" style={INP} value={draft.dob} onChange={up("dob")} autoComplete="off"/></div>
     </div>
-    <div style={FW}><label style={LBL}>{t.address}</label><input style={INP} value={draft.address} onChange={up("address")} autoComplete="street-address"/></div>
+    <div style={FW}><label style={LBL}>{t.address}</label><input style={INP} value={draft.address} onChange={up("address")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
     <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.social}</label><SSNInput value={draft.social||""} onChange={up("social")} t={t}/></div>
-      <div style={FW}><label style={LBL}>{t.recommendedBy}</label><input style={INP} value={draft.recommendedBy||""} onChange={up("recommendedBy")}/></div>
-    </div>
-    <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.clientType}</label>
-        <select style={INP} value={draft.clientType||"financeOnly"} onChange={up("clientType")}>
-          <option value="financeOnly">{t.financeOnly}</option>
-          <option value="financeAndHealth">{t.financeAndHealth}</option>
-        </select>
-      </div>
-      <div style={FW}><label style={LBL}>{t.intakeHowHeard||"How did you hear about us?"}</label><input style={INP} value={draft.howHeard||""} onChange={up("howHeard")}/></div>
+      <div style={FW}><label style={LBL}>{t.social}</label><input style={INP} type="text" value={draft.social||""} onChange={e=>upRaw("social",fmtSSN(e.target.value))} placeholder="XXX-XX-XXXX" inputMode="numeric" maxLength={11} autoComplete="off" data-lpignore="true" data-1p-ignore="true" name="ga-intake-ssn"/></div>
+      <div style={FW}><label style={LBL}>{t.intakeHowHeard||"How did you hear about us?"}</label><input style={INP} value={draft.howHeard||""} onChange={up("howHeard")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
     </div>
     <div style={{marginTop:4,marginBottom:14}}><button onClick={()=>setDraft(p=>({...p,partnerFirst:p.partnerFirst?null:"",partnerLast:p.partnerLast||""}))} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:hasP2?GOLD+"22":"transparent",color:hasP2?GOLD:TH.muted,border:"1px solid "+(hasP2?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{hasP2?"✓ "+(t.removePartner||"Remove Partner"):"＋ "+(t.addPartner||"Add Partner")}</button></div>
     {hasP2&&<>
@@ -2291,21 +2295,21 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
       </div>
       <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:8}}>👤 {draft.firstName||"Person 1"} — Personal Info</div>
       <div style={ROW2}>
-        <div style={FW}><label style={LBL}>Phone</label><input style={INP} value={draft.p1Phone||""} onChange={e=>upRaw("p1Phone",fmtPh(e.target.value))} inputMode="tel"/></div>
-        <div style={FW}><label style={LBL}>Email</label><input type="email" style={INP} value={draft.p1Email||""} onChange={up("p1Email")} inputMode="email"/></div>
+        <div style={FW}><label style={LBL}>Phone</label><input style={INP} value={draft.p1Phone||""} onChange={e=>upRaw("p1Phone",fmtPh(e.target.value))} inputMode="tel" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
+        <div style={FW}><label style={LBL}>Email</label><input type="email" style={INP} value={draft.p1Email||""} onChange={up("p1Email")} inputMode="email" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
       </div>
       <div style={ROW2}>
         <div style={FW}><label style={LBL}>Date of Birth</label><input type="date" style={INP} value={draft.p1Dob||""} onChange={up("p1Dob")}/></div>
-        <div style={FW}><label style={LBL}>SSN</label><SSNInput value={draft.p1Social||""} onChange={up("p1Social")} t={t}/></div>
+        <div style={FW}><label style={LBL}>SSN</label><input style={INP} type="text" value={draft.p1Social||""} onChange={e=>upRaw("p1Social",fmtSSN(e.target.value))} placeholder="XXX-XX-XXXX" inputMode="numeric" maxLength={11} autoComplete="off" data-lpignore="true" data-1p-ignore="true" name="ga-intake-p1ssn"/></div>
       </div>
       <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:12}}>👤 {draft.partnerFirst||"Person 2"} — Personal Info</div>
       <div style={ROW2}>
-        <div style={FW}><label style={LBL}>Phone</label><input style={INP} value={draft.p2Phone||""} onChange={e=>upRaw("p2Phone",fmtPh(e.target.value))} inputMode="tel"/></div>
-        <div style={FW}><label style={LBL}>Email</label><input type="email" style={INP} value={draft.p2Email||""} onChange={up("p2Email")} inputMode="email"/></div>
+        <div style={FW}><label style={LBL}>Phone</label><input style={INP} value={draft.p2Phone||""} onChange={e=>upRaw("p2Phone",fmtPh(e.target.value))} inputMode="tel" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
+        <div style={FW}><label style={LBL}>Email</label><input type="email" style={INP} value={draft.p2Email||""} onChange={up("p2Email")} inputMode="email" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
       </div>
       <div style={ROW2}>
         <div style={FW}><label style={LBL}>Date of Birth</label><input type="date" style={INP} value={draft.p2Dob||""} onChange={up("p2Dob")}/></div>
-        <div style={FW}><label style={LBL}>SSN</label><SSNInput value={draft.p2Social||""} onChange={up("p2Social")} t={t}/></div>
+        <div style={FW}><label style={LBL}>SSN</label><input style={INP} type="text" value={draft.p2Social||""} onChange={e=>upRaw("p2Social",fmtSSN(e.target.value))} placeholder="XXX-XX-XXXX" inputMode="numeric" maxLength={11} autoComplete="off" data-lpignore="true" data-1p-ignore="true" name="ga-intake-p2ssn"/></div>
       </div>
     </>}
     <Div/>
@@ -2355,6 +2359,12 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
   const[editing,setEditing]=useState(null);
   const[deleteConfirm,setDeleteConfirm]=useState(null);
   const[clearConfirm,setClearConfirm]=useState(null);
+  // v0.7.3 — MVP send-intake-link state
+  const[sendOpen,setSendOpen]=useState(false);
+  const[sendName,setSendName]=useState("");
+  const[sendEmail,setSendEmail]=useState("");
+  const[sendPhone,setSendPhone]=useState("");
+  const[sendLang,setSendLang]=useState("en");
   const publicBase=(typeof window!=="undefined"?window.location.origin:"")+"/intake?advisor="+(authUser?.id||"");
   const publicUrlEs=publicBase+"&lang=es";
   useEffect(()=>{let cancelled=false;(async()=>{const list=await gaLoadIntakeSubmissions(authUser?.id);if(!cancelled){setSubs(list);setLoading(false);}})();return()=>{cancelled=true;};},[authUser?.id]);
@@ -2406,6 +2416,43 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
         <span style={{fontSize:10,fontWeight:800,color:GOLD,minWidth:28,letterSpacing:"0.06em"}}>ES</span>
         <input value={publicUrlEs} readOnly onClick={e=>e.target.select()} style={{flex:1,minWidth:200,padding:"8px 10px",fontSize:11,fontFamily:"monospace",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,cursor:"text"}} onFocus={e=>e.target.select()}/>
         <button onClick={()=>copyUrl(publicUrlEs,"es")} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:urlCopied==="es"?th.pos+"33":GOLD+"22",color:urlCopied==="es"?th.pos:GOLD,border:"1px solid "+(urlCopied==="es"?th.pos+"66":GOLD+"44"),cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",minHeight:36}}>{urlCopied==="es"?"✓ "+(t.intakeCopiedToast||"URL copied"):(t.intakeCopyUrl||"Copy")}</button>
+      </div>
+      {/* v0.7.3 — Send-to-Prospect MVP (mailto/SMS, no server) */}
+      <div style={{marginTop:14,paddingTop:14,borderTop:"1px dashed "+GOLD+"44"}}>
+        <button onClick={()=>setSendOpen(o=>!o)} style={{background:"transparent",border:"none",color:GOLD,fontSize:12,fontWeight:700,cursor:"pointer",padding:0,marginBottom:sendOpen?10:0}}>{sendOpen?"▼":"▶"} {t.intakeSendTitle||"Send link to a prospect"}</button>
+        {sendOpen&&<div>
+          <div style={{fontSize:11,color:th.muted,marginBottom:10,lineHeight:1.6}}>{t.intakeSendHelp||"Pre-fill the prospect's name + email or phone, choose language, and we'll open your email/SMS app with the link ready to send. No server delivery — you send from your own account."}</div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:8}}>
+            <input placeholder={t.intakeSendName||"Prospect name (optional)"} value={sendName} onChange={e=>setSendName(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
+            <input type="email" placeholder={t.intakeSendEmail||"prospect@example.com"} value={sendEmail} onChange={e=>setSendEmail(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
+            <input type="tel" placeholder={t.intakeSendPhone||"+1 305 555 0000 (for SMS)"} value={sendPhone} onChange={e=>setSendPhone(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <span style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.intakeSendLang||"Language:"}</span>
+              {["en","es"].map(L=><button key={L} onClick={()=>setSendLang(L)} style={{padding:"6px 12px",fontSize:11,borderRadius:6,background:sendLang===L?GOLD+"33":"transparent",color:sendLang===L?GOLD:th.muted,border:"1px solid "+(sendLang===L?GOLD:th.cardBorder),cursor:"pointer",fontWeight:700,textTransform:"uppercase"}}>{L}</button>)}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {(()=>{
+              const link=sendLang==="es"?publicUrlEs:publicBase;
+              const greet=sendLang==="es"?("Hola"+(sendName?" "+sendName:"")):("Hi"+(sendName?" "+sendName:""));
+              const body=sendLang==="es"
+                ?greet+",\n\nGracias por tu interés en Golden Anchor Financial Advisory. Por favor completa este formulario antes de nuestra primera llamada:\n\n"+link+"\n\nNos contactaremos pronto.\n\nMauricio Hernandez\nGolden Anchor"
+                :greet+",\n\nThanks for your interest in Golden Anchor Financial Advisory. Please fill out this intake form before our first call:\n\n"+link+"\n\nWe'll be in touch shortly.\n\nMauricio Hernandez\nGolden Anchor";
+              const subject=sendLang==="es"?"Golden Anchor — Formulario de admisión":"Golden Anchor — Intake form";
+              const smsBody=sendLang==="es"?(greet+", aquí está tu formulario de admisión de Golden Anchor: "+link):(greet+", here is your Golden Anchor intake form: "+link);
+              const mailto="mailto:"+encodeURIComponent(sendEmail)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+              const sms="sms:"+encodeURIComponent(sendPhone)+"?&body="+encodeURIComponent(smsBody);
+              const copyMsg=async()=>{try{await navigator.clipboard.writeText(body);}catch(e){}};
+              return<>
+                <button onClick={()=>{if(!sendEmail){alert(t.intakeSendEmailReq||"Enter prospect email first.");return;}window.location.href=mailto;}} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:GOLD+"22",color:GOLD,border:"1px solid "+GOLD+"44",cursor:"pointer",fontWeight:700}}>✉️ {t.intakeSendEmailBtn||"Send Email"}</button>
+                <button onClick={()=>{if(!sendPhone){alert(t.intakeSendPhoneReq||"Enter prospect phone first.");return;}window.location.href=sms;}} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:th.blue+"22",color:th.blue,border:"1px solid "+th.blue+"44",cursor:"pointer",fontWeight:700}}>💬 {t.intakeSendSmsBtn||"Send SMS"}</button>
+                <button onClick={copyMsg} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:th.inp,color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer",fontWeight:700}}>📋 {t.intakeSendCopyBtn||"Copy message"}</button>
+              </>;
+            })()}
+          </div>
+        </div>}
       </div>
     </div>
     {loading?<div style={{textAlign:"center",color:th.muted,padding:40,fontSize:13}}>{t.loadingClients||"Loading…"}</div>:

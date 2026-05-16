@@ -35,41 +35,55 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.7.2** — established 2026-05-16 (Patch). Three small UI fixes on top of v0.7.1's full-parity public intake form. No schema change, no translation keys, no helpers added.
+**v0.7.3** — established 2026-05-16 (Patch). Four bundled fixes on top of v0.7.2: autofill suppression on the public intake form (fixes advisor's Gmail + saved-password values bleeding into prospect fields), ClientType + RecommendedBy fields removed from intake (advisor can fill those on Convert via existing client editors), light/dark toggle on the public intake page, and an MVP send-intake-link feature (mailto + sms, no server). Backlog item promoted out of Chat 7 and shipped early per Mauricio's request — server-side delivery (Resend/Twilio) deferred to true future after DNS migration.
 
-1. **SSN field auto-formats to `XXX-XX-XXXX` and is no longer marked required.** All three SSN inputs in `IntakeFormBody` (main person, P1 SSN, P2 SSN) now use the existing `SSNInput` component instead of a raw `<input>`. `SSNInput` strips non-digits, formats as `XXX-XX-XXXX` on every keystroke, masks as `password` by default with a Show/Hide toggle, and limits to 11 chars. The `*` on the main SSN label is dropped (the form's `submit()` validator never enforced it — the asterisk was misleading copy).
+1. **Browser autofill suppressed on the public intake form.** Root cause: when the advisor opens `/intake?advisor=...` in their own logged-in browser session, Chrome auto-fills `<input autoComplete="email">` with their saved Gmail (`mhernandez.fn@gmail.com`), and `SSNInput`'s `type="password"` triggers saved-password autofill which dumps arbitrary stored values (e.g. `202-0/`) into the SSN field. Fix: every `<input>` inside `IntakeFormBody` now has `autoComplete="off"` plus `data-lpignore="true"` (LastPass) and `data-1p-ignore="true"` (1Password) — these ignored-by-extension attributes are the de-facto cross-browser way to tell password managers to stop. The three SSN fields (main, P1, P2) switched from the `SSNInput` component to inline `<input type="text">` with the same `fmtSSN` format-on-keystroke logic; no Show/Hide toggle for the prospect (they're entering their own SSN on their own device, masking is unnecessary). The `name` attribute is set to `ga-intake-ssn` etc. (unique app-specific names) so password managers don't recognize the field as a known form. Side effect: the advisor's `IntakeSubmissionEditor` modal reuses `IntakeFormBody` so it inherits the same autofill suppression — acceptable since the advisor types these values manually anyway.
 
-2. **Public-intake theme now applies to the reused editor sub-components.** `ThemeCtx.Provider` in `PublicIntake` was previously passing a `{dark, light, isDark, settings}` wrapper object — but `useTh()` returns the context value directly, so `IncomeSection` / `BillsSection` / `DebtSection` / `CustomAssetsSection` (all of which call `const th = useTh()` and read `th.bg`, `th.accent`, `th.muted`, etc.) saw a malformed theme and fell back to default styling. Replaced with a flat theme object that mirrors the local `TH` plus the extra keys (`nav`, `navBorder`, `sideText`, `sideMuted`) that the style helpers (`mINP`, `mTH`, `mCARD`, `mTD`) consume. Net visual effect: DEBT, PROPERTIES, INCOME, BILLS sections now render with gold accents, blue secondary buttons, and the dark navy background — same look as the CONTACT & SERVICE section.
+2. **ClientType and RecommendedBy fields removed from the public intake form.** Both were vestigial — `clientType` is an advisor-side classification (financeOnly vs financeAndHealth) that Mauricio sets when he Converts the submission, and `recommendedBy` overlaps with `howHeard` ("How did you hear about us?"). The SSN row now pairs SSN with `howHeard` for a clean 2-column layout; the ClientType+RecommendedBy row is deleted entirely. On Convert, `clientType` falls back to `"financeOnly"` by default (per existing `mig()` defaults) — Mauricio can change it in Profile or via the existing Edit Client modal. The submission's JSONB blob just won't carry these two keys for new submissions; legacy submissions with the keys still work because `mig()` keeps them through the spread.
 
-3. **Sort-arrow spacing increased.** The `SA` component (renders `↑` / `↓` / `↕` next to sortable column headers like Card, Owed By, APR, Balance, Avail Credit, Min Pay, Due Day, Payoff) had `marginLeft:2`, which left arrows visually glued to labels. Bumped to `marginLeft:6`. Affects every sortable table column app-wide, not just the intake form — minor but consistent improvement.
+3. **Light/dark toggle on the public intake form.** New `mode` state in `PublicIntake` toggles between the existing dark navy palette and a new light palette (slate-gray text on white cards, with a slightly muted gold accent `#B8860B` instead of the brighter `#D4A017` to keep readable contrast on white). Persisted to `localStorage["ga_intake_mode"]` so a prospect who refreshes or comes back mid-fill doesn't lose their preference. Toggle button is `☀️ Light` / `🌙 Dark` placed left of the existing `🌐 EN | ES` selector. The synthetic `ThemeCtx.Provider` value rebuilds when `mode` changes so all reused editor sub-components (IncomeSection / BillsSection / DebtSection / CustomAssetsSection) follow the theme switch.
 
-No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-28, D-29 preserved. `IntakeSection` remains unmounted (third release in a row — candidate for explicit cleanup in a future minor).
+4. **MVP "Send link to a prospect" panel on `IntakeSubmissionsPage`.** Collapsed-by-default section under the existing Public Intake URL card. Inputs: prospect name (optional), prospect email, prospect phone, language toggle (EN/ES). Three action buttons: **✉️ Send Email** opens the advisor's default mail client via `window.location.href = "mailto:..."` with subject + body pre-filled (greeting with prospect's name if provided, intake link in the chosen language, sign-off as Mauricio Hernandez / Golden Anchor); **💬 Send SMS** opens the OS's SMS app via `window.location.href = "sms:..."` with a shorter pre-filled body; **📋 Copy message** writes the email body to the clipboard for pasting elsewhere (WhatsApp Web, Instagram DM, etc.). No server, no DNS dependency, no third-party API — ships immediately. Email/SMS templates are bilingual; the chosen language determines both the link variant (`/intake?advisor=...&lang=es` vs `&lang=en`) and the message copy. Each button validates that the relevant contact field is filled before opening the system handler. **Server-side delivery via Resend (email) and Twilio (SMS) remains the future-tier upgrade** — kept in WORKPLAN backlog as "Server-side intake delivery" pending Porkbun→Cloudflare DNS migration. WhatsApp delivery explicitly deferred to long-term backlog per Mauricio's call.
 
-**Build marker:** `2026-05-16-v072-intake-polish`. App.jsx 2,694 → 2,696 lines (~571 → ~571 KB; net +2 lines from the synth-theme expansion). `src/translations.js` unchanged at 1,147 keys per side.
+5. **11 new translation keys × 2 languages = 22 entries.** Added to both `T.en` and `T.es`: `intakeSendTitle`, `intakeSendHelp`, `intakeSendName`, `intakeSendEmail`, `intakeSendPhone`, `intakeSendLang`, `intakeSendEmailBtn`, `intakeSendSmsBtn`, `intakeSendCopyBtn`, `intakeSendEmailReq`, `intakeSendPhoneReq`. Dictionary 1,147 → **1,158 per side**, symmetry verified.
+
+No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-28, D-29 preserved. `IntakeSection` still unmounted (fourth release in a row — leaving it alone is now the implicit decision).
+
+**Build marker:** `2026-05-16-v073-intake-polish-and-send-mvp`. App.jsx 2,696 → 2,743 lines (~571 → ~571 KB; net +47 lines from the autofill attrs, light/dark theme branch, and send-intake panel). `src/translations.js` 1,147 → 1,158 keys/side (~81 → ~82 KB).
 
 **Out-of-app actions required before this build runs in production:**
-- Replace `src/App.jsx` only. `src/translations.js` is unchanged from v0.7.1 — no need to re-upload unless your local copy drifted.
+- Replace `src/App.jsx` AND `src/translations.js`.
 - Replace `AGENT.md` and `WORKPLAN.md` at repo root.
-- Add a CHANGELOG.md entry for v0.7.2 (see chat delivery for Option A instructions).
+- Add a CHANGELOG.md entry for v0.7.3 (see chat delivery for Option A instructions).
 - Commit + push. Vercel auto-deploys.
-- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-16-v072-intake-polish"`.
-- Spot-check: (a) open public intake URL in incognito — confirm DEBT/PROPERTIES/INCOME/BILLS section headers are gold and buttons are blue/gold (matching CONTACT & SERVICE); (b) type 9 digits into SSN field — should display as `123-45-6789` with password masking by default and a Show button; (c) confirm SSN can be left blank without blocking Submit; (d) confirm sort arrows on the DEBT card columns have visible space between label and arrow.
+- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-16-v073-intake-polish-and-send-mvp"`.
+- Spot-check: (a) open public intake URL in advisor's own logged-in Chrome — confirm email and SSN fields start empty (no Gmail autofill, no garbage SSN); (b) confirm Client Type and Recommended By fields are gone — SSN now pairs with "How did you hear about us?"; (c) toggle ☀️/🌙 in the upper-right — entire form switches between light and dark, including reused editor sub-components; refresh the page — choice persists; (d) advisor side, open Intake Forms → expand "Send link to a prospect" → fill name + email → click Send Email — confirm your default mail client opens with subject and body pre-filled; (e) switch ES, click Send Email again — body is in Spanish.
+
+---
+
+**Prior version (v0.7.2, 2026-05-16)** — Patch. Three small UI fixes on top of v0.7.1's full-parity public intake form. No schema change, no translation keys.
+
+1. **SSN field uses `SSNInput` component in all 3 spots** (now superseded in v0.7.3 — switched to inline non-password inputs to defeat autofill).
+2. **Public-intake theme** — `ThemeCtx.Provider` now passes a flat theme object instead of a wrapper; reused editors render with gold/blue accents matching CONTACT & SERVICE.
+3. **Sort-arrow spacing** — `SA` component `marginLeft:2 → 6` for visible space between column label and ↑/↓ arrow.
+
+**Build marker:** `2026-05-16-v072-intake-polish`. App.jsx 2,694 → 2,696 lines.
 
 ---
 
 **Prior version (v0.7.1, 2026-05-16)** — Patch — feature-add on top of v0.7.0 IA refactor. Full-parity public intake form + Edit/Delete on submissions. No schema change.
 
-1. **Public intake form now collects everything the old per-client `IntakeSection` did** via a new shared `IntakeFormBody` component (personal + SSN + partner P1/P2 personal info + full Income/Bills/Debt/CustomAssets editors + Contact & Service + 6 Goals/Notes textareas). State is hydrated via `mk()` and posted through existing `gaSubmitIntake` unchanged. ThemeCtx.Provider wraps the form for dark theme.
+1. **Public intake form now collects everything the old per-client `IntakeSection` did** via a new shared `IntakeFormBody` component (personal + SSN + partner P1/P2 + full Income/Bills/Debt/CustomAssets editors + Contact & Service + 6 Goals/Notes textareas). State hydrated via `mk()`, posted through existing `gaSubmitIntake`.
 
-2. **SSN is collected over the public URL** — plaintext through Supabase RLS (anon INSERT, advisor-only SELECT/UPDATE/DELETE). See v0.7.1 threat model note for residual risks.
+2. **SSN collected over public URL** — plaintext through Supabase RLS.
 
-3. **"✏️ Edit Intake" + "🗑️ Delete" actions on `IntakeSubmissionsPage`.** New `IntakeSubmissionEditor` modal hydrates `submission.data` via `mig({...mk(), ...submission.data})`, reuses `IntakeFormBody`, writes back via new `gaUpdateIntakeData(id, data)` helper. Per-row Delete + header-level "Clear converted ({n})" / "Clear rejected ({n})" bulk buttons.
+3. **"✏️ Edit Intake" + "🗑️ Delete" actions on `IntakeSubmissionsPage`.** `IntakeSubmissionEditor` modal hydrates `submission.data` via `mig({...mk(), ...submission.data})`, reuses `IntakeFormBody`, writes back via `gaUpdateIntakeData`. Per-row Delete + header-level bulk "Clear converted ({n})" / "Clear rejected ({n})" buttons.
 
-4. **3 new Supabase helpers:** `gaUpdateIntakeData`, `gaDeleteIntakeSubmission`, `gaDeleteIntakeSubmissionsByStatus`. No SQL migration.
+4. **3 new Supabase helpers** (`gaUpdateIntakeData`, `gaDeleteIntakeSubmission`, `gaDeleteIntakeSubmissionsByStatus`). No SQL migration.
 
-5. **`doConvert` rewritten** — spreads `{...sub.data}` through `mig()` so every intake field flows into the new client. Legacy v0.6.x flat-shape fallback preserved.
+5. **`doConvert` rewritten** — spreads `{...sub.data}` through `mig()` with legacy v0.6.x fallback.
 
-6. **+6 translation keys × 2 langs** — `intakeEditBtn`, `intakeDeleteBtn`, `intakeConfirmDelete`, `intakeClearConverted`, `intakeClearRejected`, `intakeConfirmClear`. Dictionary 1,141 → 1,147 per side.
+6. **+6 translation keys × 2 langs.** Dictionary 1,141 → 1,147 per side.
 
 **Build marker:** `2026-05-16-v071-full-parity-intake-edit-delete`. App.jsx 2,565 → 2,694 lines.
 
@@ -774,9 +788,11 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-16 — v0.7.2 (Patch — three UI polish fixes on top of v0.7.1: SSN field auto-formats and is no longer required, public-intake theme now applies to reused editor sub-components, sort arrow spacing). Build marker `2026-05-16-v072-intake-polish`. No translation changes. App.jsx 2,694 → 2,696 lines. No SQL migration. No new locked decisions, no closed open decisions. No new pitfalls.*
+*Last updated: 2026-05-16 — v0.7.3 (Patch — autofill suppression on public intake form, ClientType + RecommendedBy fields removed from intake, light/dark toggle on public intake page, MVP send-intake-link feature with mailto/SMS/copy-message buttons promoted from Chat 7 backlog and shipped early). Build marker `2026-05-16-v073-intake-polish-and-send-mvp`. +11 translation keys × 2 langs; dictionary 1,147 → 1,158 per side. App.jsx 2,696 → 2,743 lines. No SQL migration. No new locked decisions, no closed open decisions. No new pitfalls. Server-side email/SMS delivery (Resend + Twilio) remains backlog under "Server-side intake delivery (future)"; WhatsApp delivery explicitly deferred to long-term per Mauricio.*
 
-*Prior update: 2026-05-16 — v0.7.1 (Patch — full-parity public intake form, advisor-side Edit Intake button, single-row + bulk Delete on submissions, 3 new Supabase helpers, 6 new translation keys × 2 langs). Build marker `2026-05-16-v071-full-parity-intake-edit-delete`.*
+*Prior update: 2026-05-16 — v0.7.2 (Patch — SSN format + theme fix + sort-arrow spacing). Build marker `2026-05-16-v072-intake-polish`.*
+
+*Prior update: 2026-05-16 — v0.7.1 (Patch — full-parity public intake + Edit/Delete submissions). Build marker `2026-05-16-v071-full-parity-intake-edit-delete`.*
 
 *Prior update: 2026-05-16 — v0.7.0 (Minor — IA refactor). Build marker 2026-05-16-v070-ia-refactor-intake-forms.*
 
