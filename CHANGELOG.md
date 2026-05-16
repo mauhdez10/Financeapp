@@ -3,6 +3,45 @@
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
 ---
+# v0.6.2 (Patch) — 2026-05-15
+
+**Pure mechanical refactor — no behavior change, no UI change, no bug fixes, no new features.**
+
+Extract the `T.en` / `T.es` translation dictionaries out of `App.jsx` into a sibling `src/translations.js`. All references resolve unchanged because the imported identifier (`T`) and shape (`T.en`, `T.es`, `T[lang]`) are identical.
+
+## What changed
+
+- **New file: `src/translations.js`** (~80 KB, 4 lines). Single export `export const T = { en: {...}, es: {...} }`. Pure data — no JSX, no React imports, no logic. 1,146 keys per side, fully symmetric.
+- **`src/App.jsx`** modified at two sites:
+  - Added `import { T } from "./translations";` at line 5 (after the four existing React/Recharts/xlsx/Supabase imports).
+  - Removed the 3-line `const T = { en: {...}, es: {...} };` block (previously lines 91–93) and replaced its comment header at line 90 with a breadcrumb pointer to `src/translations.js`.
+- App.jsx: 2,580 lines / ~635 KB → 2,577 lines / ~555 KB.
+- Build marker: `2026-05-15-v061-prefs-and-intake-ux` → `2026-05-15-v062-translations-extracted`.
+
+## Why
+
+Future Spanish translation audit chats can upload `src/translations.js` alone (~80 KB) instead of the entire `App.jsx` (~635 KB), leaving more context budget for the actual audit work. This was the only refactor justifying the carve-out from D-1; no other extractions are planned at this time.
+
+## Decisions
+
+- **D-1 amended** — single-file architecture now carves out pure-data modules (literal-only exports with no JSX and no React imports) when their size impairs editing. Each carve-out gets its own locked D-NN entry; D-1 itself does not need re-opening for future ones.
+- **D-29 locked** (new) — `T.en` and `T.es` live in `src/translations.js`. Both languages must still be updated in the same edit (Pitfall #9 unchanged).
+- **D-18 (Track A) amended** — points at the new file path; key count corrected to 1,146 per side (was documented as 868 in the original D-18 wording; v0.6.0 release notes claimed 1,147 but actual is 1,146 — symmetry is intact, the documented total was off by 1).
+
+## Verification
+
+- `node` parse of `src/translations.js`: clean. `Object.keys(T.en).length === Object.keys(T.es).length === 1146`. Zero asymmetric keys.
+- `@babel/parser` parse of modified `App.jsx`: clean. Top-level statements: 252.
+- `grep` reference check: `T.en` (3 occurrences), `T[lang]` (3 occurrences) — unchanged counts vs v0.6.1. Line shifts of -2 match the net line delta (-3 removed const T block + 1 added import).
+
+## Out-of-app actions
+
+- Add `src/translations.js` to the repo at that path.
+- Replace `src/App.jsx`.
+- Commit + push. Vercel auto-deploys.
+- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-15-v062-translations-extracted"`.
+- Toggle EN/ES — the entire UI must translate identically to v0.6.1.
+- Run Playwright: `rm -rf playwright/.auth && npm run test:e2e`. Expect 60/60 passing.
 
 ## v0.6.1 — 2026-05-15 (Patch)
 
