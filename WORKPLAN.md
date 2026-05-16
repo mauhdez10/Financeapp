@@ -262,6 +262,7 @@ Notes tone (in `translations.js`, both T.en and T.es):
 
 | Chat # | Version | Date | Title |
 |---|---|---|---|
+| — | — | 2026-05-15 | SKILL.md: added Step 0 (WORKPLAN.md claim requirement). Renumbered existing Steps 0–5 → 1–6. Out-of-band docs fix, no app version bump. |
 | 1 | v0.6.2 | 2026-05-15 | Translations extracted to `src/translations.js`. D-1 amended (pure-data carve-out). D-29 locked. |
 | — | v0.6.1 | 2026-05-15 | Prefs + intake UX. (Pre-WORKPLAN era.) |
 | — | v0.6.0 | 2026-05-15 | Mobile shell + PWA install (D-27). (Pre-WORKPLAN era.) |
@@ -288,4 +289,4 @@ Notes tone (in `translations.js`, both T.en and T.es):
 
 *This file is itself versioned via git. If you're reading it and the §3 queue looks out of date or contradicts the CHANGELOG, the file may be stale — pull latest from `main` before relying on it.*
 
-*Last updated: 2026-05-15 — v1 of WORKPLAN, established by Mauricio + Claude. Queue: Chats 2, 3, 4 ready. Backlog: 5, 6.*
+*Last updated: 2026-05-15 — SKILL.md got a new Step 0 (WORKPLAN.md claim requirement) and existing Steps 0–5 renumbered to 1–6 (out-of-band docs fix, logged in §5). Queue unchanged: Chats 2, 3, 4 ready. Backlog: 5, 6.*
