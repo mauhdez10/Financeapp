@@ -145,46 +145,6 @@ Status legend:
 - `paused (chat-id: <claim>, since: ..., notes: ...)` — context-exhausted, needs resume
 - `done` — shipped and committed
 
-### Chat 2 — Service Plan cleanup + Notes tone fix [`queued`]
-
-**Files to upload:**
-- `src/App.jsx` (latest from repo)
-- `src/translations.js` (extracted in v0.6.2)
-
-**Files NOT to upload:** CHANGELOG.md (too big, chat doesn't need history).
-
-**Goal:** Trim the Service Plan UI in NotesSection to match how Mauricio actually uses it, plus fix Notes labels to second person.
-
-**Spec:**
-
-Service Plan field cleanup (in `NotesSection`, App.jsx):
-- REMOVE these fields from the UI: `category`, `status`, `nextChargeDate`, `lastPaidAt`, `serviceNotes`.
-- KEEP these fields: `plan` (dropdown), `startDate`, `paymentMethod`, `paymentLinkUrl`.
-- ADD: when `paymentMethod === "stripe"` AND `settings.stripeLinks[servicePlan.plan]` is non-empty, render two buttons:
-  - 💳 **Pay Now** → opens the Stripe link in a new tab (target=_blank).
-  - 🕓 **Pay Later** → appends `[Pay later — YYYY-MM-DD]` to `client.notes.general` with today's date. No new alert type.
-- Existing client records with the removed fields: don't migrate, just stop reading/writing those fields. Data sits dormant — forward-compatible if Mauricio ever wants them back.
-
-Notes tone (in `translations.js`, both T.en and T.es):
-- Audit Notes & Goals labels and tooltips for third-person → second-person.
-- Examples (verify exact keys against the file):
-  - "What They Want to Achieve" → "What You Want to Achieve"
-  - "Qué Desea Lograr" → "Qué Quieres Lograr"
-- Likely keys: `clientGoals`, `shortTerm`, `midTerm`, `longTerm`, `setbacks`, `generalNotes`, and any related help text.
-- Value changes only. Do NOT rename keys. Symmetry (1,146 each side) must stay intact.
-
-**Out of scope:**
-- Mobile redesign
-- IA changes (Forms tab, Intake)
-- Bulk actions
-- Playwright fixes
-
-**Version bump:** patch → v0.6.3.
-
-**Deliverables:** per §1.
-
----
-
 ### Chat 3 — IA changes (delete Forms, merge Intake) [`queued`]
 
 **Files to upload:** `src/App.jsx`, `src/translations.js`.
@@ -250,9 +210,46 @@ Notes tone (in `translations.js`, both T.en and T.es):
 
 ---
 
+### Chat 5 — Mobile / responsive redesign [`queued`]
+
+> **Dependency:** do not claim this chat until Chat 3 (IA changes) is `done` and committed. Chat 3 deletes the Forms tab and the per-client Intake tab; redesigning those surfaces first would waste the work. If Chat 3 is not yet done when this slot is reached, leave it `queued` and claim Chat 4 instead.
+
+**Files to upload:**
+- `src/App.jsx` (latest from repo)
+- `src/translations.js`
+
+**Files NOT to upload:** CHANGELOG.md.
+
+**Goal:** Make the whole app usable on a phone. It is currently desktop-first and several surfaces overflow horizontally on a narrow viewport. This pass restructures the layout primitives so nothing requires horizontal scrolling and the primary actions are reachable one-handed.
+
+**Spec:**
+
+1. **Top bar.** Remove the ⚓ mark from the mobile top bar to reclaim width (keep it on desktop). Title and nav must fit a ~360px viewport without truncation.
+
+2. **KPI grid.** The dashboard KPI cards (currently a fixed multi-column grid) collapse to a single column — or 2-up at most — on narrow screens. No card content clips.
+
+3. **Client row restructure.** The `ClientList` row currently lays name, figures, and chevron in one wide horizontal strip. Restructure so it stacks cleanly on mobile (name on top, key figures below) with no horizontal scroll.
+
+4. **Button hierarchy.** Audit primary / secondary / tertiary buttons across the main tabs. On mobile, primary actions should be full-width or clearly dominant; secondary actions shouldn't compete. No row of 4+ equal-weight buttons on a phone.
+
+5. **No horizontal scroll anywhere.** Walk every tab (Dashboard, Clients, ClientDetail tab strip, reports) at ~360px and confirm nothing overflows. Tables that genuinely can't shrink get a contained scroll region, not page-level overflow.
+
+This is a styling / layout pass. Do NOT change data shape, component responsibilities, or the EN/ES dictionary beyond any new layout-related strings (which still go in both languages per D-18).
+
+**Out of scope:**
+- IA changes (Chat 3)
+- Bulk actions (Chat 4)
+- Playwright fixes (Chat 6)
+- Any new features
+
+**Version bump:** minor → v0.9.0 (significant UI redesign, no breaking data change).
+
+**Deliverables:** per §1.
+
+---
+
 ## §4. Backlog (no prompts yet — promoted to §3 as queue empties)
 
-- **Chat 5 — Mobile/responsive redesign.** Biggest scope. Top bar (remove ⚓), KPI grid collapse, client row restructure, button hierarchy, no horizontal scroll anywhere. Goes after IA stabilizes (Chat 3) so we don't redesign components about to be deleted. Likely v0.9.0.
 - **Chat 6 — Playwright resync** (per Mauricio's instruction, after the app is fully working). Re-baseline selectors against the new IA, mobile breakpoints, and bulk-action UI. Likely no app version bump — tooling addendum.
 - **Future:** Stripe webhook for auto-`lastPaidAt`. Resend email integration (blocked on Porkbun→Cloudflare DNS). ToS/engagement-letter signature gate (O-14). Service plan in Strategy Plan tab (Q1 follow-up — currently in Monthly Statement, may want it surfaced in the planning view too).
 
@@ -262,6 +259,7 @@ Notes tone (in `translations.js`, both T.en and T.es):
 
 | Chat # | Version | Date | Title |
 |---|---|---|---|
+| 2 | v0.6.3 | 2026-05-16 | Service Plan UI trimmed to 4 fields (plan, start date, payment method, payment link URL); Pay Now / Pay Later buttons added to the Service Plan editor. `clientGoals` label moved to second person (EN + ES). +1 translation key (`payLater`), dictionary 1,146 → 1,147 per side. |
 | — | — | 2026-05-15 | SKILL.md: added Step 0 (WORKPLAN.md claim requirement). Renumbered existing Steps 0–5 → 1–6. Out-of-band docs fix, no app version bump. |
 | 1 | v0.6.2 | 2026-05-15 | Translations extracted to `src/translations.js`. D-1 amended (pure-data carve-out). D-29 locked. |
 | — | v0.6.1 | 2026-05-15 | Prefs + intake UX. (Pre-WORKPLAN era.) |
@@ -289,4 +287,4 @@ Notes tone (in `translations.js`, both T.en and T.es):
 
 *This file is itself versioned via git. If you're reading it and the §3 queue looks out of date or contradicts the CHANGELOG, the file may be stale — pull latest from `main` before relying on it.*
 
-*Last updated: 2026-05-15 — SKILL.md got a new Step 0 (WORKPLAN.md claim requirement) and existing Steps 0–5 renumbered to 1–6 (out-of-band docs fix, logged in §5). Queue unchanged: Chats 2, 3, 4 ready. Backlog: 5, 6.*
+*Last updated: 2026-05-16 — Chat 2 shipped v0.6.3 (Service Plan trim + Pay Now/Pay Later + Notes tone fix), logged in §5. Chat 5 (mobile redesign) promoted from backlog into the §3 queue. Queue now: Chats 3, 4, 5. Backlog: Chat 6.*
