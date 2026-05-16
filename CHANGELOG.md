@@ -2,6 +2,20 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.7.1 — 2026-05-16 (Patch — feature-add on top of v0.7.0)
+
+- **ADDED:** Public intake form now collects everything the old per-client `IntakeSection` did. New shared `IntakeFormBody` component renders personal block (firstName, lastName, email, phone, dob, address, **SSN**, recommendedBy, clientType, howHeard) + partner toggle with full P1/P2 personal info (phone, email, DOB, SSN per person) + full `IncomeSection` + `BillsSection` + `DebtSection` + `CustomAssetsSection` editor sub-components + Contact & Service block + Goals/Notes block (goals, short-term, mid-term, long-term, setbacks, general). Heavy form — accepts prospect-side abandonment risk in exchange for fully-loaded clients on Convert.
+- **ADDED:** SSN collection on the public intake URL. Plaintext through Supabase RLS — anon INSERT allowed, advisor-scoped SELECT/UPDATE/DELETE. See AGENT.md §3 threat-model note.
+- **ADDED:** "✏️ Edit Intake" button on `IntakeSubmissionsPage` detail panel. Opens new `IntakeSubmissionEditor` modal (`width={800}`) that hydrates the submission's `data` JSONB blob via `mig({...mk(), ...submission.data})` into a client-shaped object, reuses `IntakeFormBody` for the UI, and on Save writes back through new `gaUpdateIntakeData(id, data)` helper to `intake_submissions.data` — NOT the clients table. Useful for cleaning up sloppy prospect submissions before Convert. The per-client 📝 Intake tab stays DELETED (v0.7.0 IA decision preserved).
+- **ADDED:** Per-row "🗑️ Delete" button in detail panel for every status (pending, reviewed, converted, rejected). Confirmation modal then calls new `gaDeleteIntakeSubmission(id)` helper.
+- **ADDED:** Header-level "🧹 Clear converted ({n})" / "🧹 Clear rejected ({n})" bulk-delete buttons. Each opens a confirmation modal showing the count and calls new `gaDeleteIntakeSubmissionsByStatus(advisorId, status)` helper. Pending/reviewed submissions have no bulk path — single-delete only.
+- **ADDED:** 3 new Supabase helpers (`gaUpdateIntakeData`, `gaDeleteIntakeSubmission`, `gaDeleteIntakeSubmissionsByStatus`). RLS already covers them — no SQL migration needed.
+- **CHANGED:** `doConvert` rewritten. Old handler cherry-picked 8 flat fields; new handler spreads `{...sub.data}` through `mig()` so every intake field flows into the new client. Legacy v0.6.x flat-shape submissions still convert via a fallback branch that reconstructs `notes` from old flat fields (`d.goals`, `d.notes_text`, `d.preferredService`, `d.contactMethod`) and `incomeStreams` from old `d.monthlyNetIncome`. "Submitted via public intake on YYYY-MM-DD" appended to `client.notes.general` for traceability.
+- **ADDED:** 6 translation keys × 2 languages = 12 entries — `intakeEditBtn`, `intakeDeleteBtn`, `intakeConfirmDelete`, `intakeClearConverted`, `intakeClearRejected`, `intakeConfirmClear`. Dictionary 1,141 → **1,147 per side**, symmetry verified.
+- **RETAINED:** `IntakeSection` component definition (line 449) remains in the file but is fully unmounted (was mounted in v0.6.x, unmounted by v0.7.0, still unmounted in v0.7.1). Kept as reference implementation; candidate for future cleanup pass.
+- **BUILD MARKER:** `2026-05-16-v071-full-parity-intake-edit-delete`.
+- **CHANGED:** App.jsx 2,565 → 2,694 lines (~548 → ~571 KB). `src/translations.js` ~79 → ~81 KB. `tsc --noEmit` clean. No schema change — everything rides existing `intake_submissions.data` JSONB column.
+
 ## v0.7.0 — 2026-05-16 (Minor — IA breaking change)
 
 - **CHANGED:** Information architecture refactor. The standalone 📋 Forms tab is removed; the per-client 📝 Intake tab is removed; Investment Allocation + Emergency Fund are no longer in the client-facing intake — they now live exclusively in the advisor-only Monthly Statement.
