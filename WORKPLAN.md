@@ -145,7 +145,7 @@ Status legend:
 - `paused (chat-id: <claim>, since: ..., notes: ...)` — context-exhausted, needs resume
 - `done` — shipped and committed
 
-### Chat 3 — IA changes (delete Forms, merge Intake) [`queued`]
+### Chat 3 — IA changes (delete Forms, merge Intake) [`done`]
 
 **Files to upload:** `src/App.jsx`, `src/translations.js`.
 
@@ -248,9 +248,42 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 ---
 
+### Chat 6 — Playwright resync [`queued`]
+
+> **Dependency:** do not claim this chat until Chats 3 (IA changes), 4 (bulk actions), and 5 (mobile redesign) are all `done` and committed. The selectors and IA assumptions in the test suite will all shift once those three land; resyncing before any of them ships wastes the work.
+
+**Files to upload:**
+- `src/App.jsx` (latest from repo, post-Chats 3/4/5)
+- `tests/01-smoke.spec.ts`, `tests/02-calculators.spec.ts`, `tests/03-client-workflows.spec.ts`, `tests/04-translation.spec.ts`, `tests/05-persistence.spec.ts`
+- `utils/fixtures.ts`
+- `playwright.config.ts`
+
+**Files NOT to upload:** CHANGELOG.md, `translations.js` (unless a translation-related selector breaks).
+
+**Goal:** Re-baseline the Playwright suite against the post-Chat 5 app. Specifically: (a) IA changes from Chat 3 broke any selector that opened the per-client Intake tab, the standalone Forms tab, or expected "Intake Submissions" wording; (b) bulk actions from Chat 4 added new ClientList rows + a burger menu that the 03-client-workflows suite walks past; (c) mobile redesign from Chat 5 changed the ClientList row shape, KPI grid layout, and top-bar — anything pinning a specific desktop layout will fail on the new responsive primitives.
+
+**Spec:**
+
+1. **Catalog the failures first.** Run `rm -rf playwright/.auth && npm run test:e2e` against the current repo. Capture the failing selectors / wait-on conditions per spec file; group by root cause (IA / bulk-actions / mobile).
+
+2. **Fix selectors against the new app shape.** Prefer stable hooks the app already exposes — `data-cf` attributes from `Field` (line 157 in pre-Chat-3 App.jsx; the line will have moved by Chat 5), `getByTitle` on the language toggle, accessible names on primary buttons. Avoid pinning to specific text where translation could shift it; use regex `/Intake.*Form|Forms/i` patterns where the rename could bite.
+
+3. **Cover the new surfaces.** Add minimal coverage for: the bulk-select checkbox, the new burger menu (selection-count gating), the bulk Archive/Delete confirmation flows, and the Investment Allocation / Emergency Fund sub-sections in the Monthly Statement tab.
+
+4. **Re-enable WebKit if Codespace allows it.** Mauricio to run `sudo npx playwright install-deps webkit` once at the start of this chat. If the deps install successfully, uncomment the webkit project block in `playwright.config.ts` and rebaseline against three browsers.
+
+5. **Update AGENT.md §13** ("Playwright end-to-end testing") with the new known-issues list and the post-resync passing count.
+
+**Out of scope:** any new app features, any new translation keys, any architectural changes to App.jsx, any test framework upgrades (stay on Playwright current major).
+
+**Version bump:** none (test-harness only, tooling addendum per §1 policy).
+
+**Deliverables:** per §1, but `App.jsx` and `translations.js` are upload-only — they should NOT come back modified unless the chat surfaces a real app bug while debugging.
+
+---
+
 ## §4. Backlog (no prompts yet — promoted to §3 as queue empties)
 
-- **Chat 6 — Playwright resync** (per Mauricio's instruction, after the app is fully working). Re-baseline selectors against the new IA, mobile breakpoints, and bulk-action UI. Likely no app version bump — tooling addendum.
 - **Future:** Stripe webhook for auto-`lastPaidAt`. Resend email integration (blocked on Porkbun→Cloudflare DNS). ToS/engagement-letter signature gate (O-14). Service plan in Strategy Plan tab (Q1 follow-up — currently in Monthly Statement, may want it surfaced in the planning view too).
 
 ---
@@ -259,6 +292,7 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 | Chat # | Version | Date | Title |
 |---|---|---|---|
+| 3 | v0.7.0 | 2026-05-16 | IA refactor: deleted standalone Forms tab + `FormsPage` + orphan `dlTmpl`. Renamed Intake Submissions → **Intake Forms** (EN) / **Formularios de Admisión** (ES). Removed per-client Intake tab from `ClientDetail`; `IntakeSection` definition retained for future reuse. Moved Investment Allocation + Emergency Fund out of intake (`SavingsSection` call dropped from `IntakeSection`); they remain advisor-only inside the Monthly Statement via `FullMonthView` → `SavingsSection`. Redirected post-convert and post-addClient flows to land on `monthly` instead of the deleted `intake` tab. Deleted 6 orphan translation keys × 2 langs (`forms`, `formsTitle`, `formsDesc`, `downloadCSVTemplate`, `howToUseColon`, `newClientOnboarding`); dictionary 1,147 → 1,141 per side, symmetry intact. |
 | 2 | v0.6.3 | 2026-05-16 | Service Plan UI trimmed to 4 fields (plan, start date, payment method, payment link URL); Pay Now / Pay Later buttons added to the Service Plan editor. `clientGoals` label moved to second person (EN + ES). +1 translation key (`payLater`), dictionary 1,146 → 1,147 per side. |
 | — | — | 2026-05-15 | SKILL.md: added Step 0 (WORKPLAN.md claim requirement). Renumbered existing Steps 0–5 → 1–6. Out-of-band docs fix, no app version bump. |
 | 1 | v0.6.2 | 2026-05-15 | Translations extracted to `src/translations.js`. D-1 amended (pure-data carve-out). D-29 locked. |
@@ -287,4 +321,4 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 *This file is itself versioned via git. If you're reading it and the §3 queue looks out of date or contradicts the CHANGELOG, the file may be stale — pull latest from `main` before relying on it.*
 
-*Last updated: 2026-05-16 — Chat 2 shipped v0.6.3 (Service Plan trim + Pay Now/Pay Later + Notes tone fix), logged in §5. Chat 5 (mobile redesign) promoted from backlog into the §3 queue. Queue now: Chats 3, 4, 5. Backlog: Chat 6.*
+*Last updated: 2026-05-16 — Chat 3 shipped v0.7.0 (IA refactor — Forms tab deleted, per-client Intake tab merged into MonthlyTab, Investment Allocation + Emergency Fund moved to advisor-only Monthly Statement). Chat 6 (Playwright resync) promoted from backlog into §3 queue with explicit dependency on Chats 3/4/5. Queue now: Chats 4, 5, 6. Backlog: "Future" only.*
