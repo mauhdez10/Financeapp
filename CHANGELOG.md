@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.8.0 — 2026-05-16
+
+### Added — Multi-select & bulk actions on the Clients tab
+- Each client row now has a selection checkbox. Clicking the row body still
+  opens the client; only the checkbox toggles selection.
+- New selection bar: "select all visible" checkbox, live selected-count, Clear.
+- The Clients-tab menu gains five bulk operations: Archive Selected, Restore
+  Selected, Delete Selected, Split, and Join.
+  - Archive/Restore/Delete act on the whole selection and are disabled when
+    nothing is selected; Restore requires every selected client to be archived.
+  - Each opens a confirmation dialog listing affected clients by name; bulk
+    Delete requires typing DELETE.
+  - Split and Join open searchable pickers and reuse the existing Split/Join
+    screens — they are single-client operations and ignore the selection.
+- 27 new English/Spanish translation strings (1,158 → 1,185 keys per language).
+
+### Changed
+- Clients list component rewritten to support multi-select.
+- Shared menu component gained disabled-item support.
+
+No database changes. No breaking changes.
+Build marker: 2026-05-16-v080-bulk-client-actions
+
 ## v0.7.3 — 2026-05-16 (Patch — intake form bundle)
 
 - **FIXED:** Browser autofill bug — advisor's own Gmail and saved-password values were bleeding into the public intake form when opened in the advisor's logged-in Chrome. Root cause: `autoComplete="email"` triggered Chrome autofill; `SSNInput`'s `type="password"` triggered saved-password autofill. Every input in `IntakeFormBody` now has `autoComplete="off"` + `data-lpignore="true"` + `data-1p-ignore="true"` + unique app-specific `name` attributes. SSN fields (main, P1, P2) switched from `<SSNInput type="password">` to inline `<input type="text">` with inline `fmtSSN` helper (same auto-format-to-`XXX-XX-XXXX` behavior). No Show/Hide toggle for the prospect (they're entering their own SSN on their own device — masking is unnecessary).
