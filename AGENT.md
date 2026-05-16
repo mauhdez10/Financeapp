@@ -1,3 +1,4 @@
+> **Workflow:** This project uses `WORKPLAN.md` (in repo root) as the operational source of truth for working with Claude. Every chat MUST read `WORKPLAN.md` at step 0 — before reading this file — and follow the preferences and queue it defines. If you are a Claude chat and `WORKPLAN.md` is not in your project knowledge, STOP and ask Mauricio to add it.
 # AGENT.md — Golden Anchor Finance Project
 
 > **Read this file at the start of every conversation.** It is the source of truth for what this project is, what's been decided, what's working, and what to avoid touching. Do not propose changes that contradict the Locked Decisions section below without explicit confirmation from the user.
