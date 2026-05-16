@@ -2,6 +2,14 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.7.2 — 2026-05-16 (Patch — UI polish on top of v0.7.1)
+
+- **FIXED:** SSN fields in the public intake form (main, P1, P2) now use the existing `SSNInput` component instead of a raw `<input>`. Auto-formats to `XXX-XX-XXXX` as the user types, masked by default with a Show/Hide toggle. The `*` on the main SSN label was misleading — the `submit()` validator never enforced it, so dropped.
+- **FIXED:** Reused editor sub-components (`IncomeSection`, `BillsSection`, `DebtSection`, `CustomAssetsSection`) inside the public intake form now render with the same gold/blue dark theme as the CONTACT & SERVICE section. Root cause: `ThemeCtx.Provider` value was a `{dark, light, isDark, settings}` wrapper instead of a flat theme object — `useTh()` returns the context value directly, so the reused editors got `th.bg = undefined` and fell back to browser defaults. Replaced with a flat object mirroring the local `TH` plus the extra keys (`nav`, `navBorder`, `sideText`, `sideMuted`) the style helpers consume.
+- **FIXED:** Sort-arrow spacing in the `SA` component bumped from `marginLeft:2` to `marginLeft:6`. Visible space between column label and ↑/↓/↕ arrow — affects every sortable table app-wide.
+- **BUILD MARKER:** `2026-05-16-v072-intake-polish`.
+- **CHANGED:** App.jsx 2,694 → 2,696 lines. No translation changes (translations.js unchanged from v0.7.1). No schema change. `tsc --noEmit` clean.
+
 ## v0.7.1 — 2026-05-16 (Patch — feature-add on top of v0.7.0)
 
 - **ADDED:** Public intake form now collects everything the old per-client `IntakeSection` did. New shared `IntakeFormBody` component renders personal block (firstName, lastName, email, phone, dob, address, **SSN**, recommendedBy, clientType, howHeard) + partner toggle with full P1/P2 personal info (phone, email, DOB, SSN per person) + full `IncomeSection` + `BillsSection` + `DebtSection` + `CustomAssetsSection` editor sub-components + Contact & Service block + Goals/Notes block (goals, short-term, mid-term, long-term, setbacks, general). Heavy form — accepts prospect-side abandonment risk in exchange for fully-loaded clients on Convert.
