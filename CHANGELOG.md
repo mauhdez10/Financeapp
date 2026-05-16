@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.7.0 — 2026-05-16 (Minor — IA breaking change)
+
+- **CHANGED:** Information architecture refactor. The standalone 📋 Forms tab is removed; the per-client 📝 Intake tab is removed; Investment Allocation + Emergency Fund are no longer in the client-facing intake — they now live exclusively in the advisor-only Monthly Statement.
+- **CHANGED:** "Intake Submissions" renamed → **Intake Forms** (EN) / **Formularios de Admisión** (ES). Page header, nav label, and the `intakeShareUrlHelp` text updated in both languages. The component is still named `IntakeSubmissionsPage` internally.
+- **CHANGED:** Post-Convert and post-`addClient` flows now land on the Monthly Statement tab (previously they landed on the now-deleted Intake tab).
+- **REMOVED:** `FormsPage` component, orphan `dlTmpl` CSV-template generator, `{id:"forms"}` NAV entry, `nav==="forms"` render branch.
+- **REMOVED:** `{id:"intake"}` tab entry + `tab==="intake"` render branch from `ClientDetail`.
+- **REMOVED:** `SavingsSection` call inside `IntakeSection`. `SavingsSection` still renders in `MonthlyTab` via `FullMonthView` (current month tabbed view + full-page report + historical month view) and in the Complete Report, unchanged.
+- **REMOVED:** 6 orphan translation keys × 2 languages = 12 entries (`forms`, `formsTitle`, `formsDesc`, `downloadCSVTemplate`, `howToUseColon`, `newClientOnboarding`). Dictionary 1,147 → **1,141 per side**, symmetry verified.
+- **RETAINED:** `IntakeSection` component definition (currently unmounted in v0.7.0 — Mauricio's plan is to wire it into the `IntakeSubmissionsPage` detail view in a future chat). This is intentional; not a candidate for cleanup.
+- **NOT MIGRATED:** `client.intakeData`. Field does not exist anywhere in App.jsx (no read, no write, no migration in `mig()`); intake had always written to the same root client fields every other editor uses, so there's nothing to discard.
+- **BUILD MARKER:** `2026-05-16-v070-ia-refactor-intake-forms`.
+- **WHY:** Mauricio's audit: the standalone Forms tab and per-client Intake tab were duplicative of capabilities already covered by the public intake URL (`/intake?advisor=...`) + the global Intake Forms surface + the Monthly Statement editor. Asking clients about Investment Allocation in intake was scope-wrong — those fields belong in the advisor's planning workflow, not the client's data-gathering form.
+- **CHANGED:** App.jsx 2,568 → 2,565 lines. `src/translations.js` symmetry intact.
+
+## v0.6.3 — 2026-05-16 (Patch)
+- **CHANGED:** Service Plan editor (Notes & Goals tab) trimmed from 9 fields to 4 — kept Service Plan, Start Date, Payment Method, Payment Link URL; removed Category, Status, Next Charge Date, Last Paid Date, Service Notes. Existing client data for the removed fields is left in place — no migration.
+- **ADDED:** Pay Now / Pay Later buttons in the Service Plan editor, shown when Payment Method is "Stripe link" and a Stripe link is configured for that plan. Pay Now opens the Stripe checkout in a new tab; Pay Later stamps a dated "[Pay Later — date]" marker into the client's General Notes.
+- **CHANGED:** Notes & Goals "client goals" label moved to second person ("What You Want to Achieve" / "Qué Quieres Lograr").
+- **CHANGED:** `settings` is now passed to the Notes / Service Plan UI so the Pay buttons can read the configured Stripe links.
+- **TRANSLATIONS:** added `payLater` to EN + ES (1,146 → 1,147 keys per side).
+- **CHANGED:** build marker → `2026-05-16-v063-service-plan-trim-notes-tone`.
+
 ---
 # v0.6.2 (Patch) — 2026-05-15
 
