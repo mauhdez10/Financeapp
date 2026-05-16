@@ -136,7 +136,7 @@ const getProperties=c=>c.properties?.length?c.properties:(c.customAssets||[]);co
 const totalL=c=>((c.loans||[]).reduce((s,l)=>s+(+l.balance||0),0))+((c.cards||[]).reduce((s,cc)=>s+(+cc.balance||0),0));
 const liquidA=c=>(c.accounts||[]).filter(a=>ACCT_META[a.type]?.liquid).reduce((s,a)=>s+(+a.value||0),0);
 const useSrt=(items,dk,dd="asc")=>{const[sk,setSK]=useState(dk);const[sd,setSD]=useState(dd);const tgl=k=>{if(k===sk)setSD(d=>d==="asc"?"desc":"asc");else{setSK(k);setSD("asc");}};const srt=[...items].sort((a,b)=>{const av=a[sk],bv=b[sk];const r=typeof av==="string"?(av||"").localeCompare(bv||""):(+av||0)-(+bv||0);return sd==="asc"?r:-r;});return{sorted:srt,sortK:sk,sortD:sd,toggle:tgl};};
-const SA=({col,sortK,sortD})=><span style={{fontSize:9,opacity:0.5,marginLeft:2}}>{sortK===col?(sortD==="asc"?"↑":"↓"):"↕"}</span>;
+const SA=({col,sortK,sortD})=><span style={{fontSize:9,opacity:0.5,marginLeft:6}}>{sortK===col?(sortD==="asc"?"↑":"↓"):"↕"}</span>;
 
 /* ── CSV ─────────────────────────────────────────────────────────────────── */
 const esc=v=>{const s=String(v??'');return s.includes(',')||s.includes('"')?`"${s.replace(/"/g,'""')}"`:s;};
@@ -2177,7 +2177,7 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-16-v071-full-parity-intake-edit-delete";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-16-v072-intake-polish";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
@@ -2218,7 +2218,9 @@ function PublicIntake(){
     const res=await gaSubmitIntake(advisorId,lang,payload);
     if(res.ok){setSubmitted(true);}else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
   };
-  const synthTheme={dark:TH,light:TH,isDark:true,settings:{accent:GOLD,darkAccent:GOLD,lightAccent:GOLD}};
+  // v0.7.2 — synthetic theme MUST be a flat theme object (useTh returns ctx value directly).
+  // Mirror the TH local plus the extra keys mINP/mTH/mCARD/mTD helpers read (nav/navBorder/sideText/sideMuted).
+  const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:TH.accent,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:TH.blue};
   return<ThemeCtx.Provider value={synthTheme}>
     <div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"system-ui,sans-serif",padding:"20px 14px",lineHeight:1.45,WebkitTextSizeAdjust:"100%"}}>
       <div style={{maxWidth:760,margin:"0 auto"}}>
@@ -2269,7 +2271,7 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
     </div>
     <div style={FW}><label style={LBL}>{t.address}</label><input style={INP} value={draft.address} onChange={up("address")} autoComplete="street-address"/></div>
     <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.social} *</label><input style={INP} value={draft.social||""} onChange={up("social")} placeholder="XXX-XX-XXXX" inputMode="numeric"/></div>
+      <div style={FW}><label style={LBL}>{t.social}</label><SSNInput value={draft.social||""} onChange={up("social")} t={t}/></div>
       <div style={FW}><label style={LBL}>{t.recommendedBy}</label><input style={INP} value={draft.recommendedBy||""} onChange={up("recommendedBy")}/></div>
     </div>
     <div style={ROW2}>
@@ -2294,7 +2296,7 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
       </div>
       <div style={ROW2}>
         <div style={FW}><label style={LBL}>Date of Birth</label><input type="date" style={INP} value={draft.p1Dob||""} onChange={up("p1Dob")}/></div>
-        <div style={FW}><label style={LBL}>SSN</label><input style={INP} value={draft.p1Social||""} onChange={up("p1Social")} placeholder="XXX-XX-XXXX" inputMode="numeric"/></div>
+        <div style={FW}><label style={LBL}>SSN</label><SSNInput value={draft.p1Social||""} onChange={up("p1Social")} t={t}/></div>
       </div>
       <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:12}}>👤 {draft.partnerFirst||"Person 2"} — Personal Info</div>
       <div style={ROW2}>
@@ -2303,7 +2305,7 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
       </div>
       <div style={ROW2}>
         <div style={FW}><label style={LBL}>Date of Birth</label><input type="date" style={INP} value={draft.p2Dob||""} onChange={up("p2Dob")}/></div>
-        <div style={FW}><label style={LBL}>SSN</label><input style={INP} value={draft.p2Social||""} onChange={up("p2Social")} placeholder="XXX-XX-XXXX" inputMode="numeric"/></div>
+        <div style={FW}><label style={LBL}>SSN</label><SSNInput value={draft.p2Social||""} onChange={up("p2Social")} t={t}/></div>
       </div>
     </>}
     <Div/>

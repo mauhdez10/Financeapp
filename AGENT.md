@@ -35,36 +35,43 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.7.1** — established 2026-05-16 (Patch — feature-add on top of v0.7.0 IA refactor). Full-parity public intake form + Edit/Delete on submissions. No schema change, no migration — the existing `intake_submissions.data` JSONB blob simply carries more keys.
+**v0.7.2** — established 2026-05-16 (Patch). Three small UI fixes on top of v0.7.1's full-parity public intake form. No schema change, no translation keys, no helpers added.
 
-1. **Public intake form now collects everything the old per-client `IntakeSection` did.** The `PublicIntake` body was rewritten to use a shared `IntakeFormBody` component that owns full client-shaped local state (hydrated via `mk()`) and reuses every editor sub-component the per-client view used: `IncomeSection`, `BillsSection`, `DebtSection`, `CustomAssetsSection`. Personal block adds SSN (`social`), `recommendedBy`, `clientType`, `howHeard`, partner toggle with full P1/P2 personal info (phone, email, DOB, SSN per person). Goals/Notes block adds short/mid/long-term, setbacks, and general notes textareas in addition to the existing `goals`. On Submit, the full client-shaped state is sent through the existing `gaSubmitIntake(advisorId, lang, payload)` helper unchanged; transient fields (`id`, `archived`, `hideNumbers`, `monthSnapshots`, etc.) are stripped before POST so the JSONB blob stays clean. **The intake form is now significantly heavier; prospect-side abandonment risk is real and accepted** (Mauricio's choice in the chat: prefers a fully-loaded client over a faster-to-fill form).
+1. **SSN field auto-formats to `XXX-XX-XXXX` and is no longer marked required.** All three SSN inputs in `IntakeFormBody` (main person, P1 SSN, P2 SSN) now use the existing `SSNInput` component instead of a raw `<input>`. `SSNInput` strips non-digits, formats as `XXX-XX-XXXX` on every keystroke, masks as `password` by default with a Show/Hide toggle, and limits to 11 chars. The `*` on the main SSN label is dropped (the form's `submit()` validator never enforced it — the asterisk was misleading copy).
 
-2. **SSN is collected over the public URL** (Mauricio's choice). The field is plaintext through Supabase's `intake_submissions` table, protected by the existing RLS policy that grants `INSERT` to anon but restricts `SELECT/UPDATE/DELETE` to `auth.uid() = advisor_id`. No client-side encryption; treat the JSONB blob as sensitive PII for compliance purposes (FL0215 license implications: protect at rest and in transit). The Supabase storage layer already encrypts at rest; transport is TLS via the official Supabase JS client.
+2. **Public-intake theme now applies to the reused editor sub-components.** `ThemeCtx.Provider` in `PublicIntake` was previously passing a `{dark, light, isDark, settings}` wrapper object — but `useTh()` returns the context value directly, so `IncomeSection` / `BillsSection` / `DebtSection` / `CustomAssetsSection` (all of which call `const th = useTh()` and read `th.bg`, `th.accent`, `th.muted`, etc.) saw a malformed theme and fell back to default styling. Replaced with a flat theme object that mirrors the local `TH` plus the extra keys (`nav`, `navBorder`, `sideText`, `sideMuted`) that the style helpers (`mINP`, `mTH`, `mCARD`, `mTD`) consume. Net visual effect: DEBT, PROPERTIES, INCOME, BILLS sections now render with gold accents, blue secondary buttons, and the dark navy background — same look as the CONTACT & SERVICE section.
 
-3. **`IntakeSubmissionsPage` detail panel gets two new actions: ✏️ Edit Intake and 🗑️ Delete.** Edit Intake mounts a new `IntakeSubmissionEditor` component (modal, `width={800}`) that hydrates the submission's `data` JSONB blob via `mig({...mk(), ...submission.data})` into a client-shaped object, reuses `IntakeFormBody` for the UI, and on Save calls a new `gaUpdateIntakeData(id, data)` helper that writes the modified blob back to `intake_submissions.data` — **NOT** to the `clients` table. The per-client 📝 Intake tab stays DELETED (v0.7.0 IA decision preserved). Delete opens a confirmation modal and on confirm calls `gaDeleteIntakeSubmission(id)` which `DELETE`s the row from `intake_submissions`; RLS scopes deletion to the advisor's own rows.
+3. **Sort-arrow spacing increased.** The `SA` component (renders `↑` / `↓` / `↕` next to sortable column headers like Card, Owed By, APR, Balance, Avail Credit, Min Pay, Due Day, Payoff) had `marginLeft:2`, which left arrows visually glued to labels. Bumped to `marginLeft:6`. Affects every sortable table column app-wide, not just the intake form — minor but consistent improvement.
 
-4. **Header-level bulk-clear buttons.** Two new "🧹 Clear converted ({n})" / "🧹 Clear rejected ({n})" buttons appear in the page header row when submissions of those statuses exist. Each opens a confirmation modal showing the count and calls `gaDeleteIntakeSubmissionsByStatus(advisorId, status)` which `DELETE`s all matching rows in one round-trip. Useful for cleaning up the queue after conversions accumulate. Pending and reviewed submissions can only be deleted individually (no bulk path — preserves the safety property that pending work isn't accidentally lost).
+No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-28, D-29 preserved. `IntakeSection` remains unmounted (third release in a row — candidate for explicit cleanup in a future minor).
 
-5. **Three new Supabase helpers added** after `gaUpdateIntakeStatus` (line 18 region): `gaUpdateIntakeData(id, data)`, `gaDeleteIntakeSubmission(id)`, `gaDeleteIntakeSubmissionsByStatus(advisorId, status)`. All three respect the existing RLS policy; no SQL migration needed.
-
-6. **`doConvert` rewritten to consume the full data shape.** The old handler manually cherry-picked 8 flat fields (`firstName`, `lastName`, `email`, `phone`, `address`, `dob`, `partnerFirst`, `partnerLast`) and reconstructed a client object. The new handler spreads `{...sub.data}` and runs the result through `mig()`, which defaults every missing array/object to its standard empty value. Legacy v0.6.x flat submissions still convert correctly via a fallback branch that reconstructs `notes` from old flat fields (`d.goals`, `d.notes_text`, `d.preferredService`, `d.contactMethod`) and `incomeStreams` from old `d.monthlyNetIncome`. A "Submitted via public intake on YYYY-MM-DD" line is appended to `client.notes.general` for traceability. Net effect: post-Convert, the new client opens on Monthly Statement with every field the prospect filled already populated.
-
-7. **Six new translation keys × 2 languages = 12 entries.** Added to both `T.en` and `T.es`: `intakeEditBtn`, `intakeDeleteBtn`, `intakeConfirmDelete`, `intakeClearConverted`, `intakeClearRejected`, `intakeConfirmClear`. Dictionary 1,141 → **1,147 per side**, symmetry verified (`Object.keys(T.en).length === Object.keys(T.es).length`, zero asymmetric keys).
-
-No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-28, D-29 preserved. The `IntakeSection` component definition (retained but unmounted in v0.7.0) **remains unmounted in v0.7.1** — Mauricio chose to keep the per-client Intake tab deleted, and the new per-submission editor uses `IntakeFormBody` instead of the original `IntakeSection`. `IntakeSection` is now a fully orphaned component (definition only, never instantiated); explicit decision is to keep it for now as a reference implementation and revisit in a future cleanup pass.
-
-**Build marker:** `2026-05-16-v071-full-parity-intake-edit-delete`. App.jsx 2,565 → 2,694 lines (~571 KB, up from ~548 KB). `src/translations.js` ~81 KB (up from ~79 KB).
+**Build marker:** `2026-05-16-v072-intake-polish`. App.jsx 2,694 → 2,696 lines (~571 → ~571 KB; net +2 lines from the synth-theme expansion). `src/translations.js` unchanged at 1,147 keys per side.
 
 **Out-of-app actions required before this build runs in production:**
-- Replace `src/App.jsx` and `src/translations.js`.
+- Replace `src/App.jsx` only. `src/translations.js` is unchanged from v0.7.1 — no need to re-upload unless your local copy drifted.
 - Replace `AGENT.md` and `WORKPLAN.md` at repo root.
-- Add a CHANGELOG.md entry for v0.7.1 (see chat delivery for the Option A web-editor instructions).
+- Add a CHANGELOG.md entry for v0.7.2 (see chat delivery for Option A instructions).
 - Commit + push. Vercel auto-deploys.
-- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-16-v071-full-parity-intake-edit-delete"`.
-- Spot-check: (a) open the public intake URL on a fresh browser — confirm it shows the full personal section (SSN field present), partner toggle, income/bills/debt/custom-assets editors, contact section, goals/notes textareas; (b) submit a test intake with several income streams, a credit card, and some bills filled in; (c) in advisor view, open the new submission and click "✏️ Edit Intake" — confirm the editor modal opens, lets you change fields, and saves back to Supabase (the next reload should show the edits persisted); (d) click "🗑️ Delete" on a test submission and confirm it disappears from the list; (e) accumulate two converted submissions and click "🧹 Clear converted (2)" — confirm bulk delete works; (f) click "↪ Convert to Client" on a fully-filled submission — confirm the new client opens on Monthly Statement with income/bills/debt/assets/notes all populated.
-- Playwright: the v0.7.0 expected-failures in `03-client-workflows.spec.ts` (Intake tab selectors) and `04-translation.spec.ts` ("Intake Submissions" string check) still apply; v0.7.1 doesn't add new expected failures. Chat 6 will fix all in one batch.
+- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-16-v072-intake-polish"`.
+- Spot-check: (a) open public intake URL in incognito — confirm DEBT/PROPERTIES/INCOME/BILLS section headers are gold and buttons are blue/gold (matching CONTACT & SERVICE); (b) type 9 digits into SSN field — should display as `123-45-6789` with password masking by default and a Show button; (c) confirm SSN can be left blank without blocking Submit; (d) confirm sort arrows on the DEBT card columns have visible space between label and arrow.
 
-**Threat model note (SSN handling):** the public intake form now collects SSN over an unauthenticated `/intake?advisor=<uuid>` URL. Mitigations in place: HTTPS via Vercel/Cloudflare, Supabase server-side encryption at rest, Supabase RLS preventing read-access to anyone but the row owner, no logging of payload contents in app code. Residual risks: (a) anyone with the advisor's UUID can submit fake intakes containing arbitrary "SSNs" — these land as pending with no validation; advisor should treat the value as claimed-not-verified until verified out-of-band; (b) browser autofill may persist values in the prospect's password manager; (c) advisor's session in the app shows the full SSN in cleartext via the existing SSN-display logic. Mitigations Mauricio should consider in future versions: a server-side validation of SSN format, an audit log of intake reads, optional SSN masking in IntakeSubmissionEditor with reveal-on-click.
+---
+
+**Prior version (v0.7.1, 2026-05-16)** — Patch — feature-add on top of v0.7.0 IA refactor. Full-parity public intake form + Edit/Delete on submissions. No schema change.
+
+1. **Public intake form now collects everything the old per-client `IntakeSection` did** via a new shared `IntakeFormBody` component (personal + SSN + partner P1/P2 personal info + full Income/Bills/Debt/CustomAssets editors + Contact & Service + 6 Goals/Notes textareas). State is hydrated via `mk()` and posted through existing `gaSubmitIntake` unchanged. ThemeCtx.Provider wraps the form for dark theme.
+
+2. **SSN is collected over the public URL** — plaintext through Supabase RLS (anon INSERT, advisor-only SELECT/UPDATE/DELETE). See v0.7.1 threat model note for residual risks.
+
+3. **"✏️ Edit Intake" + "🗑️ Delete" actions on `IntakeSubmissionsPage`.** New `IntakeSubmissionEditor` modal hydrates `submission.data` via `mig({...mk(), ...submission.data})`, reuses `IntakeFormBody`, writes back via new `gaUpdateIntakeData(id, data)` helper. Per-row Delete + header-level "Clear converted ({n})" / "Clear rejected ({n})" bulk buttons.
+
+4. **3 new Supabase helpers:** `gaUpdateIntakeData`, `gaDeleteIntakeSubmission`, `gaDeleteIntakeSubmissionsByStatus`. No SQL migration.
+
+5. **`doConvert` rewritten** — spreads `{...sub.data}` through `mig()` so every intake field flows into the new client. Legacy v0.6.x flat-shape fallback preserved.
+
+6. **+6 translation keys × 2 langs** — `intakeEditBtn`, `intakeDeleteBtn`, `intakeConfirmDelete`, `intakeClearConverted`, `intakeClearRejected`, `intakeConfirmClear`. Dictionary 1,141 → 1,147 per side.
+
+**Build marker:** `2026-05-16-v071-full-parity-intake-edit-delete`. App.jsx 2,565 → 2,694 lines.
 
 ---
 
@@ -767,7 +774,9 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-16 — v0.7.1 (Patch — full-parity public intake form, advisor-side Edit Intake button, single-row + bulk Delete on submissions, 3 new Supabase helpers, 6 new translation keys × 2 langs). Build marker `2026-05-16-v071-full-parity-intake-edit-delete`. Dictionary 1,141 → 1,147 per side, symmetry intact. App.jsx 2,565 → 2,694 lines. No SQL migration. No new locked decisions, no closed open decisions. No new pitfalls.*
+*Last updated: 2026-05-16 — v0.7.2 (Patch — three UI polish fixes on top of v0.7.1: SSN field auto-formats and is no longer required, public-intake theme now applies to reused editor sub-components, sort arrow spacing). Build marker `2026-05-16-v072-intake-polish`. No translation changes. App.jsx 2,694 → 2,696 lines. No SQL migration. No new locked decisions, no closed open decisions. No new pitfalls.*
+
+*Prior update: 2026-05-16 — v0.7.1 (Patch — full-parity public intake form, advisor-side Edit Intake button, single-row + bulk Delete on submissions, 3 new Supabase helpers, 6 new translation keys × 2 langs). Build marker `2026-05-16-v071-full-parity-intake-edit-delete`.*
 
 *Prior update: 2026-05-16 — v0.7.0 (Minor — IA refactor). Build marker 2026-05-16-v070-ia-refactor-intake-forms.*
 
