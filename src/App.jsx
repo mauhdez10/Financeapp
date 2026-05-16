@@ -16,6 +16,9 @@ async function gaSaveSettings(userId,settingsObj){if(!supabase||!userId)return;c
 async function gaLoadIntakeSubmissions(advisorId){if(!supabase||!advisorId)return[];try{const{data,error}=await supabase.from("intake_submissions").select("*").eq("advisor_id",advisorId).order("created_at",{ascending:false}).limit(200);if(error){console.error("[GA] load intake subs error",error);return[];}return data||[];}catch(e){console.error("[GA] load intake subs exception",e);return[];}}
 async function gaSubmitIntake(advisorId,lang,formData){if(!supabase||!advisorId)return{ok:false,error:"no-supabase"};try{const token="tok_"+Math.random().toString(36).slice(2,14)+Date.now().toString(36);const payload={advisor_id:advisorId,submission_token:token,lang:lang||"en",status:"pending",data:formData,user_agent:typeof navigator!=="undefined"?String(navigator.userAgent||"").slice(0,200):""};const{error}=await supabase.from("intake_submissions").insert(payload);if(error){console.error("[GA] intake submit error",error);return{ok:false,error:error.message};}return{ok:true,token};}catch(e){console.error("[GA] intake submit exception",e);return{ok:false,error:String(e&&e.message||e)};}}
 async function gaUpdateIntakeStatus(id,patch){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_submissions").update(patch).eq("id",id);if(error){console.error("[GA] intake update error",error);return false;}return true;}catch(e){console.error("[GA] intake update exception",e);return false;}}
+async function gaUpdateIntakeData(id,data){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_submissions").update({data}).eq("id",id);if(error){console.error("[GA] intake data update error",error);return false;}return true;}catch(e){console.error("[GA] intake data update exception",e);return false;}}
+async function gaDeleteIntakeSubmission(id){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_submissions").delete().eq("id",id);if(error){console.error("[GA] intake delete error",error);return false;}return true;}catch(e){console.error("[GA] intake delete exception",e);return false;}}
+async function gaDeleteIntakeSubmissionsByStatus(advisorId,status){if(!supabase||!advisorId||!status)return 0;try{const{data,error}=await supabase.from("intake_submissions").delete().eq("advisor_id",advisorId).eq("status",status).select("id");if(error){console.error("[GA] intake bulk delete error",error);return 0;}return (data||[]).length;}catch(e){console.error("[GA] intake bulk delete exception",e);return 0;}}
 async function gaMigrateLocalStorage(userId){if(!supabase||!userId)return false;if(localStorage.getItem("ga_migrated_to_supabase")==="1")return false;try{const lsClients=localStorage.getItem("ga_v3");const lsSettings=localStorage.getItem("ga_settings");const existing=await gaLoadClients(userId);if((existing||[]).length>0){localStorage.setItem("ga_migrated_to_supabase","1");return false;}let allOk=true;let savedCount=0;let totalCount=0;if(lsClients){const arr=JSON.parse(lsClients);if(Array.isArray(arr)&&arr.length>0){totalCount=arr.length;for(const c of arr){const ok=await gaSaveClient(userId,c);if(ok)savedCount++;else allOk=false;}}}if(lsSettings){try{const s=JSON.parse(lsSettings);await gaSaveSettings(userId,s);}catch(se){console.error("[GA] settings migrate error",se);}}if(allOk&&totalCount===savedCount){localStorage.setItem("ga_migrated_to_supabase","1");console.log(`[GA] migration complete: ${savedCount}/${totalCount} clients migrated`);return true;}else{console.error(`[GA] migration incomplete: ${savedCount}/${totalCount} clients saved — flag NOT set, will retry next login`);return false;}}catch(e){console.error("[GA] migration error",e);return false;}}
 
 
@@ -2174,21 +2177,19 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-16-v070-ia-refactor-intake-forms";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
-
-/* ── PUBLIC INTAKE (Tier-3, v0.6.0) ─────────────────────────────────────── */
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-16-v071-full-parity-intake-edit-delete";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+/* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
   const advisorId=urlParams.get("advisor")||"";
   const initialLang=(urlParams.get("lang")||"en").toLowerCase()==="es"?"es":"en";
   const[lang,setLang]=useState(initialLang);
   const t=T[lang]||T.en;
-  const[f,setF]=useState({firstName:"",lastName:"",email:"",phone:"",dob:"",address:"",hasPartner:false,partnerFirst:"",partnerLast:"",partnerEmail:"",monthlyNetIncome:"",totalDebt:"",monthlyDebtPmts:"",goals:"",howHeard:"",preferredService:"",notes:"",contactMethod:"email"});
+  const[draft,setDraft]=useState(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email"}));
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
   const[err,setErr]=useState("");
-  const u=k=>e=>setF(p=>({...p,[k]:e&&e.target?e.target.value:e}));
-  const TH={bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,inp:"#0F1E33",inpBorder:"#1F2C44",cardBorder:"#1F2C44"};
+  const TH={bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6"};
   useEffect(()=>{if(typeof document!=="undefined"){document.documentElement.style.background=TH.bg;document.body.style.background=TH.bg;document.body.style.margin="0";}},[]);
   if(!advisorId){
     return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}>
@@ -2207,66 +2208,138 @@ function PublicIntake(){
   }
   const submit=async()=>{
     setErr("");
-    if(!f.firstName.trim()){setErr(t.intakeFirstReq||"First name required.");return;}
-    if(!f.lastName.trim()){setErr(t.intakeLastReq||"Last name required.");return;}
-    if(!f.email.trim()||!vEmail(f.email)){setErr(t.intakeEmailReq||"Valid email required.");return;}
-    if(f.hasPartner&&!f.partnerFirst.trim()){setErr(t.intakeFirstReq||"Partner first name required.");return;}
+    if(!draft.firstName.trim()){setErr(t.intakeFirstReq||"First name required.");return;}
+    if(!draft.lastName.trim()){setErr(t.intakeLastReq||"Last name required.");return;}
+    if(!draft.email.trim()||!vEmail(draft.email)){setErr(t.intakeEmailReq||"Valid email required.");return;}
+    if(draft.partnerFirst&&!String(draft.partnerFirst).trim()){setErr(t.intakeFirstReq||"Partner first name required.");return;}
     setSubmitting(true);
-    const res=await gaSubmitIntake(advisorId,lang,f);
+    const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null};
+    delete payload.id;delete payload.archived;delete payload.hideNumbers;delete payload.currentMonthLabel;
+    const res=await gaSubmitIntake(advisorId,lang,payload);
     if(res.ok){setSubmitted(true);}else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
   };
-  const INP={width:"100%",padding:"11px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
-  const LBL={fontSize:11,color:TH.muted,display:"block",marginBottom:6,fontWeight:600};
-  const HDR={fontSize:13,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",margin:"22px 0 14px",paddingBottom:6,borderBottom:"1px solid "+TH.cardBorder};
-  const FW={marginBottom:14};
+  const synthTheme={dark:TH,light:TH,isDark:true,settings:{accent:GOLD,darkAccent:GOLD,lightAccent:GOLD}};
+  return<ThemeCtx.Provider value={synthTheme}>
+    <div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"system-ui,sans-serif",padding:"20px 14px",lineHeight:1.45,WebkitTextSizeAdjust:"100%"}}>
+      <div style={{maxWidth:760,margin:"0 auto"}}>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
+          <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 EN | ES</button>
+        </div>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:48,color:GOLD}}>⚓</div>
+          <div style={{fontSize:20,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",marginTop:4}}>Golden Anchor</div>
+          <div style={{fontSize:10,color:TH.muted,letterSpacing:"0.16em",marginTop:2,textTransform:"uppercase"}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div>
+          <div style={{fontSize:18,fontWeight:700,marginTop:18}}>{t.intakeFormTitle||"New Client Intake"}</div>
+          <div style={{fontSize:12,color:TH.muted,marginTop:6,lineHeight:1.6,maxWidth:520,marginLeft:"auto",marginRight:"auto"}}>{t.intakeFormSub||"Help us understand your financial picture before your first call."}</div>
+        </div>
+        <div style={{background:TH.card,border:"1px solid "+TH.cardBorder,borderRadius:12,padding:"18px 16px",marginBottom:16}}>
+          <IntakeFormBody draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang}/>
+        </div>
+        {err&&<div style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:12,marginBottom:12}}>⚠️ {err}</div>}
+        <button onClick={submit} disabled={submitting} style={{width:"100%",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",marginTop:14,minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.intakeSubmit||"Submit Intake")}</button>
+        <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
+      </div>
+    </div>
+  </ThemeCtx.Provider>;
+}
+
+/* ── IntakeFormBody — shared between PublicIntake and IntakeSubmissionEditor ─ */
+function IntakeFormBody({draft,setDraft,t,TH,lang}){
+  const hasP2=!!draft.partnerFirst;
+  const up=k=>e=>setDraft(p=>({...p,[k]:e&&e.target?e.target.value:e}));
+  const upRaw=(k,v)=>setDraft(p=>({...p,[k]:v}));
+  const INP={width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+  const LBL={fontSize:11,color:TH.muted,display:"block",marginBottom:5,fontWeight:600};
+  const HDR={fontSize:12,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",margin:"20px 0 12px",paddingBottom:6,borderBottom:"1px solid "+TH.cardBorder};
+  const FW={marginBottom:12};
   const isNarrow=typeof window!=="undefined"&&window.innerWidth<560;
   const ROW2={display:"grid",gridTemplateColumns:isNarrow?"1fr":"1fr 1fr",gap:12};
-  return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"system-ui,sans-serif",padding:"20px 14px",lineHeight:1.45,WebkitTextSizeAdjust:"100%"}}>
-    <div style={{maxWidth:640,margin:"0 auto"}}>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
-        <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 EN | ES</button>
-      </div>
-      <div style={{textAlign:"center",marginBottom:24}}>
-        <div style={{fontSize:48,color:GOLD}}>⚓</div>
-        <div style={{fontSize:20,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",marginTop:4}}>Golden Anchor</div>
-        <div style={{fontSize:10,color:TH.muted,letterSpacing:"0.16em",marginTop:2,textTransform:"uppercase"}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div>
-        <div style={{fontSize:16,fontWeight:700,marginTop:18}}>{t.intakeFormTitle||"New Client Intake"}</div>
-        <div style={{fontSize:12,color:TH.muted,marginTop:6,lineHeight:1.6,maxWidth:480,marginLeft:"auto",marginRight:"auto"}}>{t.intakeFormSub||"Help us understand your financial picture before your first call."}</div>
-      </div>
-      <div style={HDR}>{t.intakePersonalSection||"About You"}</div>
-      <div style={ROW2}><div style={FW}><label style={LBL}>{t.firstName} *</label><input style={INP} value={f.firstName} onChange={u("firstName")} autoComplete="given-name"/></div><div style={FW}><label style={LBL}>{t.lastName} *</label><input style={INP} value={f.lastName} onChange={u("lastName")} autoComplete="family-name"/></div></div>
-      <div style={FW}><label style={LBL}>{t.email} *</label><input type="email" style={INP} value={f.email} onChange={u("email")} autoComplete="email" inputMode="email"/></div>
-      <div style={ROW2}><div style={FW}><label style={LBL}>{t.phone}</label><input type="tel" style={INP} value={f.phone} onChange={u("phone")} autoComplete="tel" inputMode="tel"/></div><div style={FW}><label style={LBL}>{t.dob}</label><input type="date" style={INP} value={f.dob} onChange={u("dob")} autoComplete="bday"/></div></div>
-      <div style={FW}><label style={LBL}>{t.address}</label><input style={INP} value={f.address} onChange={u("address")} autoComplete="street-address"/></div>
-      <div style={{marginTop:4,marginBottom:14}}><button onClick={()=>setF(p=>({...p,hasPartner:!p.hasPartner}))} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:f.hasPartner?GOLD+"22":"transparent",color:f.hasPartner?GOLD:TH.muted,border:"1px solid "+(f.hasPartner?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{f.hasPartner?"✓ "+(t.removePartner||"Remove Partner"):"＋ "+(t.addPartner||"Add Partner")}</button></div>
-      {f.hasPartner&&<><div style={ROW2}><div style={FW}><label style={LBL}>{t.partnerFirst} *</label><input style={INP} value={f.partnerFirst} onChange={u("partnerFirst")}/></div><div style={FW}><label style={LBL}>{t.partnerLast}</label><input style={INP} value={f.partnerLast} onChange={u("partnerLast")}/></div></div><div style={FW}><label style={LBL}>{(t.partnerFirst||"Partner")+" "+t.email}</label><input type="email" style={INP} value={f.partnerEmail} onChange={u("partnerEmail")} inputMode="email"/></div></>}
-      <div style={HDR}>{t.intakeFinancialSection||"Financial Overview"}</div>
-      <div style={FW}><label style={LBL}>{t.intakeMonthlyIncome||"Approximate monthly net income"}</label><input type="number" style={INP} value={f.monthlyNetIncome} onChange={u("monthlyNetIncome")} placeholder="0" inputMode="decimal"/></div>
-      <div style={ROW2}><div style={FW}><label style={LBL}>{t.intakeTotalDebt||"Total debt (cards + loans)"}</label><input type="number" style={INP} value={f.totalDebt} onChange={u("totalDebt")} placeholder="0" inputMode="decimal"/></div><div style={FW}><label style={LBL}>{t.intakeMonthlyDebtPmts||"Monthly debt payments"}</label><input type="number" style={INP} value={f.monthlyDebtPmts} onChange={u("monthlyDebtPmts")} placeholder="0" inputMode="decimal"/></div></div>
-      <div style={HDR}>{t.intakeGoalsSection||"Your Goals"}</div>
-      <div style={FW}><label style={LBL}>{t.intakeWhatHelp||"What do you want help with?"}</label><textarea style={{...INP,minHeight:90,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={f.goals} onChange={u("goals")}/></div>
-      <div style={HDR}>{t.intakeContactSection||"Contact & Service"}</div>
-      <div style={FW}><label style={LBL}>{t.intakePreferredService||"Preferred service"}</label>
-        <select style={INP} value={f.preferredService} onChange={u("preferredService")}>
-          <option value="">{t.intakeNotSure||"Not sure — recommend something"}</option>
-          {SVCS.map(s=><option key={s.id} value={s.id}>{lang==="es"?s.es:s.en}{s.price&&s.price!=="Free"&&s.price!=="Any amount"?" ("+s.price+")":""}</option>)}
+  const Div=()=><div style={{height:1,background:TH.cardBorder,margin:"22px 0"}}/>;
+  const onUpdate=c=>setDraft(c);
+  return<div>
+    <div style={HDR}>{t.intakePersonalSection||"About You"}</div>
+    <div style={ROW2}>
+      <div style={FW}><label style={LBL}>{t.firstName} *</label><input style={INP} value={draft.firstName} onChange={up("firstName")} autoComplete="given-name"/></div>
+      <div style={FW}><label style={LBL}>{t.lastName} *</label><input style={INP} value={draft.lastName} onChange={up("lastName")} autoComplete="family-name"/></div>
+    </div>
+    <div style={FW}><label style={LBL}>{t.email} *</label><input type="email" style={INP} value={draft.email} onChange={up("email")} autoComplete="email" inputMode="email"/></div>
+    <div style={ROW2}>
+      <div style={FW}><label style={LBL}>{t.phone}</label><input type="tel" style={INP} value={draft.phone} onChange={e=>upRaw("phone",fmtPh(e.target.value))} autoComplete="tel" inputMode="tel" placeholder="(305) 555-0000"/></div>
+      <div style={FW}><label style={LBL}>{t.dob}</label><input type="date" style={INP} value={draft.dob} onChange={up("dob")} autoComplete="bday"/></div>
+    </div>
+    <div style={FW}><label style={LBL}>{t.address}</label><input style={INP} value={draft.address} onChange={up("address")} autoComplete="street-address"/></div>
+    <div style={ROW2}>
+      <div style={FW}><label style={LBL}>{t.social} *</label><input style={INP} value={draft.social||""} onChange={up("social")} placeholder="XXX-XX-XXXX" inputMode="numeric"/></div>
+      <div style={FW}><label style={LBL}>{t.recommendedBy}</label><input style={INP} value={draft.recommendedBy||""} onChange={up("recommendedBy")}/></div>
+    </div>
+    <div style={ROW2}>
+      <div style={FW}><label style={LBL}>{t.clientType}</label>
+        <select style={INP} value={draft.clientType||"financeOnly"} onChange={up("clientType")}>
+          <option value="financeOnly">{t.financeOnly}</option>
+          <option value="financeAndHealth">{t.financeAndHealth}</option>
         </select>
       </div>
-      <div style={FW}><label style={LBL}>{t.intakeContactMethod||"Best way to reach you"}</label>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {[{v:"email",l:t.intakeContactEmail||"Email"},{v:"phone",l:t.intakeContactPhone||"Phone call"},{v:"text",l:t.intakeContactText||"Text message"}].map(opt=>
-            <button key={opt.v} onClick={()=>setF(p=>({...p,contactMethod:opt.v}))} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:f.contactMethod===opt.v?GOLD+"22":"transparent",color:f.contactMethod===opt.v?GOLD:TH.muted,border:"1px solid "+(f.contactMethod===opt.v?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{opt.l}</button>
-          )}
-        </div>
-      </div>
-      <div style={FW}><label style={LBL}>{t.intakeHowHeard||"How did you hear about us?"}</label><input style={INP} value={f.howHeard} onChange={u("howHeard")}/></div>
-      <div style={FW}><label style={LBL}>{t.generalNotes||"General Notes"}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={f.notes} onChange={u("notes")}/></div>
-      {err&&<div style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:12,marginBottom:12}}>⚠️ {err}</div>}
-      <button onClick={submit} disabled={submitting} style={{width:"100%",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",marginTop:14,minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.intakeSubmit||"Submit Intake")}</button>
-      <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
+      <div style={FW}><label style={LBL}>{t.intakeHowHeard||"How did you hear about us?"}</label><input style={INP} value={draft.howHeard||""} onChange={up("howHeard")}/></div>
     </div>
+    <div style={{marginTop:4,marginBottom:14}}><button onClick={()=>setDraft(p=>({...p,partnerFirst:p.partnerFirst?null:"",partnerLast:p.partnerLast||""}))} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:hasP2?GOLD+"22":"transparent",color:hasP2?GOLD:TH.muted,border:"1px solid "+(hasP2?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{hasP2?"✓ "+(t.removePartner||"Remove Partner"):"＋ "+(t.addPartner||"Add Partner")}</button></div>
+    {hasP2&&<>
+      <div style={ROW2}>
+        <div style={FW}><label style={LBL}>{t.partnerFirst} *</label><input style={INP} value={draft.partnerFirst||""} onChange={up("partnerFirst")}/></div>
+        <div style={FW}><label style={LBL}>{t.partnerLast}</label><input style={INP} value={draft.partnerLast||""} onChange={up("partnerLast")}/></div>
+      </div>
+      <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:8}}>👤 {draft.firstName||"Person 1"} — Personal Info</div>
+      <div style={ROW2}>
+        <div style={FW}><label style={LBL}>Phone</label><input style={INP} value={draft.p1Phone||""} onChange={e=>upRaw("p1Phone",fmtPh(e.target.value))} inputMode="tel"/></div>
+        <div style={FW}><label style={LBL}>Email</label><input type="email" style={INP} value={draft.p1Email||""} onChange={up("p1Email")} inputMode="email"/></div>
+      </div>
+      <div style={ROW2}>
+        <div style={FW}><label style={LBL}>Date of Birth</label><input type="date" style={INP} value={draft.p1Dob||""} onChange={up("p1Dob")}/></div>
+        <div style={FW}><label style={LBL}>SSN</label><input style={INP} value={draft.p1Social||""} onChange={up("p1Social")} placeholder="XXX-XX-XXXX" inputMode="numeric"/></div>
+      </div>
+      <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:12}}>👤 {draft.partnerFirst||"Person 2"} — Personal Info</div>
+      <div style={ROW2}>
+        <div style={FW}><label style={LBL}>Phone</label><input style={INP} value={draft.p2Phone||""} onChange={e=>upRaw("p2Phone",fmtPh(e.target.value))} inputMode="tel"/></div>
+        <div style={FW}><label style={LBL}>Email</label><input type="email" style={INP} value={draft.p2Email||""} onChange={up("p2Email")} inputMode="email"/></div>
+      </div>
+      <div style={ROW2}>
+        <div style={FW}><label style={LBL}>Date of Birth</label><input type="date" style={INP} value={draft.p2Dob||""} onChange={up("p2Dob")}/></div>
+        <div style={FW}><label style={LBL}>SSN</label><input style={INP} value={draft.p2Social||""} onChange={up("p2Social")} placeholder="XXX-XX-XXXX" inputMode="numeric"/></div>
+      </div>
+    </>}
+    <Div/>
+    <IncomeSection client={draft} onUpdate={onUpdate} t={t}/>
+    <Div/>
+    <BillsSection client={draft} onUpdate={onUpdate} t={t}/>
+    <Div/>
+    <DebtSection client={draft} onUpdate={onUpdate} t={t}/>
+    <Div/>
+    <CustomAssetsSection client={draft} onUpdate={onUpdate} t={t}/>
+    <Div/>
+    <div style={HDR}>{t.intakeContactSection||"Contact & Service"}</div>
+    <div style={FW}><label style={LBL}>{t.intakePreferredService||"Preferred service"}</label>
+      <select style={INP} value={draft.preferredService||""} onChange={up("preferredService")}>
+        <option value="">{t.intakeNotSure||"Not sure — recommend something"}</option>
+        {SVCS.map(s=><option key={s.id} value={s.id}>{lang==="es"?s.es:s.en}{s.price&&s.price!=="Free"&&s.price!=="Any amount"?" ("+s.price+")":""}</option>)}
+      </select>
+    </div>
+    <div style={FW}><label style={LBL}>{t.intakeContactMethod||"Best way to reach you"}</label>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {[{v:"email",l:t.intakeContactEmail||"Email"},{v:"phone",l:t.intakeContactPhone||"Phone call"},{v:"text",l:t.intakeContactText||"Text message"}].map(opt=>
+          <button key={opt.v} onClick={()=>upRaw("contactMethod",opt.v)} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:(draft.contactMethod||"email")===opt.v?GOLD+"22":"transparent",color:(draft.contactMethod||"email")===opt.v?GOLD:TH.muted,border:"1px solid "+((draft.contactMethod||"email")===opt.v?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{opt.l}</button>
+        )}
+      </div>
+    </div>
+    <Div/>
+    <div style={HDR}>{t.intakeGoalsSection||"Your Goals"}</div>
+    <div style={FW}><label style={LBL}>{t.intakeWhatHelp||"What do you want help with?"}</label><textarea style={{...INP,minHeight:90,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.goals)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),goals:e.target.value}}))}/></div>
+    <div style={FW}><label style={LBL}>{t.shortTerm}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.shortTerm)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),shortTerm:e.target.value}}))}/></div>
+    <div style={FW}><label style={LBL}>{t.midTerm}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.midTerm)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),midTerm:e.target.value}}))}/></div>
+    <div style={FW}><label style={LBL}>{t.longTerm}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.longTerm)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),longTerm:e.target.value}}))}/></div>
+    <div style={FW}><label style={LBL}>{t.setbacks}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.setbacks)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),setbacks:e.target.value}}))}/></div>
+    <div style={FW}><label style={LBL}>{t.generalNotes||"General Notes"}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.general)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),general:e.target.value}}))}/></div>
   </div>;
 }
+
 
 /* ── INTAKE SUBMISSIONS (advisor view) — v0.6.0 ────────────────────────── */
 function IntakeSubmissionsPage({t,authUser,onConvert}){
@@ -2277,6 +2350,9 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
   const[sel,setSel]=useState(null);
   const[convertConfirm,setConvertConfirm]=useState(null);
   const[urlCopied,setUrlCopied]=useState("");
+  const[editing,setEditing]=useState(null);
+  const[deleteConfirm,setDeleteConfirm]=useState(null);
+  const[clearConfirm,setClearConfirm]=useState(null);
   const publicBase=(typeof window!=="undefined"?window.location.origin:"")+"/intake?advisor="+(authUser?.id||"");
   const publicUrlEs=publicBase+"&lang=es";
   useEffect(()=>{let cancelled=false;(async()=>{const list=await gaLoadIntakeSubmissions(authUser?.id);if(!cancelled){setSubs(list);setLoading(false);}})();return()=>{cancelled=true;};},[authUser?.id]);
@@ -2290,16 +2366,32 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
     else{try{window.prompt(t.intakeCopyUrl||"Copy",url);}catch{}}
   };
   const setStatus=async(id,status,extras)=>{const patch={status,reviewed_at:new Date().toISOString(),...(extras||{})};const ok=await gaUpdateIntakeStatus(id,patch);if(ok)setSubs(s=>s.map(x=>x.id===id?{...x,...patch}:x));return ok;};
+  const doDelete=async(id)=>{const ok=await gaDeleteIntakeSubmission(id);if(ok){setSubs(s=>s.filter(x=>x.id!==id));if(sel&&sel.id===id)setSel(null);}return ok;};
+  const doClearByStatus=async(status)=>{const n=await gaDeleteIntakeSubmissionsByStatus(authUser?.id,status);if(n>0){setSubs(s=>s.filter(x=>x.status!==status));if(sel&&sel.status===status)setSel(null);}return n;};
+  const saveEdit=async(updatedData)=>{const ok=await gaUpdateIntakeData(editing.id,updatedData);if(ok){setSubs(s=>s.map(x=>x.id===editing.id?{...x,data:updatedData}:x));setEditing(null);}return ok;};
   const doConvert=async(sub)=>{
     const d=sub.data||{};
-    const newClient=mig({id:gid(),firstName:d.firstName||"",lastName:d.lastName||"",email:d.email||"",phone:d.phone||"",address:d.address||"",dob:d.dob||"",partnerFirst:d.hasPartner?(d.partnerFirst||""):null,partnerLast:d.hasPartner?(d.partnerLast||""):null,color1:"#4472C4",color2:d.hasPartner?"#ED7D31":null,recommendedBy:d.howHeard||"",clientType:d.preferredService==="insurance-consult"?"financeAndHealth":"financeOnly",notes:{shortTerm:"",midTerm:"",longTerm:"",setbacks:"",goals:d.goals||"",general:[d.notes?("Notes: "+d.notes):"",d.preferredService?("Requested service: "+d.preferredService):"",d.contactMethod?("Preferred contact: "+d.contactMethod):"","Submitted via public intake on "+new Date(sub.created_at).toLocaleDateString()+"."].filter(Boolean).join("\n")}});
-    if(d.monthlyNetIncome&&+d.monthlyNetIncome>0){newClient.incomeStreams=[{id:gid(),person:"p1",label:"Main Job",gross:Math.round(+d.monthlyNetIncome*1.3),net:+d.monthlyNetIncome,freq:"monthly2"}];}
+    const submittedNote="Submitted via public intake on "+new Date(sub.created_at).toLocaleDateString()+".";
+    const existingGeneral=(d.notes&&d.notes.general)||"";
+    const generalCombined=existingGeneral?existingGeneral+"\n"+submittedNote:submittedNote;
+    const legacyNotes=(!d.notes&&(d.goals||d.notes_text))?{shortTerm:"",midTerm:"",longTerm:"",setbacks:"",goals:d.goals||"",general:[d.notes_text||"",d.preferredService?("Requested service: "+d.preferredService):"",d.contactMethod?("Preferred contact: "+d.contactMethod):"",submittedNote].filter(Boolean).join("\n")}:null;
+    const baseClient={...d,id:gid(),archived:false,hideNumbers:false,monthSnapshots:[],color1:d.color1||"#4472C4",color2:d.partnerFirst?(d.color2||"#ED7D31"):null,recommendedBy:d.recommendedBy||d.howHeard||"",clientType:d.clientType||(d.preferredService==="insurance-consult"?"financeAndHealth":"financeOnly"),notes:legacyNotes||{shortTerm:"",midTerm:"",longTerm:"",setbacks:"",goals:"",...(d.notes||{}),general:generalCombined}};
+    if(!Array.isArray(d.incomeStreams)&&d.monthlyNetIncome&&+d.monthlyNetIncome>0){
+      baseClient.incomeStreams=[{id:gid(),person:"p1",label:"Main Job",gross:Math.round(+d.monthlyNetIncome*1.3),net:+d.monthlyNetIncome,freq:"monthly2"}];
+    }
+    const newClient=mig(baseClient);
     await setStatus(sub.id,"converted",{converted_at:new Date().toISOString(),client_local_id:String(newClient.id)});
     onConvert(newClient);
   };
   return<div style={{padding:isMobile?"16px 14px":"22px 20px",maxWidth:1100,margin:"0 auto"}}>
     <div style={{fontSize:isMobile?20:24,fontWeight:800,color:th.text,marginBottom:6}}>📥 {t.intakeSubmissions||"Intake Forms"}</div>
-    <div style={{fontSize:11,color:th.muted,marginBottom:18}}>{subs.filter(s=>s.status==="pending").length} {(t.intakeStatusPending||"Pending").toLowerCase()} / {subs.length} total</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,flexWrap:"wrap",gap:8}}>
+      <div style={{fontSize:11,color:th.muted}}>{subs.filter(s=>s.status==="pending").length} {(t.intakeStatusPending||"Pending").toLowerCase()} / {subs.length} total</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {subs.some(s=>s.status==="converted")&&<Btn small onClick={()=>setClearConfirm({status:"converted",count:subs.filter(s=>s.status==="converted").length})} color={th.muted}>🧹 {t.intakeClearConverted||"Clear converted"} ({subs.filter(s=>s.status==="converted").length})</Btn>}
+        {subs.some(s=>s.status==="rejected")&&<Btn small onClick={()=>setClearConfirm({status:"rejected",count:subs.filter(s=>s.status==="rejected").length})} color={th.muted}>🧹 {t.intakeClearRejected||"Clear rejected"} ({subs.filter(s=>s.status==="rejected").length})</Btn>}
+      </div>
+    </div>
     <div style={{...mCARD(th),padding:16,marginBottom:18,background:GOLD+"08",border:"1px solid "+GOLD+"33"}}>
       <div style={{fontSize:12,fontWeight:700,color:GOLD,marginBottom:8}}>📋 {t.publicIntakeUrl||"Public Intake URL"}</div>
       <div style={{fontSize:11,color:th.muted,marginBottom:12,lineHeight:1.6}}>{t.intakeShareUrlHelp||"Prospects who fill the form via this URL will appear in your Intake Submissions queue. Use the ES Copy button to send the Spanish version."}</div>
@@ -2350,8 +2442,10 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
       </div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {sel.status!=="converted"&&<BSolid onClick={()=>setConvertConfirm(sel)}>↪ {t.intakeConvertBtn||"Convert to Client"}</BSolid>}
+        {sel.status!=="converted"&&<Btn onClick={()=>setEditing(sel)} color={th.blue}>✏️ {t.intakeEditBtn||"Edit Intake"}</Btn>}
         {sel.status==="pending"&&<Btn onClick={async()=>{await setStatus(sel.id,"reviewed");}}>{t.intakeMarkReviewed||"Mark Reviewed"}</Btn>}
-        {sel.status!=="rejected"&&sel.status!=="converted"&&<Btn color={th.neg} onClick={async()=>{if(window.confirm(t.intakeConfirmReject||"Reject this submission?")){await setStatus(sel.id,"rejected");}}}>{t.intakeRejectBtn||"Reject"}</Btn>}
+        {sel.status!=="rejected"&&sel.status!=="converted"&&<Btn color={th.warn} onClick={async()=>{if(window.confirm(t.intakeConfirmReject||"Reject this submission?")){await setStatus(sel.id,"rejected");}}}>{t.intakeRejectBtn||"Reject"}</Btn>}
+        <Btn onClick={()=>setDeleteConfirm(sel)} color={th.neg}>🗑️ {t.intakeDeleteBtn||"Delete"}</Btn>
       </div>
     </div>}
     {convertConfirm&&<Modal title={t.intakeConvertBtn||"Convert to Client"} onClose={()=>setConvertConfirm(null)} width={420}>
@@ -2359,7 +2453,42 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
       <div style={{fontSize:11,color:th.muted,marginBottom:18}}>{t.firstName}: <b style={{color:th.text}}>{((convertConfirm.data?.firstName||"")+" "+(convertConfirm.data?.lastName||"")).trim()}</b></div>
       <SaveBar onSave={async()=>{await doConvert(convertConfirm);setConvertConfirm(null);}} onCancel={()=>setConvertConfirm(null)} t={t} saveLabel={t.intakeConvertBtn||"Convert"}/>
     </Modal>}
+    {deleteConfirm&&<Modal title={t.intakeDeleteBtn||"Delete Submission"} onClose={()=>setDeleteConfirm(null)} width={420}>
+      <div style={{fontSize:13,color:th.text,marginBottom:8}}>{t.intakeConfirmDelete||"Delete this submission? This cannot be undone."}</div>
+      <div style={{fontSize:11,color:th.muted,marginBottom:18}}>{t.firstName}: <b style={{color:th.text}}>{((deleteConfirm.data?.firstName||"")+" "+(deleteConfirm.data?.lastName||"")).trim()}</b></div>
+      <SaveBar onSave={async()=>{await doDelete(deleteConfirm.id);setDeleteConfirm(null);}} onCancel={()=>setDeleteConfirm(null)} t={t} saveLabel={t.intakeDeleteBtn||"Delete"}/>
+    </Modal>}
+    {clearConfirm&&<Modal title={clearConfirm.status==="converted"?(t.intakeClearConverted||"Clear converted"):(t.intakeClearRejected||"Clear rejected")} onClose={()=>setClearConfirm(null)} width={420}>
+      <div style={{fontSize:13,color:th.text,marginBottom:8}}>{(t.intakeConfirmClear||"Delete all {n} {status} submissions? This cannot be undone.").replace("{n}",String(clearConfirm.count)).replace("{status}",clearConfirm.status==="converted"?(t.intakeStatusConverted||"converted").toLowerCase():(t.intakeStatusRejected||"rejected").toLowerCase())}</div>
+      <SaveBar onSave={async()=>{await doClearByStatus(clearConfirm.status);setClearConfirm(null);}} onCancel={()=>setClearConfirm(null)} t={t} saveLabel={t.intakeDeleteBtn||"Delete"}/>
+    </Modal>}
+    {editing&&<IntakeSubmissionEditor submission={editing} onSave={saveEdit} onCancel={()=>setEditing(null)} t={t}/>}
   </div>;
+}
+
+/* ── IntakeSubmissionEditor (v0.7.1) ─────────────────────────────────────── */
+function IntakeSubmissionEditor({submission,onSave,onCancel,t}){
+  const th=useTh();
+  const[draft,setDraft]=useState(()=>mig({...mk(),...(submission.data||{}),id:gid(),monthSnapshots:[]}));
+  const[saving,setSaving]=useState(false);
+  const TH={bg:th.bg,text:th.text,muted:th.muted,dim:th.dim,pos:th.pos,neg:th.neg,accent:th.accent,card:th.card,cardBorder:th.cardBorder,inp:th.inp,inpBorder:th.inpBorder||th.cardBorder,modal:th.modal,warn:th.warn,blue:th.blue};
+  const lang=_gaLang();
+  const handleSave=async()=>{
+    setSaving(true);
+    const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null};
+    delete payload.id;delete payload.archived;delete payload.hideNumbers;delete payload.currentMonthLabel;
+    const ok=await onSave(payload);
+    if(!ok)setSaving(false);
+  };
+  return<Modal title={"✏️ "+((t.intakeEditBtn||"Edit Intake")+" — "+((submission.data?.firstName||"")+" "+(submission.data?.lastName||"")).trim())} onClose={onCancel} width={800}>
+    <div style={{maxHeight:"70vh",overflowY:"auto",paddingRight:6}}>
+      <IntakeFormBody draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang}/>
+    </div>
+    <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${th.cardBorder}`,display:"flex",gap:8,justifyContent:"flex-end"}}>
+      <Btn onClick={onCancel}>{t.cancel||"Cancel"}</Btn>
+      <BSolid onClick={handleSave} disabled={saving}>{saving?"…":(t.save||"Save")}</BSolid>
+    </div>
+  </Modal>;
 }
 
 export default function App(){
