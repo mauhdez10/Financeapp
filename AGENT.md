@@ -35,226 +35,31 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.7.3** — established 2026-05-16 (Patch). Four bundled fixes on top of v0.7.2: autofill suppression on the public intake form (fixes advisor's Gmail + saved-password values bleeding into prospect fields), ClientType + RecommendedBy fields removed from intake (advisor can fill those on Convert via existing client editors), light/dark toggle on the public intake page, and an MVP send-intake-link feature (mailto + sms, no server). Backlog item promoted out of Chat 7 and shipped early per Mauricio's request — server-side delivery (Resend/Twilio) deferred to true future after DNS migration.
+**v0.8.0** — established 2026-05-16 (Minor). Multi-select and bulk actions on the Clients tab. Every client row in `ClientList` now carries a selection checkbox; the list has a "select all visible" control plus a selection bar with a live count, and the Clients-tab burger menu gains five bulk operations. This is Chat 4 of the parallel-chat workplan (WORKPLAN §3).
 
-1. **Browser autofill suppressed on the public intake form.** Root cause: when the advisor opens `/intake?advisor=...` in their own logged-in browser session, Chrome auto-fills `<input autoComplete="email">` with their saved Gmail (`mhernandez.fn@gmail.com`), and `SSNInput`'s `type="password"` triggers saved-password autofill which dumps arbitrary stored values (e.g. `202-0/`) into the SSN field. Fix: every `<input>` inside `IntakeFormBody` now has `autoComplete="off"` plus `data-lpignore="true"` (LastPass) and `data-1p-ignore="true"` (1Password) — these ignored-by-extension attributes are the de-facto cross-browser way to tell password managers to stop. The three SSN fields (main, P1, P2) switched from the `SSNInput` component to inline `<input type="text">` with the same `fmtSSN` format-on-keystroke logic; no Show/Hide toggle for the prospect (they're entering their own SSN on their own device, masking is unnecessary). The `name` attribute is set to `ga-intake-ssn` etc. (unique app-specific names) so password managers don't recognize the field as a known form. Side effect: the advisor's `IntakeSubmissionEditor` modal reuses `IntakeFormBody` so it inherits the same autofill suppression — acceptable since the advisor types these values manually anyway.
+1. **Per-row selection + "select all visible".** `ClientList` was rewritten — it is now a multi-line component (previously a single dense line) because the bulk-selection logic is too large to maintain inline. Each active and archived client row carries a checkbox at its leftmost position. The row body still opens `ClientDetail` on click; only the checkbox toggles selection. A selection bar above the list holds a "select all" checkbox (covering the currently-filtered active list), the live selected-count, and a Clear button. Selection is **component-local state** — `useState(()=>new Set())` of client ids, not persisted, not lifted to App, reset when the user navigates away — exactly as the Chat 4 spec requires.
 
-2. **ClientType and RecommendedBy fields removed from the public intake form.** Both were vestigial — `clientType` is an advisor-side classification (financeOnly vs financeAndHealth) that Mauricio sets when he Converts the submission, and `recommendedBy` overlaps with `howHeard` ("How did you hear about us?"). The SSN row now pairs SSN with `howHeard` for a clean 2-column layout; the ClientType+RecommendedBy row is deleted entirely. On Convert, `clientType` falls back to `"financeOnly"` by default (per existing `mig()` defaults) — Mauricio can change it in Profile or via the existing Edit Client modal. The submission's JSONB blob just won't carry these two keys for new submissions; legacy submissions with the keys still work because `mig()` keeps them through the spread.
+2. **Burger menu with five bulk operations.** The existing `ClientList` Kebab (which already held Import/Export/Backup/Restore utilities) gains a divider and five bulk items: 📦 Archive Selected (N), ↩ Restore Selected (N), 🗑️ Delete Selected (N), ✂️ Split…, 🔗 Join…. Archive/Restore/Delete are disabled when zero clients are selected; Restore is additionally disabled unless every selected client is already archived. **Split and Join are deliberately always enabled** — they open their own picker modals and ignore the bulk selection entirely, because splitting and joining are inherently single-client operations (the Chat 4 spec marks Split/Join "selection ignored"; gating them on a selection they then discard would be self-contradictory UX). The shared `Kebab` component gained optional `disabled`-item support: a `disabled` flag renders a greyed, non-clickable menu item. Items with no `disabled` flag behave exactly as before, so the Dashboard and ClientDetail kebabs are unaffected in behavior.
 
-3. **Light/dark toggle on the public intake form.** New `mode` state in `PublicIntake` toggles between the existing dark navy palette and a new light palette (slate-gray text on white cards, with a slightly muted gold accent `#B8860B` instead of the brighter `#D4A017` to keep readable contrast on white). Persisted to `localStorage["ga_intake_mode"]` so a prospect who refreshes or comes back mid-fill doesn't lose their preference. Toggle button is `☀️ Light` / `🌙 Dark` placed left of the existing `🌐 EN | ES` selector. The synthetic `ThemeCtx.Provider` value rebuilds when `mode` changes so all reused editor sub-components (IncomeSection / BillsSection / DebtSection / CustomAssetsSection) follow the theme switch.
+3. **Archive / Restore / Delete confirmation modals.** Each of the three bulk actions opens a confirmation `Modal` listing every affected client by name (including partner names where applicable). Archive and Restore present a single confirm button. Delete reuses the established "permanent action" red warning panel and requires the advisor to type `DELETE` exactly into a text field before the destructive button enables — the same guard pattern as the per-client `DeleteClientModal`.
 
-4. **MVP "Send link to a prospect" panel on `IntakeSubmissionsPage`.** Collapsed-by-default section under the existing Public Intake URL card. Inputs: prospect name (optional), prospect email, prospect phone, language toggle (EN/ES). Three action buttons: **✉️ Send Email** opens the advisor's default mail client via `window.location.href = "mailto:..."` with subject + body pre-filled (greeting with prospect's name if provided, intake link in the chosen language, sign-off as Mauricio Hernandez / Golden Anchor); **💬 Send SMS** opens the OS's SMS app via `window.location.href = "sms:..."` with a shorter pre-filled body; **📋 Copy message** writes the email body to the clipboard for pasting elsewhere (WhatsApp Web, Instagram DM, etc.). No server, no DNS dependency, no third-party API — ships immediately. Email/SMS templates are bilingual; the chosen language determines both the link variant (`/intake?advisor=...&lang=es` vs `&lang=en`) and the message copy. Each button validates that the relevant contact field is filled before opening the system handler. **Server-side delivery via Resend (email) and Twilio (SMS) remains the future-tier upgrade** — kept in WORKPLAN backlog as "Server-side intake delivery" pending Porkbun→Cloudflare DNS migration. WhatsApp delivery explicitly deferred to long-term backlog per Mauricio's call.
+4. **Split / Join picker modals.** ✂️ Split opens a searchable modal listing every partnered active client; picking one mounts the existing `SplitAssignModal` for that client. 🔗 Join opens a searchable modal listing every single (un-partnered) active client; picking one mounts the existing `JoinModal`. No new split/join logic — the existing modals and their merge math are reused unchanged.
 
-5. **11 new translation keys × 2 languages = 22 entries.** Added to both `T.en` and `T.es`: `intakeSendTitle`, `intakeSendHelp`, `intakeSendName`, `intakeSendEmail`, `intakeSendPhone`, `intakeSendLang`, `intakeSendEmailBtn`, `intakeSendSmsBtn`, `intakeSendCopyBtn`, `intakeSendEmailReq`, `intakeSendPhoneReq`. Dictionary 1,147 → **1,158 per side**, symmetry verified.
+5. **Four new App-level handlers.** `archiveMany(ids)` and `restoreMany(ids)` set the `archived` flag (true / false) across a set of client ids; `deleteMany(ids)` filters them out; `splitClientPair(origId,p1,p2)` removes the original client and inserts its two split halves. `splitClientPair` is a ClientList-friendly sibling of the existing `splitClient`, which depends on the App-level `selected` client and therefore stays unchanged for `ClientDetail`'s kebab. `joinClients` is reused as-is for bulk Join. All four new handlers are `useCallback`-wrapped. The per-client kebab inside `ClientDetail` is untouched.
 
-No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-28, D-29 preserved. `IntakeSection` still unmounted (fourth release in a row — leaving it alone is now the implicit decision).
+6. **27 new translation keys × 2 languages = 54 entries.** Added to both `T.en` and `T.es`: `selectAllVisible`, `selectedLbl`, `clearSelLbl`, `bulkHint`, `bulkArchiveSel`, `bulkRestoreSel`, `bulkDeleteSel`, `bulkSplitSel`, `bulkJoinSel`, `bulkArchiveTitle`, `bulkArchiveQ`, `bulkRestoreTitle`, `bulkRestoreQ`, `bulkDeleteTitle`, `bulkDeleteQ`, `bulkDeleteTypeHint`, `permanentActionLbl`, `splitPickTitle`, `splitPickHelp`, `joinPickTitle`, `joinPickHelp`, `noPartneredClients`, `noSingleClients`, `noClientsMsg`, `archivedClientsLbl`, `viewLbl`, `restoreLbl`. Dictionary 1,158 → **1,185 per side**; symmetry verified by an `Object.keys(T.en).length === Object.keys(T.es).length` parse.
 
-**Build marker:** `2026-05-16-v073-intake-polish-and-send-mvp`. App.jsx 2,696 → 2,743 lines (~571 → ~571 KB; net +47 lines from the autofill attrs, light/dark theme branch, and send-intake panel). `src/translations.js` 1,147 → 1,158 keys/side (~81 → ~82 KB).
+No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-28, D-29 preserved. No SQL migration — bulk actions reuse the existing `archived` flag and the existing delete path; nothing touches the Supabase schema. `IntakeSection` still unmounted (now five releases running — leaving it alone remains the implicit decision).
+
+**Build marker:** `2026-05-16-v080-bulk-client-actions`. App.jsx 2,743 → 2,832 lines (~571 → ~591 KB; net +89 lines, almost entirely from `ClientList` being rewritten multi-line). `src/translations.js` 1,158 → 1,185 keys/side (~82 → ~85 KB).
 
 **Out-of-app actions required before this build runs in production:**
 - Replace `src/App.jsx` AND `src/translations.js`.
 - Replace `AGENT.md` and `WORKPLAN.md` at repo root.
-- Add a CHANGELOG.md entry for v0.7.3 (see chat delivery for Option A instructions).
+- Add a CHANGELOG.md entry for v0.8.0 (see chat delivery for Option A instructions).
 - Commit + push. Vercel auto-deploys.
-- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-16-v073-intake-polish-and-send-mvp"`.
-- Spot-check: (a) open public intake URL in advisor's own logged-in Chrome — confirm email and SSN fields start empty (no Gmail autofill, no garbage SSN); (b) confirm Client Type and Recommended By fields are gone — SSN now pairs with "How did you hear about us?"; (c) toggle ☀️/🌙 in the upper-right — entire form switches between light and dark, including reused editor sub-components; refresh the page — choice persists; (d) advisor side, open Intake Forms → expand "Send link to a prospect" → fill name + email → click Send Email — confirm your default mail client opens with subject and body pre-filled; (e) switch ES, click Send Email again — body is in Spanish.
-
----
-
-**Prior version (v0.7.2, 2026-05-16)** — Patch. Three small UI fixes on top of v0.7.1's full-parity public intake form. No schema change, no translation keys.
-
-1. **SSN field uses `SSNInput` component in all 3 spots** (now superseded in v0.7.3 — switched to inline non-password inputs to defeat autofill).
-2. **Public-intake theme** — `ThemeCtx.Provider` now passes a flat theme object instead of a wrapper; reused editors render with gold/blue accents matching CONTACT & SERVICE.
-3. **Sort-arrow spacing** — `SA` component `marginLeft:2 → 6` for visible space between column label and ↑/↓ arrow.
-
-**Build marker:** `2026-05-16-v072-intake-polish`. App.jsx 2,694 → 2,696 lines.
-
----
-
-**Prior version (v0.7.1, 2026-05-16)** — Patch — feature-add on top of v0.7.0 IA refactor. Full-parity public intake form + Edit/Delete on submissions. No schema change.
-
-1. **Public intake form now collects everything the old per-client `IntakeSection` did** via a new shared `IntakeFormBody` component (personal + SSN + partner P1/P2 + full Income/Bills/Debt/CustomAssets editors + Contact & Service + 6 Goals/Notes textareas). State hydrated via `mk()`, posted through existing `gaSubmitIntake`.
-
-2. **SSN collected over public URL** — plaintext through Supabase RLS.
-
-3. **"✏️ Edit Intake" + "🗑️ Delete" actions on `IntakeSubmissionsPage`.** `IntakeSubmissionEditor` modal hydrates `submission.data` via `mig({...mk(), ...submission.data})`, reuses `IntakeFormBody`, writes back via `gaUpdateIntakeData`. Per-row Delete + header-level bulk "Clear converted ({n})" / "Clear rejected ({n})" buttons.
-
-4. **3 new Supabase helpers** (`gaUpdateIntakeData`, `gaDeleteIntakeSubmission`, `gaDeleteIntakeSubmissionsByStatus`). No SQL migration.
-
-5. **`doConvert` rewritten** — spreads `{...sub.data}` through `mig()` with legacy v0.6.x fallback.
-
-6. **+6 translation keys × 2 langs.** Dictionary 1,141 → 1,147 per side.
-
-**Build marker:** `2026-05-16-v071-full-parity-intake-edit-delete`. App.jsx 2,565 → 2,694 lines.
-
----
-
-**Prior version (v0.7.0, 2026-05-16)** — Minor — IA breaking change. Information-architecture refactor: standalone Forms tab deleted, per-client Intake tab merged into the Monthly Statement, Investment Allocation + Emergency Fund moved out of the client-facing intake surface and locked into the advisor-only Monthly Statement. No schema change, no migration.
-
-1. **`FormsPage` deleted; standalone Forms tab removed from NAV.** The `{id:"forms",l:"📋 "+t.forms}` entry is gone from the top-level `NAV` array, the `nav==="forms"?<FormsPage t={t}/>:` render branch is gone from `App()`, and the `FormsPage` component itself (one-line, ~1.3 KB) is removed. Its sole helper `dlTmpl` (the CSV template generator) is also deleted as orphan.
-
-2. **"Intake Submissions" renamed → "Intake Forms".** EN value `"Intake Submissions"` → `"Intake Forms"`. ES `"Formularios Recibidos"` → `"Formularios de Admisión"`. Inline EN fallbacks + `intakeShareUrlHelp` updated in both languages.
-
-3. **Per-client Intake tab removed from `ClientDetail`.** The `{id:"intake"}` tab entry and the matching `tab==="intake"&&<IntakeSection .../>` render branch are gone. `IntakeSection` definition retained (line 449) but unmounted.
-
-4. **Investment Allocation + Emergency Fund moved out of intake.** `SavingsSection` is no longer rendered inside `IntakeSection`. It continues to render in `MonthlyTab` via `FullMonthView` only.
-
-5. **`setSelectedTab("intake")` redirects → `"monthly"`** at both call sites (post-Convert + post-`addClient`).
-
-6. **Six orphan translation keys deleted × 2 languages = 12 entries:** `forms`, `formsTitle`, `formsDesc`, `downloadCSVTemplate`, `howToUseColon`, `newClientOnboarding`. Dictionary 1,147 → 1,141 per side.
-
-**Build marker:** `2026-05-16-v070-ia-refactor-intake-forms`. App.jsx 2,565 lines (~548 KB).
-
-
----
-
-**Prior version (v0.6.3, 2026-05-16)** — established 2026-05-16 (Patch). Service Plan UI trim + Pay Now/Pay Later buttons + Notes & Goals tone fix. No schema change, no migration.
-
-1. **Service Plan editor trimmed to 4 fields.** `NotesSection`'s Service Plan block now shows only `plan`, `startDate`, `paymentMethod`, `paymentLinkUrl`. Removed from the UI: `category`, `status`, `nextChargeDate`, `lastPaidAt`, `serviceNotes` — along with the `STATUS_OPTS` const and the matching rows in the Complete Report's compact Service Plan block (now just Service Plan / Started / Payment method). Existing records keep those five values in `client.servicePlan` JSON; the app stops reading/writing them. No migration — forward-compatible.
-
-2. **Pay Now / Pay Later buttons.** When `servicePlan.paymentMethod === "stripe"` AND `settings.stripeLinks[servicePlan.plan]` is non-empty, the Service Plan editor renders a button pair. 💳 Pay Now opens the configured hosted Stripe link in a new tab. 🕓 Pay Later appends a localized `[Pay Later — YYYY-MM-DD]` tag (`[Pagar Después — …]` in ES) to `client.notes.general` and persists — a lightweight follow-up marker, no new alert type. `settings` is threaded as a plain prop `App → ClientDetail → {NotesSection, IntakeSection, MonthlyTab → FullMonthView/HistView → NotesSection}`, read defensively (`settings?.stripeLinks?.[…]`) so paths without it hide the buttons rather than crash. reportMode returns before the button code.
-
-3. **Notes & Goals tone fix.** `clientGoals` moved to second person — EN "What They Want to Achieve" → "What You Want to Achieve", ES "Qué quieren lograr" → "Qué Quieres Lograr". Other Notes labels are person-neutral and unchanged. Value-only, no key renames.
-
-4. **One translation key added:** `payLater` ("Pay Later" / "Pagar Después") in both `T.en` and `T.es`. Dictionary 1,146 → 1,147 per side; symmetry verified.
-
-No new locked decisions, none closed, no new pitfalls. D-1 and D-7 preserved — the new `settings` prop is ordinary prop-drilling, not a context.
-
-**Build marker:** `2026-05-16-v063-service-plan-trim-notes-tone`. App.jsx 2,568 lines (~550 KB), down 9 from v0.6.2. `src/translations.js` ~79 KB.
-
----
-
-**Prior version (v0.6.2, 2026-05-15)** — established 2026-05-15 (Patch). Pure mechanical refactor — no behavior change, no UI change, no new features, no bug fixes. Single concern: extract the `T.en` / `T.es` translation dictionaries out of `App.jsx` into a sibling `src/translations.js` so future Spanish-translation audit chats can load the dictionary alone (~80 KB) instead of all of App.jsx (~635 KB).
-
-1. **`src/translations.js` created.** Single export `export const T = { en: {...}, es: {...} }`. Pure data, no JSX, no React imports, no logic. 1,146 keys per side. Symmetry verified (`Object.keys(T.en).length === Object.keys(T.es).length`, zero asymmetric keys).
-2. **App.jsx modified at two sites only.** (a) New import line `import { T } from "./translations";` added at line 5 (after the four existing imports). (b) The 3-line `const T={...}` block at lines 91–93 plus its `/* ── TRANSLATIONS ── */` comment header at line 90 deleted; replaced by a single breadcrumb comment `/* ── TRANSLATIONS ── moved to src/translations.js per D-29 (v0.6.2) ──────── */`. All existing `T.en.x`, `T.es.x`, and `T[lang]` references resolve unchanged — same identifier, same shape.
-3. **D-1 amended** to carve out pure-data modules from the single-file rule. The carve-out is opt-in per-extraction (each new pure-data file gets its own locked D-NN entry); D-1 itself does not need re-opening for future extractions.
-4. **D-29 locked** as the first instance of the carve-out.
-5. **D-18 (Track A) amended** to point at `src/translations.js` and update the key count from the stale "868 per side" to the current 1,146 per side.
-
-**Docs accuracy note:** the v0.6.0 release notes claimed 1,147 keys per side after the +54 intake/PWA additions; the actual count in v0.6.1 App.jsx is 1,146 per side. Symmetry is intact (the property Pitfall #9 enforces) — the documented total was off by 1, almost certainly from a double-counted addition during the v0.6.0 chat. Not a runtime issue, no fix needed. Future audits using `src/translations.js` directly will report 1,146.
-
-**Build marker:** `2026-05-15-v062-translations-extracted`. App.jsx is now 2,577 lines / ~555 KB (was 2,580 lines / ~635 KB — three lines removed for the `const T = {...}` block, one new import line added, net -2 lines; ~80 KB of dictionary moved to the new file). New file: `src/translations.js` (~80 KB, 4 lines). No SQL migration. No new translation keys. No closed open decisions. One amended decision (D-1), one amended decision (D-18 Track A), one new locked decision (D-29). No new pitfalls.
-
-**Out-of-app actions required before this build runs in production:**
-- Add `src/translations.js` to the GitHub repo at that path.
-- Replace `src/App.jsx`.
-- Commit + push. Vercel auto-deploys.
-- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-15-v062-translations-extracted"` (was `2026-05-15-v061-prefs-and-intake-ux` in v0.6.1).
-- Spot-check: toggle EN/ES — the entire UI should still translate identically to v0.6.1.
-- Run Playwright (`rm -rf playwright/.auth && npm run test:e2e`); expect 60/60 passing (no test changes; pure-data extraction is invisible to the test suite).
-
----
-
-**Prior version (v0.6.1, 2026-05-15)** — established 2026-05-15 (Patch). Four small fixes Mauricio caught walking through v0.6.0:
-
-1. **Light/dark and EN/ES toggles now survive page refresh.** Root cause was that `lang` and `isDark` were `useState("en")` / `useState(true)` literals in App, while `settings` already persisted to localStorage + Supabase. Fix added `lang`+`isDark` to `DEF_SETTINGS`, initialized the state from settings, and added a `useEffect` mirror so toggles flow back into the persisted settings object. No new top-level localStorage key (D-10 preserved).
-
-2. **About Us — Pay Now button removed from the free Insurance Advisory card.** The button was previously rendered in a disabled gray state because `insurance-consult` has an empty Stripe Links entry by design. Wrapped the `<a>` in a `{s.price!=="Free"&&...}` guard; the Request Service button now stretches to full width on that one card.
-
-3. **Resources guides link to authoritative external sites instead of opening the user's email client.** Each entry in `ResourcesPage.guides` gained a `url` field; the card link became a plain `target="_blank"` external link. URLs: Experian for credit, NerdWallet for debt strategies, CFPB for emergency fund and homebuyer, Investor.gov for retirement and asset allocation.
-
-4. **Intake Submissions: EN/ES Copy buttons and URL display fixed.** Three bugs in one panel: silent clipboard failures (no feedback), the URL field showed only the EN URL even when ES Copy was clicked (confusing), and the `/intake?advisor=…` URL returned a Vercel 404 when visited directly. Fixes: `copyUrl` rewritten as an async function with a `document.execCommand("copy")` textarea fallback and a final `window.prompt` fallback; URL panel split into two rows (EN row + ES row, each with its own input + Copy); new `vercel.json` at repo root with a `{"source":"/(.*)","destination":"/"}` SPA rewrite to make the public intake route resolve.
-
-**Build marker:** `2026-05-15-v061-prefs-and-intake-ux`. App.jsx is now 2,580 lines / ~635 KB (was 2,562 / 627 KB). No SQL migration. No new translation keys (the EN/ES tag prefixes are language-neutral). No new locked decisions, no closed open decisions — this is bookkeeping-light.
-
----
-
-**Prior version (v0.6.0, 2026-05-15)** — **First Minor bump since v0.5.0.** Three bundled changes (full responsive mobile shell, PWA install, Tier-3 public intake form). Big blast radius accepted at the user's explicit direction after the v0.5.2 a/b split pattern was proposed and declined.
-
-What v0.6.0 ships:
-
-1. **Mobile responsive shell.** New `useViewport()` hook (line 157) drives layout branching at a 720px breakpoint. On mobile: the sidebar becomes an off-canvas drawer (`position:fixed`, `translateX(-100%)` when closed, `0` when open) with a dim overlay that closes on tap. A new sticky top app-bar (52px tall, gold ⚓ + current page title) carries a `☰` hamburger button to open the drawer. `Row2` collapses to single-column. `Modal` becomes a bottom-sheet (rounded top corners only, slides up, uses `100dvh` and `env(safe-area-inset-bottom)` so iOS address-bar doesn't cut content). Tap targets bumped to 40–44px on primary buttons. Desktop layout is **byte-identical** to v0.5.2b — mobile is an additive code path keyed on `vp.isMobile`, intended to keep Playwright selectors stable.
-
-2. **PWA install + service worker.** Closes **O-5** as merged-**D-27**. New static files: `public/manifest.json` (name, short_name, theme/background `#0D1B2A`, icons in 192/512/512-maskable), `public/sw.js` (cache-first for static assets, network-first for app shell, **pass-through with no caching for any URL containing `supabase`/`stripe`/`resend` per D-2**), `public/icon-*.png` (placeholder gold ⚓ on navy generated 2026-05-15 — Mauricio can swap for branded versions later), `public/apple-touch-icon.png`, `public/favicon-32.png`. The reference `index.html` adds `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, and a SW registration script that runs an immediate `reg.update()` on every page load to avoid stale-bundle issues post-deploy.
-
-3. **Tier-3 public intake form.** New `/intake?advisor=<uuid>&lang=<en|es>` public route renders a bilingual standalone form (`PublicIntake` component, ~80 lines, dark fixed theme so it works without the advisor's settings). Posts to a new Supabase `intake_submissions` table (see §11.6 / `sql/v0.6.0_intake_submissions.sql`). Schema: `(id uuid pk, advisor_id uuid, submission_token text, lang, status, data jsonb, client_local_id, ip_hash, user_agent, created_at, reviewed_at, converted_at)` with a status CHECK constraint and tiered RLS (anonymous INSERT allowed, advisor SELECT/UPDATE/DELETE gated by `advisor_id = auth.uid()`). New advisor-side `IntakeSubmissionsPage` shows the pending queue, lets Mauricio view submission data, mark reviewed, reject, or **Convert to Client** (prefills a new Client with name/contact/income/goals/notes, marks the submission `converted` and stores the resulting `client_local_id` for traceability). Public URL with EN/ES copy buttons rendered at the top of the page. Added to NAV as `📥 Intake` between Clients and Calculators.
-
-4. **42 new bilingual translation keys** for the public intake + advisor review (T.en and T.es both go from 1,093 → 1,135 keys, symmetry-verified by build script). 12 additional keys for mobile-shell + PWA chrome (`menu`, `closeMenu`, `installApp`, `installIosTip`, `installAndroidTip`, `appBarTitle`, `navTitleSection`, `intakeSubmissions`, `newSubmission`, `pendingSubmissions`, `submissionConverted`, `publicIntakeUrl`) had already been added during Phase 2 setup, so the total v0.6.0 added is 54 keys per side.
-
-5. **One new locked decision (D-27).** PWA install + mobile-first responsive shell using Vite/React (no Capacitor, no Expo, no separate native repo). Web-only per D-5, but installable.
-
-6. **One new pitfall (#13).** URL-based routing inside the single App component must guard *after* all hooks are declared (hooks rule). The `isPublicIntakeRoute` check is computed during state setup; the early `return <PublicIntake/>` happens after all `useEffect`/`useState` lines, before the auth gate.
-
-No App.jsx structural refactor outside the additions above. `mig`, `mk`, `gid`, `vEmail`, `Pill`, `Btn`, `BSolid`, `SaveBar`, `Modal`, `useTh`, `mCARD`, and `useViewport` are all the in-scope symbols the new components use. Backward-compatible with all pre-v0.6.0 saved client and settings shape.
-
-**Build marker:** `2026-05-15-v060-mobile-pwa-intake`.
-
-**Out-of-app actions required before this build runs in production:**
-- Run `sql/v0.6.0_intake_submissions.sql` in Supabase SQL Editor (creates the table + RLS).
-- Upload all files in `public/` to GitHub repo's `public/` directory.
-- Replace `index.html` at repo root with the updated reference (preserves the existing Vite entry while adding PWA registration).
-- Commit + push. Vercel auto-deploys.
-- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-15-v060-mobile-pwa-intake"`.
-- Verify PWA: in Chrome DevTools → Application → Manifest, confirm "Golden Anchor Finance" loaded; install via the ⊕ icon in the URL bar.
-- Verify public intake: visit `https://finance.goldenanchor.life/intake?advisor=<your-uuid>` — should render the standalone form on a dark navy background. Submit a test entry, then sign in to the advisor app, navigate to `📥 Intake`, confirm the submission appears, convert it, confirm the new client is created with the submitted data, then delete the test client.
-
-**Prior version (v0.5.2b, 2026-05-15)** — **Second half of the launch-stabilization patch series.** v0.5.2a (the prior patch) handled security + UX with zero schema changes. v0.5.2b is the revenue-plumbing half: per-client service plan tracking, settings-level Stripe Payment Link map, Pay Now buttons on the public services grid, and backup-verification helper closing the O-15 implementation gap.
-
-What v0.5.2b ships:
-
-1. **9-service Stripe-aligned `SVCS` array.** Replaces the old 6-service generic catalog. Each entry has a stable `id` used as a key in `settings.stripeLinks` and as a value in `client.servicePlan.plan`: `initial-checkup` ($149), `client-checkup` ($99), `quarterly-review` ($199), `strategy-session` ($129), `monthly-lite` ($49/mo), `monthly-lite-plus` ($79/mo), `annual-bundle` ($499/yr), `insurance-consult` (free), `donation` (any amount). ES descriptions live inline as `descEs`; the old standalone `SVCS_DESC_ES` const is removed.
-2. **`settings.stripeLinks` map.** Pre-populated from the 2026-05-12 Stripe CSV export with all 8 hosted Payment Link URLs (insurance-consult left empty — free consult, no Stripe link). Editable in **Profile & Settings → 💳 Stripe Payment Links**.
-3. **Pay Now buttons on About/Services page.** Each service card now has 📋 Request Service + 💳 Pay Now side-by-side. Pay Now opens the hosted Stripe Checkout in a new tab; disabled with tooltip if no URL configured.
-4. **Per-client service plan tracking.** New `client.servicePlan` nested object with `plan` (dropdown of service ids), `category` (free text), `status` (active/paused/ended), `startDate`, `nextChargeDate`, `lastPaidAt`, `paymentMethod` (stripe/cash/zelle/check/other), `paymentLinkUrl` (free text URL), `serviceNotes`. UI lives at top of the 🗒 Notes & Goals tab with independent Save button. Also renders compactly in the Complete Report's Notes section in gold.
-5. **`settings.lastBackupVerified` field + UI.** ISO date string. Collapsible "💾 Backup Verification" section in Profile & Settings walks through the monthly procedure and lets Mauricio mark a verified-restore date. Closes O-15.
-6. **AGENT.md §11 backup procedure.** Concrete steps for the monthly verification routine.
-7. **33 new bilingual translation keys.** T.en and T.es both go from 1,060 → 1,093 keys, AST-verified equal.
-
-No schema changes. `client.servicePlan` and `settings.stripeLinks`/`settings.lastBackupVerified` ride along inside the existing JSON columns and migrate transparently. Backward-compatible: existing clients with no `servicePlan` field just show empty form fields.
-
-**Build marker:** `2026-05-15-v052b-service-plans-stripe-links`.
-
-**Prior version (v0.5.2a, 2026-05-14)** — first half of the split: 30-minute idle auto-logout with 1-minute warning + draft preservation, Mauricio-only password reset via Supabase email flow (no public signup), save-failure toast via `ga-save-failed` CustomEvent. 17 new bilingual translation keys (1,060 per side at the time). No App.jsx structural changes outside the Login component, App component (state + 3 effects + 2 UI elements in the auth tree), and the two Supabase save functions.
-
-**Tooling addendum (2026-05-14, post-v0.5.2a deploy):** Playwright end-to-end test harness added to the repo. 30 tests covering smoke, calculators, client workflows, translation integrity, and Supabase persistence. Test user `test@goldenanchor.life` (UUID `9d017248-fc0a-44ad-b68b-53315bb928d8`) seeded with duplicated fake/demo clients. Main advisor account `b373dd8a-bf12-4df2-9439-d7770406d416` is protected by a hard-refuse guard in `global-setup.ts`. WebKit project disabled in the local Codespace because 36 system libraries are missing — Chromium + Firefox give adequate coverage. First run had ~30 selector-mismatch failures in `02-calculators.spec.ts`, `04-translation.spec.ts`, and the `navTo` chain in `utils/fixtures.ts` — test-code bugs, NOT app bugs. **Selector fixes took three passes:** first pass (2026-05-14) corrected the obvious bugs but shipped three live ones (non-blocking `isVisible()` probe in `switchLang`, wrong Clients-page placeholder, `getByLabel` against sibling `<label>` in `fillNumberByLabel`). Second pass (2026-05-15) patched those three plus three assertion errors. Third pass (2026-05-15 evening) patched the last four: Car Loan Term field is a range slider with interpolated label so `^Term$` regex never matched (dropped the Term setter, zeroed fee/tax noise for clean $386.66 math), and React duplicate-key warning from test-user data pollution (Miguel Torres seeded twice — suppressed in smoke filter with TODO to dedupe via SQL). **Steady state 60/60 passing as of 2026-05-15.** Detailed in §13.
-
-**Prior version (v0.5.1, 2026-05-14)** — **Critical Supabase migration bug fix.** The v0.5.0 wiring used `clientObj.id` (a numeric value from `gid() = Date.now() + Math.floor(Math.random()*99999)`) as the primary key when upserting into Supabase's `clients` table, but the `clients.id` column is a UUID. Every save failed silently with a PostgreSQL cast error; the migration loop marked `ga_migrated_to_supabase = "1"` anyway, leaving the app stuck reading from localStorage with no path to retry.
-
-**Three fixes in v0.5.1:**
-1. **`gaSaveClient`** now uses a new `local_id` text column to track the app's numeric ID, lets Supabase generate its own UUID for `id`, and `select-then-update-or-insert` to maintain idempotency. Returns `true` / `false` so callers can detect failure.
-2. **`gaDeleteClient`** matches rows by `local_id`, not `id`.
-3. **`gaMigrateLocalStorage`** only sets the `ga_migrated_to_supabase` flag when every single client save succeeded. If even one fails, the flag stays unset and the migration retries on the next login. Logs progress as `[GA] migration complete: N/N clients migrated` or `[GA] migration incomplete: M/N clients saved`.
-
-**Required Supabase SQL** (paste into Supabase SQL Editor and run before deploying v0.5.1):
-
-```sql
-alter table public.clients
-  add column if not exists local_id text;
-
-create unique index if not exists clients_user_local_id_idx
-  on public.clients(user_id, local_id)
-  where deleted_at is null;
-```
-
-**Required browser action after deploy:** open DevTools console on the deployed app and run `localStorage.removeItem("ga_migrated_to_supabase")` once. Do NOT delete `ga_v3` — that's the source of truth until migration succeeds.
-
-**Settings table is NOT affected.** `gaSaveSettings` upserts on `user_id` (a real Supabase Auth UUID), so the UUID-cast bug never hit it. Left unchanged.
-
-**Prior version (v0.5.0, 2026-05-14)** — **First Minor bump since the project began.** Two big changes:
-
-1. **Supabase Auth + DB wired into App.jsx.** Login screen replaces hardcoded credentials. Session restores on page load via `getSession()` + `onAuthStateChange`. Clients and settings now read/write to Supabase (gated by RLS `auth.uid() = user_id`) with localStorage retained as a write-through cache. Migration helper uploads existing localStorage data on first cloud login and is idempotent. Sign-out wired. **Closes D-22 at the code level** (was schema-only before) and effectively retires the D-2 PII-in-localStorage risk.
-
-2. **~140 new bilingual translation keys** covering Dashboard alerts panel, CalculatorsPage gallery, all 9 standalone calculators (Retirement / Portfolio / Home / Income / Debt Reduction / Car Loan / Affordability / Interest / HY Savings), the full Compare report block (ratio rows, field labels, column headers, save/clear messages), Complete Report section labels, and Financial Statements + Accounts/Loans filter buttons. EN and ES dicts now sit at ~1,069 keys per side. Compare report block also gained `FLD_REMAP`/`RAT_REMAP` so persisted English-label snapshots from v0.4.x render in the active language going forward.
-
-Build marker bumped to `2026-05-14-i18nplus-supabase-v050`. File grew from ~564 KB / 2,173 lines to ~580 KB / 2,254 lines.
-
-**Out-of-app actions required before this build runs in production:** `npm install @supabase/supabase-js`, set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` env vars in Vercel, create the single advisor Auth user in Supabase Dashboard, disable email confirmations. See CHANGELOG v0.5.0 entry for the step-by-step.
-
-**Prior patch (v0.4.2, 2026-05-13)** fixed Dashboard Alerts ⚙️ black-screen crash and added 9 translation keys for the Alerts Settings modal. Introduced O-11 tracking the PDF-generation gap blocking Resend email automation.
-
-**Prior merge (v0.4.0, 2026-05-13)** reconciled two streams that ran in separate chats:
-- **App-side track** (last tag v0.3.0): bilingual report coverage + six logic fixes — full FullReport / SummaryReport / FinancialStatements / CashFlow / Compare / Calc / Plan / Portfolio blocks now render in EN/ES, 868 dict keys per side (+144), Spanish month names via `MS_ES`/`mLabel()`/`fmtDate()`, 3 kebab regressions fixed, RSR formula corrected, Min Pay clarity, Liquidity Ratio rename, Allocation guard banner, Stale-snapshot warning, Income Stmt vs Cash Flow Stmt labels disambiguated. Pitfall #11 added (global text.replace destruction).
-- **Infra-side track** (last tag v0.3.2): Supabase Phase 1 SQL executed, Stripe + Calendly + Google Business Profile confirmed live, Wix → Porkbun registrar transfer in flight (ICANN 5-day clock running, expected completion 2026-05-18 to 2026-05-20). Cloudflare DNS + Resend domain verification blocked on Porkbun completion. Architecture decisions D-23 through D-26 locked (multi-tenant RLS, account consolidation deferred, domain layout, DNS path).
-
-**Decision renumbering:** the two chats independently assigned D-18, D-19, etc. to different decisions. The merged ledger keeps `D-18 = Translation` (most-referenced) and shifts the infra-side numbers up by one. See the v0.4.0 entry in CHANGELOG.md for the full old → new map.
-
-Versions bump as follows:
-- **Patch** (v0.5.0 → v0.5.1): bug fix, copy tweak, small translation addition.
-- **Minor** (v0.5.x → v0.6): new feature, new tab, new calculator, structural refactor.
-- **Major** (v0.x → v1.0): when the app is officially launched to paying clients with Supabase Auth + DB wired and at least manual payment path live.
-
-See CHANGELOG.md for full history.
+- Hard refresh production; verify `window.__GA_BUILD__ === "2026-05-16-v080-bulk-client-actions"`.
+- Spot-check: (a) Clients tab — every client row shows a checkbox; clicking the row body still opens the client, clicking only the checkbox selects without navigating; (b) tick "select all" in the selection bar — every visible (filtered) client selects and the count updates; (c) select 2-3 active clients → burger menu → Archive Selected → the confirm modal lists their names → confirm → they drop into the Archived section; (d) expand Archived, tick some archived clients → Restore Selected works; Restore is greyed out if the selection mixes archived + active; (e) Delete Selected → the confirm modal's button stays disabled until you type DELETE exactly; (f) burger → Split… → pick a partnered client → `SplitAssignModal` opens; burger → Join… → pick a single client → `JoinModal` opens; (g) switch to ES — the bulk menu items, all confirmation modals, the pickers, and the selection bar are fully translated.
 
 ---
 
@@ -788,7 +593,9 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-16 — v0.7.3 (Patch — autofill suppression on public intake form, ClientType + RecommendedBy fields removed from intake, light/dark toggle on public intake page, MVP send-intake-link feature with mailto/SMS/copy-message buttons promoted from Chat 7 backlog and shipped early). Build marker `2026-05-16-v073-intake-polish-and-send-mvp`. +11 translation keys × 2 langs; dictionary 1,147 → 1,158 per side. App.jsx 2,696 → 2,743 lines. No SQL migration. No new locked decisions, no closed open decisions. No new pitfalls. Server-side email/SMS delivery (Resend + Twilio) remains backlog under "Server-side intake delivery (future)"; WhatsApp delivery explicitly deferred to long-term per Mauricio.*
+*Last updated: 2026-05-16 — v0.8.0 (Minor — multi-select + bulk actions on the Clients tab. Per-row selection checkboxes on every active/archived `ClientList` row, a "select all visible" selection bar with live count, and the Clients-tab burger menu extended with five bulk operations: 📦 Archive / ↩ Restore / 🗑️ Delete / ✂️ Split / 🔗 Join. Archive/Restore/Delete are selection-gated with confirmation modals that list affected clients; bulk Delete requires typing DELETE. Split/Join are selection-independent — they open searchable pickers that feed the existing SplitAssignModal / JoinModal unchanged. Chat 4 of the parallel-chat workplan). Build marker `2026-05-16-v080-bulk-client-actions`. +27 translation keys × 2 langs; dictionary 1,158 → 1,185 per side. App.jsx 2,743 → 2,832 lines (`ClientList` rewritten multi-line). Four new App handlers (`archiveMany`/`restoreMany`/`deleteMany`/`splitClientPair`); `joinClients` reused; `Kebab` gained backward-compatible optional `disabled`-item support. No SQL migration. No new locked decisions, none closed. No new pitfalls.*
+
+*Prior update: 2026-05-16 — v0.7.3 (Patch — autofill suppression on public intake form, ClientType + RecommendedBy fields removed from intake, light/dark toggle on public intake page, MVP send-intake-link feature with mailto/SMS/copy-message buttons promoted from Chat 7 backlog and shipped early). Build marker `2026-05-16-v073-intake-polish-and-send-mvp`. +11 translation keys × 2 langs; dictionary 1,147 → 1,158 per side. App.jsx 2,696 → 2,743 lines. No SQL migration. No new locked decisions, no closed open decisions. No new pitfalls. Server-side email/SMS delivery (Resend + Twilio) remains backlog under "Server-side intake delivery (future)"; WhatsApp delivery explicitly deferred to long-term per Mauricio.*
 
 *Prior update: 2026-05-16 — v0.7.2 (Patch — SSN format + theme fix + sort-arrow spacing). Build marker `2026-05-16-v072-intake-polish`.*
 
