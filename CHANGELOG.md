@@ -4,6 +4,27 @@ All notable changes to App.jsx and the supporting docs. Newest entries on top. F
 
 ## v0.8.0 — 2026-05-16
 
+### Added — Bulk actions on the Clients tab
+- The Clients-tab menu gains five operations: Archive, Restore, Delete,
+  Split, and Join. The client list looks unchanged until you pick one.
+- Picking Archive, Restore, or Delete turns on a selection mode: an action
+  bar appears with a "select all" option and a live count, and checkboxes
+  appear on the clients that action applies to (Archive on active clients,
+  Restore on archived clients, Delete on any). Pick the clients, then
+  confirm in a dialog that lists them by name. Bulk Delete requires typing
+  DELETE.
+- Split and Join open searchable pickers and reuse the existing Split/Join
+  screens — they act on one client and ignore selection.
+- 28 new English/Spanish translation strings (1,158 → 1,186 keys per language).
+
+### Changed
+- Clients list component rewritten to support the bulk-action flow.
+
+No database changes. No breaking changes.
+Build marker: 2026-05-16-v080-bulk-client-actions
+
+## v0.8.0 — 2026-05-16
+
 ### Added — Multi-select & bulk actions on the Clients tab
 - Each client row now has a selection checkbox. Clicking the row body still
   opens the client; only the checkbox toggles selection.
