@@ -1,4 +1,4 @@
-import { test, expect, navTo, getBuildMarker } from "../utils/fixtures";
+import { test, expect, navTo, getBuildMarker, switchLang } from "../utils/fixtures";
 
 /**
  * SMOKE TESTS
@@ -81,7 +81,12 @@ test.describe("smoke", () => {
     { nav: "Clients", sentinel: /Search clients|New Client/i },
     { nav: "Calculators", sentinel: /Retirement|Portfolio|Home/i },
     { nav: "Promotions", sentinel: /Promotion/i },
-    { nav: "Forms", sentinel: /Forms & Documents|Forms/i },
+    // v0.9.3 resync: the standalone "Forms" tab was removed in v0.7.0. The
+    // sidebar now has an "Intake Forms" tab (id `intake-submissions`). The old
+    // {nav:"Forms"} entry was a false positive — navTo("Forms") word-matched
+    // the "Intake Forms" button, so the test passed while testing the wrong
+    // surface. Point it at the real surface instead.
+    { nav: "Intake", sentinel: /Intake Forms|Formularios/i },
     { nav: "Resources", sentinel: /Resources|Guide/i },
     { nav: "About", sentinel: /Golden Anchor|Our Services|About/i },
   ];
@@ -95,22 +100,26 @@ test.describe("smoke", () => {
     });
   }
 
-  test("language toggle switches EN -> ES without errors", async ({
-    appPage,
-  }) => {
-    // App stores lang in window.__GA_LANG and exposes a toggle button.
-    // We don't know the exact button selector, so we drive lang via window:
-    await appPage.evaluate(() => {
-      // @ts-ignore — fallback if there is no UI toggle near at hand
-      window.__GA_LANG = "es";
-    });
-    // Force a UI refresh by clicking through a tab
-    await navTo(appPage, "Dashboard");
-    await navTo(appPage, "Clients");
-    // ES version of "Search clients…" is "Buscar clientes…" — if the dict
-    // is healthy on both sides, neither raw key strings nor undefined render.
-    const body = await appPage.locator("body").innerText();
+  test("language toggle switches EN -> ES and back", async ({ appPage }) => {
+    // v0.9.3 resync: the previous version set `window.__GA_LANG = "es"`
+    // directly. That is a NO-OP for rendering — App mirrors React state OUT
+    // to that global via a useEffect, it never reads it back IN. The test
+    // passed while never actually switching language. Drive the real sidebar
+    // toggle (title="Language") via the switchLang fixture instead.
+    await switchLang(appPage, "es");
+    await navTo(appPage, "Tablero"); // ES label for "Dashboard"
+    let body = await appPage.locator("body").innerText();
+    expect(body, "ES content should render after the toggle").toMatch(
+      /Asesor|Cliente|Tablero/i,
+    );
     expect(body).not.toContain("undefined");
     expect(body).not.toMatch(/\bsearchClients\b/); // raw dict keys shouldn't leak
+
+    // Restore EN so the app is left in a known state.
+    await switchLang(appPage, "en");
+    await navTo(appPage, "Dashboard");
+    body = await appPage.locator("body").innerText();
+    expect(body).toMatch(/Dashboard|Advisor|Client/i);
+    expect(body).not.toContain("undefined");
   });
 });

@@ -31,9 +31,14 @@ import type { Page } from "@playwright/test";
 const SURFACES: Array<{ en: string; es: string; esBodyWord: RegExp }> = [
   { en: "Dashboard", es: "Tablero", esBodyWord: /Tablero|Asesor|Cliente/ },
   { en: "Clients", es: "Clientes", esBodyWord: /Clientes|Buscar/ },
+  // v0.9.3 resync: the standalone "Forms" tab was removed in v0.7.0. The
+  // old { en:"Forms", es:"Formularios" } entry was a false positive —
+  // navTo("Formularios") word-matched the new "Formularios de Admisión"
+  // (Intake Forms) button, so the test passed while exercising the wrong
+  // surface. Replaced with the real "Intake Forms" surface.
+  { en: "Intake Forms", es: "Formularios", esBodyWord: /Formulario|Admisi[oó]n/ },
   { en: "Calculators", es: "Calculadoras", esBodyWord: /Calculadora|Hogar|Préstamo/ },
   { en: "Promotions", es: "Promociones", esBodyWord: /Promoci[oó]n|Descuento/ },
-  { en: "Forms", es: "Formularios", esBodyWord: /Formulario|Descarg/ },
   { en: "Resources", es: "Recursos", esBodyWord: /Recurso|Gu[ií]a/ },
   { en: "About Us", es: "Nosotros", esBodyWord: /Nosotros|Asesor|Servicios/ },
 ];

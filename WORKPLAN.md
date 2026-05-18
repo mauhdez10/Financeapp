@@ -248,7 +248,7 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 ---
 
-### Chat 6 — Playwright resync [`queued`]
+### Chat 6 — Playwright resync [`done (test resync, 2026-05-17)`]
 
 > **Dependency:** do not claim this chat until Chats 3 (IA changes), 4 (bulk actions), and 5 (mobile redesign) are all `done` and committed. The selectors and IA assumptions in the test suite will all shift once those three land; resyncing before any of them ships wastes the work.
 
@@ -282,9 +282,42 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 ---
 
+### Chat 7 — Server-side intake delivery [`queued`]
+
+> **Dependency:** blocked on the **Porkbun → Cloudflare DNS migration**. The email-delivery path needs SPF / DKIM / DMARC records on `goldenanchor.life` before Resend can send from `mauricio@goldenanchor.life`. Do NOT claim this chat until that DNS migration is `done`. If DNS is not ready when this slot is reached, leave it `queued` and tell Mauricio why.
+
+**Files to upload:**
+- `src/App.jsx` (latest from repo)
+- `src/translations.js`
+- `CHANGELOG.md`
+
+**Files NOT to upload:** the Playwright suite (`tests/`, `utils/fixtures.ts`, `playwright.config.ts`) — unless the new delivery UI warrants test coverage in the same pass, in which case add it as a follow-up.
+
+**Goal:** Upgrade the v0.7.3 MVP intake delivery (mailto / sms / copy-message) to real server-side delivery — email via Resend, SMS via Twilio — plus an invite-token system that prefills the public intake form and tracks who opened the link.
+
+**Spec:**
+
+1. **Resend email integration.** Send the intake invite from `mauricio@goldenanchor.life` server-side (no advisor mail client). Requires the DNS records above to be live first.
+
+2. **Twilio SMS.** Outbound SMS without the advisor's own phone — advisor pays per message (~$0.01/SMS). Requires a Twilio account + verified business profile.
+
+3. **Invite-token system.** Generate a unique token per prospect; the public intake URL accepts `invite=<token>`; the form prefills from the token; track which prospect opened the link and when.
+
+4. **TCPA compliance.** Explicit opt-in language for SMS — even B2C financial-services outreach in Florida needs documented consent. Add the consent copy in EN + ES (D-18).
+
+**Open decisions to close (move from AGENT.md §5 to Locked):** email provider (Resend recommended), Twilio account + verified business profile, SMS consent legal language.
+
+**Out of scope:** WhatsApp Business API delivery (stays in §4 backlog — long-term). Any unrelated app features.
+
+**Version bump:** minor (new feature) — confirm the exact next number against AGENT.md §3 at chat start.
+
+**Deliverables:** per §1.
+
+---
+
 ## §4. Backlog (no prompts yet — promoted to §3 as queue empties)
 
-- **Server-side intake delivery (future, post-DNS-migration).** v0.7.3 shipped the MVP mailto/SMS/copy-message version. Server-side upgrade adds: (a) Resend integration for email delivery from `mauricio@goldenanchor.life` (blocked on Porkbun→Cloudflare DNS migration for SPF/DKIM/DMARC records); (b) Twilio SMS API for outbound SMS without requiring the advisor's phone (advisor pays per-message, ~$0.01/SMS); (c) invite-token system — generate unique tokens, prefill the intake form with `invite=<token>` query param, track which prospect opened the link and when. Open decisions: email provider (Resend recommended for simplicity), Twilio account setup + verified business profile, opt-in legal language for SMS (TCPA compliance — explicit consent required, even for B2C financial services outreach in Florida). Not blocked on Chat 4/5/6 — can ship as v0.8.x patch when DNS is sorted.
+- *(Server-side intake delivery was promoted to §3 as Chat 7 on 2026-05-17 — see the Chat 7 slot for the full spec. It is blocked on the Porkbun→Cloudflare DNS migration.)*
 - **WhatsApp Business API delivery (long-term, deferred).** Per Mauricio's call, this is not a near-term priority. WhatsApp Business API requires verified Business profile through Twilio (days to weeks of approval), template-message pre-approval (Meta reviews each template), and per-conversation pricing. Revisit only if SMS proves inadequate after the server-side intake delivery feature ships.
 - **Future:** Stripe webhook for auto-`lastPaidAt`. ToS/engagement-letter signature gate (O-14). Service plan in Strategy Plan tab (Q1 follow-up — currently in Monthly Statement, may want it surfaced in the planning view too).
 
@@ -294,6 +327,7 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 | Chat # | Version | Date | Title |
 |---|---|---|---|
+| 6 | — | 2026-05-17 | Playwright e2e suite resync against the post-v0.9.3 app — **test-harness only, no app version bump, `App.jsx` untouched.** Re-baselined the specs after the Chat 3/4/5 changes. **Deleted-surface fixes:** `01-smoke` dropped the standalone `Forms` tab (removed in v0.7.0) — it was a false positive, `navTo("Forms")` word-matched the new "Intake Forms" button; replaced with a real Intake Forms tab check. `04-translation` likewise swapped the bogus `Forms` ES surface for a real `Formularios de Admisión` (Intake Forms) surface. `03-client-workflows` dropped the deleted per-client `📝 Intake` tab from the ClientDetail tab walk, corrected `💹 Portfolios` → `💹 Investments`, added the `🔧 Backfill` tab. **New coverage:** `03` gained a `describe` block for the v0.8.0 action-first ClientList bulk flow (☰ Actions menu → Archive/Delete selection mode → confirm modal → DELETE-gating → Split/Join pickers) — every test cancels out, never mutating the seeded test user. **New file `tests/06-mobile.spec.ts`** — iPhone-13 emulation: drawer opens flush to the viewport's left edge + a structural pitfall-#14 guard (drawer must not be nested inside the `zoom` container), dark-mode `<html>`/`<body>` background paint (v0.9.1), and no horizontal page scroll on Dashboard / Clients / ClientDetail (v0.9.0 / v0.9.3 `data-ga-grid`). **Stale test fixed:** `01-smoke`'s language test no longer sets the no-op `window.__GA_LANG`; it drives the real `switchLang` toggle. `02-calculators` and `05-persistence` were unaffected by Chats 3/4/5 and were not rewritten (expected green). `utils/fixtures.ts` and `playwright.config.ts` needed no changes — `06-mobile` self-contains its device descriptor. WebKit re-enable shipped as an **optional terminal step**, not committed to config: the bug it guards is WebKit-only and the Codespace dep install (`sudo npx playwright install-deps webkit`) can't be verified remotely. AGENT.md §13 update deferred — the post-resync passing count must come from a real local run. |
 | — | v0.9.3 | 2026-05-17 | Third mobile-overflow hotfix in same session as v0.9.1/v0.9.2. **Three KPI/portfolio grids that v0.9.0 missed were spilling cards off the right edge on mobile.** (1) `ClientReport` 4-up KPI strip (`Net Income/mo / Monthly Bills / Total Debt / Net Worth`) — line ~617, hard-coded `gridTemplateColumns:"1fr 1fr 1fr 1fr"`. (2) `AssetsLiabilitiesTab` 4-up (`Total Assets / Total Liabilities / Net Worth / Current Ratio`) — line ~1177, hard-coded `"repeat(4,1fr)"`. (3) `InvestmentsTab` Portfolio packages 3-up (`Conservative / Growth / Aggressive`) — line ~578, hard-coded `"1fr 1fr 1fr"`. v0.9.0's pass added mobile branches to the components I touched directly (Dashboard, ClientList, ClientDetail top KPIs) but missed these. **Fix is global + defensive**, not per-call-site: (a) new `@media(max-width:719px)` block in the `ga-styles` injection that targets `[data-ga-grid="kpi-3"]`, `[data-ga-grid="kpi-4"]`, `[data-ga-grid="portfolios"]`, `[data-ga-grid="two-col"]`, `.ga-mobile-collapse` and forces 2-up or 1-up with `!important` (needed to beat the inline styles in JSX); (b) `SC` (stat card) component gets `className="ga-sc"` + `min-width:0` + `overflow:hidden`, plus a global rule `.ga-sc,.ga-sc *{min-width:0!important}` so cards can actually shrink inside the collapsed grid (without this, grid items default to `min-width:auto` ≈ content width and refuse to compress); (c) SC labels/values get `text-overflow:ellipsis` to truncate very long $ amounts; (d) the four problem grids each get a `data-ga-grid="kpi-4|kpi-3|portfolios"` attribute on their wrapping `<div>` (also tagged the matching grid in `RatioContent` and `PortfolioStandaloneCalc` while in the neighbourhood — 5 grids tagged total). **Forward-safe pattern**: any future hard-coded grid just needs a `data-ga-grid="..."` attribute and it auto-collapses on mobile — no `useViewport()` plumbing required. The remaining hard-coded grids inside calculators / summary modals are left untagged for now (either modal-scoped or desktop-only workflows); each is a one-line fix if a screenshot shows one overflowing. Zero new translation keys. App.jsx 2,880 → 2,900 lines (~595 KB). `src/translations.js` unchanged at 1,192 keys/side. No SQL migration. No new locked decisions, none closed, no new pitfalls. D-1, D-7, D-18, D-27 preserved. Build marker `2026-05-17-v093-mobile-grid-overflow`. |
 | — | v0.9.2 | 2026-05-17 | Out-of-band hotfix follow-up to v0.9.1, same session. **`Kebab` (☰) dropdown was clipping off the left edge of the viewport** when the trigger button was in the left half of the screen — most obvious on the Chat 4 bulk-action ☰ on the Clients page, which v0.8.0 placed at the left of the page header beside "+ New Client". The menu was hard-coded to `right:0`, anchoring its right edge to the button's right edge; the 200px-wide dropdown then extended leftward off the viewport on mobile. Fix: `Kebab` now measures its button's `getBoundingClientRect().left` against `window.innerWidth/2` when the menu opens, stashes `side` in component state (`left`/`right`), and the dropdown's style uses `[side]:0` as a computed key. One new `useState`, one `toggle()` helper that runs the measurement before setting open. Pure presentational fix — no API change, all existing Kebab callers (Dashboard header `⋯`, ClientList bulk action ☰, per-row `⋯`, etc.) work unchanged; only the visual anchor differs by context. Zero new translation keys. App.jsx 2,879 → 2,880 lines (~594 KB). `src/translations.js` unchanged at 1,192 keys/side. No SQL migration. No new locked decisions, none closed, no new pitfalls (v0.9.1's pitfall #14 still applies but unrelated to this fix). D-1, D-7, D-18, D-27 preserved. Build marker `2026-05-17-v092-kebab-flip`. |
 | — | v0.9.1 | 2026-05-17 | Out-of-band hotfix for two mobile bugs introduced by v0.9.0, reported by Mauricio via screenshot the morning after deploy. (1) **Mobile drawer was rendering clipped off the left edge of the viewport.** Root cause: the outer flex container in `App()` carries `zoom:(settings.appZoom||1)`; in WebKit/iOS Safari the CSS `zoom` property establishes a containing block for `position:fixed` descendants, so the drawer was positioned relative to the zoomed parent instead of the viewport. Fix: hoisted the mobile drawer + its scrim **out of** the zoom-applying flex container and into the top-level `<></>` fragment as siblings; the desktop sidebar (no transform escape needed) stays inside the flex container, now gated behind `{!vp.isMobile&&...}`. Drawer also picked up an explicit ✕ close button, 9-10px tap padding (44px target), fontSize 14. (2) **White border around the page on mobile, visible even in dark mode** (status bar tint, overscroll bounce, iOS safe-area). Root cause: nothing was painting `<html>` or `<body>`; the browser-default white bled through any pixel outside the flex container. Fix: added a `useEffect` in `App()` keyed on `theme.bg` that sets `documentElement.style.background` + `body.style.background` to `theme.bg` (same pattern as `PublicIntake` line ~2311); outer flex container also gets `width:"100%"` as a defensive belt. **New pitfall #14 logged**: `zoom` traps `position:fixed` in WebKit — mobile overlays must be siblings of, not descendants of, the zoom-carrying container. Zero new translation keys. App.jsx 2,858 → 2,879 lines (~593 KB). `src/translations.js` unchanged at 1,192 keys/side. No SQL migration. No new locked decisions. D-1, D-7, D-18, D-27 preserved. Build marker `2026-05-17-v091-mobile-fixes`. |
@@ -331,6 +365,8 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 ---
 
 *This file is itself versioned via git. If you're reading it and the §3 queue looks out of date or contradicts the CHANGELOG, the file may be stale — pull latest from `main` before relying on it.*
+
+*Last updated: 2026-05-17 — Chat 6 (Playwright resync) `done`. The e2e suite was re-baselined against v0.9.3: three specs changed (`01-smoke`, `03-client-workflows`, `04-translation`) plus one new spec (`06-mobile`); `02-calculators`, `05-persistence`, `utils/fixtures.ts`, and `playwright.config.ts` were left unchanged. No app version bump — test-harness only, `App.jsx` untouched. Chat 7 (server-side intake delivery) added to §3 as `queued`, blocked on the Porkbun→Cloudflare DNS migration. Queue: Chat 7. Backlog: WhatsApp (long-term) + Future.*
 
 *Last updated: 2026-05-17 — v0.9.3 shipped (mobile-overflow hotfix #3 — global `data-ga-grid` collapse rule + `SC` min-width fix + 5 grids tagged). Chat 6 (Playwright resync) remains claimable; mobile surface is now in good shape post-v0.9.3.*
 
