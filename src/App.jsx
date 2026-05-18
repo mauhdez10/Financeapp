@@ -14,11 +14,16 @@ async function gaDeleteClient(userId,clientId){if(!supabase||!userId||!clientId)
 async function gaLoadSettings(userId){if(!supabase||!userId)return null;const{data,error}=await supabase.from("settings").select("data").eq("user_id",userId).maybeSingle();if(error){console.error("[GA] load settings error",error);return null;}return data?.data||null;}
 async function gaSaveSettings(userId,settingsObj){if(!supabase||!userId)return;const{error}=await supabase.from("settings").upsert({user_id:userId,data:settingsObj},{onConflict:"user_id"});if(error){console.error("[GA] save settings error",error);if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("ga-save-failed",{detail:{which:"settings"}}));}}
 async function gaLoadIntakeSubmissions(advisorId){if(!supabase||!advisorId)return[];try{const{data,error}=await supabase.from("intake_submissions").select("*").eq("advisor_id",advisorId).order("created_at",{ascending:false}).limit(200);if(error){console.error("[GA] load intake subs error",error);return[];}return data||[];}catch(e){console.error("[GA] load intake subs exception",e);return[];}}
-async function gaSubmitIntake(advisorId,lang,formData){if(!supabase||!advisorId)return{ok:false,error:"no-supabase"};try{const token="tok_"+Math.random().toString(36).slice(2,14)+Date.now().toString(36);const payload={advisor_id:advisorId,submission_token:token,lang:lang||"en",status:"pending",data:formData,user_agent:typeof navigator!=="undefined"?String(navigator.userAgent||"").slice(0,200):""};const{error}=await supabase.from("intake_submissions").insert(payload);if(error){console.error("[GA] intake submit error",error);return{ok:false,error:error.message};}return{ok:true,token};}catch(e){console.error("[GA] intake submit exception",e);return{ok:false,error:String(e&&e.message||e)};}}
+async function gaSubmitIntake(advisorId,lang,formData){if(!supabase||!advisorId)return{ok:false,error:"no-supabase"};try{const token="tok_"+Math.random().toString(36).slice(2,14)+Date.now().toString(36);const payload={advisor_id:advisorId,submission_token:token,lang:lang||"en",status:"pending",data:formData,user_agent:typeof navigator!=="undefined"?String(navigator.userAgent||"").slice(0,200):""};const{data,error}=await supabase.from("intake_submissions").insert(payload).select("id").single();if(error){console.error("[GA] intake submit error",error);return{ok:false,error:error.message};}return{ok:true,token,submissionId:data&&data.id};}catch(e){console.error("[GA] intake submit exception",e);return{ok:false,error:String(e&&e.message||e)};}}
 async function gaUpdateIntakeStatus(id,patch){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_submissions").update(patch).eq("id",id);if(error){console.error("[GA] intake update error",error);return false;}return true;}catch(e){console.error("[GA] intake update exception",e);return false;}}
 async function gaUpdateIntakeData(id,data){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_submissions").update({data}).eq("id",id);if(error){console.error("[GA] intake data update error",error);return false;}return true;}catch(e){console.error("[GA] intake data update exception",e);return false;}}
 async function gaDeleteIntakeSubmission(id){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_submissions").delete().eq("id",id);if(error){console.error("[GA] intake delete error",error);return false;}return true;}catch(e){console.error("[GA] intake delete exception",e);return false;}}
 async function gaDeleteIntakeSubmissionsByStatus(advisorId,status){if(!supabase||!advisorId||!status)return 0;try{const{data,error}=await supabase.from("intake_submissions").delete().eq("advisor_id",advisorId).eq("status",status).select("id");if(error){console.error("[GA] intake bulk delete error",error);return 0;}return (data||[]).length;}catch(e){console.error("[GA] intake bulk delete exception",e);return 0;}}
+async function gaLoadIntakeInvites(userId){if(!supabase||!userId)return[];try{const{data,error}=await supabase.from("intake_invites").select("*").eq("user_id",userId).order("created_at",{ascending:false}).limit(200);if(error){console.error("[GA] load invites error",error);return[];}return data||[];}catch(e){console.error("[GA] load invites exception",e);return[];}}
+async function gaDeleteIntakeInvite(id){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_invites").delete().eq("id",id);if(error){console.error("[GA] delete invite error",error);return false;}return true;}catch(e){console.error("[GA] delete invite exception",e);return false;}}
+async function gaSendIntakeInvite(payload){if(!supabase)return{ok:false,error:"no-supabase"};try{const{data:sess}=await supabase.auth.getSession();const jwt=sess?.session?.access_token;if(!jwt)return{ok:false,error:"Not signed in. Please log out and back in."};const r=await fetch("/api/send-intake-invite",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return{ok:false,error:j.error||("HTTP "+r.status),detail:j};return{ok:true,...j};}catch(e){console.error("[GA] send invite exception",e);return{ok:false,error:String(e&&e.message||e)};}}
+async function gaResolveIntakeInvite(token){try{const r=await fetch("/api/resolve-intake-invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return{ok:false,error:j.error||("HTTP "+r.status)};return{ok:true,...j};}catch(e){console.error("[GA] resolve invite exception",e);return{ok:false,error:String(e&&e.message||e)};}}
+async function gaMarkIntakeInviteSubmitted(token,submissionId){try{await fetch("/api/mark-intake-invite-submitted",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,submissionId})});}catch(e){console.error("[GA] mark invite submitted exception",e);}}
 async function gaMigrateLocalStorage(userId){if(!supabase||!userId)return false;if(localStorage.getItem("ga_migrated_to_supabase")==="1")return false;try{const lsClients=localStorage.getItem("ga_v3");const lsSettings=localStorage.getItem("ga_settings");const existing=await gaLoadClients(userId);if((existing||[]).length>0){localStorage.setItem("ga_migrated_to_supabase","1");return false;}let allOk=true;let savedCount=0;let totalCount=0;if(lsClients){const arr=JSON.parse(lsClients);if(Array.isArray(arr)&&arr.length>0){totalCount=arr.length;for(const c of arr){const ok=await gaSaveClient(userId,c);if(ok)savedCount++;else allOk=false;}}}if(lsSettings){try{const s=JSON.parse(lsSettings);await gaSaveSettings(userId,s);}catch(se){console.error("[GA] settings migrate error",se);}}if(allOk&&totalCount===savedCount){localStorage.setItem("ga_migrated_to_supabase","1");console.log(`[GA] migration complete: ${savedCount}/${totalCount} clients migrated`);return true;}else{console.error(`[GA] migration incomplete: ${savedCount}/${totalCount} clients saved — flag NOT set, will retry next login`);return false;}}catch(e){console.error("[GA] migration error",e);return false;}}
 
 
@@ -2287,11 +2292,13 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-17-v093-mobile-grid-overflow";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-18-v0100-server-intake-delivery";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
-  const advisorId=urlParams.get("advisor")||"";
+  const inviteToken=urlParams.get("invite")||"";
+  const[resolvedAdvisorId,setResolvedAdvisorId]=useState(urlParams.get("advisor")||"");
+  const advisorId=resolvedAdvisorId;
   const initialLang=(urlParams.get("lang")||"en").toLowerCase()==="es"?"es":"en";
   const[lang,setLang]=useState(initialLang);
   const t=T[lang]||T.en;
@@ -2299,6 +2306,12 @@ function PublicIntake(){
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
   const[err,setErr]=useState("");
+  // v0.10.0 — if ?invite=<token> present, resolve it server-side to prefill
+  // name/email/phone and mark the invite as opened. Falls back gracefully
+  // if the token is invalid/expired/missing — advisor=<uuid> still works.
+  const[inviteResolved,setInviteResolved]=useState(!inviteToken);
+  const[inviteError,setInviteError]=useState("");
+  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
   // v0.7.3 — light/dark toggle on public intake.  Persist choice in localStorage
   // so a prospect who comes back doesn't lose their preference mid-fill.
   const[mode,setMode]=useState(()=>{
@@ -2335,7 +2348,7 @@ function PublicIntake(){
     const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null};
     delete payload.id;delete payload.archived;delete payload.hideNumbers;delete payload.currentMonthLabel;
     const res=await gaSubmitIntake(advisorId,lang,payload);
-    if(res.ok){setSubmitted(true);}else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
+    if(res.ok){if(inviteToken&&res.submissionId){gaMarkIntakeInviteSubmitted(inviteToken,res.submissionId);}setSubmitted(true);}else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
   };
   // v0.7.2 — synthetic theme MUST be a flat theme object (useTh returns ctx value directly).
   // Mirror the TH local plus the extra keys mINP/mTH/mCARD/mTD helpers read (nav/navBorder/sideText/sideMuted).
@@ -2469,15 +2482,25 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
   const[editing,setEditing]=useState(null);
   const[deleteConfirm,setDeleteConfirm]=useState(null);
   const[clearConfirm,setClearConfirm]=useState(null);
-  // v0.7.3 — MVP send-intake-link state
+  // v0.10.0 — server-side send-intake-invite state (replaces v0.7.3 mailto MVP)
   const[sendOpen,setSendOpen]=useState(false);
   const[sendName,setSendName]=useState("");
   const[sendEmail,setSendEmail]=useState("");
   const[sendPhone,setSendPhone]=useState("");
   const[sendLang,setSendLang]=useState("en");
+  const[sendChEmail,setSendChEmail]=useState(true);
+  const[sendChSms,setSendChSms]=useState(false);
+  const[sendSmsConsent,setSendSmsConsent]=useState(false);
+  const[sendBusy,setSendBusy]=useState(false);
+  const[sendStatus,setSendStatus]=useState(null);// {ok,error,emailOk,smsOk}
+  const[invites,setInvites]=useState([]);
+  const[invitesLoading,setInvitesLoading]=useState(true);
+  const[invitesOpen,setInvitesOpen]=useState(false);
   const publicBase=(typeof window!=="undefined"?window.location.origin:"")+"/intake?advisor="+(authUser?.id||"");
   const publicUrlEs=publicBase+"&lang=es";
   useEffect(()=>{let cancelled=false;(async()=>{const list=await gaLoadIntakeSubmissions(authUser?.id);if(!cancelled){setSubs(list);setLoading(false);}})();return()=>{cancelled=true;};},[authUser?.id]);
+  // v0.10.0 — load sent invites alongside submissions
+  useEffect(()=>{let cancelled=false;(async()=>{const list=await gaLoadIntakeInvites(authUser?.id);if(!cancelled){setInvites(list);setInvitesLoading(false);}})();return()=>{cancelled=true;};},[authUser?.id]);
   // v0.6.1 — Robust copy: try Clipboard API first, fall back to execCommand on a
   // hidden textarea. If both fail, prompt() so the user can copy manually.
   const copyUrl=async(url,which)=>{
@@ -2527,11 +2550,11 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
         <input value={publicUrlEs} readOnly onClick={e=>e.target.select()} style={{flex:1,minWidth:200,padding:"8px 10px",fontSize:11,fontFamily:"monospace",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,cursor:"text"}} onFocus={e=>e.target.select()}/>
         <button onClick={()=>copyUrl(publicUrlEs,"es")} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:urlCopied==="es"?th.pos+"33":GOLD+"22",color:urlCopied==="es"?th.pos:GOLD,border:"1px solid "+(urlCopied==="es"?th.pos+"66":GOLD+"44"),cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",minHeight:36}}>{urlCopied==="es"?"✓ "+(t.intakeCopiedToast||"URL copied"):(t.intakeCopyUrl||"Copy")}</button>
       </div>
-      {/* v0.7.3 — Send-to-Prospect MVP (mailto/SMS, no server) */}
+      {/* v0.10.0 — Server-side send-intake-invite panel (replaces v0.7.3 mailto MVP) */}
       <div style={{marginTop:14,paddingTop:14,borderTop:"1px dashed "+GOLD+"44"}}>
-        <button onClick={()=>setSendOpen(o=>!o)} style={{background:"transparent",border:"none",color:GOLD,fontSize:12,fontWeight:700,cursor:"pointer",padding:0,marginBottom:sendOpen?10:0}}>{sendOpen?"▼":"▶"} {t.intakeSendTitle||"Send link to a prospect"}</button>
+        <button onClick={()=>setSendOpen(o=>!o)} style={{background:"transparent",border:"none",color:GOLD,fontSize:12,fontWeight:700,cursor:"pointer",padding:0,marginBottom:sendOpen?10:0}}>{sendOpen?"▼":"▶"} {t.intakeSendTitle||"Send invite to a prospect"}</button>
         {sendOpen&&<div>
-          <div style={{fontSize:11,color:th.muted,marginBottom:10,lineHeight:1.6}}>{t.intakeSendHelp||"Pre-fill the prospect's name + email or phone, choose language, and we'll open your email/SMS app with the link ready to send. No server delivery — you send from your own account."}</div>
+          <div style={{fontSize:11,color:th.muted,marginBottom:10,lineHeight:1.6}}>{t.intakeSendHelpV2||"We'll send a personalized invite from mauricio@finance.goldenanchor.life with a unique tracked link. The form auto-fills the prospect's name and contact info. SMS is disabled until Twilio business verification completes."}</div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:8}}>
             <input placeholder={t.intakeSendName||"Prospect name (optional)"} value={sendName} onChange={e=>setSendName(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
             <input type="email" placeholder={t.intakeSendEmail||"prospect@example.com"} value={sendEmail} onChange={e=>setSendEmail(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
@@ -2543,25 +2566,64 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
               {["en","es"].map(L=><button key={L} onClick={()=>setSendLang(L)} style={{padding:"6px 12px",fontSize:11,borderRadius:6,background:sendLang===L?GOLD+"33":"transparent",color:sendLang===L?GOLD:th.muted,border:"1px solid "+(sendLang===L?GOLD:th.cardBorder),cursor:"pointer",fontWeight:700,textTransform:"uppercase"}}>{L}</button>)}
             </div>
           </div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {(()=>{
-              const link=sendLang==="es"?publicUrlEs:publicBase;
-              const greet=sendLang==="es"?("Hola"+(sendName?" "+sendName:"")):("Hi"+(sendName?" "+sendName:""));
-              const body=sendLang==="es"
-                ?greet+",\n\nGracias por tu interés en Golden Anchor Financial Advisory. Por favor completa este formulario antes de nuestra primera llamada:\n\n"+link+"\n\nNos contactaremos pronto.\n\nMauricio Hernandez\nGolden Anchor"
-                :greet+",\n\nThanks for your interest in Golden Anchor Financial Advisory. Please fill out this intake form before our first call:\n\n"+link+"\n\nWe'll be in touch shortly.\n\nMauricio Hernandez\nGolden Anchor";
-              const subject=sendLang==="es"?"Golden Anchor — Formulario de admisión":"Golden Anchor — Intake form";
-              const smsBody=sendLang==="es"?(greet+", aquí está tu formulario de admisión de Golden Anchor: "+link):(greet+", here is your Golden Anchor intake form: "+link);
-              const mailto="mailto:"+encodeURIComponent(sendEmail)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
-              const sms="sms:"+encodeURIComponent(sendPhone)+"?&body="+encodeURIComponent(smsBody);
-              const copyMsg=async()=>{try{await navigator.clipboard.writeText(body);}catch(e){}};
-              return<>
-                <button onClick={()=>{if(!sendEmail){alert(t.intakeSendEmailReq||"Enter prospect email first.");return;}window.location.href=mailto;}} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:GOLD+"22",color:GOLD,border:"1px solid "+GOLD+"44",cursor:"pointer",fontWeight:700}}>✉️ {t.intakeSendEmailBtn||"Send Email"}</button>
-                <button onClick={()=>{if(!sendPhone){alert(t.intakeSendPhoneReq||"Enter prospect phone first.");return;}window.location.href=sms;}} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:th.blue+"22",color:th.blue,border:"1px solid "+th.blue+"44",cursor:"pointer",fontWeight:700}}>💬 {t.intakeSendSmsBtn||"Send SMS"}</button>
-                <button onClick={copyMsg} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:th.inp,color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer",fontWeight:700}}>📋 {t.intakeSendCopyBtn||"Copy message"}</button>
-              </>;
-            })()}
+          {/* Channel toggles */}
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:8,fontSize:11,color:th.muted}}>
+            <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={sendChEmail} onChange={e=>setSendChEmail(e.target.checked)}/> ✉️ {t.intakeSendChEmail||"Email"}</label>
+            <label style={{display:"flex",alignItems:"center",gap:6,cursor:"not-allowed",opacity:0.5}} title={t.intakeSendSmsDisabled||"SMS disabled until Twilio business verification completes."}><input type="checkbox" checked={sendChSms} onChange={e=>setSendChSms(e.target.checked)} disabled/> 💬 {t.intakeSendChSms||"SMS"} <span style={{fontSize:10,color:th.dim}}>({t.intakeSendSmsSoon||"coming soon"})</span></label>
           </div>
+          {/* TCPA consent — hidden until SMS is enabled, but rendered so the state stays consistent */}
+          {sendChSms&&<div style={{fontSize:11,color:th.muted,padding:"8px 10px",background:th.warn+"11",border:"1px solid "+th.warn+"44",borderRadius:6,marginBottom:8,lineHeight:1.5}}>
+            <label style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
+              <input type="checkbox" checked={sendSmsConsent} onChange={e=>setSendSmsConsent(e.target.checked)} style={{marginTop:2}}/>
+              <span>{t.intakeSendTcpa||"I confirm this prospect has given me prior express consent (verbal or written) to receive SMS messages from Golden Anchor. I understand this attestation will be logged with timestamp."}</span>
+            </label>
+          </div>}
+          {/* Send button */}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+            <button disabled={sendBusy||(!sendChEmail&&!sendChSms)} onClick={async()=>{
+              setSendStatus(null);
+              if(sendChEmail&&!sendEmail){setSendStatus({ok:false,error:t.intakeSendEmailReq||"Enter prospect email first."});return;}
+              if(sendChSms&&!sendPhone){setSendStatus({ok:false,error:t.intakeSendPhoneReq||"Enter prospect phone first."});return;}
+              if(sendChSms&&!sendSmsConsent){setSendStatus({ok:false,error:t.intakeSendTcpaReq||"You must attest to prior express consent before sending SMS."});return;}
+              setSendBusy(true);
+              const r=await gaSendIntakeInvite({prospectName:sendName,prospectEmail:sendEmail,prospectPhone:sendPhone,lang:sendLang,channelEmail:sendChEmail,channelSms:sendChSms,smsConsent:sendSmsConsent});
+              setSendBusy(false);
+              if(r.ok){setSendStatus({ok:true,emailOk:r.email?.ok,smsOk:r.sms?.ok,inviteUrl:r.inviteUrl});setSendName("");setSendEmail("");setSendPhone("");setSendSmsConsent(false);const fresh=await gaLoadIntakeInvites(authUser?.id);setInvites(fresh);}
+              else{setSendStatus({ok:false,error:r.error||"Send failed"});}
+            }} style={{padding:"10px 16px",fontSize:12,borderRadius:6,background:sendBusy?th.cardBorder:GOLD,color:sendBusy?th.muted:"#0D1B2A",border:"1px solid "+GOLD,cursor:sendBusy?"default":"pointer",fontWeight:800,minHeight:36}}>
+              {sendBusy?(t.intakeSendBusy||"Sending…"):"⚓ "+(t.intakeSendBtn||"Send Invite")}
+            </button>
+            {sendStatus&&sendStatus.ok&&<span style={{fontSize:11,color:th.pos,fontWeight:600}}>{t.intakeSendOk||"Invite sent."} {sendStatus.emailOk===false&&<span style={{color:th.neg}}>({t.intakeSendEmailFailed||"email failed"})</span>}{sendStatus.smsOk===false&&<span style={{color:th.neg}}> ({t.intakeSendSmsFailed||"SMS failed"})</span>}</span>}
+            {sendStatus&&!sendStatus.ok&&<span style={{fontSize:11,color:th.neg,fontWeight:600}}>⚠️ {sendStatus.error}</span>}
+          </div>
+        </div>}
+      </div>
+      {/* v0.10.0 — Sent Invites list (collapsed by default) */}
+      <div style={{marginTop:14,paddingTop:14,borderTop:"1px dashed "+GOLD+"44"}}>
+        <button onClick={()=>setInvitesOpen(o=>!o)} style={{background:"transparent",border:"none",color:GOLD,fontSize:12,fontWeight:700,cursor:"pointer",padding:0}}>{invitesOpen?"▼":"▶"} {t.intakeSentInvitesTitle||"Sent invites"} ({invites.length})</button>
+        {invitesOpen&&<div style={{marginTop:10}}>
+          {invitesLoading?<div style={{fontSize:11,color:th.muted}}>{t.loadingClients||"Loading…"}</div>
+          :invites.length===0?<div style={{fontSize:11,color:th.muted,fontStyle:"italic"}}>{t.intakeNoSentInvites||"No invites sent yet."}</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {invites.slice(0,50).map(inv=>{
+              const statusColor=inv.status==="submitted"?th.pos:inv.status==="opened"?th.blue:inv.status==="failed"?th.neg:inv.status==="expired"?th.dim:th.warn;
+              const statusLabel=inv.status==="submitted"?(t.intakeInviteStatusSubmitted||"Submitted"):inv.status==="opened"?(t.intakeInviteStatusOpened||"Opened"):inv.status==="failed"?(t.intakeInviteStatusFailed||"Failed"):inv.status==="expired"?(t.intakeInviteStatusExpired||"Expired"):(t.intakeInviteStatusSent||"Sent");
+              const channels=[inv.channel_email?"✉️":null,inv.channel_sms?"💬":null].filter(Boolean).join(" ");
+              return<div key={inv.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"8px 10px",background:th.inp,border:"1px solid "+th.cardBorder,borderRadius:6,fontSize:11,flexWrap:"wrap"}}>
+                <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:0,flex:1}}>
+                  <div style={{color:th.text,fontWeight:600}}>{inv.prospect_name||inv.prospect_email||inv.prospect_phone||"(no contact)"} <span style={{color:th.dim,fontWeight:400}}>· {channels} · {inv.lang.toUpperCase()}</span></div>
+                  <div style={{color:th.muted,fontSize:10}}>{inv.prospect_email||""}{inv.prospect_phone?" · "+inv.prospect_phone:""}</div>
+                  {inv.send_error&&<div style={{color:th.neg,fontSize:10}}>⚠️ {inv.send_error}</div>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:700,background:statusColor+"22",color:statusColor,border:"1px solid "+statusColor+"44"}}>{statusLabel}</span>
+                  <span style={{color:th.dim,fontSize:10}}>{fmtDate(new Date(inv.created_at),_gaLang())}</span>
+                  <button onClick={async()=>{if(!window.confirm(t.intakeInviteDeleteConfirm||"Delete this invite record? The link will no longer work."))return;const ok=await gaDeleteIntakeInvite(inv.id);if(ok)setInvites(s=>s.filter(x=>x.id!==inv.id));}} title={t.intakeInviteDelete||"Delete"} style={{background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:13,padding:"2px 4px"}}>🗑️</button>
+                </div>
+              </div>;
+            })}
+            {invites.length>50&&<div style={{fontSize:10,color:th.dim,textAlign:"center",padding:6}}>{t.intakeInvitesTruncated||"Showing 50 most recent."}</div>}
+          </div>}
         </div>}
       </div>
     </div>
