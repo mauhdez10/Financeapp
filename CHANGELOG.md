@@ -2,6 +2,14 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## Tooling — 2026-05-17 (Playwright suite resync — no app version change)
+- **CHANGED:** Re-baselined the Playwright e2e suite against the post-v0.9.3 app.
+- **WHY:** Chats 3/4/5 (IA refactor, bulk actions, mobile redesign) shifted the
+  selectors and surfaces the suite relied on; two specs were passing falsely
+  against the deleted Forms tab.
+- **CHANGED:** tests/01-smoke.spec.ts, tests/03-client-workflows.spec.ts,
+  tests/04-translation.spec.ts; new tests/06-mobile.spec.ts. App.jsx untouched.
+
 ## v0.9.0 — 2026-05-16 (Minor)
 
 Mobile / responsive redesign of every primary surface. Layout primitives only — no data shape, no behavior, no new components, zero new translation keys. Chat 5 of the parallel-chat workplan.
