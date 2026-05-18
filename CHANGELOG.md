@@ -2,6 +2,25 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.10.0 — 2026-05-18 (Minor)
+- **NEW:** Server-side intake invite delivery via Resend. Replaces the v0.7.3 mailto/SMS MVP send panel.
+- **NEW:** 3 Vercel Serverless Functions under `api/` — first instance of D-1 carve-out for server code (D-30).
+  - `api/send-intake-invite.js` — verifies advisor JWT, generates 24-byte token, inserts invite row, sends via Resend; Twilio path included but feature-flagged off.
+  - `api/resolve-intake-invite.js` — anonymous prefill endpoint via SECURITY DEFINER RPC.
+  - `api/mark-intake-invite-submitted.js` — links invite to new intake submission on success.
+- **NEW:** Supabase tables `intake_invites` + `sms_consent_log` with RLS and SECURITY DEFINER functions (`resolve_invite_token`, `mark_invite_submitted`).
+- **NEW:** PublicIntake reads `?invite=<token>` on mount, calls resolve API to prefill firstName/lastName/email/phone, marks `opened_at`. On submit, links the new submission back to the invite.
+- **NEW:** Sent Invites collapsible list under the send panel — status pills (Sent/Opened/Submitted/Failed/Expired), per-row delete.
+- **NEW:** TCPA consent attestation pattern (D-33) — advisor checkbox + opt-out footer + persistent log. Engages whenever the SMS channel is on, regardless of `TWILIO_ENABLED`.
+- **CHANGED:** `gaSubmitIntake` returns `submissionId` (used to link invite → submission).
+- **CHANGED:** `intakeSendTitle` text "Send link to a prospect" → "Send invite to a prospect" (EN + ES).
+- **NEW LOCKED DECISIONS:** D-30 (server code in `api/` Vercel functions), D-31 (Resend = email provider, sender + reply-to addresses locked), D-32 (Twilio code-complete but feature-flagged off until business verification), D-33 (TCPA = advisor attestation + opt-out footer + audit log).
+- **OPEN DECISIONS CLARIFIED:** O-11 / O-13 (PDF) remain open but scope clarified — intake invites carry no PDF; PDF generation is a future "email Complete Report" concern.
+- **NEW TRANSLATION KEYS:** +22 × 2 langs (1,195 → 1,217 per side, symmetry intact).
+- **App.jsx:** 2,900 → 2,962 lines. Build marker: `2026-05-18-v0100-server-intake-delivery`.
+- **DB MIGRATION REQUIRED:** Run `supabase/migrations/20260518_intake_invites.sql` in Supabase SQL Editor.
+- **ENV VARS REQUIRED:** Set 7 vars in Vercel: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM`, `RESEND_REPLY_TO`, `PUBLIC_INTAKE_BASE_URL`, `TWILIO_ENABLED=0`.
+
 ## Tooling — 2026-05-17 (Playwright suite resync — no app version change)
 - **CHANGED:** Re-baselined the Playwright e2e suite against the post-v0.9.3 app.
 - **WHY:** Chats 3/4/5 (IA refactor, bulk actions, mobile redesign) shifted the
