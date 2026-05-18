@@ -28,10 +28,6 @@ import { devices } from "@playwright/test";
  */
 
 test.use({ ...devices["iPhone 13"] });
-test.skip(
-  ({ browserName }) => browserName === "firefox",
-  "iPhone 13 emulation sets isMobile, which Playwright does not support on Firefox.",
-);
 
 // rgb()/rgba() string -> rough relative luminance in 0..1.
 function luminance(rgb: string): number {
@@ -42,6 +38,18 @@ function luminance(rgb: string): number {
 }
 
 test.describe("mobile layout (iPhone 13)", () => {
+  // Firefox cannot emulate `isMobile`, which the iPhone 13 descriptor sets.
+  // A conditional `test.skip(({browserName}) => ...)` at file scope is
+  // evaluated per-test but still reported Firefox runs in the prior version;
+  // a `beforeAll` skip guarantees the whole describe is skipped on Firefox
+  // before any test body executes.
+  test.beforeAll(async ({ browserName }) => {
+    test.skip(
+      browserName === "firefox",
+      "iPhone 13 emulation sets isMobile, unsupported on Firefox.",
+    );
+  });
+
   test("drawer opens fully (no left-edge clip) and nav walks Dashboard → Clients → ClientDetail → back", async ({
     appPage,
   }) => {
@@ -59,6 +67,20 @@ test.describe("mobile layout (iPhone 13)", () => {
 
     // (1a) The drawer's left edge must sit at the viewport's left edge — not
     // pushed inward and not clipped off-screen.
+    //
+    // The drawer slides in via `transition: transform 0.25s ease-out` (from
+    // translateX(-100%) to translateX(0)). `toBeVisible()` resolves the
+    // instant the element has layout + visibility — i.e. at the START of that
+    // 250ms slide, while it is still travelling. Measuring boundingBox() then
+    // catches a mid-animation x (which is why earlier runs saw -31 / -102 /
+    // -146: a moving target, not a real clip). Poll boundingBox().x until it
+    // settles at the resting position before asserting.
+    await expect
+      .poll(async () => (await drawer.boundingBox())?.x ?? null, {
+        message: "drawer should settle at its resting left edge (x ≈ 0)",
+        timeout: 5_000,
+      })
+      .toBeGreaterThanOrEqual(-1); // not clipped off the left
     const box = await drawer.boundingBox();
     expect(box, "drawer should have a layout box once open").not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(-1); // not clipped off the left
