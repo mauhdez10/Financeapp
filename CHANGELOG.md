@@ -2,6 +2,14 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.10.2 — 2026-05-18
+- Fix: deleting a client now persists. v0.10.1's gaDeleteClient used a single
+  PostgREST .or() filter, which PostgREST parses by splitting on "."; JSON paths
+  and decimal client ids broke the query, so the soft-delete silently failed.
+  Replaced with two plain .eq() UPDATE calls.
+- Correction: v0.10.1's "NULL local_id" root cause was wrong; local_id is
+  populated on every row. v0.10.1's grid/invites/de-dupe changes remain valid.
+
 ## v0.10.0 — 2026-05-18 (Minor)
 - **NEW:** Server-side intake invite delivery via Resend. Replaces the v0.7.3 mailto/SMS MVP send panel.
 - **NEW:** 3 Vercel Serverless Functions under `api/` — first instance of D-1 carve-out for server code (D-30).
