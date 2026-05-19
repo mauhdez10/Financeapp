@@ -2,6 +2,34 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.12.1 — 2026-05-19 (Patch — Vercel Chromium runtime fix)
+FIX: v0.12.0 deployed successfully but every PDF send failed at runtime with `Failed to launch the browser process! /tmp/chromium: error while loading shared libraries: libnss3.so: cannot open shared object file: No such file or directory`. The advisor saw the inline error in the EmailReportModal; the PDF never reached the recipient.
+WHY: `@sparticuz/chromium@131`'s bundled native libs (libnss3 + a stack of others) did not survive Vercel's serverless bundler tracing. Compounded by an accidental `npm install puppeteer` (full ~280MB Puppeteer package) during the v0.12.0 deploy session, which bloated `node_modules` past the practical tracing limit, increasing the chance of partial bundling. The Chromium binary itself got copied to `/tmp/chromium` but the loader couldn't find its `.so` deps because they were dropped during trace.
+HOW IT'S FIXED: Switched from `@sparticuz/chromium` to `@sparticuz/chromium-min`. The `-min` variant ships only ~5MB of JS glue; the Chromium brotli tarball is fetched at runtime from the official GitHub release URL (`https://github.com/Sparticuz/chromium/releases/download/v140.0.0/chromium-v140.0.0-pack.x64.tar`) and cached in `/tmp` between warm invocations. This sidesteps Vercel's bundle tracing entirely and keeps the deployed bundle tiny (~5MB).
+VERSIONS BUMPED: `@sparticuz/chromium-min@^140.0.0` paired with `puppeteer-core@^24.10.0`. `chromium-min` follows Chromium's release cycle (not semver) so this is a deliberate major-style bump, not a routine upgrade. Pair-matched per the Sparticuz/chromium release notes: chromium v140 ↔ puppeteer-core v24.
+LAUNCH CALL MODERNIZED: `headless: chromium.headless` → `headless: "shell"` (puppeteer-core 24's expected literal). Added `--no-sandbox`, `--disable-setuid-sandbox`, `--hide-scrollbars`, `--disable-web-security` to the args spread as defensive belt for the Lambda runtime.
+CHANGED:
+`api/render-report-pdf.js` — header comment block updated; imports switched to `@sparticuz/chromium-min`; new pinned `CHROMIUM_PACK_URL` constant; `renderPDF()` function rewritten in its launch block (pass URL to `chromium.executablePath()`, `headless: "shell"`, defensive args). JWT verify, client load, HTML builder, SVG charts, and Resend attach paths are unchanged.
+`package.json` — `@sparticuz/chromium` removed, `@sparticuz/chromium-min@^140.0.0` added. `puppeteer-core` bumped `^23.0.0` → `^24.10.0`. Full `puppeteer` (accidentally installed in the v0.12.0 session) must be uninstalled — see deploy steps.
+`src/App.jsx` — only the build marker line changed (`2026-05-19-v0120-email-report-pdf` → `2026-05-19-v0121-chromium-min-fix`). No component changes, no helper changes, no UI changes.
+`AGENT.md` — §3 head replaced with v0.12.1 entry (v0.12.0 demoted to prior); D-34 amended with the chromium-min lesson + version-pinning rule.
+`WORKPLAN.md` — §5 completed log gets v0.12.1 row; footer updated. Chat 10 stays `done`; v0.12.1 is an out-of-band patch.
+NO TRANSLATION CHANGES. `src/translations.js` unchanged at 1,230 keys/side.
+NO `vercel.json` CHANGE. `maxDuration: 30` and `memory: 1024` were correct.
+NO SQL MIGRATION. NO NEW ENV VARS.
+DEPLOY STEPS:
+`cd /workspaces/Financeapp`
+`npm uninstall puppeteer @sparticuz/chromium` — remove the bad/redundant deps left over from v0.12.0.
+`npm install @sparticuz/chromium-min@^140 puppeteer-core@^24` — install the working pair.
+Drop in `src/App.jsx`, `api/render-report-pdf.js`, `package.json` (and `package-lock.json` from the npm commands above), `AGENT.md`, `WORKPLAN.md`. Append this CHANGELOG entry at the top.
+Commit + push (commands below).
+Vercel auto-deploys. The new function bundle should be ~5–10MB (much smaller than the previous bloated one).
+Hard-refresh production; verify `window.__GA_BUILD__ === "2026-05-19-v0121-chromium-min-fix"`.
+Smoke test: same client that failed before → Reports → Complete Report → 📧 Email. First send is the one-time tarball download (5–8s, well under the 30s `maxDuration`). Second send within ~5 minutes is warm (~1s). PDF should arrive.
+EXPECTATIONS: Cold start moved from ~2–4s (claimed in v0.12.0) to ~5–8s (chromium-min downloads tarball once per cold container). Warm starts still ~1s. If the first send ever hits the 30s ceiling, the GitHub release CDN is being throttled — Vercel keeps the container warm for ~5 minutes so a retry should land in the warm path.
+BUILD MARKER: `2026-05-19-v0121-chromium-min-fix`.
+D-34 amended. No new locked decisions, no new pitfalls.
+
 ## v0.12.0 — 2026-05-19 (Minor — Chat 10)
 FEATURE: Email the Complete Report to a client as a real PDF attachment, directly from the Complete Report tab.
 WHY: Last major launch-blocker for client-facing report delivery. The existing `window.print()` → "Save as PDF" path stays as a manual fallback (O-13 stance retained for in-browser save), but the advisor can now hand off a polished PDF without leaving the app.

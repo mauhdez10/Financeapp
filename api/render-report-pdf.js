@@ -1,7 +1,8 @@
 // api/render-report-pdf.js
 // ============================================================================
 // Render Complete Report → PDF → email as attachment via Resend.
-// v0.12.0 (Chat 10). Per WORKPLAN §3 Chat 10 + O-11 → approach (a) Puppeteer.
+// v0.12.1 (Chat 10 patch — fixes libnss3.so load failure on Vercel).
+// Per WORKPLAN §3 Chat 10 + O-11 → approach (a) Puppeteer (D-34).
 //
 // Auth: same pattern as send-intake-invite.js (D-30). Caller passes the
 //       advisor's Supabase JWT in Authorization: Bearer <token>. We verify
@@ -15,6 +16,14 @@
 //       Puppeteer that to PDF, and attach to a Resend email. Charts are
 //       hand-rolled inline SVG (donut + bars). See O-11 — print HTML path.
 //
+// Chromium runtime (v0.12.1 patch — fixes the v0.12.0 libnss3.so error):
+//   Uses @sparticuz/chromium-min instead of @sparticuz/chromium.
+//   The chromium tarball is downloaded at runtime from the official GitHub
+//   release URL (cached in /tmp between warm invocations). This keeps the
+//   deployed function bundle small (~5MB) — well under Vercel's size limit
+//   — and avoids the Vercel-tracing bug that mangled the bundled libs.
+//   First cold start downloads ~50MB once; warm starts use /tmp cache.
+//
 // Env vars required:
 //   SUPABASE_URL              — same as VITE_SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY — service_role secret
@@ -24,13 +33,20 @@
 //   RESEND_REPLY_TO           — optional override for reply-to
 //
 // Vercel function config (vercel.json): maxDuration 30s, memory 1024MB.
-//   Cold start with @sparticuz/chromium is ~2–4s, warm renders ~1s.
+//   Cold start ~5-8s (tarball download), warm ~1s.
 // ============================================================================
 
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
+
+// Pinned to match the chromium-min major. When bumping the npm package,
+// bump this URL too — they must match. Sourced from the Sparticuz/chromium
+// GitHub releases page; the URL is stable and CDN-fronted via GitHub's
+// release assets.
+const CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v140.0.0/chromium-v140.0.0-pack.x64.tar";
 
 export const config = {
   maxDuration: 30
@@ -415,12 +431,20 @@ ${advEmail}`;
 
 // ── Puppeteer launcher ─────────────────────────────────────────────────────
 async function renderPDF(html) {
-  const executablePath = await chromium.executablePath();
+  // chromium-min fetches the brotli tarball from the URL on first run,
+  // decompresses to /tmp/chromium, and reuses it on warm invocations.
+  const executablePath = await chromium.executablePath(CHROMIUM_PACK_URL);
   const browser = await puppeteer.launch({
-    args: chromium.args,
+    args: [
+      ...chromium.args,
+      "--hide-scrollbars",
+      "--disable-web-security",
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ],
     defaultViewport: chromium.defaultViewport,
     executablePath,
-    headless: chromium.headless
+    headless: "shell"
   });
   try {
     const page = await browser.newPage();

@@ -2340,7 +2340,7 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-19-v0120-email-report-pdf";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-19-v0121-chromium-min-fix";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
