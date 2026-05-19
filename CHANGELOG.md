@@ -2,6 +2,12 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.11.0 — 2026-05-19
+- Browser history integration. In-app navigation (nav / open client / tab)
+  now pushes browser history, so Back/Forward move within the app instead of
+  unloading it. popstate restores the prior view; a no-state Back falls back
+  to the dashboard. On mobile, Back closes an open drawer first.
+
 ## v0.10.2 — 2026-05-18
 - Fix: deleting a client now persists. v0.10.1's gaDeleteClient used a single
   PostgREST .or() filter, which PostgREST parses by splitting on "."; JSON paths

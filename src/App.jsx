@@ -2293,7 +2293,7 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-18-v0102-delete-fix";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-19-v0110-history-backbutton";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
@@ -2838,6 +2838,42 @@ export default function App(){
     _lastSettingsRef.current=settings;
   },[settings,authUser]);
   useEffect(()=>{if(typeof window!=="undefined")window.__GA_LANG=lang;},[lang]);
+  // v0.11.0 — Browser history integration. Push a history entry on each
+  // in-app navigation change (nav / open client / tab) so the browser Back
+  // button moves within the app instead of unloading it. See pitfall #14.
+  const _historySeededRef=useRef(false);
+  const _popstateRestoringRef=useRef(false);
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    if(isPublicIntakeRoute)return;        // /intake is its own page — no in-app history
+    if(!authUser)return;                  // only track history once past the login gate
+    if(_popstateRestoringRef.current){_popstateRestoringRef.current=false;return;} // change came from Back/Forward — don't re-push
+    const snap={ga:true,nav,selectedId:selected?.id??null,selectedTab};
+    if(!_historySeededRef.current){window.history.replaceState(snap,"");_historySeededRef.current=true;}
+    else{window.history.pushState(snap,"");}
+  },[nav,selected?.id,selectedTab,authUser,isPublicIntakeRoute]);
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    if(isPublicIntakeRoute)return;
+    const onPop=(e)=>{
+      // Mobile: if the drawer is open, first Back just closes it.
+      if(drawerOpen){setDrawerOpen(false);window.history.pushState({ga:true,nav,selectedId:selected?.id??null,selectedTab},"");return;}
+      const st=e.state;
+      _popstateRestoringRef.current=true;
+      if(st&&st.ga){
+        setNav(st.nav||"dashboard");
+        setSelectedTab(st.selectedTab||"report");
+        if(st.selectedId==null){setSelected(null);}
+        else{const c=clients.find(x=>x.id===st.selectedId);setSelected(c||null);}
+      }else{
+        // No app state (backed out past the first entry) — fall back to the
+        // dashboard instead of letting the SPA unload.
+        setNav("dashboard");setSelected(null);setSelectedTab("report");
+      }
+    };
+    window.addEventListener("popstate",onPop);
+    return()=>window.removeEventListener("popstate",onPop);
+  },[clients,drawerOpen,nav,selected?.id,selectedTab,isPublicIntakeRoute]);
   // v0.9.1 — Paint document.documentElement + body with theme.bg so the area
   // outside the flex container (overscroll bounce on iOS, safe-area insets,
   // status-bar tint) doesn't show the browser-default white. Same pattern as
