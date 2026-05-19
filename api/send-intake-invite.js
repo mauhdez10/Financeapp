@@ -14,8 +14,8 @@
 //   SUPABASE_URL              — same as VITE_SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY — service_role secret from Supabase dashboard
 //   RESEND_API_KEY            — from Resend dashboard
-//   RESEND_FROM               — verified sender, e.g. "Mauricio Hernandez <mauricio@finance.goldenanchor.life>"
-//   RESEND_REPLY_TO           — optional, e.g. "mauricio@goldenanchor.life"
+//   RESEND_FROM               — verified sender, e.g. "Golden Anchor <noreply@finance.goldenanchor.life>"
+//   RESEND_REPLY_TO           — optional, e.g. "noreply@finance.goldenanchor.life"
 //   PUBLIC_INTAKE_BASE_URL    — e.g. "https://finance.goldenanchor.life/intake"
 //   TWILIO_ENABLED            — "1" to enable SMS path; anything else disables
 //   TWILIO_ACCOUNT_SID        — Twilio account SID (only required if enabled)
@@ -67,7 +67,11 @@ function htmlEscape(s) {
 }
 
 // ── email body builders ────────────────────────────────────────────────────
-function buildEmailBody(lang, prospectName, inviteUrl) {
+function buildEmailBody(lang, prospectName, inviteUrl, advisor) {
+  // v0.11.1 — signature name/email come from the advisor's Profile & Settings
+  // (passed through from App.jsx); fall back to the historical defaults.
+  const advName = (advisor && advisor.name) ? String(advisor.name).slice(0, 120) : "Mauricio Hernandez";
+  const advEmail = (advisor && advisor.email) ? String(advisor.email).slice(0, 200) : "mauricio@goldenanchor.life";
   const greet = prospectName
     ? (lang === "es" ? `Hola ${prospectName},` : `Hi ${prospectName},`)
     : (lang === "es" ? "Hola," : "Hi,");
@@ -81,9 +85,9 @@ ${inviteUrl}
 
 Tu información está protegida y solo se usa para tu estrategia financiera. Si tienes preguntas, simplemente responde a este correo.
 
-Mauricio Hernandez
+${advName}
 Golden Anchor Financial Advisory
-mauricio@goldenanchor.life`;
+${advEmail}`;
 
     const html = `
       <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;color:#0F172A;line-height:1.55">
@@ -99,7 +103,7 @@ mauricio@goldenanchor.life`;
         </p>
         <p style="font-size:12px;color:#64748B">O copia este enlace: <span style="font-family:monospace;word-break:break-all">${htmlEscape(inviteUrl)}</span></p>
         <p style="font-size:12px;color:#64748B">Tu información está protegida y solo se usa para tu estrategia financiera. Si tienes preguntas, simplemente responde a este correo.</p>
-        <p style="margin-top:24px"><strong>Mauricio Hernandez</strong><br>Golden Anchor Financial Advisory<br><a href="mailto:mauricio@goldenanchor.life" style="color:#B8860B">mauricio@goldenanchor.life</a></p>
+        <p style="margin-top:24px"><strong>${htmlEscape(advName)}</strong><br>Golden Anchor Financial Advisory<br><a href="mailto:${htmlEscape(advEmail)}" style="color:#B8860B">${htmlEscape(advEmail)}</a></p>
         <div style="border-top:1px solid #E2E8F0;margin-top:24px;padding-top:12px;font-size:10px;color:#94A3B8;text-align:center">
           Este correo fue enviado a un prospecto que solicitó información sobre nuestros servicios. Si no esperabas este mensaje, puedes ignorarlo.
         </div>
@@ -120,9 +124,9 @@ ${inviteUrl}
 
 Your information is protected and only used for your financial strategy. If you have questions, just reply to this email.
 
-Mauricio Hernandez
+${advName}
 Golden Anchor Financial Advisory
-mauricio@goldenanchor.life`;
+${advEmail}`;
 
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;color:#0F172A;line-height:1.55">
@@ -138,7 +142,7 @@ mauricio@goldenanchor.life`;
       </p>
       <p style="font-size:12px;color:#64748B">Or copy this link: <span style="font-family:monospace;word-break:break-all">${htmlEscape(inviteUrl)}</span></p>
       <p style="font-size:12px;color:#64748B">Your information is protected and only used for your financial strategy. If you have questions, just reply to this email.</p>
-      <p style="margin-top:24px"><strong>Mauricio Hernandez</strong><br>Golden Anchor Financial Advisory<br><a href="mailto:mauricio@goldenanchor.life" style="color:#B8860B">mauricio@goldenanchor.life</a></p>
+      <p style="margin-top:24px"><strong>${htmlEscape(advName)}</strong><br>Golden Anchor Financial Advisory<br><a href="mailto:${htmlEscape(advEmail)}" style="color:#B8860B">${htmlEscape(advEmail)}</a></p>
       <div style="border-top:1px solid #E2E8F0;margin-top:24px;padding-top:12px;font-size:10px;color:#94A3B8;text-align:center">
         This email was sent to a prospect who requested information about our services. If you did not expect this message, you may ignore it.
       </div>
@@ -230,6 +234,9 @@ export default async function handler(req, res) {
   const channelEmail = body.channelEmail === true || body.channelEmail === "true";
   const channelSms = body.channelSms === true || body.channelSms === "true";
   const smsConsent = body.smsConsent === true || body.smsConsent === "true";
+  // v0.11.1 — advisor signature fields (optional; buildEmailBody falls back if absent)
+  const advisorName = String(body.advisorName || "").trim().slice(0, 120);
+  const advisorEmail = String(body.advisorEmail || "").trim().slice(0, 200);
 
   if (!channelEmail && !channelSms) {
     return res.status(400).json({ ok: false, error: "At least one channel must be selected" });
@@ -293,7 +300,7 @@ export default async function handler(req, res) {
   // Email send
   if (channelEmail) {
     try {
-      const { subject, text, html } = buildEmailBody(lang, prospectName, inviteUrl);
+      const { subject, text, html } = buildEmailBody(lang, prospectName, inviteUrl, { name: advisorName, email: advisorEmail });
       const resend = new Resend(RESEND_API_KEY);
       const payload = {
         from: RESEND_FROM,

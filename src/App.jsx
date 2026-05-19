@@ -2293,7 +2293,7 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-19-v0110-history-backbutton";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-19-v0111-invite-signature";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
@@ -2472,7 +2472,7 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
 
 
 /* ── INTAKE SUBMISSIONS (advisor view) — v0.6.0 ────────────────────────── */
-function IntakeSubmissionsPage({t,authUser,onConvert}){
+function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
   const th=useTh();
   const{isMobile}=useViewport();
   const[subs,setSubs]=useState([]);
@@ -2587,7 +2587,7 @@ function IntakeSubmissionsPage({t,authUser,onConvert}){
               if(sendChSms&&!sendPhone){setSendStatus({ok:false,error:t.intakeSendPhoneReq||"Enter prospect phone first."});return;}
               if(sendChSms&&!sendSmsConsent){setSendStatus({ok:false,error:t.intakeSendTcpaReq||"You must attest to prior express consent before sending SMS."});return;}
               setSendBusy(true);
-              const r=await gaSendIntakeInvite({prospectName:sendName,prospectEmail:sendEmail,prospectPhone:sendPhone,lang:sendLang,channelEmail:sendChEmail,channelSms:sendChSms,smsConsent:sendSmsConsent});
+              const r=await gaSendIntakeInvite({prospectName:sendName,prospectEmail:sendEmail,prospectPhone:sendPhone,lang:sendLang,channelEmail:sendChEmail,channelSms:sendChSms,smsConsent:sendSmsConsent,advisorName:settings?.advisorName||"",advisorEmail:settings?.advisorEmail||""});
               setSendBusy(false);
               if(r.ok){setSendStatus({ok:true,emailOk:r.email?.ok,smsOk:r.sms?.ok,inviteUrl:r.inviteUrl});setSendName("");setSendEmail("");setSendPhone("");setSendSmsConsent(false);const fresh=await gaLoadIntakeInvites(authUser?.id);setInvites(fresh);}
               else{setSendStatus({ok:false,error:r.error||"Send failed"});}
@@ -2840,7 +2840,7 @@ export default function App(){
   useEffect(()=>{if(typeof window!=="undefined")window.__GA_LANG=lang;},[lang]);
   // v0.11.0 — Browser history integration. Push a history entry on each
   // in-app navigation change (nav / open client / tab) so the browser Back
-  // button moves within the app instead of unloading it. See pitfall #14.
+  // button moves within the app instead of unloading it. See pitfall #16.
   const _historySeededRef=useRef(false);
   const _popstateRestoringRef=useRef(false);
   useEffect(()=>{
@@ -2856,7 +2856,6 @@ export default function App(){
     if(typeof window==="undefined")return;
     if(isPublicIntakeRoute)return;
     const onPop=(e)=>{
-      // Mobile: if the drawer is open, first Back just closes it.
       if(drawerOpen){setDrawerOpen(false);window.history.pushState({ga:true,nav,selectedId:selected?.id??null,selectedTab},"");return;}
       const st=e.state;
       _popstateRestoringRef.current=true;
@@ -2866,8 +2865,6 @@ export default function App(){
         if(st.selectedId==null){setSelected(null);}
         else{const c=clients.find(x=>x.id===st.selectedId);setSelected(c||null);}
       }else{
-        // No app state (backed out past the first entry) — fall back to the
-        // dashboard instead of letting the SPA unload.
         setNav("dashboard");setSelected(null);setSelectedTab("report");
       }
     };
@@ -2990,7 +2987,7 @@ export default function App(){
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings}/>:
           nav==="dashboard"?<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>:
           nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
-          nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} onConvert={c=>{addClient(c);}}/>:
+          nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} settings={settings} onConvert={c=>{addClient(c);}}/>:
           nav==="calculators"?<CalculatorsPage t={t}/>:
           nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
                     nav==="resources"?<ResourcesPage t={t}/>:

@@ -2,6 +2,16 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.11.1 — 2026-05-19
+- Intake-invite email signature now pulls the advisor name and contact
+  email from Profile & Settings instead of being hard-coded. Set them in
+  the app (Profile & Settings → Advisor Name / Email).
+- Resend sender and reply-to standardized to noreply@finance.goldenanchor.life
+  (D-31). The visible signature address is independent of the technical
+  sender and is controlled from Profile & Settings.
+- Server function api/send-intake-invite.js: buildEmailBody takes advisor
+  name/email from the request payload, with a fallback to prior defaults.
+
 ## v0.11.0 — 2026-05-19
 - Browser history integration. In-app navigation (nav / open client / tab)
   now pushes browser history, so Back/Forward move within the app instead of
