@@ -2,6 +2,36 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.12.0 — 2026-05-19 (Minor — Chat 10)
+FEATURE: Email the Complete Report to a client as a real PDF attachment, directly from the Complete Report tab.
+WHY: Last major launch-blocker for client-facing report delivery. The existing `window.print()` → "Save as PDF" path stays as a manual fallback (O-13 stance retained for in-browser save), but the advisor can now hand off a polished PDF without leaving the app.
+ARCHITECTURE (D-34, new locked decision): PDF rendering goes through a self-contained printable HTML document built server-side from the client's data, then Puppeteer'd to PDF — NOT by headlessly driving the live `finance.goldenanchor.life` SPA. Rationale: driving the SPA would require injecting a Supabase session into the headless browser context (refresh-token exposure), wait for Recharts animations + chart layout to settle, and would silently break on any App.jsx layout drift. Print-HTML is faster, more stable, smaller cold-start surface, and keeps the auth model clean.
+CLOSES: O-11 (PDF generation approach) — chosen approach (a) Puppeteer, refined per D-34 to print-HTML rather than live-SPA-drive. O-13 (PDF generation timing for launch).
+CHANGED:
+NEW `api/render-report-pdf.js` — Vercel Serverless Function (D-30 server file). Verifies the advisor JWT (same pattern as `send-intake-invite.js`), loads the client row via service-role + two `.eq()` calls (pitfall #15 avoided — `local_id` first, then `data->>'id'` fallback), builds a Letter-sized printable HTML doc with inline SVG donut (income / bills) + bar (debts) charts in the Golden Anchor palette, `puppeteer-core` + `@sparticuz/chromium` renders to PDF (0.5in margins, `printBackground:true`, `waitUntil:"networkidle0"`), Resend (D-31) sends the email with the PDF as a base64 attachment. `reply_to` defaults to `RESEND_REPLY_TO`; if unset, falls back to the advisor's Profile & Settings email.
+`vercel.json` — `functions` block added for `api/render-report-pdf.js`: `memory: 1024`, `maxDuration: 30`. Cold start ~2–4s, warm ~1s.
+`package.json` — `puppeteer-core@^23.0.0` and `@sparticuz/chromium@^131.0.0` added to `dependencies`. `resend` and `@supabase/supabase-js` already present from v0.10.0.
+`src/App.jsx` (2,998 → 3,046 lines):
+New top-level helper `gaEmailCompleteReport(payload)` (line 28): grabs the Supabase session token, POSTs `/api/render-report-pdf` with `Authorization: Bearer <jwt>`, returns `{ok, messageId, filename, pdfBytes}` or `{ok:false, error}`.
+New component `EmailReportModal` (line 643): recipient input auto-fills `client.email` (advisor can override), EN/ES default subject + body, inline send status with auto-close on success (1.6s). Disabled send button until recipient passes email regex.
+`CompleteReportTab` signature gains `settings` prop; new `emailOpen` state; new `Btn small` "📧 Email" wrapped with `PrintBtn` inside a `ga-np` flex row so both hide when the report is printed.
+`ClientReport` signature gains `settings` and forwards it to `CompleteReportTab`; `ClientDetail`'s `tab==="report"` call site also passes `settings` through.
+`src/translations.js` (1,218 → 1,230 keys/side, symmetry verified): 12 new keys × 2 langs — `emailReportBtn`, `emailReportTitle`, `emailReportHelp`, `emailReportTo`, `emailReportSubject`, `emailReportMessage`, `emailReportSig`, `emailReportInvalidTo`, `emailReportSending`, `emailReportSendBtn`, `emailReportSent`, `emailReportFailed`. D-18 / pitfall #9 satisfied.
+EMAIL SIGNATURE: Same v0.11.1 pattern — pulled from Profile & Settings (`advisorName` / `advisorEmail` in the payload), with a fallback to the historical defaults. Independent of `RESEND_FROM`.
+NO SQL MIGRATION.
+NO NEW VERCEL ENV VARS. Reuses the v0.10.0 / v0.11.1 set: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM`, `RESEND_REPLY_TO`.
+DEPLOY STEPS:
+`cd /workspaces/Financeapp && npm install puppeteer-core @sparticuz/chromium` — installs the two new runtime deps for the Vercel function.
+Drop in `src/App.jsx`, `src/translations.js`, `vercel.json`, `package.json`, `AGENT.md`, `WORKPLAN.md`. Add `api/render-report-pdf.js`.
+Append this CHANGELOG entry at the top of `CHANGELOG.md`.
+Commit + push (full commands below).
+Vercel auto-deploys; the new function is picked up automatically (Vercel scans `api/*.js`).
+Hard-refresh production; verify `window.__GA_BUILD__ === "2026-05-19-v0120-email-report-pdf"` in DevTools.
+Smoke test: open any client with non-empty income/bills/debt data → Reports → Complete Report → "📧 Email" → enter your own email → "Send PDF". First send is the cold-start (5–8s); follow-ups are 1–2s. Confirm the email arrives with a `golden-anchor-report-<name>-<date>.pdf` attachment.
+BUILD MARKER: `2026-05-19-v0120-email-report-pdf`.
+NEW LOCKED DECISIONS: D-34 (print-HTML + Puppeteer, NOT live-SPA-drive).
+PITFALLS: None new. D-1, D-7, D-18, D-27, D-30, D-31 preserved.
+
 ## v0.11.1 — 2026-05-19
 - Intake-invite email signature now pulls the advisor name and contact
   email from Profile & Settings instead of being hard-coded. Set them in
