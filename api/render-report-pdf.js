@@ -67,7 +67,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM = process.env.RESEND_FROM || "Golden Anchor <noreply@finance.goldenanchor.life>";
 const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || "";
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// ── helpers (MIRROR App.jsx field names exactly, v0.12.5 data-extraction fix) ──
 function vEmail(s) {
   return typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 }
@@ -86,40 +86,99 @@ function fmtPct(n) {
   const v = Number(n) || 0;
   return v.toFixed(1) + "%";
 }
-function sumStreams(arr) {
-  if (!Array.isArray(arr)) return 0;
-  return arr.reduce((s, x) => s + (Number(x?.amount) || Number(x?.netMo) || 0), 0);
-}
 function safeArr(x) { return Array.isArray(x) ? x : []; }
 
-// ── financial aggregates (corrected to match App.jsx) ──────────────────────
+// ── Frequency table — MIRRORS App.jsx FREQ object exactly (line 121).
+//    weekly: 52/12, biweekly: 26/12, semimonthly: 2/mo, monthly2: 1, annual: 1/12
+const FREQ = { weekly: 52/12, biweekly: 26/12, semimonthly: 2, monthly2: 1, annual: 1/12 };
+const toM = (a, f) => (Number(a) || 0) * (FREQ[f] ?? 1);
+
+// ── Bills filter — only active bills count for monthly total. MIRRORS actB. ──
+function actB(bills) {
+  const t = new Date();
+  return safeArr(bills).filter(b => {
+    if (b.type === "temporary") return !b.maturity || new Date(b.maturity) > t;
+    if (b.type === "annual") return b.dueMonth === t.getMonth() + 1;
+    return true;
+  });
+}
+
+// ── Card interest (mirrors cardMoInt) — used by effectiveMin ──
+function cardMoInt(c) {
+  const ps = safeArr(c.promos);
+  const pb = ps.reduce((s, p) => s + (Number(p.balance) || 0), 0);
+  const rb = Math.max(0, (Number(c.balance) || 0) - pb);
+  return rb * (Number(c.apr) || 0) / 100 / 12 +
+    ps.reduce((s, p) => s + (Number(p.balance) || 0) * (Number(p.rate) || 0) / 100 / 12, 0);
+}
+
+// ── Effective minimum payment per card (mirrors effectiveMin). ──
+//    If c.min explicitly set → use it. Otherwise: max(25, balance*0.01 + monthly interest).
+function effectiveMin(c) {
+  const bal = Number(c.balance) || 0;
+  if (bal <= 0) return 0;
+  const minSet = Number(c.min) || 0;
+  if (minSet > 0) return Math.min(bal, minSet);
+  return Math.min(bal, Math.max(25, Math.round(bal * 0.01 + cardMoInt(c))));
+}
+
+// ── Account types considered "liquid" (mirrors ACCT_META.liquid). ──
+const LIQUID_TYPES = new Set(["checking", "savings", "money_market"]);
+const ACCT_LABELS = {
+  checking: "Checking", savings: "Savings", money_market: "Money Market",
+  retirement: "Retirement / 401k", ira: "IRA", brokerage: "Brokerage / Investment",
+  other: "Other"
+};
+const ACCT_ICONS = {
+  checking: "🏦", savings: "💵", money_market: "💰",
+  retirement: "🎯", ira: "📊", brokerage: "📈", other: "💼"
+};
+
+// ── Financial aggregates — every formula mirrors the live App.jsx. ──
 function computeAggregates(client) {
-  // Income: prefer netMo if present, fall back to amount
-  const income = safeArr(client.incomeStreams).reduce((s, stream) => {
-    return s + (Number(stream.netMo) || Number(stream.amount) || 0);
-  }, 0);
-  
-  // Bills: sum all .amount
-  const bills = safeArr(client.bills).reduce((s, b) => s + (Number(b.amount) || 0), 0);
-  
-  // Debt: balance + apr + minPayment
-  const debt = safeArr(client.debts).reduce((s, d) => s + (Number(d.balance) || 0), 0);
-  const debtMinPay = safeArr(client.debts).reduce((s, d) => s + (Number(d.minPayment) || 0), 0);
-  
-  // Assets: accounts (checking, savings, retirement) + customAssets
-  const accounts = safeArr(client.accounts).reduce((s, a) => s + (Number(a.balance) || 0), 0);
-  const customAssets = safeArr(client.customAssets).reduce((s, a) => s + (Number(a.value) || 0), 0);
-  const totalAssets = accounts + customAssets;
-  
+  // Income (net monthly): sum of toM(stream.net, stream.freq) across all streams
+  const income = safeArr(client.incomeStreams).reduce((s, x) => s + toM(x.net, x.freq), 0);
+  const grossIncome = safeArr(client.incomeStreams).reduce((s, x) => s + toM(x.gross, x.freq), 0);
+
+  // Bills (monthly): sum of toM(bill.cost, bill.freq) across ACTIVE bills only
+  const bills = actB(client.bills).reduce((s, b) => s + toM(b.cost, b.freq), 0);
+
+  // Debt: cards + loans
+  const cards = safeArr(client.cards);
+  const loans = safeArr(client.loans);
+  const cardsBal = cards.reduce((s, c) => s + (Number(c.balance) || 0), 0);
+  const loansBal = loans.reduce((s, l) => s + (Number(l.balance) || 0), 0);
+  const debt = cardsBal + loansBal;
+
+  // Min payments (cards use effectiveMin; loans use their nominal min if set)
+  const cardsMin = cards.reduce((s, c) => s + effectiveMin(c), 0);
+  const loansMin = loans.reduce((s, l) => s + (Number(l.min) || 0), 0);
+  const debtMinPay = cardsMin + loansMin;
+
+  // Assets: accounts + (properties OR customAssets) + marketInvestments
+  const accountsVal = safeArr(client.accounts).reduce((s, a) => s + (Number(a.value) || 0), 0);
+  const properties = (client.properties && client.properties.length)
+    ? client.properties
+    : safeArr(client.customAssets);
+  const propertiesVal = properties.reduce((s, a) => s + (Number(a.value) || 0), 0);
+  const investmentsVal = safeArr(client.marketInvestments).reduce((s, i) => s + (Number(i.value) || 0), 0);
+  const totalAssets = accountsVal + propertiesVal + investmentsVal;
+
+  // Cash (liquid) accounts only — for emergency-fund calc
+  const cashAccounts = safeArr(client.accounts)
+    .filter(a => LIQUID_TYPES.has(a.type))
+    .reduce((s, a) => s + (Number(a.value) || 0), 0);
+
   const netWorth = totalAssets - debt;
   const netMonthly = income - bills - debtMinPay;
-  
-  // Cash accounts (checking + savings) for emergency fund calc
-  const cashAccounts = safeArr(client.accounts)
-    .filter(a => (a.type || "").toLowerCase() === "checking" || (a.type || "").toLowerCase() === "savings")
-    .reduce((s, a) => s + (Number(a.balance) || 0), 0);
-  
-  return { income, bills, debt, debtMinPay, accounts, customAssets, totalAssets, netWorth, netMonthly, cashAccounts };
+
+  return {
+    income, grossIncome, bills, debt, debtMinPay,
+    cardsBal, loansBal, cardsMin, loansMin,
+    accountsVal, propertiesVal, investmentsVal, totalAssets,
+    cashAccounts, netWorth, netMonthly,
+    cards, loans, properties
+  };
 }
 
 // ── inline SVG charts ──────────────────────────────────────────────────────
@@ -331,12 +390,12 @@ function buildPrintHTML(client, lang, advisor, include) {
   const clientName = `${client.firstName || ""} ${client.lastName || ""}`.trim() + (client.partnerFirst ? ` & ${client.partnerFirst} ${client.partnerLast || ""}`.trim() : "");
 
   // ── Income table + donut
-  const incomeRows = safeArr(client.incomeStreams).filter(s => (Number(s.netMo) || Number(s.amount) || 0) > 0);
+  const incomeRows = safeArr(client.incomeStreams).filter(s => toM(s.net, s.freq) > 0);
   const incomeColors = [GOLD, POS, BLUE, WARN, "#8B5CF6", "#EC4899", "#14B8A6"];
   const incomeChart = inc.income ? donutSVG(
     incomeRows.map((s, i) => ({ 
-      label: s.source || s.name || ("Source " + (i + 1)), 
-      value: Number(s.netMo) || Number(s.amount) || 0, 
+      label: s.label || s.source || s.name || ("Source " + (i + 1)), 
+      value: toM(s.net, s.freq), 
       color: incomeColors[i % incomeColors.length] 
     })),
     L.incomeDist
@@ -344,17 +403,17 @@ function buildPrintHTML(client, lang, advisor, include) {
   const incomeTable = inc.income && incomeRows.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
       <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
-      <tbody>${incomeRows.map(s => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(s.source || s.name || L.none)}</td><td style="padding:5px 8px;text-align:right;color:${POS};font-weight:600">${fmtUSD(Number(s.netMo) || Number(s.amount))}</td></tr>`).join("")}
+      <tbody>${incomeRows.map(s => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(s.label || s.source || s.name || L.none)}</td><td style="padding:5px 8px;text-align:right;color:${POS};font-weight:600">${fmtUSD(toM(s.net, s.freq))}</td></tr>`).join("")}
       <tr style="background:#F0FDF4"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiIncome}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${POS}">${fmtUSD(agg.income)}</td></tr></tbody>
     </table>` : (inc.income ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
   // ── Bills table + donut
-  const billRows = safeArr(client.bills).filter(b => Number(b.amount) > 0);
+  const billRows = actB(client.bills).filter(b => Number(b.cost) > 0);
   const billColors = [NEG, WARN, BLUE, "#8B5CF6", "#06B6D4", "#84CC16", "#F97316"];
   const billsChart = inc.bills ? donutSVG(
     billRows.map((b, i) => ({ 
       label: b.name || b.label || b.category || ("Bill " + (i + 1)), 
-      value: Number(b.amount) || 0, 
+      value: toM(b.cost, b.freq), 
       color: billColors[i % billColors.length] 
     })),
     L.billsDist
@@ -362,19 +421,22 @@ function buildPrintHTML(client, lang, advisor, include) {
   const billsTable = inc.bills && billRows.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
       <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
-      <tbody>${billRows.map(b => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(b.name || b.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(b.category || b.type || "")}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(b.amount)}</td></tr>`).join("")}
+      <tbody>${billRows.map(b => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(b.name || b.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${b.dueDay ? ("Day " + b.dueDay) : htmlEscape(b.type || "")}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(toM(b.cost, b.freq))}</td></tr>`).join("")}
       <tr style="background:#FEF2F2"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiBills}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.bills)}</td></tr></tbody>
     </table>` : (inc.bills ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
   // ── Debts table + bar
-  const debtRows = safeArr(client.debts).filter(d => Number(d.balance) > 0);
+  const debtRows = [
+    ...safeArr(client.cards).map(c => ({ ...c, _isCard: true })),
+    ...safeArr(client.loans).map(l => ({ ...l, _isCard: false }))
+  ].filter(d => Number(d.balance) > 0);
   const debtBar = inc.debt && debtRows.length ? barCompareSVG(L.debtBreakdown, debtRows.map((d, i) => ({
     label: d.name || d.label || ("Debt " + (i + 1)), value: Number(d.balance) || 0, color: NEG
   }))) : '';
   const debtsTable = inc.debt && debtRows.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
       <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.balance}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.minPay}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.interest}</th></tr></thead>
-      <tbody>${debtRows.map(d => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(d.name || d.label || L.none)}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(d.balance)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${fmtUSD(d.minPayment)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${d.apr != null ? fmtPct(d.apr) : L.none}</td></tr>`).join("")}
+      <tbody>${debtRows.map(d => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(d.name || d.label || L.none)}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(d.balance)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${fmtUSD(d._isCard ? effectiveMin(d) : (Number(d.min) || 0))}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${d.apr != null ? fmtPct(d.apr) : L.none}</td></tr>`).join("")}
       <tr style="background:#FEF2F2"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiDebt}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.debt)}</td><td style="padding:6px 8px;text-align:right;font-weight:600;color:${MUTED}">${fmtUSD(agg.debtMinPay)}</td><td></td></tr></tbody>
     </table>` : (inc.debt ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
@@ -385,7 +447,7 @@ function buildPrintHTML(client, lang, advisor, include) {
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
       <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.value}</th></tr></thead>
       <tbody>
-      ${accountsRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(a.type || a.kind || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.balance)}</td></tr>`).join("")}
+      ${accountsRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${(ACCT_ICONS[a.type] || "💼") + " " + htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(ACCT_LABELS[a.type] || a.type || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
       ${customRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(a.type || a.kind || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
       <tr style="background:#EFF6FF"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">Total</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD(agg.totalAssets)}</td></tr></tbody>
     </table>` : (inc.assets ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
@@ -400,20 +462,26 @@ function buildPrintHTML(client, lang, advisor, include) {
     `<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${htmlEscape(k)}</div><div style="font-size:11px;color:${TEXT};line-height:1.55;white-space:pre-wrap">${htmlEscape(v)}</div></div>`
   ).join("") : (inc.notes ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
-  // ── Investment Allocation
-  const investAlloc = client.investAllocation || {};
-  const allocEntries = Object.entries(investAlloc).filter(([k, v]) => v.checked && Number(v.pct) > 0);
+  // ── Investment Allocation (mirrors client.alloc + client.committed structure)
+  const ALLOC_LABELS = { stocks: "📈 Stocks", retirement: "🎯 Retirement", realEstate: "🏠 Real Estate", savings: "🏦 Savings", vacation: "✈️ Vacation", other: "💡 Other", debtRepayment: "💳 Debt Repayment" };
+  const ALLOC_LABELS_ES = { stocks: "📈 Acciones", retirement: "🎯 Jubilación", realEstate: "🏠 Bienes Raíces", savings: "🏦 Ahorros", vacation: "✈️ Vacaciones", other: "💡 Otro", debtRepayment: "💳 Pago de Deuda" };
+  const allocSrc = client.alloc || {};
+  const committedSrc = client.committed || {};
+  const ALL_KEYS = ["stocks", "retirement", "realEstate", "savings", "vacation", "other", "debtRepayment"];
+  const allocEntries = ALL_KEYS
+    .filter(k => Number(allocSrc[k]) > 0)
+    .map(k => [k, { pct: Number(allocSrc[k]), label: (isEs ? ALLOC_LABELS_ES : ALLOC_LABELS)[k] || k, committed: !!committedSrc[k] }]);
   const allocTotal = allocEntries.reduce((s, [_, v]) => s + Number(v.pct), 0);
   const investAllocHTML = inc.investAllocation && allocEntries.length ? `
-    <div style="font-size:10px;color:${MUTED};margin-bottom:6px">${L.available}: ${fmtUSD(agg.netMonthly)}/mo</div>
+    <div style="font-size:10px;color:${MUTED};margin-bottom:6px">${L.available}: ${fmtUSD(Math.max(0, agg.netMonthly))}/mo</div>
     <table style="width:100%;border-collapse:collapse;font-size:10px">
       <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">%</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
       <tbody>
       ${allocEntries.map(([k, v]) => {
-        const amt = (Number(v.pct) / 100) * agg.netMonthly;
+        const amt = (Number(v.pct) / 100) * Math.max(0, agg.netMonthly);
         return `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(v.label || k)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${fmtPct(v.pct)}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(amt)}</td></tr>`;
       }).join("")}
-      <tr style="background:#EFF6FF"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.allocated}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${allocTotal > 100 ? NEG : TEXT}">${fmtPct(allocTotal)}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD((allocTotal / 100) * agg.netMonthly)}</td></tr>
+      <tr style="background:#EFF6FF"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.allocated}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${allocTotal > 100 ? NEG : TEXT}">${fmtPct(allocTotal)}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD((allocTotal / 100) * Math.max(0, agg.netMonthly))}</td></tr>
       </tbody>
     </table>` : '';
 
