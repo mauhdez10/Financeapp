@@ -143,271 +143,43 @@ Status legend:
 - `queued` — ready for a chat to claim
 - `in-progress (chat-id: <claim>, since: YYYY-MM-DD HH:MM)` — actively being worked
 - `paused (chat-id: <claim>, since: ..., notes: ...)` — context-exhausted, needs resume
-- `done` — shipped and committed
+- `done` — shipped and committed (entries moved to §5)
 
-### Chat 3 — IA changes (delete Forms, merge Intake) [`done`]
-
-**Files to upload:** `src/App.jsx`, `src/translations.js`.
-
-**Goal:** Kill the standalone Forms tab. Consolidate intake into one global "Intake Forms" surface. Move Investment Allocation and Emergency Fund OUT of intake and INTO the Monthly Statement tab (advisor-only).
-
-**Spec:**
-
-1. **Delete the standalone Forms tab entirely.** Remove from the `NAV` array. Remove the `FormsPage` component. Remove orphaned translation keys (audit carefully — some `forms*` keys may be reused elsewhere; only delete truly orphaned ones).
-
-2. **Rename "Intake Submissions" → "Intake Forms"** everywhere it appears (nav label, page header, related help text). Both EN and ES.
-
-3. **Remove the per-client Intake tab from `ClientDetail`.** Drop the `intake` entry from the tabs array. The `IntakeSection` component STAYS — still used by the global Intake Forms page.
-
-4. **Discard existing per-client intake data on read.** Mauricio confirmed current data is all test data. Stop rendering `client.intakeData` anywhere. Don't write to it on save. Don't migrate it.
-
-5. **Investment Allocation + Emergency Fund move to Monthly Statement:**
-   - Remove the Investment Allocation and Emergency Fund sections from the Intake Forms surface (client-facing — they should never be asked of the client).
-   - Add Investment Allocation and Emergency Fund sub-sections to `MonthlyTab` (in ClientDetail → Monthly Statement), advisor-editable.
-   - Same data fields as before, same Complete Report rendering. Just a different edit surface.
-
-6. **Intake Forms workflow preserved:** when advisor opens a submission, the existing "apply to client / create client from this" buttons stay. Confirmed.
-
-**Out of scope:** mobile redesign, bulk actions, Playwright fixes.
-
-**Version bump:** minor → v0.7.0 (IA breaking change — Forms tab removed, per-client intake gone).
-
-**Deliverables:** per §1.
-
----
-
-### Chat 4 — Bulk actions on Clients tab [`done`]
-
-**Files to upload:** `src/App.jsx`, `src/translations.js`.
-
-**Goal:** Multi-select on the Clients tab + burger menu with bulk Split/Join/Archive/Delete.
-
-**Spec:**
-
-1. **Selection model:** checkbox at the leftmost position of each `ClientList` row. Header row has "select all visible". Selection is component-local state. Row body click still opens client detail; only the checkbox toggles selection.
-
-2. **Burger menu** on Clients tab header (next to "New Client" button):
-   - 📦 Archive Selected (N)
-   - ↩ Restore Selected (N) — only enabled if all selected are archived
-   - 🗑️ Delete Selected (N) — confirmation requires typing "DELETE"
-   - ✂️ Split — opens picker modal (see #3)
-   - 🔗 Join — opens picker modal (see #4)
-   - All items disabled if zero selected.
-
-3. **Split flow:** click ✂️ Split → modal with search bar + list of all currently-partnered clients. Picking one opens existing `SplitAssignModal`. Bulk selection state is ignored — Split is inherently single-client.
-
-4. **Join flow:** click 🔗 Join → modal with search bar + list of all single clients (no partner). Picking one opens existing `JoinModal`. Bulk selection state ignored.
-
-5. **Archive / Restore / Delete:** act on entire selection. Each shows a confirmation modal listing affected clients ("Archive 3 clients: John Smith, Jane Doe, Carlos Ruiz"). Delete requires typing "DELETE" exactly.
-
-6. **Per-client kebab menu in ClientDetail** keeps existing items unchanged. Bulk menu is additive.
-
-**Out of scope:** mobile polish of new modals, Playwright fixes.
-
-**Version bump:** minor → v0.8.0 (new feature: bulk actions).
-
-**Deliverables:** per §1.
-
----
-
-### Chat 5 — Mobile / responsive redesign [`done (v0.9.0, 2026-05-16)`]
-
-> **Dependency:** do not claim this chat until Chat 3 (IA changes) is `done` and committed. Chat 3 deletes the Forms tab and the per-client Intake tab; redesigning those surfaces first would waste the work. If Chat 3 is not yet done when this slot is reached, leave it `queued` and claim Chat 4 instead.
+### Chat 11 — O-14 engagement-letter gate (ToS + per-client signature date) [`queued`]
 
 **Files to upload:**
-- `src/App.jsx` (latest from repo)
+- `src/App.jsx` (latest, post-v0.12.6)
 - `src/translations.js`
-
-**Files NOT to upload:** CHANGELOG.md.
-
-**Goal:** Make the whole app usable on a phone. It is currently desktop-first and several surfaces overflow horizontally on a narrow viewport. This pass restructures the layout primitives so nothing requires horizontal scrolling and the primary actions are reachable one-handed.
-
-**Spec:**
-
-1. **Top bar.** Remove the ⚓ mark from the mobile top bar to reclaim width (keep it on desktop). Title and nav must fit a ~360px viewport without truncation.
-
-2. **KPI grid.** The dashboard KPI cards (currently a fixed multi-column grid) collapse to a single column — or 2-up at most — on narrow screens. No card content clips.
-
-3. **Client row restructure.** The `ClientList` row currently lays name, figures, and chevron in one wide horizontal strip. Restructure so it stacks cleanly on mobile (name on top, key figures below) with no horizontal scroll.
-
-4. **Button hierarchy.** Audit primary / secondary / tertiary buttons across the main tabs. On mobile, primary actions should be full-width or clearly dominant; secondary actions shouldn't compete. No row of 4+ equal-weight buttons on a phone.
-
-5. **No horizontal scroll anywhere.** Walk every tab (Dashboard, Clients, ClientDetail tab strip, reports) at ~360px and confirm nothing overflows. Tables that genuinely can't shrink get a contained scroll region, not page-level overflow.
-
-This is a styling / layout pass. Do NOT change data shape, component responsibilities, or the EN/ES dictionary beyond any new layout-related strings (which still go in both languages per D-18).
-
-**Out of scope:**
-- IA changes (Chat 3)
-- Bulk actions (Chat 4)
-- Playwright fixes (Chat 6)
-- Any new features
-
-**Version bump:** minor → v0.9.0 (significant UI redesign, no breaking data change).
-
-**Deliverables:** per §1.
-
----
-
-### Chat 6 — Playwright resync [`done (test resync, 2026-05-17)`]
-
-> **Dependency:** do not claim this chat until Chats 3 (IA changes), 4 (bulk actions), and 5 (mobile redesign) are all `done` and committed. The selectors and IA assumptions in the test suite will all shift once those three land; resyncing before any of them ships wastes the work.
-
-**Files to upload:**
-- `src/App.jsx` (latest from repo, post-Chats 3/4/5)
-- `tests/01-smoke.spec.ts`, `tests/02-calculators.spec.ts`, `tests/03-client-workflows.spec.ts`, `tests/04-translation.spec.ts`, `tests/05-persistence.spec.ts`
-- `utils/fixtures.ts`
-- `playwright.config.ts`
-
-**Files NOT to upload:** CHANGELOG.md, `translations.js` (unless a translation-related selector breaks).
-
-**Goal:** Re-baseline the Playwright suite against the post-Chat 5 app. Specifically: (a) IA changes from Chat 3 broke any selector that opened the per-client Intake tab, the standalone Forms tab, or expected "Intake Submissions" wording; (b) bulk actions from Chat 4 added new ClientList rows + a burger menu that the 03-client-workflows suite walks past; (c) mobile redesign from Chat 5 changed the ClientList row shape, KPI grid layout, and top-bar — anything pinning a specific desktop layout will fail on the new responsive primitives.
-
-**Spec:**
-
-1. **Catalog the failures first.** Run `rm -rf playwright/.auth && npm run test:e2e` against the current repo. Capture the failing selectors / wait-on conditions per spec file; group by root cause (IA / bulk-actions / mobile).
-
-2. **Fix selectors against the new app shape.** Prefer stable hooks the app already exposes — `data-cf` attributes from `Field` (line 157 in pre-Chat-3 App.jsx; the line will have moved by Chat 5), `getByTitle` on the language toggle, accessible names on primary buttons. Avoid pinning to specific text where translation could shift it; use regex `/Intake.*Form|Forms/i` patterns where the rename could bite.
-
-3. **Cover the new surfaces.** Add minimal coverage for: the bulk-select checkbox, the new burger menu (selection-count gating), the bulk Archive/Delete confirmation flows, and the Investment Allocation / Emergency Fund sub-sections in the Monthly Statement tab.
-
-4. **Re-enable WebKit if Codespace allows it.** Mauricio to run `sudo npx playwright install-deps webkit` once at the start of this chat. If the deps install successfully, uncomment the webkit project block in `playwright.config.ts` and rebaseline against three browsers.
-
-5. **Update AGENT.md §13** ("Playwright end-to-end testing") with the new known-issues list and the post-resync passing count.
-
-**Out of scope:** any new app features, any new translation keys, any architectural changes to App.jsx, any test framework upgrades (stay on Playwright current major).
-
-**Version bump:** none (test-harness only, tooling addendum per §1 policy).
-
-**Deliverables:** per §1, but `App.jsx` and `translations.js` are upload-only — they should NOT come back modified unless the chat surfaces a real app bug while debugging.
-
----
-
-### Chat 7 — Server-side intake delivery [`done (v0.10.0, 2026-05-18)`]
-
-> **Dependency:** the email path needs SPF / DKIM / DMARC records on `goldenanchor.life` before Resend can send from `mauricio@goldenanchor.life`. This is **NOT** blocked on the Porkbun→Cloudflare *registrar transfer* (that transfer is locked until ~2026-07-15 by the 60-day ICANN lock, and is a separate, later task). What this chat actually needs is the DNS records to exist — and they can be added now.
->
-> **Plan (decided 2026-05-17, Mauricio — "Option B"):** point `goldenanchor.life`'s **nameservers** at Cloudflare while leaving the domain *registered* at Porkbun. Changing nameservers is unrestricted — the 60-day lock only blocks moving the registration. DNS is currently served by Porkbun, so this is a clean cutover, not a half-migration. After the nameserver switch, all DNS records (including the Resend SPF/DKIM/DMARC set) are managed in the Cloudflare dashboard. The full registrar transfer to Cloudflare happens later as its own deliberate task (~2026-07-15+), unrelated to this chat.
->
-> **Before claiming this chat, confirm:** (a) the Cloudflare nameservers are live on the domain (`dig NS goldenanchor.life` returns the `*.ns.cloudflare.com` pair); (b) all pre-existing records were carried over to Cloudflare before the cutover — the `/intake` setup, any MX records, and the app's existing CNAMEs must not drop; (c) Resend's SPF/DKIM/DMARC records are added in Cloudflare and Resend shows the domain verified. If any of those is not true, leave this slot `queued` and tell Mauricio which step is outstanding.
-
-**Files to upload:**
-- `src/App.jsx` (latest from repo)
-- `src/translations.js`
-- `CHANGELOG.md`
-
-**Files NOT to upload:** the Playwright suite (`tests/`, `utils/fixtures.ts`, `playwright.config.ts`) — unless the new delivery UI warrants test coverage in the same pass, in which case add it as a follow-up.
-
-**Goal:** Upgrade the v0.7.3 MVP intake delivery (mailto / sms / copy-message) to real server-side delivery — email via Resend, SMS via Twilio — plus an invite-token system that prefills the public intake form and tracks who opened the link.
-
-**Spec:**
-
-1. **Resend email integration.** Send the intake invite from `mauricio@goldenanchor.life` server-side (no advisor mail client). Requires the SPF/DKIM/DMARC records to be live and the domain verified in Resend first — added in the Cloudflare DNS dashboard once nameservers are pointed there (see the Dependency block; this does NOT wait on the registrar transfer).
-
-2. **Twilio SMS.** Outbound SMS without the advisor's own phone — advisor pays per message (~$0.01/SMS). Requires a Twilio account + verified business profile.
-
-3. **Invite-token system.** Generate a unique token per prospect; the public intake URL accepts `invite=<token>`; the form prefills from the token; track which prospect opened the link and when.
-
-4. **TCPA compliance.** Explicit opt-in language for SMS — even B2C financial-services outreach in Florida needs documented consent. Add the consent copy in EN + ES (D-18).
-
-**Open decisions to close (move from AGENT.md §5 to Locked):** email provider (Resend recommended), Twilio account + verified business profile, SMS consent legal language.
-
-**Out of scope:** WhatsApp Business API delivery (stays in §4 backlog — long-term). Any unrelated app features.
-
-**Version bump:** minor (new feature) — confirm the exact next number against AGENT.md §3 at chat start.
-
-**Deliverables:** per §1.
-
----
-
-### Chat 8 — Spanish review pass + Resend smoke test in production [`done (v0.12.2, 2026-05-19)`]
-
-> **Completion note (2026-05-19).** Items 1–4 shipped as **v0.12.2**. The Spanish audit was done statically (App.jsx parsed against translations.js) rather than by screenshot walk — more exhaustive: it found **134 hardcoded English strings / 203 code sites** that never routed through `t.key`, all now wired (48 reused keys, 83 new × 2 langs). O-9 roadmap `sub` blocks translated. O-10 Resend production smoke test passed (Mauricio ran it — EN + ES invites, full loop confirmed). **O-9 and O-10 closed in AGENT.md §5.** **Two spec items remain with Mauricio, no code:** item 5 (Twilio go/defer decision — still open) and item 6 (v0.12.x Complete Report PDF smoke test — runbook handed to Mauricio; if it surfaces PDF defects they feed Chat 11 spec item 1, else Chat 11 item 1 is a no-op).
-
-
-**Files to upload:**
-- `src/App.jsx` (latest from repo, post-v0.10.0)
-- `src/translations.js`
-
-**Files NOT to upload:** CHANGELOG.md, the Playwright suite.
-
-**Goal:** Close out the two oldest open decisions in AGENT.md §5 — **O-9 (Phase-2 roadmap narrative translation)** and **O-10 (Spanish review pass)** — by walking the EN→ES surface end-to-end and fixing any remaining English bleed-through, regional terminology issues, or wording that reads stiff in Spanish. Also: validate the v0.10.0 Resend integration in production by sending two real intake invites (one EN, one ES) to Mauricio's own inbox and confirming the full open→submit→link-back loop works.
-
-**Spec:**
-
-1. **Spanish audit walk-through.** Sign in, toggle to Spanish, then walk every primary surface: Dashboard, Clients, ClientList, ClientDetail (all 8 tabs), Intake Forms (incl. the new v0.10.0 send panel + Sent invites list + TCPA copy when SMS is toggled — even though SMS is disabled, the consent checkbox renders and its copy must be Spanish), Calculators (all 7), Resources, About, Profile & Settings, Backfill, the Compare report, the Strategy Plan tab, and the Monthly Statement. Take a screenshot every time an English string appears in the Spanish UI.
-
-2. **Fix surfaced bleed-through.** For each English string found, add the translation key (or fix the existing one). Update both `T.en` and `T.es` in the same edit (pitfall #9). Watch for the v0.10.0 send-invite panel specifically — that copy is new and hasn't seen a native-speaker pass yet.
-
-3. **Roadmap narrative blocks** (the original O-9 scope). The Financial Roadmap narrative blocks ("Focus all extra cash on debt...", "Allocate 25% stocks + 20% retirement...") were flagged as the last English-only surface in the v0.5.0 era. If they're still English-only, translate them.
-
-4. **Production Resend smoke test.** Send two real intake invites (one EN, one ES) to Mauricio's own email. Verify: (a) the email arrives within ~30s, (b) the branding renders correctly in Gmail web + Gmail mobile, (c) the link opens the public form, (d) the form prefills correctly, (e) submission flips the invite status to "Submitted" in the Sent invites list, (f) the new intake submission appears in Intake Forms with the prospect's data.
-
-5. **Twilio decision.** Mauricio confirms whether to start the Twilio business profile verification process now (1-3 day approval window) or defer indefinitely. This is a 1-decision close (no code change either way). If go: prerequisites for a future Chat 9 are gathered (account, phone number purchased, business profile submitted). If defer: SMS path stays feature-flagged off; D-32 stays locked as-is.
-
-6. **v0.12.0 Email Complete Report PDF smoke test (added 2026-05-19, post-Chat 10).** With a real client that has non-empty income/bills/debt data, open the Reports → Complete Report tab → click 📧 Email → send the PDF to Mauricio's own email. Verify: (a) the cold-start completes within the 30s `maxDuration`, (b) Gmail receives a `golden-anchor-report-<name>-<date>.pdf` attachment that opens cleanly in Gmail's PDF preview + Adobe Acrobat, (c) the PDF KPI strip + income/bills donuts + debt bar + asset table + notes all render with the expected numbers (no `$NaN`, no missing cells), (d) the signature pulls from Profile & Settings (advisor name + email), (e) running it a second time inside ~1 minute hits the warm-start path (~1–2s). Repeat with `lang=es`. If anything looks wrong in the PDF (numbers off, layout busted, missing section), file specifics for a v0.12.1 patch.
-
-**Out of scope:** any new features, engagement-letter gate (O-14), WhatsApp.
-
-**Version bump:** patch — next available patch number (confirm at chat start; v0.10.1, v0.10.2, v0.11.0 and v0.11.1 are all taken) if translation fixes ship, or none if the Spanish audit finds nothing wrong and only docs change.
-
-**Deliverables:** per §1.
-
----
-
-### Chat 10 — Email Complete Report as PDF (Puppeteer) [`done (v0.12.0, 2026-05-19)`]
-
-**Files to upload:**
-- `src/App.jsx` (latest from repo)
-- `api/send-intake-invite.js` (as the pattern reference for a Vercel function: JWT verify, service-role client, env handling)
 - `AGENT.md`, `SKILL.md`, `WORKPLAN.md`
 
-**Files NOT to upload:** `src/translations.js` (unless new UI strings are genuinely needed), the Playwright suite.
+**Files NOT to upload:** the Playwright suite, CHANGELOG.md, `api/render-report-pdf.js` (no edits expected in Chat 11 unless a PDF bug surfaces).
 
-**Goal:** Let Mauricio email a client their **Complete Report** as a real PDF attachment. **O-11 is RESOLVED — approach (a): Puppeteer rendering the real page server-side**, chosen by Mauricio 2026-05-19 for best fidelity (real fonts, real charts). This supersedes the a/b/c choice in O-11; record O-11 as closed when this ships.
+**Goal:** Close O-14 by shipping (A) the first-login ToS / Privacy Policy click-through gate and (B) the per-client engagement-letter "mark as signed" workflow. **No** in-app signing flow — that stays deferred (D-23 territory). Mauricio's interim flow is: send engagement letter via email + DocuSign/paper externally, then come back to the app and click "Mark as signed today."
 
-**Spec / decisions to nail down at chat start:**
-
-1. **The auth problem must be solved first.** A Vercel function cannot just open `finance.goldenanchor.life` and screenshot it — the report lives behind the login gate in authenticated client state. Decide the data path before writing Puppeteer code. Likely shape: a new `api/render-report-pdf.js` that (a) verifies the advisor JWT exactly like `send-intake-invite.js`, (b) loads the client's data server-side with the service-role key, (c) renders a dedicated print-only report route/HTML, (d) Puppeteers that HTML to PDF. A self-contained print HTML (no login, no live app) is simpler and faster than driving the full SPA — prefer it unless fidelity demands the real React tree.
-2. **Puppeteer on Vercel needs the slim Chromium build.** Full `puppeteer` exceeds Vercel's function size limit. Use `puppeteer-core` + `@sparticuz/chromium`. Confirm current versions and the Vercel function `maxDuration` / memory config at chat start — cold starts are heavy.
-3. **Delivery.** Generate the PDF, then either attach it to a Resend email (the existing Resend integration — reuse `RESEND_FROM` = `noreply@finance.goldenanchor.life`, D-31) or upload to Supabase Storage and link it. Decide attach vs link at chat start (attachment size limits vs link convenience).
-4. **App.jsx** gets a "📧 Email report" action wired to the new endpoint. The email signature, like the intake invite, should pull advisor name/email from Profile & Settings (the v0.11.1 pattern — pass `advisorName`/`advisorEmail` in the payload).
-5. **Respect D-30** (server code lives in `api/` Vercel functions) and **pitfall #13** for any new App.jsx hooks.
-
-**Out of scope:** replacing the existing `window.print()` manual share flow (it stays — O-13). Monthly-report or statement PDFs (this chat is the Complete Report only).
-
-**Version bump:** minor — new feature — confirm the next number against AGENT.md §3 at chat start (v0.11.1 is the latest shipped).
-
-**Deliverables:** per §1, plus the new `api/render-report-pdf.js` and any `package.json` dependency note (`puppeteer-core`, `@sparticuz/chromium`).
-
----
-
-### Chat 11 — PDF report polish + engagement-letter gate prep [`queued`]
-
-**Files to upload:**
-- `src/App.jsx` (latest from repo, post-v0.12.0)
-- `src/translations.js`
-- `api/render-report-pdf.js` (the Chat 10 print-HTML builder — likely the file that needs the bulk of the edits)
-- `AGENT.md`, `SKILL.md`, `WORKPLAN.md`
-
-**Files NOT to upload:** the Playwright suite, CHANGELOG.md.
-
-**Goal:** Two-part. **(A)** Iterate on the v0.12.0 Complete Report PDF based on Chat 8's smoke-test findings — fix layout/number issues found in production, optionally add the Financial Statements + Strategy Plan sections to the PDF (currently only KPI strip + income/bills/debt/assets/notes), and add per-section toggles so the PDF respects the existing `client.reportInclude` map the way the on-screen Complete Report does. **(B)** Begin closing **O-14 (Terms of Service / Privacy Policy acceptance gate + Engagement Letter signature flow)** by shipping the ToS click-through (Mauricio's first-login gate) + the per-client engagement-letter signature date field; the in-app DocuSign-style signing flow is deferred to a follow-up.
+**Note — what v0.12.4 / v0.12.5 / v0.12.6 already closed (no longer in scope):**
+- ✅ Email PDF feature parity — all 5 sections (Investment Allocation, Financial Ratios, Cash Flow Statement, Strategy Plan, Notes) shipped in v0.12.4
+- ✅ Email PDF data extraction — wrong-field bugs fixed in v0.12.5 with citations to App.jsx source lines
+- ✅ Per-tab PDF differentiation — Monthly tab emails monthly-format, Financial tab emails statements-format, Complete tab emails the long form (v0.12.6)
+- ✅ Soft-grey print background — `@media print { html, body { background: #F1F5F9 } }` + `print-color-adjust: exact` (v0.12.4, regressed in v0.12.5, restored in v0.12.6)
+- ✅ Basic print page-break rules — `h1-h4 { page-break-after: avoid }`, `table { page-break-inside: avoid }`, `tr { page-break-inside: avoid }`, `.ga-section { page-break-inside: avoid }` on FullReport's `RS` helper (v0.12.6)
+- ✅ Modal backdrop-close suppression on EmailReportModal (v0.12.5)
 
 **Spec:**
 
-1. **PDF iteration (depends on Chat 8 smoke-test report).** Whatever Chat 8 flagged from the v0.12.0 production smoke test — number mismatches, layout overflow, font issues in Gmail's preview, broken Spanish copy in the report shell, etc. — fix in `api/render-report-pdf.js`. If `buildPrintHTML()` needs to call into a real React render for fidelity reasons, surface that as a D-34 re-open question; otherwise keep the print-HTML path.
+1. **ToS click-through gate (closes O-14 part A).** On first login (or first login after a ToS version bump), show a one-time modal: "I have read and accept the Terms of Service and Privacy Policy" + the two PDF links. Store `settings.tosAcceptedAt` (ISO date) + `settings.tosVersion` (string). Gate access to the app until accepted — modal cannot be dismissed without acceptance. Use existing Modal component with `disableBackdropClose` (v0.12.5). Make the ToS / Privacy PDF links external (Mauricio hosts them on goldenanchor.life or as static files in `/public`).
 
-2. **Optional extension: Financial Statements + Strategy Plan sections in the PDF.** v0.12.0 ships the Complete Report's primary blocks (KPI / Income / Bills / Debt / Assets / Notes). The on-screen Complete Report also embeds the Financial Statements (balance sheet, income statement, cash-flow stmt) and the Strategy Plan. Decide at chat start whether to extend the PDF to include them — depends on how often Mauricio actually emails the long-form report vs the short one. If yes, mirror the JSX math in `api/render-report-pdf.js`.
+2. **Per-client engagement-letter signature date (closes O-14 part B).** Add `engagementLetter: { signedAt: ISO-string, signedBy: string, ipHash: string|null }` to the client schema (default `{}`). In `ClientDetail`'s header area, add a small banner/badge:
+   - `engagementLetter.signedAt` set → green pill "Engagement letter signed YYYY-MM-DD"
+   - unset → amber pill "⚠ No engagement letter on file" + a "Mark as signed today" button that writes `{ signedAt: today, signedBy: advisor.name, ipHash: null }`
+   The in-app signing flow + uploaded template (D-23 multi-agent feature) is explicitly deferred — leave as a §4 backlog item.
 
-3. **Per-section include/exclude in the PDF.** `CompleteReportTab` already has a `reportInclude` toggle map per client; the on-screen report respects it. The PDF currently does not — passes everything. Wire the modal to read `client.reportInclude` and pass an `include` map to the server function; honor it in `buildPrintHTML()`.
+3. **Small PDF polish (optional, only if it fits in the chat).** Minor visual tightening based on smoke-test feedback after v0.12.6 ships:
+   - (a) If the in-browser print Strategy Plan card still bleeds past page edge on certain client data, add `className="ga-section"` to the relevant card in the JSX path that renders the live Strategy Plan (NOT the server-side print HTML — that already pages correctly).
+   - (b) If "Background graphics" toggle is still tripping users up, add a small italic note next to each PrintBtn ("*Tip: enable 'Background graphics' in Chrome's print dialog to keep the grey background*"). Keep it subtle and non-blocking.
 
-4. **ToS click-through gate (closes O-14 part A).** On first login (or first login after a ToS version bump), show a one-time modal: "I have read and accept the Terms of Service and Privacy Policy" + the two PDF links. Store `settings.tosAcceptedAt` (ISO date) + `settings.tosVersion` (string). Gate access to the app until accepted. Modal cannot be dismissed without acceptance.
+**Out of scope:** in-app DocuSign-style signing flow, multi-tenant agent-uploaded-template feature (D-23 territory), Twilio activation, WhatsApp, per-tab PDF visual differentiation beyond the section toggles already shipped in v0.12.6.
 
-5. **Per-client engagement-letter signature date (closes O-14 part B, no signing flow).** Add `engagementLetter: { signedAt, signedBy, ipHash }` to the client schema. In ClientDetail, add a small banner/badge at the top: "Engagement letter signed YYYY-MM-DD" (if set) or "⚠ No engagement letter on file" (if unset, with a "Mark as signed today" button that writes the date). Mauricio's interim workflow remains: send the engagement letter via email + DocuSign/paper, then come back to the app and mark it signed manually. The in-app signing flow + uploaded template (D-23 multi-agent feature) is explicitly deferred — track as a §4 backlog item.
-
-**Out of scope:** in-app DocuSign-style signing flow, multi-tenant agent-uploaded-template feature (D-23 territory), Twilio activation, WhatsApp.
-
-**Version bump:** minor → v0.13.0 if either of (A) or (B) ships meaningful new surface; patch v0.12.1 if (A) is fixes-only and (B) defers.
+**Version bump:** minor → v0.13.0 if both (1) and (2) ship (meaningful new surface). Patch v0.12.7 if only (3) ships.
 
 **Deliverables:** per §1.
 
@@ -426,8 +198,9 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 | Chat # | Version | Date | Title |
 |---|---|---|---|
-| — | v0.12.5 | 2026-05-20 | Patch (out-of-band, not a queued chat). **Email PDF data CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled.** Three fixes responding to Mauricio's smoke-test feedback on v0.12.4. **Fix 1 — data extraction:** v0.12.4 was supposed to fix the email-PDF numbers but used wrong field names everywhere — `.amount`/`.netMo` for income (actual: `.net`+`.freq` via `toM`), `.amount` for bills (actual: `.cost`+`.freq`), `client.debts` (actual: `client.cards` + `client.loans`), `.minPayment` (actual: `effectiveMin(c)` for cards), `.balance` for accounts (actual: `.value`), `client.investAllocation` (actual: `client.alloc` + `client.committed`). Result: v0.12.4 email PDF showed Net Worth $22,000 vs the live $28,100, Income $0 vs $9,600, Bills $0 vs $1,985, Total Debt $0 vs $31,700. The only correct value ($22,000 from Fidelity Account) only made it through because `.value` happened to be the right field for `customAssets`. v0.12.5 rewrites helpers + `computeAggregates` (~100 lines, lines 70-167 of `api/render-report-pdf.js`) to mirror the live App.jsx math exactly, with citations back to source lines: `FREQ@121`, `toM@122`, `actB@129`, `cardMoInt@136`, `effectiveMin@133`, `liquidA`/`totalA`/`totalL`@145-147, `ACCT_META@58`. Surgically corrects 10 wrong field references throughout `buildPrintHTML` (income tables, bill tables, debt tables, account tables, investment allocation, debt payoff). Cards-and-loans tagged at construction (`_isCard: true|false`) so the min-pay column picks `effectiveMin(c)` for cards vs raw `.min` for loans. **Fix 2 — email button on Monthly + Financial tabs:** v0.12.0 added 📧 Email only to Complete Report tab; Monthly + Financial only had 🖨️ Print. v0.12.5 adds 📧 Email to both other tabs (wrapped in `<div className="ga-np">` so both buttons hide during in-browser print). Both tabs now accept `settings` prop and forward to EmailReportModal; ClientReport call sites pass `settings={settings}`. All three buttons send the same Complete Report PDF for now — per-tab PDF differentiation (Monthly-style vs Financial-style) deferred to Chat 11. **Fix 3 — modal backdrop-close disabled on EmailReportModal:** Mauricio reported losing typed content when accidentally clicking outside the modal. Modal now accepts `disableBackdropClose` prop (defaults to false, preserves every other modal's existing behavior); EmailReportModal opts in. Closing requires explicit Cancel or × button. App.jsx 3,046 → 3,046 lines (one-line replacements only). render-report-pdf.js 817 → 885 lines. `translations.js` unchanged at 1,313 keys/side. `package.json`, `vercel.json` unchanged. Build marker `2026-05-20-v0125-email-on-all-reports-data-fix`. D-36 scope check passed. No SQL migration, no new locked decisions, no new pitfalls. D-1, D-7, D-18, D-27, D-30, D-31, D-34, D-36 preserved. |
-| — | v0.12.4 | 2026-05-20 | Patch (out-of-band, not a queued chat). **Email Complete Report PDF section parity + soft-grey background for all three on-screen PrintBtns.** Added 5 missing sections (Investment Allocation, Financial Ratios, Cash Flow Statement, Strategy Plan) to the email PDF; respected `client.reportInclude` toggle map. Page background `#F1F5F9` with white section cards. App.jsx `@media print` block patched: `body { background: white }` → `html, body { background: #F1F5F9 }` + `print-color-adjust: exact` on `*` so browsers preserve the painted backgrounds when generating saved PDFs. **However**, the data-extraction code in v0.12.4 used wrong field names (`.amount` for income/bills, `client.debts` for cards, `.balance` for accounts, `client.investAllocation` for allocation) — the email PDF still rendered $0 across the board despite the new sections. Build marker `2026-05-20-v0124-section-parity-grey-print`. **Data bug corrected in v0.12.5.** |
+| — | v0.12.6 | 2026-05-20 | Patch (out-of-band, not a queued chat). **Per-tab PDF differentiation + restored grey @media print background (v0.12.4 regression) + page-break rules + WORKPLAN cleanup.** Three fixes after Mauricio's v0.12.5 smoke test. **Fix 1 — per-tab PDF differentiation:** v0.12.5 had all three Email buttons sending the same Complete Report PDF. v0.12.6: Monthly tab's 📧 sends a monthly-statement PDF (income + bills + debt + accounts + notes, no allocation/ratios/cash-flow/strategy sections), Financial tab's 📧 sends a financial-statements PDF (balance sheet via assets section + Financial Ratios + Cash Flow Statement), Complete tab's 📧 keeps the full report. Wiring: `EmailReportModal` accepts a `reportType="complete"\|"monthly"\|"financial"` prop, includes it in the POST body, varies subject + modal title accordingly; `gaEmailCompleteReport` passes it through; server handler whitelists the value and routes to `buildPrintHTML(client, lang, advisor, include, reportType)`; `buildPrintHTML` overrides `inc` (the section toggle map) and `L.title` based on reportType. Filename also varies: `golden-anchor-monthly-...pdf`, `golden-anchor-financial-statements-...pdf`, `golden-anchor-complete-report-...pdf`. **Fix 2 — grey @media print background restored:** v0.12.4 set `html, body { background: #F1F5F9 }` with `print-color-adjust: exact`, but v0.12.5 silently reverted it (I built v0.12.5 from a `/mnt/project/App.jsx` that was still at v0.12.3 baseline because Mauricio's v0.12.4 deploy never made it into project knowledge). Mauricio's smoke test PDF was pure white. v0.12.6 restores the v0.12.4 fix verbatim + adds page-break rules: `h1,h2,h3,h4 { page-break-after: avoid }`, `table { page-break-inside: avoid }`, `tr { page-break-inside: avoid }`, `.ga-section { page-break-inside: avoid }`. Also added `className="ga-section"` to `FullReport`'s `RS` helper at App.jsx line 620, so the new CSS rule has something to target on the most common large card. **Fix 3 — WORKPLAN §3 cleanup:** removed 8 `done` chat slots (Chat 3-10), keeping only Chat 11 as the active queued item. Chat 11 spec rewritten to reflect what's actually still pending after v0.12.4/v0.12.5/v0.12.6 closed the PDF iteration items — now scoped to O-14 engagement-letter gate (ToS click-through + per-client signature date) + small PDF polish if it fits. **No translation changes.** `translations.js` unchanged at 1,313 keys/side. `package.json`, `vercel.json` unchanged. App.jsx 3,046 → 3,052 lines (+6 for the section-override block in EmailReportModal + the const RPT_LABEL declaration). render-report-pdf.js 885 → 906 lines (+21 for the inc/title override block + reportType validation in handler + TYPE_SLUG filename routing). **D-36 scope check passed:** `reportType` is destructured in every function that uses it (EmailReportModal signature, buildPrintHTML signature with default value). **D-37 not added** (no new locked decision) but worth flagging informally: **when starting a new patch always pull `/mnt/project/<file>` AND verify its build marker matches the latest `<file>` in `/home/claude/` — if they differ, the project knowledge is stale and your patch will silently regress whatever shipped between the two**. The v0.12.4 → v0.12.5 regression came from exactly this mismatch (project knowledge was v0.12.3, /home/claude had v0.12.4 from prior turn, I pulled the wrong one). Build marker `2026-05-20-v0126-per-tab-pdf-grey-print-restored`. No SQL migration, no new pitfalls, no new locked decisions. D-1, D-7, D-18, D-27, D-30, D-31, D-34, D-36 preserved. |
+| — | v0.12.5 | 2026-05-20 | Patch (out-of-band, not a queued chat). **Email PDF data CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled.** Three fixes from Mauricio's v0.12.4 smoke-test feedback. **(1)** `api/render-report-pdf.js` helpers + `computeAggregates` rewritten (~100 lines) to mirror live App.jsx math exactly — v0.12.4's data-extraction code used invented field names that don't exist; v0.12.5 uses real ones (`toM(stream.net, stream.freq)` for income, `actB(bills).reduce(toM(b.cost, b.freq))` for bills, `client.cards + client.loans` for debt, `effectiveMin(c)` for card min pay, `a.value` for accounts, `client.alloc + client.committed` for investment allocation). 10 buildPrintHTML field references surgically corrected. **(2)** Email button added to Monthly + Financial tabs. **(3)** Modal gains `disableBackdropClose`; EmailReportModal opts in. App.jsx 3,046 → 3,046. render-report-pdf.js 817 → 885. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0125-email-on-all-reports-data-fix`. **Silent regression**: v0.12.5 reverted v0.12.4's grey `@media print` background and section parity work because I built from the wrong baseline (`/mnt/project/App.jsx` was still v0.12.3 because Mauricio's v0.12.4 deploy never updated project knowledge). Fixed in v0.12.6. |
+| — | v0.12.4 | 2026-05-20 | Patch (out-of-band, not a queued chat). **Email Complete Report PDF section parity + soft-grey background for all three on-screen PrintBtns.** Added 5 missing sections (Investment Allocation, Financial Ratios, Cash Flow Statement, Strategy Plan) to the email PDF; respected `client.reportInclude` toggle map. Page background `#F1F5F9` with white section cards. App.jsx `@media print` block patched: `body { background: white }` → `html, body { background: #F1F5F9 }` + `print-color-adjust: exact` on `*`. **However** the data-extraction code used wrong field names — fixed in v0.12.5. And the `@media print` change was lost in v0.12.5 — restored in v0.12.6. Build marker `2026-05-20-v0124-section-parity-grey-print`. |
 | 8 (hotfix) | v0.12.3 | 2026-05-20 | **Hotfix for v0.12.2 — `t`-out-of-scope crash; blank screen after login.** v0.12.2 deployed Monday and immediately broke production: every login rendered a blank screen because 8 component functions (`Kebab`, `PTag`, `BulkSnapModal`, `ImportWizard`, `DuplicateResolverModal`, `DeleteClientModal`, `BackupImportModal`, `ExportModal`) referenced new `t.xxx` keys in their bodies but did NOT accept `t` as a parameter. JavaScript threw `ReferenceError: t is not defined` at render time → React error boundary fired → blank screen. `Kebab` was the killer because it renders on every dashboard client row (the first paint after login). Mauricio rolled back to v0.12.1 to recover the app. **The v0.12.2 audit missed this** because the TypeScript `--noLib` dry-run only catches syntax errors and `t.foo` where `t` is undefined is **valid syntax** — the crash is a runtime `ReferenceError`, not a parse error. The key-symmetry check was source-text-only, not scope-aware. **Fix:** added `t` as a destructured prop to all 8 signatures; propagated `t={t}` at all 22 JSX call sites; also added `t` to `ArchivedSection` (dead-code path but defense-in-depth — it calls `DeleteClientModal`). **The patcher itself had to be rewritten brace-aware:** the naive `<Name[^>]*?/?>` regex used in the first attempt matched the FIRST `>` inside a JSX attribute-expression body (e.g. inside `onClose={()=>setX(false)}` the `>` from the arrow), so `t={t}` was injected mid-arrow-function → different broken syntax. The corrected patcher walks the tag character-by-character tracking `{}` depth and string-quote state (`'`, `"`, `` ` ``) until it finds the real `>` or `/>` at depth 0. A new **scope-aware static verifier** (now part of the fix script) confirms (a) every function referencing a known dict key has `t` in its parameter list or declares `const t=` itself, and (b) every JSX call site passing `t={t}` has `t` in its enclosing function's scope — both report zero findings. **Belt-and-suspenders:** every `t.X||"fallback"` reference newly introduced in v0.12.2 (113 unique dict keys / 177 source sites) was additionally wrapped with optional chaining → `t?.X||"fallback"`. If a future refactor *again* loses `t` from some scope, those sites will degrade to the English fallback string instead of crashing the app with `ReferenceError`. Pre-existing `t.X||` patterns (~984 sites) were left untouched — they've been battle-tested by months of production traffic, and changing them would balloon the diff without reducing risk. `translations.js` unchanged at 1,313 keys/side. App.jsx 3,046 → 3,046 lines (signature edits only). TypeScript dry-run clean. Build marker `2026-05-20-v0123-t-scope-fix`. **One new locked decision: D-36** (static-text patches MUST be verified by a scope-aware checker, not just a syntax check). No SQL, no env vars, no `api/*` or `package.json` changes. **Deploy note:** because Mauricio rolled back to v0.12.1, the v0.12.3 deploy must include BOTH the v0.12.2 `translations.js` (with the 83 new keys, since the `t.xxx` references in App.jsx depend on them) AND the v0.12.3 `App.jsx`. Replace both files; commit + push; Vercel auto-deploys. |
 | 8 | v0.12.2 | 2026-05-19 | **Spanish bleed-through fix — closes O-9 and O-10.** Static EN→ES audit of `App.jsx` against `src/translations.js` (more exhaustive than the planned screenshot walk): the dictionary itself was healthy (perfect EN/ES symmetry, well-translated) but **134 unique hardcoded English strings across 203 code sites** never routed through the `t.key` lookup — `Field` renders `{label}` raw, so every `<Field label="literal">` stayed English when the UI toggled to Spanish. Concentrated in the calculator field labels (paycheck/debt/car — the v0.5.0 "calculators are bilingual" claim covered headings, not the dense field labels), the client-data modals (income/bill/card/account/property editors), the Backfill/Import modal titles, the ClientList filter/sort chips, the Market Investments category options, and the nav tooltips. **Fix:** all 203 sites wired through `t.key||"English fallback"` — **48 reused existing keys, 83 new keys minted** (× EN/ES) in the dictionary's neutral Latin-American Spanish register (`Down`→"Enganche", `Taxable`→"Gravable", `Checking`→"Cuenta Corriente", `Filing`→"Declaración", etc.). The two O-9 Financial Roadmap `PhaseCard`/`Phase` `sub` template literals — which mixed the already-translated `extraToFastestDebt` fragment with hardcoded English glue ("Applying … /mo extra to fastest debt using") — are now fully bilingual. `PrintBtn`'s default parameter was reverted to a plain-string default (a function-parameter destructuring default cannot be a JSX `{…}` expression or reference `t`); all three `<PrintBtn/>` call sites (MonthlyReportTab, FinancialStatementReportTab, CompleteReportTab — all have `t` in scope) now pass a translated label. `translations.js` 1,230 → 1,313 keys/side (+83), EN/ES symmetry verified zero-orphan both directions. App.jsx 3,045 → 3,046 lines. TypeScript dry-run clean. **O-10 production Resend smoke test passed** — Mauricio sent two real intake invites (one EN, one ES) to his own inbox; full open→prefill→submit→status-flip→submission-appears loop confirmed on Gmail web + mobile. No SQL migration, no env vars, no `api/*` or `package.json` changes, no new locked decisions, no new pitfalls. Build marker `2026-05-19-v0122-spanish-bleedthrough`. **Outstanding (Mauricio, no code):** Twilio go/defer decision (Chat 8 spec item 5); v0.12.x Complete Report PDF smoke test (spec item 6). |
 | — | v0.12.1 | 2026-05-19 | Patch (not a queued chat). **Vercel Chromium runtime fix for v0.12.0.** v0.12.0 deployed but every PDF send failed with `Failed to launch the browser process! /tmp/chromium: error while loading shared libraries: libnss3.so: cannot open shared object file`. Root cause: `@sparticuz/chromium@131`'s bundled native libs (libnss3 + a stack of others) did not survive Vercel's serverless bundler tracing — compounded by an accidental `npm install puppeteer` (full ~280MB Puppeteer) that bloated `node_modules` past the practical tracing limit, increasing the chance of partial bundling. Fix: switched to `@sparticuz/chromium-min@^140.0.0` (NOT regular `@sparticuz/chromium`) paired with `puppeteer-core@^24.10.0`. The `-min` variant ships only ~5MB of JS glue; the Chromium brotli tarball is downloaded at runtime from the official GitHub release URL `https://github.com/Sparticuz/chromium/releases/download/v140.0.0/chromium-v140.0.0-pack.x64.tar` and cached in `/tmp` between warm invocations. Tiny deploy bundle, working `libnss3.so`, no Vercel size-limit risk. Also modernized the `puppeteer.launch` call: `headless: chromium.headless` → `headless: "shell"` (puppeteer-core 24's expected literal), added `--no-sandbox` + `--disable-setuid-sandbox` + `--hide-scrollbars` to the args spread as defensive belt for the Lambda runtime. **D-34 amended** with the chromium-min lesson + version-pinning rule (the URL constant must match the npm major). **No App.jsx logic changes, no translation changes** — only `api/render-report-pdf.js` (runtime/launch section) + `package.json` deps + build marker. App.jsx 3,046 lines unchanged. translations.js 1,230 keys/side unchanged. Cold start expectation: ~5–8s on first invocation after deploy (tarball download), ~1s warm. Build marker `2026-05-19-v0121-chromium-min-fix`. No SQL migration. No new pitfalls (the libnss3 + chromium-min lesson is captured in AGENT.md §3 v0.12.1 + D-34 — if a future headless-browser feature recurs the issue, those are the references). |
@@ -476,8 +249,8 @@ This is a styling / layout pass. Do NOT change data shape, component responsibil
 
 *This file is itself versioned via git. If you're reading it and the §3 queue looks out of date or contradicts the CHANGELOG, the file may be stale — pull latest from `main` before relying on it.*
 
-*Last updated: 2026-05-20 — v0.12.5 (Patch, out-of-band, not a queued chat) shipped. **Email PDF data CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled.** Three fixes from Mauricio's v0.12.4 smoke-test feedback: (1) `api/render-report-pdf.js` helpers + `computeAggregates` rewritten (~100 lines) to mirror live App.jsx math exactly — v0.12.4's data-extraction used invented field names that don't exist; v0.12.5 uses real ones (`toM(stream.net, stream.freq)` for income, `actB(bills).reduce(toM(b.cost, b.freq))` for bills, `client.cards + client.loans` for debt, `effectiveMin(c)` for card min pay, `a.value` for accounts, `client.alloc + client.committed` for investment allocation). 10 buildPrintHTML field references surgically corrected. (2) Email button added to Monthly Report + Financial Statements tabs; both tabs now accept `settings` prop and forward to EmailReportModal; ClientReport call sites pass `settings={settings}`. All three Email buttons send the same Complete Report PDF for now. (3) Modal gains `disableBackdropClose` prop; EmailReportModal opts in so accidental backdrop clicks no longer dismiss. App.jsx 3,046 → 3,046 lines (one-line replacements). render-report-pdf.js 817 → 885 lines. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0125-email-on-all-reports-data-fix`. D-36 scope check passed. **Queue:** Chat 11 (PDF polish + O-14 prep) — still `queued`, claimable now. With v0.12.5 the email PDF "data correctness" question is closed; Chat 11 now scopes to per-tab PDF differentiation (Monthly-style/Financial-style/Complete-style) + engagement-letter gate (O-14 part A/B) + Strategy Plan print pagination (the live React print on page 6 still bleeds past the page edge — Mauricio flagged this; cosmetic). §4 backlog unchanged.*
+*Last updated: 2026-05-20 — v0.12.6 (Patch, out-of-band) shipped. **Per-tab PDF differentiation + restored grey @media print background (v0.12.4 regression fix) + page-break rules + WORKPLAN cleanup.** (1) Monthly tab's 📧 Email now sends a monthly-statement PDF (income + bills + debt + accounts + notes); Financial tab's 📧 sends a financial-statements PDF (assets + financial ratios + cash-flow statement); Complete tab's 📧 keeps the full report. Server endpoint accepts `reportType` param, validates whitelist, routes via `buildPrintHTML(..., reportType)`. Filename varies (`golden-anchor-monthly-...`, `golden-anchor-financial-statements-...`, `golden-anchor-complete-report-...`). (2) Restored v0.12.4's `html, body { background: #F1F5F9 }` + `print-color-adjust: exact` rules that v0.12.5 had silently reverted (built from wrong baseline). Also added page-break rules: `h1-h4 { page-break-after: avoid }`, `table/tr { page-break-inside: avoid }`, `.ga-section { page-break-inside: avoid }` + className added to FullReport's RS helper. (3) WORKPLAN §3 cleaned: removed Chat 3-10 (all `done`), kept only Chat 11 with refreshed spec. Chat 11 is now scoped to O-14 engagement-letter gate (ToS click-through + per-client signature date) + small PDF polish if it fits. App.jsx 3,046 → 3,052 lines. render-report-pdf.js 885 → 906. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0126-per-tab-pdf-grey-print-restored`. **Lesson:** when starting a patch, always verify `/mnt/project/<file>` build marker matches `/home/claude/<file>` — if they differ, project knowledge is stale and the patch will silently regress whatever shipped between the two. **Queue:** Chat 11 (O-14 engagement letter gate) — still `queued`, claimable now.*
 
-*Prior: 2026-05-20 — v0.12.4 (Patch, out-of-band) shipped. Email Complete Report PDF section parity + soft-grey background for all three on-screen PrintBtns. Added 5 missing sections (Investment Allocation, Financial Ratios, Cash Flow Statement, Strategy Plan) to the email PDF. Page bg `#F1F5F9` with white section cards. App.jsx @media print rule: `body { background: white }` → `html, body { background: #F1F5F9 }` + `print-color-adjust: exact` on *. Applies to all three on-screen PrintBtns. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0124-section-parity-grey-print`. **However, the data-extraction code used wrong field names** — fixed in v0.12.5.*
+*Prior: 2026-05-20 — v0.12.5 (Patch, out-of-band) shipped. Email PDF data extraction CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled. Build marker `2026-05-20-v0125-email-on-all-reports-data-fix`. Silent regression introduced: v0.12.4's `@media print` grey fix was lost (built from wrong project-knowledge baseline). Fixed in v0.12.6.*
 
-*Prior: 2026-05-20 — v0.12.3 (Hotfix for v0.12.2 t-out-of-scope crash). v0.12.2 broke production immediately after deploy — blank screen after login. 8 components referenced t.xxx without t in scope → ReferenceError. Fix: added t to 8 signatures + 22 call sites + scope-aware verifier. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0123-t-scope-fix`. New locked decision D-36.*
+*Prior: 2026-05-20 — v0.12.4 (Patch, out-of-band) shipped. Email PDF section parity (5 new sections) + soft-grey print background for all three on-screen PrintBtns. Build marker `2026-05-20-v0124-section-parity-grey-print`. Data-extraction code used wrong field names — fixed in v0.12.5. @media print fix reverted in v0.12.5 — restored in v0.12.6.*

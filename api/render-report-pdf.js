@@ -249,7 +249,7 @@ function barCompareSVG(title, items) {
 }
 
 // ── print HTML builder (extended with all sections) ────────────────────────
-function buildPrintHTML(client, lang, advisor, include) {
+function buildPrintHTML(client, lang, advisor, include, reportType = "complete") {
   const isEs = lang === "es";
   const L = isEs ? {
     title: "Reporte Financiero Completo",
@@ -382,6 +382,25 @@ function buildPrintHTML(client, lang, advisor, include) {
     income: true, bills: true, debt: true, assets: true, notes: true,
     investAllocation: true, financialRatios: true, cashFlow: true, strategyPlan: true
   };
+
+  // ── reportType routes which sections appear (v0.12.6). ───────────────────
+  //    "complete"  → everything from inc (default)
+  //    "monthly"   → cash-flow-style (income / bills / debt / accounts / notes)
+  //    "financial" → balance-sheet-style (assets / financial ratios / cash-flow stmt / notes)
+  // The L.title is also overridden so the document banner matches what the
+  // advisor clicked from.
+  if (reportType === "monthly") {
+    inc.income = true; inc.bills = true; inc.debt = true; inc.assets = true; inc.notes = true;
+    inc.investAllocation = false; inc.financialRatios = false; inc.cashFlow = false; inc.strategyPlan = false;
+    L.title = isEs ? "Reporte Mensual" : "Monthly Report";
+    L.snapshot = isEs ? "Resumen del mes" : "Monthly snapshot";
+  } else if (reportType === "financial") {
+    inc.income = false; inc.bills = false; inc.debt = false; inc.assets = true; inc.notes = true;
+    inc.investAllocation = false; inc.financialRatios = true; inc.cashFlow = true; inc.strategyPlan = false;
+    L.title = isEs ? "Estados Financieros" : "Financial Statements";
+    L.snapshot = isEs ? "Balance, ingresos y flujo de efectivo" : "Balance sheet, income & cash flow";
+  }
+  // else: "complete" — keep defaults (L.title = "Complete Financial Report")
 
   const agg = computeAggregates(client);
   const today = new Date().toISOString().slice(0, 10);
@@ -789,6 +808,7 @@ export default async function handler(req, res) {
   const advisorName = String(body.advisorName || "").trim().slice(0, 120);
   const advisorEmail = String(body.advisorEmail || "").trim().slice(0, 200);
   const include = body.include || null; // reportInclude toggle map
+  const reportType = ["monthly", "financial", "complete"].includes(body.reportType) ? body.reportType : "complete";
 
   if (!clientId) return res.status(400).json({ ok: false, error: "clientId required" });
   if (!vEmail(to)) return res.status(400).json({ ok: false, error: "Valid recipient email required" });
@@ -831,7 +851,7 @@ export default async function handler(req, res) {
 
   // Build HTML
   const advisor = { name: advisorName, email: advisorEmail };
-  const html = buildPrintHTML(clientRow, lang, advisor, include);
+  const html = buildPrintHTML(clientRow, lang, advisor, include, reportType);
 
   // Render PDF
   let pdfBuffer;
@@ -845,7 +865,8 @@ export default async function handler(req, res) {
   // Filename
   const safeName = String((clientRow.firstName || "") + "-" + (clientRow.lastName || "")).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 60) || "client";
   const today = new Date().toISOString().slice(0, 10);
-  const filename = `golden-anchor-report-${safeName}-${today}.pdf`;
+  const TYPE_SLUG = { monthly: "monthly", financial: "financial-statements", complete: "complete-report" };
+  const filename = `golden-anchor-${TYPE_SLUG[reportType] || "report"}-${safeName}-${today}.pdf`;
 
   // Send via Resend
   const { text, html: bodyHTML } = buildEmailBody(lang, message, advisor);

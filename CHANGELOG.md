@@ -2,6 +2,43 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.12.6 — 2026-05-20 (Patch — Per-tab PDF differentiation + restored grey @media print background + page-break rules + WORKPLAN §3 cleanup)
+Three fixes after Mauricio's v0.12.5 smoke test.
+FIX 1 (Per-tab PDF differentiation): v0.12.5 left all three 📧 Email buttons (Monthly Report, Financial Statements, Complete Report tabs) sending the SAME Complete Report PDF. v0.12.6 wires real differentiation end-to-end.
+WHY: Mauricio: "the email reports corresponding to financial statements and monthly report don't send the corresponding pdf, they send the pdf for the complete report." Having the Monthly tab's Email send the long-form report is wrong — different report types have different audiences.
+CHANGED:
+`src/App.jsx` — `EmailReportModal` signature now `({client,lang,t,settings,onClose,reportType="complete"})`. Modal title and default subject vary by `reportType` ("📧 Email Monthly Report" / "📧 Email Financial Statements" / "📧 Email Complete Financial Report"). The send() payload includes `reportType`. The 3 Email button mount sites pass their respective values: `MonthlyReportTab` → `"monthly"`, `FinancialStatementReportTab` → `"financial"`, `CompleteReportTab` → `"complete"`.
+`api/render-report-pdf.js` — handler whitelists `body.reportType` and passes to `buildPrintHTML(client, lang, advisor, include, reportType)`. The function overrides `inc` (section toggle map) and `L.title` after the defaults:
+`"monthly"` → income/bills/debt/assets/notes only. Title: "Monthly Report" / "Reporte Mensual".
+`"financial"` → assets + financial ratios + cash-flow statement + notes. Title: "Financial Statements" / "Estados Financieros".
+`"complete"` → no override (honors `client.reportInclude`). Title: "Complete Financial Report" / "Reporte Financiero Completo".
+Filename varies: `golden-anchor-monthly-<name>-<date>.pdf` / `golden-anchor-financial-statements-<name>-<date>.pdf` / `golden-anchor-complete-report-<name>-<date>.pdf`.
+FIX 2 (Grey @media print background restored + page-break rules added): v0.12.4 introduced `html, body { background: #F1F5F9 !important }` + `print-color-adjust: exact` so the on-screen Print / Save PDF flow produces a soft grey page with white cards. v0.12.5 silently lost this when I built the patch from a stale `/mnt/project/App.jsx` (still at v0.12.3 baseline — Mauricio's v0.12.4 deploy never updated project knowledge). v0.12.6 restores the v0.12.4 fix verbatim AND adds page-break rules.
+WHY: Mauricio: "the pdf print report lost the color update we had done and there is no page break implemented." Two issues in one — the color regression came from v0.12.5 (regression), and page breaks were never added in v0.12.4 (always missing).
+CHANGED:
+`src/App.jsx` `@media print` block at line ~2963 — restored: `html, body { background: #F1F5F9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important }` + `* { print-color-adjust: exact !important }`. Added page-break rules: `h1, h2, h3, h4 { page-break-after: avoid }`, `table { page-break-inside: avoid }`, `tr { page-break-inside: avoid }`, `.ga-section { page-break-inside: avoid }`. Also added `className="ga-section"` to `FullReport`'s `RS` helper at line 620 so the new CSS rule has something to target on the most common large report card.
+FIX 3 (WORKPLAN §3 cleanup): `WORKPLAN.md` §3 (active queue) had 9 chat slots — Chat 3 through Chat 11 — with only Chat 11 still `queued` and the rest `done`. The "rolling window 2-3 chats max" note at the top was being ignored.
+WHY: Mauricio: "Can we clean up the workplan since most tasks are done?"
+CHANGED:
+`WORKPLAN.md` §3 — removed all `done` chat slots (Chat 3 through Chat 10). Their summaries already live in §5 / git history. Only Chat 11 remains in §3.
+`WORKPLAN.md` Chat 11 spec rewritten — the PDF iteration sub-items it referenced (section parity, data fix, per-tab differentiation, grey background, page breaks) are now closed by v0.12.4 / v0.12.5 / v0.12.6. Chat 11 is now scoped to O-14 engagement-letter gate (ToS click-through + per-client signature date) + optional small PDF polish if it fits.
+WORKPLAN.md dropped from 484 lines to ~265 lines.
+NO TRANSLATION CHANGES. `src/translations.js` unchanged at 1,313 keys/side. The new report-type labels are server-side (in the `L` dict for the PDF body, and in a `RPT_LABEL` const inside EmailReportModal for the UI strings) — no new translation keys needed.
+NO `package.json` or `vercel.json` CHANGES. Reuses v0.12.1's chromium-min runtime.
+NO SQL MIGRATION. NO NEW ENV VARS.
+D-36 scope check passed: `reportType` is destructured in every function that uses it (EmailReportModal signature, buildPrintHTML signature with default value). No undefined-variable risk.
+CRITICAL LESSON (informal, not promoted to D-NN yet): When starting any patch, always verify the build marker of `/mnt/project/<file>` matches the latest `<file>` in `/home/claude/`. A `grep window.__GA_BUILD__ /mnt/project/App.jsx /home/claude/App.jsx` at the start of every chat catches this in 5 seconds. The v0.12.4 → v0.12.5 silent regression came from exactly this gap — project knowledge was at v0.12.3, `/home/claude/` had v0.12.4 from a prior turn, I pulled the wrong one. Not locking as D-37 yet — wait to see if this happens a second time.
+DEPLOY:
+`cd /workspaces/Financeapp`
+Drop in `src/App.jsx`, `api/render-report-pdf.js`, `AGENT.md`, `WORKPLAN.md`. Append this CHANGELOG entry at the top.
+`git add ... && git commit -m "..." && git push origin main`
+Vercel auto-deploys.
+Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0126-per-tab-pdf-grey-print-restored"`.
+SMOKE TEST 1 (Per-tab PDFs): Amanda Chen client → Reports → Monthly Report → 📧 Email → send to yourself. The PDF should be titled "Monthly Report" and show ONLY Income + Bills + Debts + Accounts + Notes (no Investment Allocation, no Financial Ratios, no Cash Flow Statement, no Strategy Plan). Filename: `golden-anchor-monthly-Amanda-Chen-2026-05-20.pdf`. Repeat for Financial Statements → PDF titled "Financial Statements", shows assets + ratios + cash flow + notes. Repeat for Complete Report → full long form like v0.12.5.
+SMOKE TEST 2 (In-browser print background + page breaks): Reports → any tab → 🖨️ Print / Save PDF → in Chrome's print dialog, expand More settings → enable "Background graphics" → Save. Page background must be soft grey (#F1F5F9) with white section cards. Section headers should stay glued to their content (no orphan headers at bottom of page). Tables shouldn't split mid-row.
+BUILD MARKER: `2026-05-20-v0126-per-tab-pdf-grey-print-restored`
+D-1, D-7, D-18, D-27, D-30, D-31, D-34, D-36 preserved. No new locked decisions, no new pitfalls.
+
 ## v0.12.5 — 2026-05-20 (Patch — Email PDF data CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled)
 Three fixes from Mauricio's smoke-test feedback on v0.12.4.
 FIX 1 (Email PDF data extraction): v0.12.4 was supposed to make the email PDF match the live app numbers, but the fix used field names that don't exist on the stored data. The result was the same `$0 / $0 / $0 / $22,000` PDF shipped under v0.12.4 even with all 5 new sections rendering. The wrong reads:
