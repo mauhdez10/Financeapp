@@ -2,6 +2,24 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.12.3 — 2026-05-20 (Patch)
+
+**Hotfix for v0.12.2 — `t`-out-of-scope crash; blank screen after login.**
+
+v0.12.2 broke production immediately after deploy: every login rendered a blank screen because 8 component functions (`Kebab`, `PTag`, `BulkSnapModal`, `ImportWizard`, `DuplicateResolverModal`, `DeleteClientModal`, `BackupImportModal`, `ExportModal`) referenced new `t.xxx` keys in their bodies but did NOT accept `t` as a parameter. JavaScript threw `ReferenceError: t is not defined` → React error boundary fired → blank screen. `Kebab` was the killer because it renders on every dashboard client row (the first paint after login).
+
+**Fix:** added `t` to all 8 signatures; propagated `t={t}` at all 22 JSX call sites; also added `t` to `ArchivedSection` (dead-code path, defense-in-depth).
+
+**Why v0.12.2's audit missed it:** the TypeScript `--noLib` dry-run only catches syntax errors, and `t.foo` where `t` is undefined is **valid syntax** — the crash is a runtime `ReferenceError`, not a parse error. The key-symmetry check was source-text-only, not scope-aware.
+
+**New locked decision D-36:** static-text patches MUST be verified by a scope-aware checker, not just a syntax check. The v0.12.3 patcher is now (a) brace-aware (walks tag chars tracking `{}` depth and string-quote state), and (b) followed by a scope verifier confirming every `t.knownKey` reference has `t` in scope and every `t={t}` call site has `t` in its enclosing function's scope.
+
+`translations.js` unchanged at 1,313 keys/side. `App.jsx` 3,046 → 3,046 lines (signature edits only). TypeScript dry-run clean. Build marker `2026-05-20-v0123-t-scope-fix`.
+
+**Deploy note:** because production rolled back to v0.12.1, this deploy must include BOTH the v0.12.2 `translations.js` (with the 83 new keys) AND the v0.12.3 `App.jsx`.
+
+---
+
 ## v0.12.1 — 2026-05-19 (Patch — Vercel Chromium runtime fix)
 FIX: v0.12.0 deployed successfully but every PDF send failed at runtime with `Failed to launch the browser process! /tmp/chromium: error while loading shared libraries: libnss3.so: cannot open shared object file: No such file or directory`. The advisor saw the inline error in the EmailReportModal; the PDF never reached the recipient.
 WHY: `@sparticuz/chromium@131`'s bundled native libs (libnss3 + a stack of others) did not survive Vercel's serverless bundler tracing. Compounded by an accidental `npm install puppeteer` (full ~280MB Puppeteer package) during the v0.12.0 deploy session, which bloated `node_modules` past the practical tracing limit, increasing the chance of partial bundling. The Chromium binary itself got copied to `/tmp/chromium` but the loader couldn't find its `.so` deps because they were dropped during trace.
