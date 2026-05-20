@@ -2,7 +2,64 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
-##v0.13.0 — 2026-05-20 (Minor)
+## v0.13.1 — 2026-05-20 (Patch)
+FIXED — Three v0.13.0 smoke-test follow-ups
+Fix 1 — `/report` always in client URL. v0.13.0 omitted the default tab from the URL (`/clients/<id>` not `/clients/<id>/report`) on the grounds of brevity. Reverted per Mauricio — every tab is now explicit in the URL. `buildGAPath` always appends a tab segment when a client is selected.
+Fix 2 — Back/Forward now actually switches the visible client-detail tab. `ClientDetail` declared its internal `tab` state with `useState(startTab||"report")` — the initializer only fires at mount. So when browser Back changed App's `selectedTab` and flowed down as a new `startTab` prop, the URL updated but the visible tab stayed at whatever the user last clicked. Fix: a `useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab)},[startTab])` syncs the internal state to the prop on every change. Standard controlled-prop synchronization pattern. Placed after all hook declarations in ClientDetail, before the JSX return (pitfall #13 safe).
+Fix 3 — Each calculator gets its own URL. v0.13.0 only mapped `/calculators` (the picker); clicking a calc card flipped internal `active` state inside `CalculatorsPage` with no URL change. Hitting Back from a calculator skipped over the picker and went all the way back to whatever sidebar nav was open before. v0.13.1 extends the URL scheme:
+URL	View
+`/calculators`	Picker grid
+`/calculators/retirement`	Retirement Planner
+`/calculators/portfolio`	Portfolio Calculator
+`/calculators/homeEquity`	Home Calculator
+`/calculators/income`	Income Calculator
+`/calculators/debtReduction`	Debt Reduction
+`/calculators/carLoan`	Car Loan
+`/calculators/affordability`	Affordability
+`/calculators/interest`	Interest Calculator
+`/calculators/savings`	High Yield Savings
+Unknown calc id silently bounces to the picker.
+CHANGED — `src/App.jsx` (3,117 → 3,135 lines)
+New App-level state `selectedCalc` (string|null). Tracks which calculator is open inside the `/calculators` page.
+`buildGAPath` signature: `(nav, selectedId, selectedTab)` → `(nav, selectedId, selectedTab, selectedCalc)`. Now always emits the client-tab segment; also emits `/calculators/<id>` when `nav==="calculators"&&selectedCalc`.
+`parseGAPath` detects `/calculators/<id>` and returns `selectedCalc` in its result object.
+History snap object carries `selectedCalc`; popstate restores it; hydration applies it; the mobile-drawer popstate push includes it.
+Both sidebar nav buttons (mobile + desktop) call `setSelectedCalc(null)` when switching nav, mirroring the existing `setSelected(null)` reset behavior.
+`CalculatorsPage` signature: `({t})` → `({t, activeCalc, onActiveChange})`. Internal `active` state initialized from `activeCalc`, kept in sync via a `useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next)},[activeCalc])`. Card click and Back button both call `onActiveChange?.(...)` alongside the local `setActive`. Unknown calc id → silent bounce to picker via `onActiveChange?.(null)`.
+`ClientDetail` gains a `useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab)},[startTab])` to sync internal tab state to the controlled prop.
+Build marker: `2026-05-20-v0130-deep-linkable-urls` → `2026-05-20-v0131-deep-link-fixes`.
+NOT CHANGED
+`src/translations.js` — 1,313 keys/side. Calc ids stay as code identifiers (the user-facing labels still come from `t.calc*` keys; that part of v0.6.2 is preserved).
+`vercel.json` — the v0.13.0 SPA-fallback rewrite already covers `/calculators/<id>` since the negative lookahead only excludes `api`, `assets`, and paths-with-dots.
+No SQL migration.
+No new locked decisions; no new pitfalls.
+D-1, D-7, D-18, D-27, D-28, D-30, D-31, D-34, D-36 preserved.
+Pitfall #13 (hook order) preserved — both new useEffects sit after all useState/useRef declarations and before the JSX return.
+Smoke tests
+Client tab via Back. Open any client. Click Monthly Statement → URL `/clients/<id>/monthly`. Click Financial Statements → URL `/clients/<id>/financialStatements`. Hit browser Back → URL reverts to `/clients/<id>/monthly` AND the visible tab switches back to Monthly Statement (this was broken in v0.13.0).
+Calc deep link. Sidebar → Calculators → URL `/calculators`. Click Retirement Planner → URL `/calculators/retirement`. Hit Back → URL `/calculators` and the picker reappears. Forward → URL `/calculators/retirement` and the calc reappears.
+Calc deep link from cold start. Paste `https://finance.goldenanchor.life/calculators/homeEquity` into a fresh tab. After login, lands on the Home Calculator directly.
+Nav reset. While on `/calculators/affordability`, click Dashboard → URL `/dashboard`. Click Calculators again → URL `/calculators` (picker, NOT auto-resuming Affordability).
+`/report` in URL. Open any client. URL should be `/clients/<id>/report`, not `/clients/<id>`.
+Deploy steps
+```bash
+cd /workspaces/Financeapp
+git add src/App.jsx AGENT.md WORKPLAN.md CHANGELOG.md
+git commit -m "fix(routing): v0.13.0 follow-ups (v0.13.1)
+
+- /report explicit in client URLs (buildGAPath no longer omits default tab)
+- ClientDetail syncs internal tab state to startTab prop via useEffect
+- /calculators/<calc-id> deep links: selectedCalc state hoisted to App,
+  plumbed through history snap + popstate + hydration; CalculatorsPage
+  becomes a controlled component (activeCalc + onActiveChange props)
+
+vercel.json unchanged from v0.13.0 (SPA-fallback already covers).
+Build marker: 2026-05-20-v0131-deep-link-fixes"
+git push origin main
+```
+Vercel auto-deploys (~30s). Hard-refresh; confirm `window.__GA_BUILD__ === "2026-05-20-v0131-deep-link-fixes"` in DevTools.
+
+## v0.13.0 — 2026-05-20 (Minor)
 
 ADDED — Deep-linkable URLs
 What: The URL bar now reflects in-app navigation. URLs are shareable, bookmarkable, and refresh-safe.
