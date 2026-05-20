@@ -2,6 +2,84 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+##v0.13.0 — 2026-05-20 (Minor)
+
+ADDED — Deep-linkable URLs
+What: The URL bar now reflects in-app navigation. URLs are shareable, bookmarkable, and refresh-safe.
+URL scheme:
+URL	View
+`/` and `/dashboard`	Dashboard
+`/clients`	Clients list
+`/clients/<id>`	Client detail (default `report` tab)
+`/clients/<id>/<tab>`	Client detail at specific tab — `monthly` / `financialStatements` / `investments` / `plan` / `calculators` / `backfill` / `notes`
+`/intake-submissions`	Intake Forms
+`/calculators`	Calculators
+`/promotions`	Promotions
+`/resources`	Resources
+`/about`	About
+`/intake?invite=<token>`	Public intake (D-28, unchanged)
+Anything else	Silently falls back to `/dashboard`
+The default `report` tab is omitted from the URL to keep it short — `/clients/abc/report` normalizes to `/clients/abc`.
+CHANGED
+`src/App.jsx` (3,052 → 3,117 lines):
+New top-level helpers before `App()`: `_GA_NAVS`, `_GA_CLIENT_TABS`, `buildGAPath(nav, selectedId, selectedTab)`, `parseGAPath(pathname)`. Pure functions, no React deps.
+New `_hydrationDoneRef` + URL-hydration `useEffect` declared immediately before the v0.11.0 history-seed effect. Runs once when authenticated; defers a tick if URL targets a client and `clients` is empty (waits for Supabase load).
+v0.11.0 seed effect updated to (a) guard on `_hydrationDoneRef.current` so it waits for hydration, and (b) pass `buildGAPath(...)` as the URL arg to `history.replaceState`/`pushState`.
+v0.11.0 popstate handler updated to fall back to `parseGAPath(window.location.pathname)` when `e.state` is missing (paste/bookmark/external-link/manual-URL-edit). The mobile-drawer popstate push also carries the proper URL.
+`ClientDetail` signature gains `onTabChange` prop. The 8-tab strip's click handler becomes `()=>{setTab(tb.id);onTabChange?.(tb.id);}` so internal tab clicks propagate to App's `selectedTab` and drive a URL push.
+App's single `<ClientDetail/>` mount site passes `onTabChange={setSelectedTab}`.
+Build marker bumped: `2026-05-20-v0126-per-tab-pdf-grey-print-restored` → `2026-05-20-v0130-deep-linkable-urls`.
+`vercel.json` — SPA-fallback rewrite added (see below). Required, otherwise hard-refresh on any non-root URL returns Vercel's 404.
+NOT CHANGED
+`src/translations.js` — 1,313 keys/side. URLs not translated; nav/tab ids stay English.
+No SQL migration.
+No new locked decisions; no new pitfalls.
+D-1, D-7, D-18, D-27, D-28, D-30, D-31, D-34, D-36 preserved.
+D-28 (`/intake` public route) preserved — `isPublicIntakeRoute` runs first and short-circuits any deep-link parsing.
+Pitfall #13 (hook order) preserved — hydration/seed/popstate effects all sit below every hook declaration and above the `isPublicIntakeRoute` early return.
+Pitfall #16 (v0.11.0 history) extended, not replaced. Same seed/popstate pattern; now the URL bar moves with it.
+`vercel.json` — required rewrite
+If your current `vercel.json` doesn't have a `rewrites` key, add:
+```json
+{
+  "rewrites": [
+    { "source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html" }
+  ]
+}
+```
+If it already has `rewrites`, append this object to the array:
+```json
+{ "source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html" }
+```
+The negative lookahead leaves `/api/*` (server functions), `/assets/*` (built bundles), and any path with a dot (`favicon.ico`, `manifest.json`, `sw.js`) alone. Everything else rewrites to `/index.html` so the SPA boots and parses the URL itself.
+WHY
+v0.11.0 wired browser Back/Forward via `history.pushState` but never moved the URL bar — every view was `finance.goldenanchor.life/`. Sharing or bookmarking a specific client/tab wasn't possible; hard-refresh always landed back on the dashboard. v0.13.0 closes the loop. Originally tagged "post-launch deferred" in §4; promoted at Mauricio's direction (2026-05-20) as a parallel out-of-band patch while Chat 11 (engagement-letter gate) is worked elsewhere.
+Smoke tests
+URL updates as you navigate. Open the app at `/`. URL normalizes to `/dashboard`. Click Clients → `/clients`. Click any client → `/clients/<id>`. Click the Monthly Statement tab → `/clients/<id>/monthly`. Click back to the Report tab → `/clients/<id>` (default tab omitted). Click ⚓ About → `/about`.
+Back/Forward as deep history. From `/about`, press Back. Should walk back through every visited section — `/clients/<id>` → `/clients` → `/dashboard` — not unload the SPA.
+Refresh + bookmark. Navigate to `/clients/<id>/financialStatements`. Hard-refresh. Page should reload directly into the financial-statements tab. Copy the URL, open in a fresh browser tab — same view after login.
+Intake invite unchanged. Open `/intake?invite=<token>` in incognito. PublicIntake renders exactly as before, no redirect, no in-app history.
+Unknown URL. Type `/finance.goldenanchor.life/nonsense`. Silently falls back to `/dashboard`.
+Deploy steps
+```bash
+cd /workspaces/Financeapp
+git add src/App.jsx vercel.json AGENT.md WORKPLAN.md CHANGELOG.md
+git commit -m "feat(routing): deep-linkable URLs (v0.13.0)
+
+- buildGAPath / parseGAPath helpers map nav state ↔ URL path
+- URL-hydration useEffect declared before history seed (runs first)
+- seed/popstate now carry the path as third arg to push/replaceState
+- popstate falls back to URL parse when e.state is missing
+- ClientDetail gains onTabChange prop so internal tab clicks propagate
+- vercel.json SPA-fallback rewrite added
+
+Promoted from §4 backlog; parallel work to Chat 11.
+Extends v0.11.0 history infrastructure; D-28 /intake route untouched.
+Build marker: 2026-05-20-v0130-deep-linkable-urls"
+git push origin main
+```
+Vercel auto-deploys (~30s). Hard-refresh; confirm `window.__GA_BUILD__ === "2026-05-20-v0130-deep-linkable-urls"` in DevTools.
+
 ## v0.12.6 — 2026-05-20 (Patch — Per-tab PDF differentiation + restored grey @media print background + page-break rules + WORKPLAN §3 cleanup)
 Three fixes after Mauricio's v0.12.5 smoke test.
 FIX 1 (Per-tab PDF differentiation): v0.12.5 left all three 📧 Email buttons (Monthly Report, Financial Statements, Complete Report tabs) sending the SAME Complete Report PDF. v0.12.6 wires real differentiation end-to-end.

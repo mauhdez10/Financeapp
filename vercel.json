@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/render-report-pdf.js": {

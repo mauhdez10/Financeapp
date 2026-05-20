@@ -35,44 +35,56 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.12.6** — established 2026-05-20 (Patch — Per-tab PDF differentiation + restored grey @media print background (v0.12.4 regression) + page-break rules + WORKPLAN §3 cleanup).
+**v0.13.0** — established 2026-05-20 (Minor — Deep-linkable URLs / shareable + bookmarkable + refresh-safe in-app paths).
 
-**What shipped:** Three fixes after Mauricio's v0.12.5 smoke test.
+**What shipped:** v0.11.0 made browser Back/Forward work via `history.pushState`, but the URL bar never changed — every section was `finance.goldenanchor.life/`. v0.13.0 makes URLs real, shareable, bookmarkable, and refresh-safe. Promoted from §4 backlog at Mauricio's direction, separate from Chat 11 (engagement letter) which is being worked in a parallel chat.
 
-**Fix 1 — Per-tab PDF differentiation.** v0.12.5 left all three 📧 Email buttons (Monthly Report tab, Financial Statements tab, Complete Report tab) sending the SAME Complete Report PDF, with a note "per-tab differentiation deferred to Chat 11." Mauricio surfaced this in v0.12.5 testing — having the Monthly tab's Email button send the long-form Complete Report is wrong. v0.12.6 wires actual differentiation end-to-end:
-- `EmailReportModal` accepts a `reportType="complete"|"monthly"|"financial"` prop (defaults to `"complete"`).
-- The modal title + default subject + the POST body's `reportType` field all vary based on this prop. The user sees "📧 Email Monthly Report" / "📧 Email Financial Statements" / "📧 Email Complete Financial Report" as the modal title; the default subject line includes the matching report name.
-- Each of the 3 Email button mount sites passes its respective reportType: `MonthlyReportTab` → `"monthly"`, `FinancialStatementReportTab` → `"financial"`, `CompleteReportTab` → `"complete"`.
-- `gaEmailCompleteReport()` passes the payload through verbatim, so no helper-function change needed.
-- Server handler whitelists the value (`["monthly","financial","complete"].includes(body.reportType)`, fallback to `"complete"`), then passes to `buildPrintHTML(client, lang, advisor, include, reportType)`.
-- In `buildPrintHTML`, after the default `inc` (section toggle map) and `L.title` are set, a reportType-aware override runs:
-  - `"monthly"` → keep income/bills/debt/assets/notes; turn off investAllocation/financialRatios/cashFlow/strategyPlan. Title becomes "Monthly Report" / "Reporte Mensual". Subtitle "Monthly snapshot" / "Resumen del mes".
-  - `"financial"` → keep assets/financialRatios/cashFlow/notes; turn off income/bills/debt/investAllocation/strategyPlan. Title "Financial Statements" / "Estados Financieros". Subtitle "Balance sheet, income & cash flow".
-  - `"complete"` → no override (default behavior preserved — honors `client.reportInclude` toggles).
-- Filename also varies: `golden-anchor-monthly-<name>-<date>.pdf`, `golden-anchor-financial-statements-<name>-<date>.pdf`, `golden-anchor-complete-report-<name>-<date>.pdf`. Helps the advisor's email + client's downloads stay organized.
+**URL scheme:**
+- `/` and `/dashboard` → Dashboard
+- `/clients` → Clients list
+- `/clients/<id>` → Client detail at default tab (`report`)
+- `/clients/<id>/<tab>` → Client detail at specific tab; valid tabs are `report` / `monthly` / `financialStatements` / `investments` / `plan` / `calculators` / `backfill` / `notes`. The default `report` is omitted from the URL to keep it short.
+- `/intake-submissions`, `/calculators`, `/promotions`, `/resources`, `/about` → matching nav sections
+- `/intake?...` → unchanged (PublicIntake, D-28). Detected first via `isPublicIntakeRoute` before any deep-link parsing runs.
+- Unknown URLs silently fall through to `/dashboard`.
 
-**Fix 2 — Grey @media print background restored + page-break rules added (regression fix from v0.12.5).** v0.12.4 had introduced `html, body { background: #F1F5F9 !important }` and `print-color-adjust: exact` in the global `@media print` block, so the on-screen Print / Save PDF flow produces a soft grey page with white section cards. v0.12.5 silently lost this — I built v0.12.5 from `/mnt/project/App.jsx`, but project knowledge was still at the v0.12.3 baseline because Mauricio's v0.12.4 deploy never updated project knowledge. So when v0.12.5 shipped, the `@media print` block reverted to its v0.12.3 form (`body { background: white !important }`). Mauricio's v0.12.5 smoke test PDF came out pure white.
+**App.jsx changes** (3,052 → 3,117 lines, +65):
+- New top-level helpers (before `App()`): `_GA_NAVS` (7 nav ids), `_GA_CLIENT_TABS` (8 client-detail tab ids), `buildGAPath(nav, selectedId, selectedTab)` for state → path, `parseGAPath(pathname)` for path → state. `parseGAPath` returns `null` for `/intake*` so PublicIntake is never overridden.
+- New `_hydrationDoneRef` + a hydration `useEffect` declared immediately BEFORE the v0.11.0 history-seed effect. Runs once when authenticated; parses the URL and applies it to `nav`/`selectedTab`/`selected` (the last one defers a tick until `clients.length>0`). Sets `_hydrationDoneRef.current = true` when complete.
+- The existing v0.11.0 seed effect now (a) guards on `_hydrationDoneRef.current` so it won't push a stale default URL before hydration applies the real one, and (b) passes `buildGAPath(...)` as the URL argument to `history.replaceState`/`pushState` so the URL bar actually updates.
+- The existing v0.11.0 `popstate` handler gains a fallback: when `e.state` is missing (paste / manual edit / external link), it parses `window.location.pathname` and applies it to state — same code path as initial hydration. The mobile-drawer `popstate` push also carries the proper URL now.
+- `ClientDetail` gains `onTabChange` prop. The 8-tab strip's click handler is `()=>{setTab(tb.id);onTabChange?.(tb.id);}` so internal tab clicks propagate to `selectedTab` in App, which in turn drives a URL push via the seed effect. Single mount site at App-level passes `onTabChange={setSelectedTab}`.
 
-v0.12.6 restores the v0.12.4 fix verbatim AND adds page-break rules to address the secondary complaint that sections were bleeding across page boundaries:
-- `h1, h2, h3, h4 { page-break-after: avoid !important }` — section headers stay glued to their content.
-- `table { page-break-inside: avoid !important }` and `tr { page-break-inside: avoid !important }` — tables don't split mid-row.
-- `.ga-section { page-break-inside: avoid !important }` — major report cards (when tagged) stay intact.
-- Added `className="ga-section"` to `FullReport`'s `RS` helper at App.jsx line 620, so the most common large report card now gets the page-break protection. Other section wrappers can be tagged incrementally.
+**Out-of-app — `vercel.json` rewrite required** (see "Out-of-app actions" below). Without this, hard-refreshing on any non-root URL (`/clients/<id>`, `/calculators`, etc.) hits Vercel's static-file handler, returns 404, never reaches the SPA. The SPA-fallback rewrite is one line:
+```json
+{"source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html"}
+```
+The negative lookahead leaves `/api/*` (server functions), `/assets/*` (built JS/CSS bundles), and any path with a dot (e.g. `/favicon.ico`, `/manifest.json`, `/sw.js`) alone. Everything else rewrites to `index.html` so the SPA boots and parses the URL itself.
 
-These rules are best-effort: Chrome still requires the user-facing "Background graphics" checkbox in the print dialog to be enabled before it'll preserve the painted backgrounds. The `print-color-adjust: exact` CSS rule tells the browser "yes, this is intentional", but the user toggle is still gated. No CSS-only way around it — document this in Chat 11's polish backlog (option: add a small italic tip next to PrintBtn).
+**Behavioral rules preserved:**
+- D-1 (single-file app code): preserved. Helpers + effects all in App.jsx.
+- D-7 (state in App component): preserved. No new contexts, no new state stores.
+- D-28 (`/intake` public route): preserved. `isPublicIntakeRoute` runs first, before any deep-link parse.
+- Pitfall #13 (hook order): preserved. Hydration/seed/popstate effects all sit below every hook declaration and above the `isPublicIntakeRoute` early return.
+- Pitfall #16 (v0.11.0 history): extended, not replaced. The same seed/popstate pattern; now the URL moves with it.
 
-**Fix 3 — WORKPLAN §3 cleanup.** §3 had 9 chat slots — Chat 3 through Chat 11 — with only Chat 11 still `queued` and the rest `done`. The "rolling window 2-3 chats max" note at the top of §3 was being ignored. v0.12.6 trims §3 to just Chat 11 (done chats live in §5 / git history). Chat 11's spec is also refreshed: the PDF iteration sub-items (parity, data, per-tab differentiation, grey background, page breaks) are now closed by v0.12.4 / v0.12.5 / v0.12.6, so Chat 11 is now scoped to **O-14 engagement-letter gate** (ToS click-through + per-client signature date) + optional small PDF polish if it fits in the chat budget. WORKPLAN dropped from 484 to ~265 lines.
-
-**Critical lesson (informal, not promoted to a D-NN yet):** When starting any patch, **always** verify the build marker of `/mnt/project/<file>` matches the latest `<file>` in `/home/claude/`. If they differ, project knowledge is stale and the patch will silently regress whatever shipped between them. The v0.12.4 → v0.12.5 regression came from exactly this mismatch — project knowledge was at v0.12.3, `/home/claude/` had v0.12.4 from a prior turn, and I pulled the wrong one as the baseline. A simple `grep window.__GA_BUILD__ /mnt/project/App.jsx /home/claude/App.jsx` at the start of every chat catches this in 5 seconds. Not locking as D-37 yet — wait to see if this happens a second time before turning it into a rule.
-
-**Build marker:** `2026-05-20-v0126-per-tab-pdf-grey-print-restored`. App.jsx 3,046 → 3,052 lines (+6 for the EmailReportModal title/subject vary block). render-report-pdf.js 885 → 906 lines (+21 for inc/title override block + handler whitelist + TYPE_SLUG filename routing). `src/translations.js` unchanged at 1,313 keys/side — the reportType labels are server-side (in the `L` dict and `RPT_LABEL`), no new translation keys needed. `package.json` and `vercel.json` unchanged. No SQL migration. No new locked decisions. No new pitfalls.
+**Build marker:** `2026-05-20-v0130-deep-linkable-urls`. App.jsx 3,052 → 3,117 lines. `src/translations.js` unchanged at 1,313 keys/side — no new user-facing strings (URLs aren't translated; tab/nav ids stay English). `vercel.json` gains a rewrite. No SQL migration. No new locked decisions. No new pitfalls (no mistakes made — the hydration-ordering subtlety is handled by inline comments).
 
 **Out-of-app actions required:**
-- **Replace** `src/App.jsx`, `api/render-report-pdf.js`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` entry. No translation/package/vercel/SQL changes.
+- **Replace** `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` entry; merge the rewrite block into `vercel.json` (paste from CHANGELOG if your current `vercel.json` lacks a `rewrites` key; if it already has one, just add the SPA-fallback object to the array).
 - Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0126-per-tab-pdf-grey-print-restored"`.
-- **Smoke test 1 (per-tab PDFs):** open Amanda Chen → Reports → Monthly Report → 📧 Email → send to yourself. The PDF should be titled "Monthly Report" and only show Income + Bills + Debts + Accounts + Notes (no Investment Allocation, no Financial Ratios, no Cash Flow Statement section, no Strategy Plan). Repeat for Financial Statements tab — PDF should be titled "Financial Statements" and show ratios + cash flow + assets. Repeat for Complete Report tab — PDF should be the full long form (matches v0.12.5 behavior).
-- **Smoke test 2 (in-browser print bg restored):** open Reports → any tab → 🖨️ Print / Save PDF → in Chrome's print dialog, expand More settings → **enable "Background graphics"** → Save. Page background should be soft grey (#F1F5F9) with white section cards. Page-break behavior: section headers should stay with content, tables shouldn't split mid-row.
+- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0130-deep-linkable-urls"`.
+- **Smoke test 1 (URL updates as you navigate):** Open the app at `/`. URL should normalize to `/dashboard`. Click Clients → URL becomes `/clients`. Click any client → URL becomes `/clients/<id>`. Click the Monthly Statement tab inside the client → URL becomes `/clients/<id>/monthly`. Click back to the Report tab → URL becomes `/clients/<id>` (default tab omitted). Click ⚓ About in the sidebar → URL becomes `/about`.
+- **Smoke test 2 (Back/Forward work as deep history):** From `/about`, press Back. Should go through every visited section in reverse — `/clients/<id>` → `/clients` → `/dashboard` — not unload the app.
+- **Smoke test 3 (refresh + bookmark):** Navigate to `/clients/<id>/financialStatements`. Hard-refresh. Page should reload directly into the financial-statements tab for that client. Then copy the URL, open in a fresh browser tab, paste, hit Enter — should land on the same view after login.
+- **Smoke test 4 (intake invite unchanged):** Open `/intake?invite=<token>` in incognito. Should render PublicIntake exactly as before, no redirect, no in-app history pushed.
+- **Smoke test 5 (unknown URL):** Type `/finance.goldenanchor.life/nonsense` directly. Should silently fall back to `/dashboard`, no error.
+
+---
+
+### Prior: v0.12.6 — 2026-05-20 (Patch — Per-tab PDF differentiation + grey @media print restored + page-break rules + WORKPLAN §3 cleanup)
+
+Three fixes after Mauricio's v0.12.5 smoke test. (1) Per-tab Email buttons send the actual tab's report — `EmailReportModal` accepts a `reportType="complete"|"monthly"|"financial"` prop, varies modal title + subject + POST body; server handler whitelists and routes to `buildPrintHTML(client, lang, advisor, include, reportType)`, which overrides the `inc` section-toggle map + `L.title` based on reportType. Filename also varies. (2) Restored v0.12.4's grey `@media print` background that v0.12.5 silently reverted (built from wrong project-knowledge baseline). Added page-break rules: `h1-h4` page-break-after avoid; `table/tr/.ga-section` page-break-inside avoid. (3) WORKPLAN §3 trimmed from 9 chat slots to 1 (Chat 11). Build marker `2026-05-20-v0126-per-tab-pdf-grey-print-restored`.
 
 ---
 
@@ -305,7 +317,7 @@ Current (manual web UI):
 // In browser DevTools console, paste this:
 window.__GA_BUILD__
 ```
-Should return the build marker string (current: `"2026-05-14-i18nplus-supabase-v050"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
+Should return the build marker string (current: `"2026-05-20-v0130-deep-linkable-urls"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
 
 ---
 
@@ -631,7 +643,9 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-20 — v0.12.6 (Patch — Per-tab PDF differentiation + restored grey @media print background (v0.12.4 regression) + page-break rules + WORKPLAN §3 cleanup). Three fixes after Mauricio's v0.12.5 smoke test. (1) Monthly tab's 📧 Email now sends a monthly-statement PDF; Financial tab's 📧 sends a financial-statements PDF; Complete tab's 📧 keeps the full report. End-to-end wiring: EmailReportModal accepts `reportType` prop, varies modal title + subject + POST body; gaEmailCompleteReport passes through; server handler whitelists and routes; buildPrintHTML overrides `inc` (section toggle map) + `L.title` based on reportType. Filename varies. (2) Restored v0.12.4's grey `@media print` background that v0.12.5 silently reverted (built from wrong project-knowledge baseline). Added page-break rules: h1-h4 page-break-after avoid, table/tr/.ga-section page-break-inside avoid. Added className="ga-section" to FullReport's RS helper. (3) WORKPLAN §3 trimmed from 9 chat slots (8 done) to 1 (Chat 11, with refreshed spec now scoped to O-14 engagement letter gate). App.jsx 3,046 → 3,052 lines. render-report-pdf.js 885 → 906. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0126-per-tab-pdf-grey-print-restored`. **Lesson:** when starting a patch, always verify `/mnt/project/<file>` build marker matches `/home/claude/<file>` — if they differ, project knowledge is stale and the patch will silently regress. The v0.12.4 → v0.12.5 regression came from exactly this. No new locked decisions, no new pitfalls. D-1, D-7, D-18, D-27, D-30, D-31, D-34, D-36 preserved.*
+*Last updated: 2026-05-20 — v0.13.0 (Minor — Deep-linkable URLs). Promoted from §4 backlog (parallel work; Chat 11 / engagement letter is in another chat). v0.11.0 wired Back/Forward via `history.pushState` but never moved the URL bar; v0.13.0 closes the loop. New `buildGAPath`/`parseGAPath` helpers; new `_hydrationDoneRef` + URL-hydration `useEffect` declared before the existing seed effect so the seed waits for hydration to apply the URL before pushing. Seed + popstate now carry the path as the third arg to `replaceState`/`pushState`; popstate falls back to URL parse when `e.state` is missing (paste/bookmark/external-link). ClientDetail gains `onTabChange` prop so internal tab clicks propagate to App's `selectedTab` and drive a URL push. URL scheme: `/dashboard`, `/clients`, `/clients/<id>`, `/clients/<id>/<tab>`, `/intake-submissions`, `/calculators`, `/promotions`, `/resources`, `/about`; default `report` tab omitted from URL for cleanliness; unknown paths fall back to `/dashboard`. `/intake?invite=...` (D-28) untouched — `isPublicIntakeRoute` short-circuits before parsing. **Out-of-app:** `vercel.json` needs the SPA-fallback rewrite (`/((?!api|assets|.*\..*).*) → /index.html`) or hard-refresh on any non-root URL returns Vercel's 404. App.jsx 3,052 → 3,117 lines. translations.js unchanged at 1,313 keys/side (URLs not translated). No SQL migration. No new locked decisions. No new pitfalls. D-1, D-7, D-18, D-27, D-28, D-30, D-31, D-34, D-36 preserved.*
+
+*Prior update: 2026-05-20 — v0.12.6 (Patch — Per-tab PDF differentiation + restored grey @media print background (v0.12.4 regression) + page-break rules + WORKPLAN §3 cleanup). Three fixes after Mauricio's v0.12.5 smoke test. (1) Monthly tab's 📧 Email now sends a monthly-statement PDF; Financial tab's 📧 sends a financial-statements PDF; Complete tab's 📧 keeps the full report. End-to-end wiring: EmailReportModal accepts `reportType` prop, varies modal title + subject + POST body; gaEmailCompleteReport passes through; server handler whitelists and routes; buildPrintHTML overrides `inc` (section toggle map) + `L.title` based on reportType. Filename varies. (2) Restored v0.12.4's grey `@media print` background that v0.12.5 silently reverted (built from wrong project-knowledge baseline). Added page-break rules: h1-h4 page-break-after avoid, table/tr/.ga-section page-break-inside avoid. Added className="ga-section" to FullReport's RS helper. (3) WORKPLAN §3 trimmed from 9 chat slots (8 done) to 1 (Chat 11, with refreshed spec now scoped to O-14 engagement letter gate). App.jsx 3,046 → 3,052 lines. render-report-pdf.js 885 → 906. translations.js unchanged at 1,313 keys/side. Build marker `2026-05-20-v0126-per-tab-pdf-grey-print-restored`. **Lesson:** when starting a patch, always verify `/mnt/project/<file>` build marker matches `/home/claude/<file>` — if they differ, project knowledge is stale and the patch will silently regress. The v0.12.4 → v0.12.5 regression came from exactly this. No new locked decisions, no new pitfalls. D-1, D-7, D-18, D-27, D-30, D-31, D-34, D-36 preserved.*
 
 *Prior update: 2026-05-20 — v0.12.5 (Patch — Email PDF data CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled). Fixed wrong field names in computeAggregates (used .netMo/.amount/etc that don't exist; real ones: toM(s.net, s.freq), client.cards + client.loans, effectiveMin(c), .value, client.alloc + client.committed). 10 field references corrected. Added Email button to Monthly + Financial tabs. Modal gains disableBackdropClose; EmailReportModal opts in. translations.js unchanged. Build marker `2026-05-20-v0125-email-on-all-reports-data-fix`. Silent regression: lost v0.12.4's @media print grey background — fixed in v0.12.6.*
 
