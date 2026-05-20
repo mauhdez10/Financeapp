@@ -2,6 +2,35 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.12.4 — 2026-05-20 (Patch — Email Complete Report PDF section parity + soft-grey background)
+FIX 1 (email PDF data was wrong): The v0.12.0 email PDF showed Net Worth $22,000 / Income $0 / Bills $0 / Total Debt $0 for a client whose live dashboard showed $28,100 / $9,600 / $1,985 / $31,700. Root cause: `buildPrintHTML()` in `api/render-report-pdf.js` was reading wrong JSON field names — `.amount` instead of `.netMo` for income, `.interestRate` instead of `.apr` for debts, only `.name` for bills (missed rows whose label was on `.label`), and didn't separate cash accounts (checking/savings) from non-cash so the net-worth roll-up was missing $15,800.
+FIX 2 (email PDF was missing five sections): The v0.12.0 email PDF rendered only KPI strip + Income + Bills + Debts + Assets + Notes. The on-screen Complete Report shows five more sections that weren't in the email PDF: Investment Allocation, Financial Ratios (Liquidity / Debt-to-Asset / Emergency Fund), Cash Flow Statement (inflows / outflows / operating CF), Strategy Plan (debt payoff order + 2-phase financial roadmap + 5/10/20-year investment projection).
+FIX 3 (all PDFs were pure white, hard to read): The global `@media print` rule forced `body { background: white }`. Saved PDFs from all three on-screen PrintBtns (Monthly, Financial, Complete) had no contrast between page and cards. Same issue on the email PDF.
+WHY: v0.12.0 (the original "Email Complete Report" feature) was scoped to land the puppeteer plumbing + a minimal PDF. v0.12.4 brings the email PDF to feature parity with the on-screen Complete Report, and lifts the visual polish across all PDF flows.
+CHANGED:
+`api/render-report-pdf.js` (599 → 817 lines) — `computeAggregates()` rewritten to read correct fields; all five missing sections built out with hand-rolled inline SVG donut + bar charts in the Golden Anchor palette (no library deps); respects `client.reportInclude` toggle map (sections turned off in the on-screen Complete Report won't appear in the PDF); page background `#F1F5F9` (matches `DEF_SETTINGS.lightBg`), section cards on white with `#E2E8F0` borders. JWT verify, client load (`local_id` → `data->>'id'` fallback, pitfall #15 avoided), Puppeteer launch, and Resend attach paths are unchanged from v0.12.1.
+`src/App.jsx` (3,046 → 3,046 lines, one CSS rule + build marker) — global `@media print` block at line 2963 patched: `body { background: white }` → `html, body { background: #F1F5F9 }`, added `print-color-adjust: exact` + WebKit + legacy variants on `*` so Chrome/Edge/Safari preserve the painted backgrounds when generating the saved PDF (without this rule, browsers strip background colors by default at print time as an ink-saving measure). One single edit; applies to all three on-screen PrintBtns automatically. No component logic changes, no signature changes — the v0.12.3 scope-fix work (D-36) is preserved untouched.
+`AGENT.md` — §3 head replaced with v0.12.4 entry; v0.12.3 demoted to "Prior"; footer updated.
+`WORKPLAN.md` — §5 completed log gets v0.12.4 row; footer updated. Chat 11 stays `queued`; v0.12.4 is an out-of-band patch.
+NO TRANSLATION CHANGES. `src/translations.js` unchanged at 1,313 keys/side. The v0.12.2 Spanish keys are preserved. The print HTML's bilingual `L` object (server-side) already had EN/ES for all section headers; the five new sections use it.
+NO `vercel.json` or `package.json` CHANGE. Reuses v0.12.1's `@sparticuz/chromium-min@^140` + `puppeteer-core@^24.10` runtime.
+NO SQL MIGRATION. NO NEW ENV VARS.
+BACKGROUND COLOR CHOICE: `#F1F5F9` (option b from the 2026-05-19 design conversation) — matches `DEF_SETTINGS.lightBg`, so the saved PDF and on-screen view feel like the same document. Rejected alternatives: `#FAF9F7` (too subtle), `#E2E8F0` (too contrast-heavy, magazine-glossy feel).
+USER-FACING NOTE for in-browser print/save: Chrome's "Background graphics" checkbox in the print dialog must be enabled for the grey to appear in the saved PDF. This is the user-facing toggle that maps to the `print-color-adjust: exact` CSS rule — we set the CSS, browsers still ask the user to opt in (default OFF to save ink on direct printing). The email PDF (server-side Puppeteer with `printBackground: true` already in v0.12.0) has no such toggle — the grey will always appear.
+DEPLOY STEPS:
+`cd /workspaces/Financeapp`
+Drop in `src/App.jsx`, `api/render-report-pdf.js`, `AGENT.md`, `WORKPLAN.md`. Append this CHANGELOG entry at the top.
+Commit + push (commands below).
+Vercel auto-deploys.
+Hard-refresh production; verify `window.__GA_BUILD__ === "2026-05-20-v0124-section-parity-grey-print"`.
+SMOKE TEST 1 (email PDF): open the Amanda Chen client → Reports → Complete Report → 📧 Email → send to yourself. The PDF should now show:
+Net Worth $28,100, Income $9,600, Bills $1,985, Total Debt $31,700 (was: $22,000 / $0 / $0 / $0)
+Five new sections: Investment Allocation, Financial Ratios (Liquidity 13.17x / Debt-to-Asset 53% / Emergency Fund 8.0 mo), Cash Flow Statement, Strategy Plan (debt payoff Capital One→Vehicle Loan→Student Loan + Phase 1/Phase 2 roadmap + 5/10/20-year projection)
+Soft grey page bg with white section cards
+SMOKE TEST 2 (in-browser print/save, all three tabs): open any client → Reports → Monthly tab → 🖨️ Print / Save PDF → in the browser's print dialog, enable "Background graphics" → save PDF. Verify the saved PDF has the soft-grey page background. Repeat for Financial and Complete tabs.
+BUILD MARKER: `2026-05-20-v0124-section-parity-grey-print`.
+D-1, D-7, D-18, D-27, D-30, D-31, D-34, D-36 preserved. No new locked decisions, no new pitfalls.
+
 ## v0.12.3 — 2026-05-20 (Patch)
 
 **Hotfix for v0.12.2 — `t`-out-of-scope crash; blank screen after login.**

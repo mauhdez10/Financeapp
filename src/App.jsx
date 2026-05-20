@@ -2340,7 +2340,7 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-20-v0123-t-scope-fix";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-20-v0124-section-parity-grey-print";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
@@ -2963,13 +2963,14 @@ export default function App(){
       @media print{
         #ga-sidebar{display:none!important}
         .ga-np{display:none!important}
-        body{background:white!important;margin:0;padding:0;overflow:visible!important}
+        html,body{background:#F1F5F9!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+        *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
         #root,div{overflow:visible!important;max-height:none!important}
         ::-webkit-scrollbar{display:none!important}
         scrollbar-width:none!important;
         .recharts-wrapper,.recharts-responsive-container{width:100%!important;overflow:visible!important}
         .recharts-surface{overflow:visible!important}
-        @page{margin:1.5cm}
+        @page{margin:1.5cm;background:#F1F5F9}
         page-break-inside:avoid
       }
     `;
