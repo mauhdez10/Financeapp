@@ -2,6 +2,56 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.13.4 — 2026-05-21 (Patch — Bigger desktop sidebar tiles + universal page-break protection)
+
+Mauricio's v0.13.3 smoke test confirmed sidebar tiles still felt small on desktop with too much empty space, and surfaced new print/PDF complaints (sections breaking mid-card across pages; dark backgrounds appearing to end mid-page). Two fixes, five total edits.
+
+**Build marker:** `2026-05-21-v0134-bigger-tiles-print-fixes`
+
+### Context — file state at session start
+
+The deployed `App.jsx` was at build marker `v0140-engagement-letter-flow` from a parallel chat that shipped engagement-letter / ToS / services-editor work. All v0.13.3 fixes were preserved in that file. Per Mauricio's instruction "start with 0.13.4", build marker is labeled `v0134` even though it goes "backwards" from `v0140` numerically. The v0.14.0 work is preserved in code but its formal AGENT.md documentation (D-40 through D-44) is deferred to a future session — the proposed updates live in a separate `AGENT_v0.14.0_UPDATES.md` doc.
+
+### Fixed
+
+1. **Universal page-break protection via `mCARD`.** The `mCARD` style helper at line 51 now returns `breakInside:"avoid"` + `pageBreakInside:"avoid"` + `WebkitPrintColorAdjust:"exact"` + `printColorAdjust:"exact"` in addition to its existing `background/border/borderRadius`. Every component using `...mCARD(th)` (Strategy Plan outer, Balance Sheet cards, Income Statement, Cash Flow Statement, KPI tiles, all section cards — 8000+ places) automatically inherits these. Effect at print time: when a big container needs to split, browser tries to break BETWEEN inner cards rather than mid-card. Addresses Mauricio's Image 4 (Balance Sheet split) and Image 5 (Strategy Plan dark background ending mid-page).
+
+   **Reminder:** Chrome still requires "Background graphics" enabled in print dialog → More Settings before painted backgrounds will print. There's no CSS-only way around this. Document in advisor onboarding.
+
+### Changed
+
+2. **Desktop sidebar tile minmax floors bumped to 540** for Calculators / Resources / About-services. At Mauricio's primary 1700-1920px viewport:
+   - Calculators (9 items): **3 columns × 640px each** — 3 full rows, zero empty space (was 5 cols × 384px with 1 empty slot per row).
+   - Resources (6 items): **3 columns × 640px each** — 2 full rows (was 5 cols × 384px with 4 empty slots).
+   - About-services (9 items): **3 columns × 640px each** — 3 full rows (was 6 cols × 316px with 3 empty slots, per Mauricio's Image 3).
+   
+   About-advisor block stays at 420 (only 2 items, doesn't suffer the empty-row problem). At smaller viewports (1200-1400px), cards become wider per row (700-800px) but still readable. Mobile fallback (≤719px) unchanged — single column.
+
+### Out of scope (deferred)
+
+- **Mobile column hiding for Income/Bills/Debt tables** (Source/Person/Net for Income, Name/Person/Monthly for Bills, Name/Balance/Min for Debt). Still queued.
+- **v0.14.0 D-40 through D-44 formal documentation** (engagement-letter / ToS / services-editor / logos / public-intake-flow). Proposed updates in `AGENT_v0.14.0_UPDATES.md` for a future folding session.
+- **Restructuring `PlanReportBlock` so each Phase card is its own top-level section** (would give even cleaner page breaks). Universal `mCARD` fix is the lower-risk first attempt; escalate only if Mauricio's next print test still shows mid-card splits.
+
+### Files changed
+
+- `src/App.jsx` (3,417 lines, +102 chars)
+- `AGENT.md` (§3 swap, §8 build marker, footer)
+- `WORKPLAN.md` (§5 prepend, footer)
+- `src/translations.js` — unchanged
+- `vercel.json` — unchanged
+
+### Smoke tests
+
+1. **Desktop sidebar tiles (≥1400px)** — Calculators / Resources / About services cards visibly much larger. Calculators 3×3, Resources 3×2, Services 3×3.
+2. **Desktop print/PDF — Balance Sheet** — Reports → Complete Report → Print. Balance Sheet should NOT split mid-card. If split, break happens between Assets and Liabilities cards cleanly.
+3. **Desktop print/PDF — Strategy Plan** — same flow. Outer container fits on one page OR breaks cleanly between inner cards (KPI → DEBT PAYOFF ORDER → ROADMAP → INVESTMENT PROJECTION).
+4. **Desktop print/PDF — Income Statement** — same.
+5. **Mobile print/PDF** — same page-break improvements apply.
+6. **Chrome "Background graphics"** — confirm toggle is ON in print dialog → More Settings, otherwise dark backgrounds won't print.
+
+---
+
 # Golden Anchor Finance — v0.14.0 CHANGELOG Entry
 
 ## [0.14.0] — 2026-05-20
