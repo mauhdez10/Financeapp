@@ -3,6 +3,7 @@ import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie
 import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 import { T } from "./translations";
+import { ENGAGEMENT_LETTER, ELT_DEFAULTS, fillTokens } from "./engagementLetterTemplate";
 
 /* ── SUPABASE CLIENT ─────────────────────────────────────────────────────── */
 const SUPABASE_URL=(typeof import.meta!=="undefined"&&import.meta.env?import.meta.env.VITE_SUPABASE_URL:"")||"";
@@ -214,7 +215,102 @@ function SaveBar({onSave,onCancel,onDelete,t,saveLabel}){const[conf,setConf]=use
 function IAdd({cols,onSave,label="＋ Add row…"}){const th=useTh();const[open,setOpen]=useState(false);const[vals,setVals]=useState({});const u=k=>e=>setVals(p=>({...p,[k]:e.target.value}));const save=()=>{if(onSave(vals)){setVals({});setOpen(false);}};if(!open)return<tr onClick={()=>setOpen(true)} style={{cursor:"pointer"}}><td colSpan={cols.length+1} style={{...mTD(th),color:th.dim,fontStyle:"italic",padding:"8px 0"}}>{label}</td></tr>;return<tr style={{background:th.bg+"88"}}>{cols.map(c=><td key={c.key} style={{...mTD(th),paddingRight:6}}>{c.type==="select"?<select value={vals[c.key]||c.default||""} onChange={u(c.key)} style={{...mIIN(th),padding:"3px 6px"}}>{c.options.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>:<input type={c.type||"text"} placeholder={c.placeholder||""} value={vals[c.key]||""} onChange={u(c.key)} onKeyDown={c.numeric?bE:undefined} style={mIIN(th)} onKeyUp={e=>e.key==="Enter"&&save()}/>}</td>)}<td style={{...mTDR(th),whiteSpace:"nowrap"}}><button onClick={save} style={{fontSize:12,padding:"3px 10px",borderRadius:6,background:GOLD,color:"#0D1B2A",border:"none",cursor:"pointer",fontWeight:700,marginRight:4}}>✓</button><button onClick={()=>setOpen(false)} style={{fontSize:12,padding:"3px 8px",borderRadius:6,background:th.inp,color:th.muted,border:"none",cursor:"pointer"}}>×</button></td></tr>;}
 
 /* ── PROFILE MODAL ───────────────────────────────────────────────────────── */
-function ProfileModal({settings,onSave,onClose,t}){const th=useTh();const[s,setS]=useState({...settings});const[stripeOpen,setStripeOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fontSize:11,color:th.muted,marginBottom:6}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(p=><div key={p.v} onClick={()=>setS(prev=>({...prev,[k]:p.v}))} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}}><div style={{width:26,height:26,borderRadius:"50%",background:p.v,border:s[k]===p.v?"3px solid white":"2px solid transparent",boxShadow:s[k]===p.v?`0 0 0 2px ${p.v}`:"0 0 0 1px #0002"}}/><span style={{fontSize:9,color:th.dim}}>{t["color"+p.l]||p.l}</span></div>)}<input type="color" value={s[k]||presets[0].v} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:26,height:26,cursor:"pointer",border:"none",borderRadius:4}}/><input value={s[k]||''} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:80,fontFamily:"monospace",fontSize:11}} placeholder="#000000"/></div></div>;const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:9}}><div style={{fontSize:10,color:th.muted,marginBottom:5}}>{label}</div><div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:24,height:24,borderRadius:6,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 2px ${th.accent}44`:"none"}}/>)}<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:24,height:24,cursor:"pointer",border:"none",borderRadius:4,padding:0}}/><input value={v||""} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:78,fontFamily:"monospace",fontSize:10}} placeholder="#000000"/></div></div>;};return<Modal title={t.profileSettings} onClose={onClose} width={500}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.07em"}}>{t.appZoom||"APP ZOOM"}</div><div style={{marginBottom:18}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}><input type="range" min={50} max={200} step={10} value={Math.round((s.appZoom||1)*100)} onChange={e=>setS(p=>({...p,appZoom:(+e.target.value||100)/100}))} style={{flex:1,accentColor:th.accent,cursor:"pointer"}}/><span style={{fontSize:13,fontWeight:700,color:th.accent,minWidth:52}}>{Math.round((s.appZoom||1)*100)}%</span></div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{[75,90,100,110,125,150].map(pct=><button key={pct} onClick={()=>setS(p=>({...p,appZoom:pct/100}))} style={{fontSize:11,padding:"4px 10px",borderRadius:7,cursor:"pointer",background:Math.round((s.appZoom||1)*100)===pct?th.accent+"22":"transparent",color:Math.round((s.appZoom||1)*100)===pct?th.accent:th.muted,border:`1px solid ${Math.round((s.appZoom||1)*100)===pct?th.accent:th.cardBorder}`,fontWeight:Math.round((s.appZoom||1)*100)===pct?700:400}}>{pct}%</button>)}</div><div style={{fontSize:10,color:th.dim,marginTop:6,fontStyle:"italic"}}>{t.settingsZoomHelp||"Scales the whole app (like browser zoom). Use Ctrl/Cmd + or − for quick browser-level zoom."}</div></div><Row2><Field label={t.settingsAdvisorName||"Advisor Name"}><input style={INP} value={s.advisorName||""} onChange={u("advisorName")}/></Field><Field label={t.settingsEmail||"Email"}><input style={INP} value={s.advisorEmail||""} onChange={u("advisorEmail")}/></Field></Row2><Field label={t.settingsInstagram||"Instagram"}><div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:th.dim,fontSize:12}}>@</span><input style={{...INP,paddingLeft:28}} value={s.ig||""} onChange={u("ig")}/></div></Field><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:4}}>{t.themeColors||"THEME COLORS"}</div><AccRow label={t.darkMode+" "+(t.settingsAccentSuffix||"Accent")} k="darkAccent" presets={DARK_ACCENTS}/><AccRow label={t.lightMode+" "+(t.settingsAccentSuffix||"Accent")} k="lightAccent" presets={LIGHT_ACCENTS}/><div style={{marginTop:6,marginBottom:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:4,letterSpacing:"0.07em"}}>{(t.appearanceHdr||"Background Colors").toUpperCase()}</div><div style={{fontSize:10,color:th.dim,marginBottom:10,fontStyle:"italic",lineHeight:1.5}}>{t.appearanceHelp||"Adjust the page and card background for light and dark mode. Pick a preset or a custom color, then preview it below before saving."}</div>{[{m:"light",lbl:t.lightMode,emoji:"☀️",bgK:"lightBg",cardK:"lightCard",bgDef:"#F1F5F9",cardDef:"#FFFFFF",bgP:LIGHT_BG_PRESETS,cardP:LIGHT_CARD_PRESETS,txt:"#0F172A",bd:"#E2E8F0"},{m:"dark",lbl:t.darkMode,emoji:"🌙",bgK:"darkBg",cardK:"darkCard",bgDef:"#111827",cardDef:"#1F2937",bgP:DARK_BG_PRESETS,cardP:DARK_CARD_PRESETS,txt:"#F1F5F9",bd:"#374151"}].map(M=>{const bgV=s[M.bgK]||M.bgDef,cardV=s[M.cardK]||M.cardDef;return<div key={M.m} style={{...mCARD(th),padding:"12px 14px",marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontSize:12,fontWeight:700,color:th.text}}>{M.emoji} {M.lbl}</span><button onClick={()=>setS(p=>({...p,[M.bgK]:M.bgDef,[M.cardK]:M.cardDef}))} style={{fontSize:10,padding:"3px 9px",borderRadius:6,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.resetToDefault||"Reset"}</button></div><div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}><div style={{flex:"1 1 200px",minWidth:0}}><BgPicker label={t.pageBackgroundLbl||"Page background"} k={M.bgK} presets={M.bgP} def={M.bgDef}/><BgPicker label={t.cardBackgroundLbl||"Card background"} k={M.cardK} presets={M.cardP} def={M.cardDef}/></div><div style={{flex:"0 0 auto"}}><div style={{fontSize:9,letterSpacing:"0.1em",color:th.dim,marginBottom:4}}>{(t.previewLbl||"Preview").toUpperCase()}</div><div style={{width:120,borderRadius:9,overflow:"hidden",border:`1px solid ${th.cardBorder}`}}><div style={{background:bgV,padding:13}}><div style={{background:cardV,borderRadius:7,padding:"10px 11px",border:`1px solid ${M.bd}`}}><div style={{fontSize:10,fontWeight:800,color:M.txt}}>⚓ Golden Anchor</div><div style={{height:5,width:"72%",background:M.bd,borderRadius:3,marginTop:7}}/><div style={{height:5,width:"48%",background:M.bd,borderRadius:3,marginTop:5}}/></div></div></div></div></div></div>;})}</div><div style={{fontSize:11,color:th.dim,marginBottom:12,padding:"10px 12px",background:th.inp,borderRadius:8,lineHeight:1.6}}>{t.settingsAlertsTip?<>ℹ️ {t.settingsAlertsTip}</>:<>ℹ️ Alert types are managed in the <b>⚙️ icon</b> on the Alerts panel (Dashboard).</>}</div><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><span style={{fontSize:11,color:th.muted}}>{t.settingsNoContact||"No-contact threshold:"}</span><input type="number" min={7} max={180} value={s.noContactDays||30} onChange={e=>setS(p=>({...p,noContactDays:+e.target.value||30}))} style={{...mIIN(th),width:60,textAlign:"center"}}/><span style={{fontSize:11,color:th.dim}}>{t.settingsDays||"days"}</span></div><div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:GOLD+"08",border:`1px solid ${GOLD}33`}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setStripeOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:GOLD}}>💳 {t.settingsStripeLinks||"Stripe Payment Links"} {stripeOpen?"▲":"▼"}</span><span style={{fontSize:10,color:th.dim}}>{Object.values(s.stripeLinks||{}).filter(v=>!!v).length} / {SVCS.length}</span></div>{stripeOpen&&<div style={{marginTop:10}}><div style={{fontSize:10,color:th.dim,marginBottom:8,lineHeight:1.5,fontStyle:"italic"}}>{t.settingsStripeLinksHelp||"Paste the hosted Payment Link URL from your Stripe Dashboard for each service. Leave blank to hide the Pay Now button for that service."}</div>{SVCS.map(svc=><div key={svc.id} style={{marginBottom:8}}><div style={{fontSize:10,color:th.muted,marginBottom:3}}>{svc.icon} {svc.en} <span style={{color:th.dim}}>({svc.price})</span></div><input style={{...INP,fontFamily:"monospace",fontSize:11}} placeholder="https://buy.stripe.com/..." value={(s.stripeLinks||{})[svc.id]||""} onChange={e=>setS(p=>({...p,stripeLinks:{...(p.stripeLinks||{}),[svc.id]:e.target.value}}))}/></div>)}</div>}</div><div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setBackupOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>💾 {t.settingsBackup||"Backup Verification"} {backupOpen?"▲":"▼"}</span><span style={{fontSize:10,color:th.dim}}>{s.lastBackupVerified?fmtDate(s.lastBackupVerified):(t.settingsBackupNever||"never")}</span></div>{backupOpen&&<div style={{marginTop:10}}><div style={{fontSize:10,color:th.dim,marginBottom:8,lineHeight:1.6,fontStyle:"italic"}}>{t.settingsBackupHelp||"Export a full backup monthly via Dashboard → ⋯ → Backup All (JSON). Save the file to your password-manager vault or encrypted drive, then re-import it to a fresh tab to confirm it restores cleanly. Click below to log today as a verified-backup date."}</div><div style={{fontSize:11,color:th.muted,marginBottom:8}}>{t.settingsBackupLast||"Last verified:"} <b style={{color:th.text}}>{s.lastBackupVerified?fmtDate(s.lastBackupVerified):(t.settingsBackupNever||"never")}</b></div><button onClick={()=>setS(p=>({...p,lastBackupVerified:new Date().toISOString().slice(0,10)}))} style={{fontSize:11,padding:"5px 12px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>✓ {t.settingsBackupMarkVerified||"Mark Verified Today"}</button></div>}</div><SaveBar onSave={()=>onSave(s)} onCancel={onClose} t={t}/></Modal>;}
+function ProfileModal({settings,onSave,onClose,t}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
+const services = s.services && s.services.length ? s.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:(v.en||""),price:(v.price||""),stripeUrl:(s.stripeLinks||{})[v.id]||""}));
+const updateService=(idx,field,val)=>{const next=services.map((sv,i)=>i===idx?{...sv,[field]:val}:sv);setS(p=>({...p,services:next}));};
+const addService=()=>{const next=[...services,{id:"svc-"+Date.now(),icon:"💼",name:"",price:"",stripeUrl:""}];setS(p=>({...p,services:next}));};
+const removeService=(idx)=>{if(!confirm(t.confirmRemoveSvc||"Remove this service?"))return;const next=services.filter((_,i)=>i!==idx);setS(p=>({...p,services:next}));};
+const uploadLogo=(mode)=>(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>500*1024){alert((t.logoTooLarge||"Logo image is too large (max 500KB).")+" "+(f.size/1024).toFixed(0)+"KB");return;}const r=new FileReader();r.onload=ev=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:ev.target.result}));};r.readAsDataURL(f);};
+const clearLogo=(mode)=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:""}));};
+const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fontSize:11,color:th.muted,marginBottom:6}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(p=><div key={p.v} onClick={()=>setS(prev=>({...prev,[k]:p.v}))} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}}><div style={{width:26,height:26,borderRadius:"50%",background:p.v,border:s[k]===p.v?"3px solid white":"2px solid transparent",boxShadow:s[k]===p.v?`0 0 0 2px ${p.v}`:"0 0 0 1px #0002"}}/><span style={{fontSize:9,color:th.dim}}>{t["color"+p.l]||p.l}</span></div>)}<input type="color" value={s[k]||presets[0].v} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:26,height:26,cursor:"pointer",border:"none",borderRadius:4}}/><input value={s[k]||''} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:80,fontFamily:"monospace",fontSize:11}} placeholder="#000000"/></div></div>;
+const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:9}}><div style={{fontSize:10,color:th.muted,marginBottom:5}}>{label}</div><div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:24,height:24,borderRadius:6,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 2px ${th.accent}44`:"none"}}/>)}<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:24,height:24,cursor:"pointer",border:"none",borderRadius:4,padding:0}}/><input value={v||""} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:78,fontFamily:"monospace",fontSize:10}} placeholder="#000000"/></div></div>;};
+const ToggleField=({k,label})=>{const hasIt=!!s["has_"+k];return<div style={{marginBottom:10}}>
+<label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:hasIt?6:0}}>
+  <input type="checkbox" checked={hasIt} onChange={e=>setS(p=>({...p,["has_"+k]:e.target.checked,...(e.target.checked?{}:{[k]:""})}))} style={{cursor:"pointer"}}/>
+  <span style={{fontSize:11,color:th.muted,fontWeight:600}}>{label}</span>
+</label>
+{hasIt && <input style={INP} value={s[k]||""} onChange={u(k)} placeholder={label}/>}
+</div>;};
+return<Modal title={t.profileSettings} onClose={onClose} width={520}>
+
+<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.07em"}}>{t.appZoom||"APP ZOOM"}</div>
+<div style={{marginBottom:18}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}><input type="range" min={50} max={200} step={10} value={Math.round((s.appZoom||1)*100)} onChange={e=>setS(p=>({...p,appZoom:(+e.target.value||100)/100}))} style={{flex:1,accentColor:th.accent,cursor:"pointer"}}/><span style={{fontSize:13,fontWeight:700,color:th.accent,minWidth:52}}>{Math.round((s.appZoom||1)*100)}%</span></div></div>
+
+<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.07em"}}>{t.advisorInfoHdr||"ADVISOR INFORMATION"}</div>
+<Row2><Field label={t.settingsAdvisorName||"Advisor Name"}><input style={INP} value={s.advisorName||""} onChange={u("advisorName")}/></Field><Field label={t.settingsEmail||"Email"}><input style={INP} value={s.advisorEmail||""} onChange={u("advisorEmail")}/></Field></Row2>
+<Row2><Field label={t.advisorPhone||"Personal Phone"}><input style={INP} value={s.advisorPhone||""} onChange={u("advisorPhone")} placeholder="(305) 555-1234"/></Field><Field label={t.settingsInstagram||"Instagram"}><div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:th.dim,fontSize:12}}>@</span><input style={{...INP,paddingLeft:28}} value={s.ig||""} onChange={u("ig")}/></div></Field></Row2>
+<Field label={t.companyName||"Company Name"}><input style={INP} value={s.companyName||""} onChange={u("companyName")} placeholder="Golden Anchor Financial Planning & Wealth Management"/></Field>
+
+<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.optionalFieldsHdr||"OPTIONAL — CHECK TO ADD"}</div>
+<ToggleField k="companyPhone" label={t.companyPhone||"Company Phone"}/>
+<ToggleField k="businessAddress" label={t.businessAddress||"Business Address"}/>
+<ToggleField k="googleMapsUrl" label={t.googleMapsUrl||"Google Maps URL"}/>
+<ToggleField k="website" label={t.website||"Website"}/>
+
+<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.logoHdr||"LOGOS (LIGHT & DARK)"}</div>
+<div style={{fontSize:10,color:th.dim,marginBottom:10,fontStyle:"italic",lineHeight:1.5}}>{t.logoHelp||"Upload a logo for each theme. Used in app header and engagement letter. Max 500KB per image."}</div>
+<Row2>
+  <div>
+    <div style={{fontSize:10,color:th.muted,marginBottom:4,fontWeight:600}}>☀️ {t.lightModeLogo||"Light mode logo"}</div>
+    <div style={{...mCARD(th),padding:10,background:"#FFFFFF",border:`1px dashed ${th.cardBorder}`,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}>{s.logoLight?<img src={s.logoLight} alt="light" style={{maxHeight:70,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.logoNone||"No logo set"}</span>}</div>
+    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={uploadLogo("light")} style={{fontSize:11,width:"100%"}}/>
+    {s.logoLight && <button type="button" onClick={()=>clearLogo("light")} style={{fontSize:10,marginTop:4,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.clearLogo||"Clear"}</button>}
+  </div>
+  <div>
+    <div style={{fontSize:10,color:th.muted,marginBottom:4,fontWeight:600}}>🌙 {t.darkModeLogo||"Dark mode logo"}</div>
+    <div style={{...mCARD(th),padding:10,background:"#0D1B2A",border:`1px dashed ${th.cardBorder}`,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}>{s.logoDark?<img src={s.logoDark} alt="dark" style={{maxHeight:70,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>{t.logoNone||"No logo set"}</span>}</div>
+    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={uploadLogo("dark")} style={{fontSize:11,width:"100%"}}/>
+    {s.logoDark && <button type="button" onClick={()=>clearLogo("dark")} style={{fontSize:10,marginTop:4,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.clearLogo||"Clear"}</button>}
+  </div>
+</Row2>
+
+<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.advisorSigHdr||"YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)"}</div>
+<SignaturePad value={s.advisorSignature?{kind:"drawn",dataUrl:s.advisorSignature}:null} onChange={v=>setS(p=>({...p,advisorSignature:v?v.dataUrl:""}))} t={t} theme={th} defaultName={s.advisorName}/>
+
+<div style={{...mCARD(th),padding:"10px 14px",marginTop:18,marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setThemeOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>🎨 {t.themeColors||"Theme Colors"} {themeOpen?"▲":"▼"}</span></div>
+  {themeOpen && <div style={{marginTop:10}}>
+    <AccRow label={t.darkMode+" "+(t.settingsAccentSuffix||"Accent")} k="darkAccent" presets={DARK_ACCENTS}/>
+    <AccRow label={t.lightMode+" "+(t.settingsAccentSuffix||"Accent")} k="lightAccent" presets={LIGHT_ACCENTS}/>
+  </div>}
+</div>
+
+<div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setBgOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>🖼️ {t.appearanceHdr||"Background Colors"} {bgOpen?"▲":"▼"}</span></div>
+  {bgOpen && <div style={{marginTop:10}}>
+    {[{m:"light",lbl:t.lightMode,emoji:"☀️",bgK:"lightBg",cardK:"lightCard",bgDef:"#F1F5F9",cardDef:"#FFFFFF",bgP:LIGHT_BG_PRESETS,cardP:LIGHT_CARD_PRESETS,txt:"#0F172A",bd:"#E2E8F0"},{m:"dark",lbl:t.darkMode,emoji:"🌙",bgK:"darkBg",cardK:"darkCard",bgDef:"#111827",cardDef:"#1F2937",bgP:DARK_BG_PRESETS,cardP:DARK_CARD_PRESETS,txt:"#F1F5F9",bd:"#374151"}].map(M=>{const bgV=s[M.bgK]||M.bgDef,cardV=s[M.cardK]||M.cardDef;return<div key={M.m} style={{...mCARD(th),padding:"12px 14px",marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontSize:12,fontWeight:700,color:th.text}}>{M.emoji} {M.lbl}</span><button onClick={()=>setS(p=>({...p,[M.bgK]:M.bgDef,[M.cardK]:M.cardDef}))} style={{fontSize:10,padding:"3px 9px",borderRadius:6,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.resetToDefault||"Reset"}</button></div><BgPicker label={t.pageBackgroundLbl||"Page background"} k={M.bgK} presets={M.bgP} def={M.bgDef}/><BgPicker label={t.cardBackgroundLbl||"Card background"} k={M.cardK} presets={M.cardP} def={M.cardDef}/></div>;})}
+  </div>}
+</div>
+
+<div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:GOLD+"08",border:`1px solid ${GOLD}33`}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setServicesOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:GOLD}}>💼 {t.ourServices||"Our Services"} {servicesOpen?"▲":"▼"}</span><span style={{fontSize:10,color:th.dim}}>{services.length}</span></div>
+  {servicesOpen && <div style={{marginTop:10}}>
+    <div style={{fontSize:10,color:th.dim,marginBottom:10,lineHeight:1.5,fontStyle:"italic"}}>{t.ourServicesHelp||"Edit the name, price, and Stripe Payment Link for each service. These appear on the public intake form for clients to choose from."}</div>
+    {services.map((svc,idx)=><div key={svc.id||idx} style={{padding:"10px 12px",background:th.bg,borderRadius:8,marginBottom:8,border:`1px solid ${th.cardBorder}`}}>
+      <Row2>
+        <Field label={t.svcIcon||"Icon"}><input style={INP} value={svc.icon||""} onChange={e=>updateService(idx,"icon",e.target.value)} maxLength={3}/></Field>
+        <Field label={t.svcPrice||"Price"}><input style={INP} value={svc.price||""} onChange={e=>updateService(idx,"price",e.target.value)} placeholder="$149"/></Field>
+      </Row2>
+      <Field label={t.svcName||"Service name"}><input style={INP} value={svc.name||""} onChange={e=>updateService(idx,"name",e.target.value)}/></Field>
+      <Field label={t.svcStripeUrl||"Stripe Payment Link"}><input style={{...INP,fontFamily:"monospace",fontSize:11}} placeholder="https://buy.stripe.com/..." value={svc.stripeUrl||""} onChange={e=>updateService(idx,"stripeUrl",e.target.value)}/></Field>
+      <button type="button" onClick={()=>removeService(idx)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>🗑 {t.removeSvc||"Remove"}</button>
+    </div>)}
+    <button type="button" onClick={addService} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}55`,cursor:"pointer",fontWeight:600}}>+ {t.addService||"Add service"}</button>
+  </div>}
+</div>
+
+<div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setBackupOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>💾 {t.settingsBackup||"Backup Verification"} {backupOpen?"▲":"▼"}</span><span style={{fontSize:10,color:th.dim}}>{s.lastBackupVerified?fmtDate(s.lastBackupVerified):(t.settingsBackupNever||"never")}</span></div>
+  {backupOpen && <div style={{marginTop:10}}>
+    <div style={{fontSize:10,color:th.dim,marginBottom:8,lineHeight:1.6,fontStyle:"italic"}}>{t.settingsBackupHelp||"Export a full backup monthly via Dashboard → ⋯ → Backup All (JSON). Save the file to your password-manager vault or encrypted drive."}</div>
+    <button onClick={()=>setS(p=>({...p,lastBackupVerified:new Date().toISOString().slice(0,10)}))} style={{fontSize:11,padding:"5px 12px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>✓ {t.settingsBackupMarkVerified||"Mark Verified Today"}</button>
+  </div>}
+</div>
+
+<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><span style={{fontSize:11,color:th.muted}}>{t.settingsNoContact||"No-contact threshold:"}</span><input type="number" min={7} max={180} value={s.noContactDays||30} onChange={e=>setS(p=>({...p,noContactDays:+e.target.value||30}))} style={{...mIIN(th),width:60,textAlign:"center"}}/><span style={{fontSize:11,color:th.dim}}>{t.settingsDays||"days"}</span></div>
+
+<SaveBar onSave={()=>onSave(s)} onCancel={onClose} t={t}/>
+</Modal>;}
 
 /* ── NEW CLIENT MODAL (with optional partner) ────────────────────────────── */
 function NewClientModal({onSave,onClose,t}){const th=useTh();const[f,setF]=useState({firstName:"",lastName:"",email:"",color1:"#4472C4",hasPartner:false,partnerFirst:"",partnerLast:"",color2:"#ED7D31"});const[err,setErr]=useState("");const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));const save=()=>{if(!f.firstName||!f.lastName){setErr("First and last name required.");return;}if(!f.email||!vEmail(f.email)){setErr("Valid email required.");return;}if(f.hasPartner&&!f.partnerFirst){setErr("Partner first name required.");return;}onSave(mig({...f,id:gid(),partnerFirst:f.hasPartner?f.partnerFirst:null,partnerLast:f.hasPartner?f.partnerLast:null,color2:f.hasPartner?f.color2:null}));};const INP=mINP(th);return<Modal title={t.addClient} onClose={onClose} width={500}><Row2><Field label={`${t.firstName} *`}><input style={INP} value={f.firstName} onChange={u("firstName")}/></Field><Field label={`${t.lastName} *`}><input style={INP} value={f.lastName} onChange={u("lastName")}/></Field></Row2><Field label={`${t.email} *`}><input style={INP} value={f.email} onChange={u("email")}/></Field><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"10px 12px",background:th.bg,borderRadius:8}}><CCircle value={f.color1} onChange={u("color1")}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:th.text}}>{f.firstName||t.p1} color</div></div></div><div style={{borderTop:`1px solid ${th.cardBorder}`,paddingTop:14,marginBottom:14}}><button onClick={()=>setF(p=>({...p,hasPartner:!p.hasPartner}))} style={{fontSize:12,padding:"6px 14px",borderRadius:8,cursor:"pointer",background:f.hasPartner?th.accent+"22":"transparent",color:f.hasPartner?th.accent:th.muted,border:`1px solid ${f.hasPartner?th.accent:th.cardBorder}`,fontWeight:600}}>{f.hasPartner?"✓ "+t.removePartner:"＋ "+t.addPartner}</button></div>{f.hasPartner&&<><Row2><Field label={`${t.partnerFirst} *`}><input style={INP} value={f.partnerFirst} onChange={u("partnerFirst")}/></Field><Field label={t.partnerLast}><input style={INP} value={f.partnerLast} onChange={u("partnerLast")}/></Field></Row2><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"10px 12px",background:th.bg,borderRadius:8}}><CCircle value={f.color2} onChange={u("color2")}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:th.text}}>{f.partnerFirst||t.p2} color</div></div></div></>}{err&&<div style={{fontSize:11,color:"#EF4444",background:"#EF444411",borderRadius:8,padding:"7px 10px",marginBottom:8}}>{err}</div>}<SaveBar onSave={save} onCancel={onClose} t={t}/></Modal>;}
@@ -2351,67 +2447,291 @@ function Login({onLogin,t,isDark,onToggle}){
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
 // === DEPLOY MARKER — confirms this build is the latest ===
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-20-v0133-grid-tags-plus-headers";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+
+/* ── LogoImg — renders settings logo (light/dark variant) or falls back to ⚓ ── */
+function LogoImg({settings,mode,size,fallbackColor}){
+  const logo = mode==="light" ? (settings?.logoLight||"") : (settings?.logoDark||"");
+  if(logo) return <img src={logo} alt="Golden Anchor" style={{height:size||32,width:"auto",maxWidth:size?size*2:64,objectFit:"contain",display:"inline-block",verticalAlign:"middle"}}/>;
+  return <span style={{color:fallbackColor||GOLD,fontSize:size||24}}>⚓</span>;
+}
+
+/* ── SignaturePad — Canvas draw OR typed name+date toggle ── */
+function SignaturePad({value,onChange,t,theme,label,defaultName}){
+  const [mode,setMode]=useState((value&&value.kind==="typed")?"typed":"draw");
+  const [typed,setTyped]=useState(value?.kind==="typed"?(value.text||""):(defaultName||""));
+  const canvasRef=useRef(null);
+  const isDrawingRef=useRef(false);
+  const lastRef=useRef(null);
+  const TH=theme||{};
+  useEffect(()=>{
+    const c=canvasRef.current; if(!c) return;
+    const ctx=c.getContext("2d");
+    ctx.lineWidth=2; ctx.lineCap="round"; ctx.lineJoin="round";
+    ctx.strokeStyle="#0F172A";
+    if(value&&value.kind==="drawn"&&value.dataUrl){
+      const img=new Image();
+      img.onload=()=>{ ctx.clearRect(0,0,c.width,c.height); ctx.drawImage(img,0,0,c.width,c.height); };
+      img.src=value.dataUrl;
+    }
+  },[mode]);
+  const getPos=(e)=>{ const c=canvasRef.current; const r=c.getBoundingClientRect(); const sx=c.width/r.width, sy=c.height/r.height; const cx=e.touches?e.touches[0].clientX:e.clientX; const cy=e.touches?e.touches[0].clientY:e.clientY; return {x:(cx-r.left)*sx,y:(cy-r.top)*sy}; };
+  const start=(e)=>{ e.preventDefault(); isDrawingRef.current=true; lastRef.current=getPos(e); };
+  const move=(e)=>{ if(!isDrawingRef.current) return; e.preventDefault(); const c=canvasRef.current; const ctx=c.getContext("2d"); const p=getPos(e); ctx.beginPath(); ctx.moveTo(lastRef.current.x,lastRef.current.y); ctx.lineTo(p.x,p.y); ctx.stroke(); lastRef.current=p; };
+  const end=()=>{ if(!isDrawingRef.current) return; isDrawingRef.current=false; const c=canvasRef.current; const dataUrl=c.toDataURL("image/png"); onChange&&onChange({kind:"drawn",dataUrl,signedAt:new Date().toISOString()}); };
+  const clear=()=>{ const c=canvasRef.current; if(!c) return; const ctx=c.getContext("2d"); ctx.clearRect(0,0,c.width,c.height); onChange&&onChange(null); };
+  const onTyped=(v)=>{ setTyped(v); onChange&&onChange({kind:"typed",text:v,signedAt:new Date().toISOString()}); };
+  return <div style={{border:`1px solid ${TH.cardBorder||"#E2E8F0"}`,borderRadius:10,padding:12,background:TH.card||"#fff"}}>
+    {label&&<div style={{fontSize:11,fontWeight:700,color:TH.muted||"#475569",marginBottom:8}}>{label}</div>}
+    <div style={{display:"flex",gap:4,marginBottom:8}}>
+      <button type="button" onClick={()=>setMode("draw")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="draw"?(TH.accent||GOLD):"transparent",color:mode==="draw"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="draw"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>✍️ {t.sigDrawTab||"Draw signature"}</button>
+      <button type="button" onClick={()=>setMode("typed")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="typed"?(TH.accent||GOLD):"transparent",color:mode==="typed"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="typed"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>⌨️ {t.sigTypedTab||"Type name + date"}</button>
+    </div>
+    {mode==="draw"?<div>
+      <canvas ref={canvasRef} width={500} height={140} style={{width:"100%",height:140,background:"#FFFFFF",border:`1px dashed ${TH.cardBorder||"#CBD5E1"}`,borderRadius:8,touchAction:"none",cursor:"crosshair",display:"block"}} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
+        <span style={{fontSize:10,color:TH.dim||"#94A3B8",fontStyle:"italic"}}>{t.sigDrawHint||"Sign with mouse or finger"}</span>
+        <button type="button" onClick={clear} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:"transparent",color:TH.muted||"#475569",border:`1px solid ${TH.cardBorder||"#E2E8F0"}`,cursor:"pointer"}}>↺ {t.sigClear||"Clear"}</button>
+      </div>
+    </div>:<div>
+      <input value={typed} onChange={e=>onTyped(e.target.value)} placeholder={t.sigTypedPlaceholder||"Type your full legal name"} style={{width:"100%",padding:"10px 12px",fontSize:18,fontFamily:"'Brush Script MT',cursive,serif",fontStyle:"italic",background:"#FFFFFF",border:`1px dashed ${TH.cardBorder||"#CBD5E1"}`,borderRadius:8,color:"#0F172A",outline:"none",boxSizing:"border-box"}}/>
+      <div style={{fontSize:10,color:TH.dim||"#94A3B8",marginTop:6,fontStyle:"italic"}}>{t.sigTypedHint||"By typing your name above and submitting, you are signing this document electronically."}</div>
+    </div>}
+  </div>;
+}
+
+/* ── ToSModal — mandatory acceptance gate on first login ── */
+function ToSModal({onAccept,onCancel,t,theme}){
+  const[checked,setChecked]=useState(false);
+  return <div style={{position:"fixed",inset:0,background:"#000a",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:14}}>
+    <div style={{background:theme.card,border:`2px solid ${theme.accent}`,borderRadius:16,padding:24,maxWidth:520,width:"100%",boxShadow:"0 32px 80px #0009",maxHeight:"90vh",overflowY:"auto"}}>
+      <div style={{fontSize:22,fontWeight:800,color:theme.text,marginBottom:14}}>⚓ {t.tosTitle||"Terms of Service & Privacy"}</div>
+      <div style={{fontSize:12,color:theme.muted,lineHeight:1.7,marginBottom:16,padding:"12px",background:theme.bg,borderRadius:8,maxHeight:220,overflowY:"auto"}}>
+        <p style={{margin:"0 0 8px"}}><b>Golden Anchor Financial Advisory</b></p>
+        <p style={{margin:"0 0 8px"}}>{t.tosBody1||"Welcome. By using this application, you agree to our Terms of Service and Privacy Policy. Golden Anchor provides financial education and coaching. Mauricio Hernandez (FL License FL0215) does not provide investment advisory services, manage securities, or act as a fiduciary unless separately agreed in writing."}</p>
+        <p style={{margin:"0 0 4px",fontWeight:600}}>{t.tosKeyTerms||"Key terms:"}</p>
+        <ul style={{margin:"4px 0 0 18px",padding:0}}>
+          <li>{t.tosBullet1||"Education and coaching — not investment advice"}</li>
+          <li>{t.tosBullet2||"Your data is encrypted and confidential"}</li>
+          <li>{t.tosBullet3||"Consult professionals for tax, legal, or investment decisions"}</li>
+        </ul>
+      </div>
+      <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:18,padding:"10px 12px",background:theme.bg,borderRadius:8,cursor:"pointer"}}>
+        <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:18,height:18,cursor:"pointer",marginTop:2,flexShrink:0}}/>
+        <span style={{fontSize:12,color:theme.text,lineHeight:1.5}}>{t.tosAcceptMsg||"I have read and accept the Terms of Service and Privacy Policy"}</span>
+      </label>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={onCancel} style={{flex:1,padding:"11px 14px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",background:"transparent",color:theme.muted,border:`1px solid ${theme.cardBorder}`}}>{t.tosRejectBtn||"Cancel"}</button>
+        <button onClick={()=>checked&&onAccept()} disabled={!checked} style={{flex:1,padding:"11px 14px",borderRadius:10,fontWeight:700,fontSize:12,cursor:checked?"pointer":"not-allowed",background:checked?theme.accent:theme.cardBorder,color:"#fff",border:"none",opacity:checked?1:0.5}}>{t.tosAcceptBtn||"Accept & Continue"}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ── EngagementLetter — renders the full letter with token substitution.
+   Section 4 (Compensation & Fees) shows the selected service price.        */
+function EngagementLetter({settings,clientName1,clientName2,selectedService,lang,t,theme,signatureClient1,signatureClient2,onSig1,onSig2,readOnly}){
+  const TH=theme;
+  const L=ENGAGEMENT_LETTER[lang]||ENGAGEMENT_LETTER.en;
+  const today=new Date().toLocaleDateString(lang==="es"?"es-US":"en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const greetNames=[clientName1,clientName2].filter(s=>!!s&&s.trim()).join(" & ");
+  const greeting = `${lang==="es"?"Estimado/a":"Dear"} ${greetNames||"___________"},`;
+  const ctx={
+    date: today,
+    firmName: settings.companyName || "Golden Anchor Financial Planning & Wealth Management",
+    firmPhone: settings.companyPhone || settings.advisorPhone || "(305) 490-6868",
+    firmEmail: settings.advisorEmail || "mauricio@goldenanchor.life",
+    firmTagline: ELT_DEFAULTS.firmTagline,
+    advisorName: settings.advisorName || "Mauricio Hernandez",
+    clientGreeting: greeting,
+    selectedServiceName: selectedService?.name || "—",
+    selectedServicePrice: selectedService?.price || "—",
+    ongoingFeeAmount: settings.ongoingFeeAmount || ELT_DEFAULTS.ongoingFeeAmount,
+    ongoingFeeQuarterly: settings.ongoingFeeQuarterly || ELT_DEFAULTS.ongoingFeeQuarterly,
+    aumPct: settings.aumPct || ELT_DEFAULTS.aumPct,
+    aumFrequency: settings.aumFrequency || ELT_DEFAULTS.aumFrequency
+  };
+  const fill=(s)=>fillTokens(s,ctx);
+  const isCouple=!!(clientName2&&clientName2.trim());
+  return <div style={{background:"#FFFFFF",color:"#0F172A",padding:"28px 26px",borderRadius:12,fontFamily:"Georgia,serif",lineHeight:1.6,fontSize:13}}>
+    {/* Header with logo */}
+    <div style={{textAlign:"center",borderBottom:"2px solid #D4A017",paddingBottom:16,marginBottom:18}}>
+      <div style={{marginBottom:8}}><LogoImg settings={settings} mode="light" size={56}/></div>
+      <div style={{fontSize:20,fontWeight:800,color:"#1F2937"}}>{L.headerFirm}</div>
+      <div style={{fontSize:13,fontStyle:"italic",color:"#475569",marginTop:4}}>{L.headerSub}</div>
+    </div>
+    {/* Firm block */}
+    <div style={{textAlign:"center",fontSize:12,color:"#475569",marginBottom:14,lineHeight:1.8}}>
+      {L.firmBlock.map((line,i)=><div key={i}>{fill(line)}</div>)}
+    </div>
+    <div style={{fontSize:12,marginBottom:16,fontWeight:600}}>{fill(L.dateLabel)}</div>
+    {/* Greeting */}
+    <div style={{fontSize:14,marginBottom:12,fontWeight:600}}>{fill(L.greeting)}</div>
+    <div style={{marginBottom:12,textAlign:"justify"}}>{L.intro}</div>
+    <div style={{marginBottom:14,textAlign:"justify"}}>{L.introCarefully}</div>
+    <div style={{marginBottom:6}}>{L.sincerely}</div>
+    {/* Advisor signature */}
+    <div style={{marginBottom:24,paddingBottom:6,borderBottom:`1px solid ${settings.advisorSignature?"transparent":"#94A3B8"}`,minHeight:60}}>
+      {settings.advisorSignature ? <img src={settings.advisorSignature} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/> : <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>}
+    </div>
+    <div style={{fontSize:13,fontWeight:700,marginBottom:24,paddingTop:0}}>{fill(L.signatureLine)}</div>
+    {/* Sections */}
+    {L.sections.map(sec=><div key={sec.n} style={{marginBottom:18,pageBreakInside:"avoid"}}>
+      <div style={{fontSize:14,fontWeight:800,color:"#1F2937",marginBottom:8,borderBottom:"1px solid #E2E8F0",paddingBottom:4}}>{sec.n}. {sec.title}</div>
+      {sec.body && <div style={{marginBottom:8,textAlign:"justify"}}>{sec.body}</div>}
+      {sec.sub && sec.sub.map((sb,i)=><div key={i} style={{marginBottom:10,paddingLeft:8}}>
+        <div style={{fontWeight:700,marginBottom:4,fontSize:13}}>{sb.t}</div>
+        {sb.b && <div style={{marginBottom:6}}>{sb.b}</div>}
+        {sb.list && <ul style={{margin:"0 0 6px 18px",padding:0}}>{sb.list.map((li,j)=><li key={j} style={{marginBottom:4}}>{li}</li>)}</ul>}
+        {sb.after && <div style={{marginTop:6}}>{sb.after}</div>}
+      </div>)}
+      {sec.steps && <ol style={{margin:"6px 0 0 22px",padding:0}}>{sec.steps.map((st,i)=><li key={i} style={{marginBottom:6}}><b>{st[0]}.</b> {st[1]}</li>)}</ol>}
+      {sec.list && <ul style={{margin:"4px 0 0 18px",padding:0}}>{sec.list.map((li,j)=><li key={j} style={{marginBottom:4}}>{li}</li>)}</ul>}
+      {sec.kind==="section4" && sec.section4 && <div style={{margin:"8px 0",padding:"12px 14px",background:"#FEF9E7",border:"1px solid #F0D870",borderRadius:8}}>
+        <div style={{marginBottom:8}}>
+          <div style={{fontWeight:700}}>{sec.section4.planLabel}: <span style={{color:"#92400E"}}>{ctx.selectedServiceName} — {ctx.selectedServicePrice}</span></div>
+          <div style={{fontSize:12,fontStyle:"italic",color:"#475569",marginLeft:8,marginTop:2}}>{sec.section4.planNote}</div>
+        </div>
+        <div style={{marginBottom:8}}><b>{sec.section4.ongoingLabel}:</b> {fill(sec.section4.ongoingValue)}</div>
+        <div style={{marginBottom:8}}><b>{sec.section4.aumLabel}:</b> {fill(sec.section4.aumValue)}</div>
+        <div style={{marginBottom:8}}><b>{sec.section4.commissionsLabel}:</b> {sec.section4.commissionsValue}</div>
+        <div><b>{sec.section4.referralLabel}:</b> {sec.section4.referralValue}</div>
+      </div>}
+      {sec.after && <div style={{marginTop:8,fontStyle:"italic",fontSize:12}}>{sec.after}</div>}
+    </div>)}
+    {/* Client signatures */}
+    <div style={{marginTop:28,paddingTop:18,borderTop:"2px solid #D4A017"}}>
+      <div style={{fontSize:14,fontWeight:800,marginBottom:14,color:"#1F2937"}}>{t.clientSignaturesHdr||"Client Signature(s)"}</div>
+      {!readOnly && <>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>{t.clientSig1Label||"Client signature"}: {clientName1||"___________"}</div>
+          <SignaturePad value={signatureClient1} onChange={onSig1} t={t} theme={TH} defaultName={clientName1}/>
+        </div>
+        {isCouple && <div style={{marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>{t.clientSig2Label||"Co-client signature"}: {clientName2}</div>
+          <SignaturePad value={signatureClient2} onChange={onSig2} t={t} theme={TH} defaultName={clientName2}/>
+        </div>}
+      </>}
+      {readOnly && <>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:"#475569"}}>{clientName1||"—"}</div>
+          {signatureClient1?.kind==="drawn" && <img src={signatureClient1.dataUrl} alt="sig" style={{height:48,maxWidth:240,border:"1px solid #E2E8F0",borderRadius:6,padding:4,background:"#FFF"}}/>}
+          {signatureClient1?.kind==="typed" && <div style={{fontSize:22,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif"}}>{signatureClient1.text}</div>}
+          {signatureClient1?.signedAt && <div style={{fontSize:10,color:"#64748B",marginTop:2}}>{(t.signedAtLbl||"Signed")}: {new Date(signatureClient1.signedAt).toLocaleString()}</div>}
+        </div>
+        {isCouple && <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:"#475569"}}>{clientName2}</div>
+          {signatureClient2?.kind==="drawn" && <img src={signatureClient2.dataUrl} alt="sig2" style={{height:48,maxWidth:240,border:"1px solid #E2E8F0",borderRadius:6,padding:4,background:"#FFF"}}/>}
+          {signatureClient2?.kind==="typed" && <div style={{fontSize:22,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif"}}>{signatureClient2.text}</div>}
+          {signatureClient2?.signedAt && <div style={{fontSize:10,color:"#64748B",marginTop:2}}>{(t.signedAtLbl||"Signed")}: {new Date(signatureClient2.signedAt).toLocaleString()}</div>}
+        </div>}
+      </>}
+    </div>
+  </div>;
+}
+
+
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-20-v0140-engagement-letter-flow";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
   const inviteToken=urlParams.get("invite")||"";
+  const promoFromUrl=urlParams.get("promo")||"";
   const[resolvedAdvisorId,setResolvedAdvisorId]=useState(urlParams.get("advisor")||"");
+  const[resolvedSettings,setResolvedSettings]=useState(null);
   const advisorId=resolvedAdvisorId;
   const initialLang=(urlParams.get("lang")||"en").toLowerCase()==="es"?"es":"en";
   const[lang,setLang]=useState(initialLang);
   const t=T[lang]||T.en;
+  const[step,setStep]=useState("household");
+  const[householdType,setHouseholdType]=useState("single");
   const[draft,setDraft]=useState(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email"}));
+  const[selectedServiceId,setSelectedServiceId]=useState("");
+  const[promoCode,setPromoCode]=useState(promoFromUrl);
+  const[sig1,setSig1]=useState(null);
+  const[sig2,setSig2]=useState(null);
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
   const[err,setErr]=useState("");
-  // v0.10.0 — if ?invite=<token> present, resolve it server-side to prefill
-  // name/email/phone and mark the invite as opened. Falls back gracefully
-  // if the token is invalid/expired/missing — advisor=<uuid> still works.
   const[inviteResolved,setInviteResolved]=useState(!inviteToken);
   const[inviteError,setInviteError]=useState("");
-  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
-  // v0.7.3 — light/dark toggle on public intake.  Persist choice in localStorage
-  // so a prospect who comes back doesn't lose their preference mid-fill.
-  const[mode,setMode]=useState(()=>{
-    if(typeof window==="undefined")return "dark";
-    try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}
-  });
+  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.advisorSettings)setResolvedSettings(r.advisorSettings);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
+  const[mode,setMode]=useState(()=>{if(typeof window==="undefined")return "dark";try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}});
   const isDark=mode==="dark";
-  const TH=isDark
-    ?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}
-    :{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
+  const TH=isDark?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}:{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
   useEffect(()=>{if(typeof document!=="undefined"){document.documentElement.style.background=TH.bg;document.body.style.background=TH.bg;document.body.style.margin="0";}try{window.localStorage.setItem("ga_intake_mode",mode);}catch(e){}},[mode,TH.bg]);
-  if(!advisorId){
-    return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}>
-      <div style={{fontSize:48,color:GOLD}}>⚓</div>
-      <div style={{fontSize:16,fontWeight:700,maxWidth:480}}>{t.intakeInvalidLink||"This intake link is invalid or expired."}</div>
-      <div style={{fontSize:12,color:TH.muted,maxWidth:480}}>{t.intakeContactAdvisor||"Please contact your advisor directly."}</div>
-    </div>;
-  }
-  if(submitted){
-    return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}>
-      <div style={{fontSize:64,color:GOLD}}>✓</div>
-      <div style={{fontSize:22,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif"}}>Golden Anchor</div>
-      <div style={{fontSize:14,fontWeight:600,maxWidth:480,lineHeight:1.6}}>{t.intakeFormThanks||"Thank you! Your advisor will reach out shortly."}</div>
-      <div style={{fontSize:10,color:TH.dim,maxWidth:480,marginTop:20,padding:"0 12px",lineHeight:1.6}}>{t.disclaimer||""}</div>
-    </div>;
-  }
-  const submit=async()=>{
+  // Resolve services from advisor settings (fallback to default SVCS)
+  const advisorSettings = resolvedSettings || {};
+  const services = (advisorSettings.services && advisorSettings.services.length) ? advisorSettings.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:lang==="es"?v.es:v.en,price:v.price,stripeUrl:(advisorSettings.stripeLinks||{})[v.id]||"",desc:lang==="es"?v.descEs:v.desc}));
+  const selectedService = services.find(sv=>sv.id===selectedServiceId);
+  if(!advisorId){return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}><div style={{fontSize:48,color:GOLD}}>⚓</div><div style={{fontSize:16,fontWeight:700,maxWidth:480}}>{t.intakeInvalidLink||"This intake link is invalid or expired."}</div><div style={{fontSize:12,color:TH.muted,maxWidth:480}}>{t.intakeContactAdvisor||"Please contact your advisor directly."}</div></div>;}
+  const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:TH.accent,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:TH.blue};
+  const goSubmit=async()=>{
     setErr("");
-    if(!draft.firstName.trim()){setErr(t.intakeFirstReq||"First name required.");return;}
-    if(!draft.lastName.trim()){setErr(t.intakeLastReq||"Last name required.");return;}
-    if(!draft.email.trim()||!vEmail(draft.email)){setErr(t.intakeEmailReq||"Valid email required.");return;}
-    if(draft.partnerFirst&&!String(draft.partnerFirst).trim()){setErr(t.intakeFirstReq||"Partner first name required.");return;}
     setSubmitting(true);
-    const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null};
+    const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null,householdType,selectedServiceId,promoCode,engagementLetter:{signedAt:new Date().toISOString(),signature1:sig1,signature2:householdType==="couple"?sig2:null,version:"v1"}};
     delete payload.id;delete payload.archived;delete payload.hideNumbers;delete payload.currentMonthLabel;
     const res=await gaSubmitIntake(advisorId,lang,payload);
-    if(res.ok){if(inviteToken&&res.submissionId){gaMarkIntakeInviteSubmitted(inviteToken,res.submissionId);}setSubmitted(true);}else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
+    if(res.ok){
+      if(inviteToken&&res.submissionId){gaMarkIntakeInviteSubmitted(inviteToken,res.submissionId);}
+      // Redirect to Stripe payment link if available
+      const stripeUrl = selectedService && selectedService.stripeUrl;
+      if(stripeUrl){
+        try{
+          const url = new URL(stripeUrl);
+          if(promoCode) url.searchParams.set("prefilled_promo_code", promoCode);
+          if(draft.email) url.searchParams.set("prefilled_email", draft.email);
+          setTimeout(()=>{window.location.href=url.toString();},800);
+        }catch(e){}
+      }
+      setSubmitted(true);
+    }else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
   };
-  // v0.7.2 — synthetic theme MUST be a flat theme object (useTh returns ctx value directly).
-  // Mirror the TH local plus the extra keys mINP/mTH/mCARD/mTD helpers read (nav/navBorder/sideText/sideMuted).
-  const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:TH.accent,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:TH.blue};
+  // Step navigation
+  const next=()=>{
+    setErr("");
+    if(step==="household"){
+      if(!draft.firstName.trim()){setErr(t.intakeFirstReq||"First name required.");return;}
+      if(!draft.lastName.trim()){setErr(t.intakeLastReq||"Last name required.");return;}
+      if(!draft.email.trim()||!vEmail(draft.email)){setErr(t.intakeEmailReq||"Valid email required.");return;}
+      if(householdType==="couple"){
+        if(!String(draft.partnerFirst||"").trim()){setErr(t.intakeFirstReq||"Partner first name required.");return;}
+      }else{
+        // clear partner fields if single
+        setDraft(d=>({...d,partnerFirst:"",partnerLast:"",partnerEmail:"",partnerPhone:""}));
+        setSig2(null);
+      }
+      setStep("service");return;
+    }
+    if(step==="service"){
+      if(!selectedServiceId){setErr(t.intakePickService||"Please pick a service.");return;}
+      setStep("engagement");return;
+    }
+    if(step==="engagement"){
+      if(!sig1){setErr(t.intakeSigRequired||"Your signature is required.");return;}
+      if(householdType==="couple"&&!sig2){setErr(t.intakeSig2Required||"Both signatures are required for a couple.");return;}
+      setStep("intake");return;
+    }
+    if(step==="intake"){goSubmit();return;}
+  };
+  const back=()=>{
+    setErr("");
+    if(step==="service")setStep("household");
+    else if(step==="engagement")setStep("service");
+    else if(step==="intake")setStep("engagement");
+  };
+  if(submitted){
+    const payUrl = selectedService && selectedService.stripeUrl;
+    return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}>
+      <div style={{fontSize:64,color:GOLD}}>✓</div>
+      <div style={{fontSize:22,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif"}}>{advisorSettings.companyName||"Golden Anchor"}</div>
+      <div style={{fontSize:14,fontWeight:600,maxWidth:480,lineHeight:1.6}}>{t.intakeFormThanks||"Thank you! Your advisor will reach out shortly."}</div>
+      {payUrl && <div style={{fontSize:12,color:TH.muted,marginTop:12}}>{t.intakeRedirecting||"Redirecting to payment…"}</div>}
+      {!payUrl && <div style={{fontSize:11,color:TH.dim,marginTop:8}}>{t.intakeNoPaymentLink||"No payment is required at this time. Your advisor will follow up."}</div>}
+    </div>;
+  }
+  // Step indicator
+  const STEPS=[{id:"household",label:t.stepHousehold||"You"},{id:"service",label:t.stepService||"Service"},{id:"engagement",label:t.stepEngagement||"Agreement"},{id:"intake",label:t.stepDetails||"Details"}];
+  const curIdx=STEPS.findIndex(s=>s.id===step);
   return<ThemeCtx.Provider value={synthTheme}>
     <div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"system-ui,sans-serif",padding:"20px 14px",lineHeight:1.45,WebkitTextSizeAdjust:"100%"}}>
       <div style={{maxWidth:760,margin:"0 auto"}}>
@@ -2419,114 +2739,72 @@ function PublicIntake(){
           <button onClick={()=>setMode(m=>m==="dark"?"light":"dark")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>{isDark?"☀️ "+(t.lightMode||"Light"):"🌙 "+(t.darkMode||"Dark")}</button>
           <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 EN | ES</button>
         </div>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:48,color:GOLD}}>⚓</div>
-          <div style={{fontSize:20,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",marginTop:4}}>Golden Anchor</div>
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <div style={{marginBottom:4}}><LogoImg settings={advisorSettings} mode={isDark?"dark":"light"} size={56}/></div>
+          <div style={{fontSize:20,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",marginTop:4}}>{advisorSettings.companyName||"Golden Anchor"}</div>
           <div style={{fontSize:10,color:TH.muted,letterSpacing:"0.16em",marginTop:2,textTransform:"uppercase"}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div>
-          <div style={{fontSize:18,fontWeight:700,marginTop:18}}>{t.intakeFormTitle||"New Client Intake"}</div>
-          <div style={{fontSize:12,color:TH.muted,marginTop:6,lineHeight:1.6,maxWidth:520,marginLeft:"auto",marginRight:"auto"}}>{t.intakeFormSub||"Help us understand your financial picture before your first call."}</div>
         </div>
-        <div style={{background:TH.card,border:"1px solid "+TH.cardBorder,borderRadius:12,padding:"18px 16px",marginBottom:16}}>
-          <IntakeFormBody draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang}/>
+        {/* Step indicator */}
+        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:18,flexWrap:"wrap"}}>{STEPS.map((sp,i)=>{const done=i<curIdx,here=i===curIdx;return<div key={sp.id} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:600,color:here?GOLD:(done?TH.pos:TH.dim)}}><div style={{width:22,height:22,borderRadius:11,background:here?GOLD:(done?TH.pos:TH.cardBorder),color:here||done?"#0D1B2A":TH.dim,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11}}>{done?"✓":i+1}</div><span>{sp.label}</span>{i<STEPS.length-1&&<span style={{color:TH.dim}}>›</span>}</div>;})}</div>
+        <div style={{background:TH.card,border:"1px solid "+TH.cardBorder,borderRadius:12,padding:"20px 18px",marginBottom:16}}>
+          {step==="household" && <div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:10,color:TH.text}}>{t.stepHouseholdQ||"Are you applying as an individual or a couple?"}</div>
+            <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+              {[{id:"single",lbl:t.householdSingle||"Just me",emoji:"👤"},{id:"couple",lbl:t.householdCouple||"My partner & me",emoji:"💑"}].map(opt=><button key={opt.id} onClick={()=>setHouseholdType(opt.id)} style={{flex:"1 1 200px",padding:"14px 18px",borderRadius:12,border:`2px solid ${householdType===opt.id?GOLD:TH.cardBorder}`,background:householdType===opt.id?GOLD+"22":"transparent",color:TH.text,cursor:"pointer",fontSize:14,fontWeight:600,textAlign:"left",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:24}}>{opt.emoji}</span>{opt.lbl}</button>)}
+            </div>
+            <div style={{fontSize:13,fontWeight:700,color:TH.muted,marginTop:14,marginBottom:8}}>{t.yourInfoHdr||"Your information"}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.firstNameLbl||"First name"} *</div><input value={draft.firstName||""} onChange={e=>setDraft(d=>({...d,firstName:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+              <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.lastNameLbl||"Last name"} *</div><input value={draft.lastName||""} onChange={e=>setDraft(d=>({...d,lastName:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+            </div>
+            <div style={{marginBottom:10}}><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.emailLbl||"Email"} *</div><input type="email" value={draft.email||""} onChange={e=>setDraft(d=>({...d,email:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+            <div style={{marginBottom:10}}><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.phoneLbl||"Phone"}</div><input value={draft.phone||""} onChange={e=>setDraft(d=>({...d,phone:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+            {householdType==="couple" && <>
+              <div style={{fontSize:13,fontWeight:700,color:TH.muted,marginTop:14,marginBottom:8}}>{t.partnerInfoHdr||"Partner information"}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.firstNameLbl||"First name"} *</div><input value={draft.partnerFirst||""} onChange={e=>setDraft(d=>({...d,partnerFirst:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+                <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.lastNameLbl||"Last name"}</div><input value={draft.partnerLast||""} onChange={e=>setDraft(d=>({...d,partnerLast:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+              </div>
+              <div style={{marginBottom:10}}><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.partnerEmailLbl||"Partner email"}</div><input type="email" value={draft.partnerEmail||""} onChange={e=>setDraft(d=>({...d,partnerEmail:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+            </>}
+          </div>}
+          {step==="service" && <div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:10,color:TH.text}}>{t.stepServiceQ||"Which service interests you most?"}</div>
+            <div style={{fontSize:12,color:TH.muted,marginBottom:14}}>{t.stepServiceHelp||"You can change this later — this just helps us prepare for the call."}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {services.map(svc=><button key={svc.id} onClick={()=>setSelectedServiceId(svc.id)} style={{textAlign:"left",padding:"12px 14px",borderRadius:10,border:`2px solid ${selectedServiceId===svc.id?GOLD:TH.cardBorder}`,background:selectedServiceId===svc.id?GOLD+"15":TH.inp,color:TH.text,cursor:"pointer"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}><span style={{fontSize:14,fontWeight:700}}>{svc.icon} {svc.name}</span><span style={{fontSize:14,fontWeight:800,color:GOLD}}>{svc.price}</span></div>
+                {svc.desc && <div style={{fontSize:11,color:TH.muted,lineHeight:1.5}}>{svc.desc}</div>}
+              </button>)}
+            </div>
+          </div>}
+          {step==="engagement" && <div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:6,color:TH.text}}>{t.stepEngagementTitle||"Review & sign the engagement letter"}</div>
+            <div style={{fontSize:12,color:TH.muted,marginBottom:14,lineHeight:1.5}}>{t.stepEngagementHelp||"Please read carefully. Sign at the bottom to continue to the intake form."}</div>
+            <EngagementLetter settings={advisorSettings} clientName1={[draft.firstName,draft.lastName].filter(Boolean).join(" ")} clientName2={householdType==="couple"?[draft.partnerFirst,draft.partnerLast].filter(Boolean).join(" "):""} selectedService={selectedService} lang={lang} t={t} theme={synthTheme} signatureClient1={sig1} signatureClient2={sig2} onSig1={setSig1} onSig2={setSig2} readOnly={false}/>
+          </div>}
+          {step==="intake" && <div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:6,color:TH.text}}>{t.intakeFormTitle||"New Client Intake"}</div>
+            <div style={{fontSize:12,color:TH.muted,marginBottom:14}}>{t.intakeFormSub||"Help us understand your financial picture before your first call."}</div>
+            <IntakeFormBody draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang}/>
+            {promoFromUrl && <div style={{marginTop:14,padding:"10px 12px",background:GOLD+"15",border:`1px solid ${GOLD}44`,borderRadius:8,fontSize:12,color:TH.text}}>🎟️ {t.promoApplied||"Promo code applied:"} <b style={{color:GOLD,fontFamily:"monospace"}}>{promoCode}</b></div>}
+            {!promoFromUrl && <div style={{marginTop:14}}>
+              <div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.promoCodeLbl||"Promo code (optional)"}</div>
+              <input value={promoCode} onChange={e=>setPromoCode(e.target.value)} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"monospace",textTransform:"uppercase"}}/>
+            </div>}
+          </div>}
         </div>
-        {err&&<div style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:12,marginBottom:12}}>⚠️ {err}</div>}
-        <button onClick={submit} disabled={submitting} style={{width:"100%",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",marginTop:14,minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.intakeSubmit||"Submit Intake")}</button>
+        {err && <div style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:12,marginBottom:12}}>⚠️ {err}</div>}
+        <div style={{display:"flex",gap:8,marginTop:14}}>
+          {step!=="household" && <button onClick={back} disabled={submitting} style={{flex:"0 0 100px",padding:"14px",borderRadius:10,background:"transparent",color:TH.text,fontWeight:700,fontSize:13,border:"1px solid "+TH.cardBorder,cursor:"pointer"}}>← {t.backBtn||"Back"}</button>}
+          <button onClick={next} disabled={submitting} style={{flex:1,padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(step==="intake"?(selectedService&&selectedService.stripeUrl?(t.intakeSubmitPay||"Submit & pay"):(t.intakeSubmit||"Submit Intake")):(t.continueBtn||"Continue"))} {step!=="intake"&&"→"}</button>
+        </div>
         <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
       </div>
     </div>
   </ThemeCtx.Provider>;
 }
 
-/* ── IntakeFormBody — shared between PublicIntake and IntakeSubmissionEditor ─ */
-function IntakeFormBody({draft,setDraft,t,TH,lang}){
-  const hasP2=!!draft.partnerFirst;
-  const up=k=>e=>setDraft(p=>({...p,[k]:e&&e.target?e.target.value:e}));
-  const upRaw=(k,v)=>setDraft(p=>({...p,[k]:v}));
-  const INP={width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
-  const LBL={fontSize:11,color:TH.muted,display:"block",marginBottom:5,fontWeight:600};
-  const HDR={fontSize:12,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",margin:"20px 0 12px",paddingBottom:6,borderBottom:"1px solid "+TH.cardBorder};
-  const FW={marginBottom:12};
-  const isNarrow=typeof window!=="undefined"&&window.innerWidth<560;
-  const ROW2={display:"grid",gridTemplateColumns:isNarrow?"1fr":"1fr 1fr",gap:12};
-  const Div=()=><div style={{height:1,background:TH.cardBorder,margin:"22px 0"}}/>;
-  // v0.7.3 — inline SSN format helper.  Avoids <SSNInput> here because its type="password"
-  // triggers Chrome's saved-password autofill which dumps garbage into the field.
-  const fmtSSN=v=>{const d=String(v||"").replace(/\D/g,"").slice(0,9);if(d.length<=3)return d;if(d.length<=5)return d.slice(0,3)+"-"+d.slice(3);return d.slice(0,3)+"-"+d.slice(3,5)+"-"+d.slice(5);};
-  const onUpdate=c=>setDraft(c);
-  return<div>
-    <div style={HDR}>{t.intakePersonalSection||"About You"}</div>
-    <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.firstName} *</label><input style={INP} value={draft.firstName} onChange={up("firstName")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-      <div style={FW}><label style={LBL}>{t.lastName} *</label><input style={INP} value={draft.lastName} onChange={up("lastName")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-    </div>
-    <div style={FW}><label style={LBL}>{t.email} *</label><input type="email" style={INP} value={draft.email} onChange={up("email")} autoComplete="off" data-lpignore="true" data-1p-ignore="true" inputMode="email"/></div>
-    <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.phone}</label><input type="tel" style={INP} value={draft.phone} onChange={e=>upRaw("phone",fmtPh(e.target.value))} autoComplete="off" data-lpignore="true" data-1p-ignore="true" inputMode="tel" placeholder="(305) 555-0000"/></div>
-      <div style={FW}><label style={LBL}>{t.dob}</label><input type="date" style={INP} value={draft.dob} onChange={up("dob")} autoComplete="off"/></div>
-    </div>
-    <div style={FW}><label style={LBL}>{t.address}</label><input style={INP} value={draft.address} onChange={up("address")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-    <div style={ROW2}>
-      <div style={FW}><label style={LBL}>{t.social}</label><input style={INP} type="text" value={draft.social||""} onChange={e=>upRaw("social",fmtSSN(e.target.value))} placeholder="XXX-XX-XXXX" inputMode="numeric" maxLength={11} autoComplete="off" data-lpignore="true" data-1p-ignore="true" name="ga-intake-ssn"/></div>
-      <div style={FW}><label style={LBL}>{t.intakeHowHeard||"How did you hear about us?"}</label><input style={INP} value={draft.howHeard||""} onChange={up("howHeard")} autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-    </div>
-    <div style={{marginTop:4,marginBottom:14}}><button onClick={()=>setDraft(p=>({...p,partnerFirst:p.partnerFirst?null:"",partnerLast:p.partnerLast||""}))} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:hasP2?GOLD+"22":"transparent",color:hasP2?GOLD:TH.muted,border:"1px solid "+(hasP2?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{hasP2?"✓ "+(t.removePartner||"Remove Partner"):"＋ "+(t.addPartner||"Add Partner")}</button></div>
-    {hasP2&&<>
-      <div style={ROW2}>
-        <div style={FW}><label style={LBL}>{t.partnerFirst} *</label><input style={INP} value={draft.partnerFirst||""} onChange={up("partnerFirst")}/></div>
-        <div style={FW}><label style={LBL}>{t.partnerLast}</label><input style={INP} value={draft.partnerLast||""} onChange={up("partnerLast")}/></div>
-      </div>
-      <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:8}}>👤 {draft.firstName||"Person 1"} — Personal Info</div>
-      <div style={ROW2}>
-        <div style={FW}><label style={LBL}>{t?.phone||"Phone"}</label><input style={INP} value={draft.p1Phone||""} onChange={e=>upRaw("p1Phone",fmtPh(e.target.value))} inputMode="tel" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-        <div style={FW}><label style={LBL}>{t?.email||"Email"}</label><input type="email" style={INP} value={draft.p1Email||""} onChange={up("p1Email")} inputMode="email" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-      </div>
-      <div style={ROW2}>
-        <div style={FW}><label style={LBL}>{t?.dob||"Date of Birth"}</label><input type="date" style={INP} value={draft.p1Dob||""} onChange={up("p1Dob")}/></div>
-        <div style={FW}><label style={LBL}>{t?.social||"SSN"}</label><input style={INP} type="text" value={draft.p1Social||""} onChange={e=>upRaw("p1Social",fmtSSN(e.target.value))} placeholder="XXX-XX-XXXX" inputMode="numeric" maxLength={11} autoComplete="off" data-lpignore="true" data-1p-ignore="true" name="ga-intake-p1ssn"/></div>
-      </div>
-      <div style={{fontSize:11,fontWeight:700,color:TH.muted,marginBottom:10,marginTop:12}}>👤 {draft.partnerFirst||"Person 2"} — Personal Info</div>
-      <div style={ROW2}>
-        <div style={FW}><label style={LBL}>{t?.phone||"Phone"}</label><input style={INP} value={draft.p2Phone||""} onChange={e=>upRaw("p2Phone",fmtPh(e.target.value))} inputMode="tel" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-        <div style={FW}><label style={LBL}>{t?.email||"Email"}</label><input type="email" style={INP} value={draft.p2Email||""} onChange={up("p2Email")} inputMode="email" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
-      </div>
-      <div style={ROW2}>
-        <div style={FW}><label style={LBL}>{t?.dob||"Date of Birth"}</label><input type="date" style={INP} value={draft.p2Dob||""} onChange={up("p2Dob")}/></div>
-        <div style={FW}><label style={LBL}>{t?.social||"SSN"}</label><input style={INP} type="text" value={draft.p2Social||""} onChange={e=>upRaw("p2Social",fmtSSN(e.target.value))} placeholder="XXX-XX-XXXX" inputMode="numeric" maxLength={11} autoComplete="off" data-lpignore="true" data-1p-ignore="true" name="ga-intake-p2ssn"/></div>
-      </div>
-    </>}
-    <Div/>
-    <IncomeSection client={draft} onUpdate={onUpdate} t={t}/>
-    <Div/>
-    <BillsSection client={draft} onUpdate={onUpdate} t={t}/>
-    <Div/>
-    <DebtSection client={draft} onUpdate={onUpdate} t={t}/>
-    <Div/>
-    <CustomAssetsSection client={draft} onUpdate={onUpdate} t={t}/>
-    <Div/>
-    <div style={HDR}>{t.intakeContactSection||"Contact & Service"}</div>
-    <div style={FW}><label style={LBL}>{t.intakePreferredService||"Preferred service"}</label>
-      <select style={INP} value={draft.preferredService||""} onChange={up("preferredService")}>
-        <option value="">{t.intakeNotSure||"Not sure — recommend something"}</option>
-        {SVCS.map(s=><option key={s.id} value={s.id}>{lang==="es"?s.es:s.en}{s.price&&s.price!=="Free"&&s.price!=="Any amount"?" ("+s.price+")":""}</option>)}
-      </select>
-    </div>
-    <div style={FW}><label style={LBL}>{t.intakeContactMethod||"Best way to reach you"}</label>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        {[{v:"email",l:t.intakeContactEmail||"Email"},{v:"phone",l:t.intakeContactPhone||"Phone call"},{v:"text",l:t.intakeContactText||"Text message"}].map(opt=>
-          <button key={opt.v} onClick={()=>upRaw("contactMethod",opt.v)} style={{fontSize:12,padding:"9px 14px",borderRadius:8,background:(draft.contactMethod||"email")===opt.v?GOLD+"22":"transparent",color:(draft.contactMethod||"email")===opt.v?GOLD:TH.muted,border:"1px solid "+((draft.contactMethod||"email")===opt.v?GOLD:TH.cardBorder),fontWeight:600,cursor:"pointer",minHeight:40}}>{opt.l}</button>
-        )}
-      </div>
-    </div>
-    <Div/>
-    <div style={HDR}>{t.intakeGoalsSection||"Your Goals"}</div>
-    <div style={FW}><label style={LBL}>{t.intakeWhatHelp||"What do you want help with?"}</label><textarea style={{...INP,minHeight:90,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.goals)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),goals:e.target.value}}))}/></div>
-    <div style={FW}><label style={LBL}>{t.shortTerm}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.shortTerm)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),shortTerm:e.target.value}}))}/></div>
-    <div style={FW}><label style={LBL}>{t.midTerm}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.midTerm)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),midTerm:e.target.value}}))}/></div>
-    <div style={FW}><label style={LBL}>{t.longTerm}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.longTerm)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),longTerm:e.target.value}}))}/></div>
-    <div style={FW}><label style={LBL}>{t.setbacks}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.setbacks)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),setbacks:e.target.value}}))}/></div>
-    <div style={FW}><label style={LBL}>{t.generalNotes||"General Notes"}</label><textarea style={{...INP,minHeight:60,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} value={(draft.notes&&draft.notes.general)||""} onChange={e=>setDraft(p=>({...p,notes:{...(p.notes||{}),general:e.target.value}}))}/></div>
-  </div>;
-}
 
 
 /* ── INTAKE SUBMISSIONS (advisor view) — v0.6.0 ────────────────────────── */
@@ -3085,6 +3363,7 @@ export default function App(){
   const splitClientPair=useCallback((origId,p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==origId),p1,p2]);setSelected(null);},[]);
   const NAV=[{id:"dashboard",l:"📊 "+t.dashboard},{id:"clients",l:"👥 "+t.clients},{id:"intake-submissions",l:"📥 "+(t.intakeSubmissions||"Intake Forms")},{id:"calculators",l:"🧮 "+t.calculators},{id:"promotions",l:"🏷️ "+t.promotions},{id:"resources",l:"📚 "+t.resources},{id:"about",l:"⚓ "+t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;
+  if(authUser&&!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
   if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)}/></ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13,flexDirection:"column",gap:12}}><div style={{fontSize:36}}>⚓</div><div>{t.loadingClients||"Loading clients…"}</div></div></ThemeCtx.Provider>;
@@ -3103,7 +3382,7 @@ export default function App(){
         them position:fixed relative to the viewport again. */}
     {vp.isMobile&&drawerOpen&&<div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,background:"#000a",zIndex:90,touchAction:"none"}} aria-hidden="true"/>}
     {vp.isMobile&&<div id="ga-sidebar-mobile" style={{width:260,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",transform:drawerOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.25s ease-out",zIndex:100,boxShadow:drawerOpen?"4px 0 32px #000a":"none",visibility:drawerOpen?"visible":"hidden"}}>
-      <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",letterSpacing:"0.02em",whiteSpace:"nowrap"}}>⚓ Golden Anchor</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
+      <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",letterSpacing:"0.02em",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
       <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=><button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{n.l}</button>)}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
         <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} style={{width:"100%",padding:"9px",borderRadius:8,fontSize:13,cursor:"pointer",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,fontWeight:700,marginBottom:8,whiteSpace:"nowrap",overflow:"hidden"}}>⚙️ {t.profileSettings}</button>
@@ -3114,7 +3393,7 @@ export default function App(){
     </div>}
     <div style={{display:"flex",minHeight:"100vh",width:"100%",background:theme.bg,fontFamily:"system-ui,sans-serif",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1)}}>
       {!vp.isMobile&&<div id="ga-sidebar" style={{width:sidebarCollapsed?62:222,flexShrink:0,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width 0.2s"}}>
-        <div style={{padding:sidebarCollapsed?"18px 10px":"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}>{sidebarCollapsed?<div style={{fontSize:22,color:GOLD,textAlign:"center"}}>⚓</div>:<><div style={{fontSize:16,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",letterSpacing:"0.02em",whiteSpace:"nowrap",overflow:"visible"}}>⚓ Golden Anchor</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></>}</div>{!sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(true)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:4}} title={t?.navCollapse||"Collapse"}>«</button>}</div>{sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(false)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:"8px 0",borderBottom:`1px solid ${theme.navBorder}`}} title={t?.navExpand||"Expand"}>»</button>}
+        <div style={{padding:sidebarCollapsed?"18px 10px":"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}>{sidebarCollapsed?<div style={{fontSize:22,color:GOLD,textAlign:"center"}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={22}/>:"⚓"}</div>:<><div style={{fontSize:16,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",letterSpacing:"0.02em",whiteSpace:"nowrap",overflow:"visible",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></>}</div>{!sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(true)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:4}} title={t?.navCollapse||"Collapse"}>«</button>}</div>{sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(false)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:"8px 0",borderBottom:`1px solid ${theme.navBorder}`}} title={t?.navExpand||"Expand"}>»</button>}
         <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?icon:n.l}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
           <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,fontWeight:700,marginBottom:8,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?"⚙️":"⚙️ "+t.profileSettings}</button>

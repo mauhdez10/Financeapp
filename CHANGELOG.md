@@ -2,6 +2,88 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+# Golden Anchor Finance — v0.14.0 CHANGELOG Entry
+
+## [0.14.0] — 2026-05-20
+
+### Major feature: Engagement Letter & Onboarding Flow (Phase 1)
+
+**A. Profile & Settings restructure**
+- Added Advisor profile fields: `companyName`, `advisorPhone`
+- Added optional toggle-gated fields: Company Phone, Business Address, Google Maps URL, Website
+- Added Logo uploads — separate Light Mode (`logoLight`) and Dark Mode (`logoDark`) base64 images, max 500KB each
+- Added Advisor Signature pad (canvas drawn, stored as base64 in `advisorSignature`)
+- Restructured Profile modal as collapsible dropdowns: Theme Colors, Background Colors, Our Services, Backup Verification
+- Renamed "Stripe Payment Links" → "Our Services" with editable name/icon/price/Stripe URL per service (was read-only icon+text+price before)
+
+**B. Engagement Letter flow**
+- New file: `src/engagementLetterTemplate.js` — pure data, follows D-29 (translations.js precedent)
+- New components: `EngagementLetter`, `SignaturePad`, `LogoImg`, `ToSModal`
+- Full FPWMP-compliant letter with 8 sections rendered live
+- Section 4 (Compensation & Fees) dynamically pulls selected service from intake
+- Token substitution: date, firm info, advisor info, client names, advisor signature, service pricing
+- Client signature capture: Canvas draw OR typed-name+date tabs
+- Couples get two signature blocks on the same document
+- Renders for both single and couple flows
+
+**C. Public Intake refactor — 4-step flow**
+- Step 1 (Household): "Single or Couple?" + name/email/partner fields
+- Step 2 (Service): pick a service from "Our Services" list (price + description)
+- Step 3 (Engagement): renders engagement letter with prefilled advisor + client data, signature required
+- Step 4 (Details): existing intake form body + optional promo code field
+- Submit → if service has a Stripe URL, redirects to checkout with `prefilled_promo_code` + `prefilled_email`
+- Step indicator at top shows current progress
+- Back button at each step (except first)
+
+**D. ToS click-through gate**
+- New mandatory acceptance modal on first login (or after ToS version bump)
+- Stores `settings.tosAcceptedAt` (ISO date) + `settings.tosVersion`
+- "Cancel" signs out via Supabase Auth (no bypass)
+
+**E. Logo replaces ⚓ emoji in app chrome**
+- Sidebar (mobile drawer, desktop collapsed, desktop expanded) — uses `settings.logoLight` or `settings.logoDark` based on theme
+- Falls back to ⚓ emoji if no logo set
+- Sidebar header text uses `settings.companyName` (truncated >22 chars) instead of "Golden Anchor"
+
+**F. Schema additions**
+- `settings.companyName`, `settings.companyPhone`, `settings.businessAddress`, `settings.googleMapsUrl`, `settings.website`
+- `settings.logoLight`, `settings.logoDark` (base64 data URLs)
+- `settings.advisorSignature` (base64 data URL)
+- `settings.advisorPhone`
+- `settings.services` — array of `{id, icon, name, price, stripeUrl, desc}` (overrides default `SVCS` if present)
+- `settings.tosAcceptedAt`, `settings.tosVersion`
+- `settings.has_companyPhone`, `settings.has_businessAddress`, `settings.has_googleMapsUrl`, `settings.has_website` — toggle flags
+- `client.engagementLetter`: `{ signedAt, signature1, signature2, version }`
+- `intake_submissions`: + `householdType`, `selectedServiceId`, `promoCode`, `engagementLetter{}`
+
+**G. Translations**
+- 70+ new keys in EN + ES covering ToS, Profile fields, logos, signature pad, Our Services editor, 4-step flow, engagement letter
+
+### Build marker
+`window.__GA_BUILD__ = "2026-05-20-v0140-engagement-letter-flow"`
+
+### Files changed
+- `src/App.jsx` (+1,520 lines) — components, ProfileModal rewrite, PublicIntake rewrite, ToS gate, sidebar logo
+- `src/translations.js` (+6.8KB) — 70+ EN/ES keys
+- `src/engagementLetterTemplate.js` (NEW, 18KB) — engagement letter data
+- `AGENT.md` (pending: version bump, schema additions)
+
+### Deferred to v0.14.1 (Phase 2)
+- `api/render-engagement-letter-pdf.js` — server-side PDF generation
+- `api/email-engagement-letter.js` — auto-email signed PDF via Resend to client + advisor
+- Questionnaire builder (Profile & Settings dropdown)
+- Optional questionnaire injection into intake form
+- Per-intake engagement letter template editor (advisor-side)
+- Logo on report PDF headers (server-side render path)
+
+### Breaking changes
+- None. Existing `settings.stripeLinks` map is migrated on-the-fly into `services[].stripeUrl` if `settings.services` is empty. Existing default `SVCS` constant kept as fallback.
+
+### Known limitations
+- Logos > 500KB rejected client-side; no server-side validation yet
+- Advisor must enable "Promotion codes" on each Stripe Payment Link in Stripe Dashboard for promo codes to apply
+- Email of signed engagement letter is manual until v0.14.1
+
 ## v0.13.3 — 2026-05-20 (Patch — Continued grid-tagging + Strategy Plan label + bigger desktop tiles + header reflow)
 
 Mauricio's screenshot-driven smoke test of v0.13.2 surfaced more layout regressions — mostly grids that should collapse on mobile but weren't tagged with the v0.9.3 `data-ga-grid` attributes, plus a too-long Strategy Plan label and inadequate desktop sidebar tile bumps. Sixteen surgical edits. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
