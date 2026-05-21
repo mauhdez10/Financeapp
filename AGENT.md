@@ -35,7 +35,55 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.13.4** — established 2026-05-21 (Patch — Bigger desktop sidebar tiles + universal page-break protection for all card-styled elements).
+**v0.13.5** — established 2026-05-21 (Patch — `PlanReportBlock` restructured into 5 self-contained cards to fix print BG-repaint failure on page splits).
+
+**What shipped:** v0.13.4 added `breakInside:"avoid"` to `mCARD` to control WHERE page breaks happen on print. Mauricio's smoke test confirmed: with "Background graphics" enabled in Chrome's print dialog, the break now happens cleanly between mCARDs (good), but the Strategy Plan section's OUTER container background still ends mid-page on page splits — DEBT PAYOFF ORDER cards on page 8 have dark BG, FINANCIAL ROADMAP + Phase cards on page 9 floating on white. Same root cause as Image 5/6 from the v0.13.3 patch turn.
+
+**Diagnosis — Chrome paints background only on the FIRST fragment of a split container.** This is well-documented browser behavior with no CSS-only fix. When a `<div>` with a background gets split across pages, the background paint stops at the page edge of the first fragment and does NOT repaint on subsequent fragments. `print-color-adjust: exact` (already set globally) helps ensure the painted backgrounds print at all, but it doesn't make the browser repaint across split fragments. Even modern Chrome (2026) still has this limitation.
+
+**Fix — restructure `PlanReportBlock` so each major section is its own self-contained mCARD.** Each card has its own background that paints correctly per page — if a card fits on one page, its background extends to its full content; if a card must split, both fragments paint their own BG (because each fragment IS a card, not a fragment-of-a-parent). The outer wrapper now has no background, just margin.
+
+**New structure (5 cards):**
+1. **Card 1** — Strategy Plan title + KPI block (Net Income/Bills/Min Debt/Extra) + Debt Strategy caption
+2. **Card 2** — DEBT PAYOFF ORDER header + debt items list (only if `totalDebt > 0`)
+3. **Card 3** — FINANCIAL ROADMAP header + Phase 1 + Phase 2 + Phase 3 cards
+4. **Card 4** — INVESTMENT PROJECTION (only if `investPerMo > 0`; was already its own mCARD, just no longer wrapped in outer)
+5. **Card 5** — Additional Notes / Recommendations (only if `ov.extra`)
+
+All conditional rendering preserved (`hasStrat`, `totalDebt`, `efGap`, `investPerMo`, `ov.extra`). All inner cards (debt items, PhaseCards, KPI tiles) unchanged. KPI block's `marginBottom` made conditional on `hasStrat` so the caption sits flush when present and the block tightens when absent.
+
+**Visual change on screen:** Strategy Plan section is now a vertical stack of 5 distinct cards with visible card boundaries (border + dark BG per card), instead of one large unified container with sub-sections. Less unified-looking but more print-correct.
+
+**Trade-off accepted:** Slightly more visual chrome on screen for vastly better print behavior. Each printed card has its own dark BG that doesn't disappear at page splits.
+
+**Residual risk:** If a SINGLE card (most likely Card 3 — FINANCIAL ROADMAP with 3 long Phase cards) is still too tall for one printed page, that single card could split and the BG-repaint issue would recur for that fragment specifically. Lower probability than before (each card is smaller than the original outer container) but not zero. Escalation path: split FINANCIAL ROADMAP further so each Phase becomes its own top-level card. Wait for Mauricio's next print test before applying.
+
+**Out of scope (deferred):**
+- **Email PDF (`/api/render-report-pdf.js`)** has its own `buildPrintHTML` logic separate from App.jsx's Print/Save PDF flow. This patch fixes only the in-browser print. If Mauricio uses Email PDF and sees the same issue, a parallel restructure of the server-side template will be needed.
+- **Mobile column hiding for Income/Bills/Debt tables** — still queued.
+- **v0.14.0 D-40 through D-44 formal documentation** — still pending, lives in `AGENT_v0.14.0_UPDATES.md`.
+
+**Build marker:** `2026-05-21-v0135-strategy-plan-restructure`. App.jsx 3,417 lines (in-place, +499 chars from the structural change). `src/translations.js` unchanged. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Out-of-app actions required:**
+- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.5 entry.
+- Commit + push; Vercel auto-deploys.
+- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0135-strategy-plan-restructure"`.
+- Re-upload current App.jsx + AGENT.md + WORKPLAN.md to project knowledge (drift problem keeps biting — needs to become muscle memory after every deploy).
+
+**Smoke tests:**
+1. **In-browser print — Strategy Plan section** — open any client with full data → Reports → Complete Report → Print (Background graphics ON). The Strategy Plan section now appears as 5 stacked cards. When page breaks happen, they fall between cards (not within). EVERY card has its full dark background on whatever page it lands on. No more white-background orphans.
+2. **Screen view — Strategy Plan section** — open Financial Plan tab. The section now looks like 5 distinct cards stacked vertically (was: one big card with sub-sections). Slightly more visual chrome, same content.
+3. **Conditional rendering still correct** — verify with multiple test clients:
+   - Client with no debt + good income: Debt Free callout appears, no DEBT PAYOFF ORDER card, no Phase 1.
+   - Client with debt but no EF gap: DEBT PAYOFF ORDER card present, FINANCIAL ROADMAP has Phase 1 + Phase 3 only (Phase 2 hidden).
+   - Client with no extra cash for investments: INVESTMENT PROJECTION card hidden.
+   - Client with `ov.extra` notes: Additional Notes card appears at the bottom.
+4. **FINANCIAL ROADMAP card size check** — if a client has all 3 phases (debt + EF gap + invest) AND each phase has long notes, the FINANCIAL ROADMAP card may still be too tall for one page. If split BG issue recurs, escalation is to split each Phase into its own top-level card.
+
+---
+
+### Prior: v0.13.4 — 2026-05-21 (Patch — Bigger desktop sidebar tiles + universal page-break protection for all card-styled elements).
 
 **What shipped:** Mauricio's v0.13.3 smoke test confirmed sidebar tiles STILL felt small with too much empty space on desktop, and surfaced new print/PDF complaints (sections breaking mid-card across pages; dark backgrounds appearing to end mid-page). Two fixes, five total edits. No new locked decisions, no D-amendments.
 
@@ -489,7 +537,7 @@ Current (manual web UI):
 // In browser DevTools console, paste this:
 window.__GA_BUILD__
 ```
-Should return the build marker string (current: `"2026-05-21-v0134-bigger-tiles-print-fixes"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
+Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan-restructure"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
 
 ---
 
@@ -815,7 +863,9 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-21 — v0.13.4 (Patch — Bigger desktop sidebar tiles + universal page-break protection for all card-styled elements). Two fixes, five edits total. **Fix 1:** `mCARD` style helper at line 51 augmented with `breakInside:"avoid"`, `pageBreakInside:"avoid"`, `WebkitPrintColorAdjust:"exact"`, `printColorAdjust:"exact"`. Every `mCARD`-using element automatically gets page-break protection on print — addresses Mauricio's Image 4 (Balance Sheet splitting across pages) and Image 5 (Strategy Plan dark background ending mid-page). Browser will try to break BETWEEN inner cards rather than mid-card. **Fix 2:** Desktop sidebar tile minmax floors bumped to 540 (was 360/360/-/320 for Calculators/Resources/Services; About advisor untouched at 420 since it only has 2 items). At 1700-1920px viewport: 3 columns × 640px each, eliminating the "9 cards / 5 cols = 2 rows with empty slots" pattern Mauricio screenshotted. App.jsx 3,417 lines (+102 chars). Build marker `2026-05-21-v0134-bigger-tiles-print-fixes`. **Important context:** File started session at `v0140-engagement-letter-flow` from a parallel chat. Per Mauricio's instruction "start with 0.13.4", build marker is v0134. The v0.14.0 work (engagement letters, ToS, services editor) is preserved in the file but NOT documented in this AGENT.md — the suggested updates live in `AGENT_v0.14.0_UPDATES.md` and will be folded in a future session. **Out of scope (deferred):** mobile column-hiding for Income/Bills/Debt tables; v0.14.0 D-40 through D-44 formal documentation; restructuring `PlanReportBlock` for cleaner page breaks (try `breakInside:avoid` first, escalate only if needed).*
+*Last updated: 2026-05-21 — v0.13.5 (Patch — `PlanReportBlock` restructured into 5 self-contained cards to fix print BG-repaint failure on page splits). Mauricio's v0.13.4 smoke test confirmed the page-break-WHERE fix from v0.13.4 works (clean breaks between mCARDs) but the underlying BG-repaint failure persists: Chrome paints container background only on the FIRST fragment of a split container, leaving subsequent pages with orphaned children on white BG. No CSS-only fix exists. **The structural fix:** outer wrapper now has no BG; each major section becomes its own self-contained mCARD with its own dark BG that paints correctly per-page. New structure: (1) Strategy Plan title + KPI + Debt Strategy caption, (2) DEBT PAYOFF ORDER, (3) FINANCIAL ROADMAP + Phases, (4) INVESTMENT PROJECTION (already mCARD), (5) Additional Notes (if any). All conditional rendering preserved. Visual change on screen: section now looks like 5 stacked cards instead of one big card — more visible card boundaries, more print-correct. App.jsx 3,417 lines (+499 chars). Build marker `2026-05-21-v0135-strategy-plan-restructure`. **Residual risk:** if a single resulting card (likely Card 3 — FINANCIAL ROADMAP with 3 Phase cards) is still too tall for one page, the BG-repaint problem could recur for that one card specifically — escalation path is to split each Phase into its own top-level card. Wait for Mauricio's next print test before escalating. **Email PDF** (`/api/render-report-pdf.js`) has separate server-side template — not touched in this patch, would need parallel restructure if the same issue manifests there.*
+
+*Prior update: 2026-05-21 — v0.13.4 (Patch — Bigger desktop sidebar tiles + universal page-break protection for all card-styled elements). Two fixes, five edits total. **Fix 1:** `mCARD` style helper at line 51 augmented with `breakInside:"avoid"`, `pageBreakInside:"avoid"`, `WebkitPrintColorAdjust:"exact"`, `printColorAdjust:"exact"`. Every `mCARD`-using element automatically gets page-break protection on print — addresses Mauricio's Image 4 (Balance Sheet splitting across pages) and Image 5 (Strategy Plan dark background ending mid-page). Browser will try to break BETWEEN inner cards rather than mid-card. **Fix 2:** Desktop sidebar tile minmax floors bumped to 540 (was 360/360/-/320 for Calculators/Resources/Services; About advisor untouched at 420 since it only has 2 items). At 1700-1920px viewport: 3 columns × 640px each, eliminating the "9 cards / 5 cols = 2 rows with empty slots" pattern Mauricio screenshotted. App.jsx 3,417 lines (+102 chars). Build marker `2026-05-21-v0134-bigger-tiles-print-fixes`. **Important context:** File started session at `v0140-engagement-letter-flow` from a parallel chat. Per Mauricio's instruction "start with 0.13.4", build marker is v0134. The v0.14.0 work (engagement letters, ToS, services editor) is preserved in the file but NOT documented in this AGENT.md — the suggested updates live in `AGENT_v0.14.0_UPDATES.md` and will be folded in a future session. **Out of scope (deferred):** mobile column-hiding for Income/Bills/Debt tables; v0.14.0 D-40 through D-44 formal documentation; restructuring `PlanReportBlock` for cleaner page breaks (try `breakInside:avoid` first, escalate only if needed).*
 
 *Prior update: 2026-05-20 — v0.13.3 (Patch — Continued grid-tagging pass + Strategy Plan label fix + bigger desktop sidebar tiles + header reflow on Assets/Savings & Debt sections). Mauricio's v0.13.2 smoke test surfaced more grids that needed `data-ga-grid` collapsing on mobile. **Fixes:** (1) "Min Debt Pay (All Loans)" → "Min Debt" (shorter label fits 2×2 on mobile). (2) Strategy Plan KPI 4-up tagged `kpi-4` at both call sites. (3) SummarySection KPI 4-up (Monthly Report) tagged `kpi-4`. (4) SummarySection 2-col (income pie | debt trend) tagged `two-col`. (5) Balance Sheet tagged `two-col`. (6) Bills 1-15/16-31 in Complete Report tagged `two-col`. (7) Investment Allocation in report tagged `two-col`. (8) Trends in Complete Report tagged `two-col`. (9) SummaryReport inner (Client Report Summary) tagged `two-col`. (10) SavingsSection header: outer flex gets `flexWrap`, inner cards become 3-col grid with `kpi-3` collapse. (11) DebtSection header: outer + inner flex both get `flexWrap`. (12) Desktop sidebar tiles bumped 280→360 / 300→360 / 340→420 / 280→320 — visibly bigger at 1200-1920px viewports. App.jsx 3,135 lines (+316 chars). translations.js + vercel.json unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved. Build marker `2026-05-20-v0133-grid-tags-plus-headers`. **Deferred to v0.13.4+:** mobile column-hiding for Income/Bills/Debt tables (refactor); print CSS (needs print-preview screenshot); Monthly Summary fully matching Client Report Summary (overlaps with #3+#4 progress this patch).*
 

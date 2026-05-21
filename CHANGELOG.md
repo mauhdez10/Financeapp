@@ -2,6 +2,65 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.13.5 — 2026-05-21 (Patch — `PlanReportBlock` restructured into 5 self-contained cards to fix print BG-repaint failure)
+
+Mauricio's v0.13.4 smoke test (Strategy Plan section printed with Background graphics enabled) confirmed the fix from v0.13.4 worked for the WHERE of page breaks — clean breaks now happen between mCARDs — but the underlying issue persisted: DEBT PAYOFF ORDER cards printed with dark BG on page 8, but FINANCIAL ROADMAP + Phase cards on page 9 floated on white background.
+
+**Build marker:** `2026-05-21-v0135-strategy-plan-restructure`
+
+### Diagnosis
+
+Chrome paints container backgrounds **only on the first fragment** of a split container. This is a well-known browser limitation with no CSS-only fix — `print-color-adjust: exact` and `breakInside: avoid` don't change it. When the original outer `<div mCARD>` was split across pages, fragment 1 (page 8) got the BG paint, but fragment 2 (page 9) showed the children floating on white because the parent's BG didn't repaint.
+
+### Fixed
+
+**`PlanReportBlock` restructured.** The outer `<div mCARD>` wrapper became `<div>` (no background, no border). Each major section is now its own self-contained mCARD that paints its own dark background per-page:
+
+1. **Card 1** — Strategy Plan title + KPI block (Net Income / Bills / Min Debt / Extra/mo) + Debt Strategy caption
+2. **Card 2** — DEBT PAYOFF ORDER header + debt items list (only if `totalDebt > 0`)
+3. **Card 3** — FINANCIAL ROADMAP header + Phase 1 / Phase 2 / Phase 3
+4. **Card 4** — INVESTMENT PROJECTION (only if `investPerMo > 0`; was already its own mCARD, just no longer wrapped)
+5. **Card 5** — Additional Notes / Recommendations (only if `ov.extra`)
+
+All conditional rendering preserved (`hasStrat`, `totalDebt`, `efGap`, `investPerMo`, `ov.extra`). All inner cards (debt items, PhaseCards, KPI tiles) unchanged. KPI block's `marginBottom` made conditional on `hasStrat` (tightens when caption absent).
+
+### Changed
+
+**Visual on screen:** Strategy Plan section now reads as a vertical stack of 5 distinct cards with visible card boundaries (border + dark BG per card), instead of one large unified container with sub-sections. More visible card boundaries, slightly more visual chrome, vastly better print behavior.
+
+### Residual risk
+
+If a SINGLE resulting card is still taller than one printed page — most likely Card 3 (FINANCIAL ROADMAP) when a client has all 3 phases AND each phase has long notes — that single card could split and the BG-repaint problem would recur for that fragment specifically. Lower probability than before (each card is smaller than the original outer container) but not zero.
+
+**Escalation path:** split FINANCIAL ROADMAP further so each Phase becomes its own top-level card. Wait for Mauricio's next print test before applying.
+
+### Out of scope (deferred)
+
+- **Email PDF (`/api/render-report-pdf.js`)** has its own server-side `buildPrintHTML` template — not touched in this patch. If Mauricio uses Email PDF and sees the same issue, parallel restructure of the server-side template needed.
+- **Mobile column hiding for Income/Bills/Debt tables** — still queued.
+- **v0.14.0 D-40 through D-44 formal documentation** — pending separate session.
+
+### Files changed
+
+- `src/App.jsx` (3,417 lines, +499 chars)
+- `AGENT.md` (§3 swap, §8 build marker, footer)
+- `WORKPLAN.md` (§5 prepend, footer)
+- `src/translations.js` — unchanged
+- `vercel.json` — unchanged
+
+### Smoke tests
+
+1. **In-browser print — Strategy Plan section** — open any client with full data → Reports → Complete Report → Print (Background graphics ON). Strategy Plan now appears as 5 stacked cards. Page breaks fall between cards (not within). Every card has its full dark background on whatever page it lands on. No more white-background orphans.
+2. **Screen view — Strategy Plan section** — Financial Plan tab. Section now looks like 5 distinct cards stacked vertically (was: one big card with sub-sections).
+3. **Conditional rendering still correct** — verify with multiple test clients:
+   - No debt + good income: Debt Free callout appears, no DEBT PAYOFF ORDER card, no Phase 1.
+   - Has debt, no EF gap: DEBT PAYOFF ORDER present, FINANCIAL ROADMAP has Phase 1 + Phase 3 only.
+   - No extra cash: INVESTMENT PROJECTION card hidden.
+   - Has `ov.extra`: Additional Notes card at bottom.
+4. **FINANCIAL ROADMAP card size check** — if a client has all 3 phases with long notes and the card still splits poorly, escalation is to split each Phase further.
+
+---
+
 ## v0.13.4 — 2026-05-21 (Patch — Bigger desktop sidebar tiles + universal page-break protection)
 
 Mauricio's v0.13.3 smoke test confirmed sidebar tiles still felt small on desktop with too much empty space, and surfaced new print/PDF complaints (sections breaking mid-card across pages; dark backgrounds appearing to end mid-page). Two fixes, five total edits.
