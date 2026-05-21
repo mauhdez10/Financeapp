@@ -2,6 +2,48 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.13.2 — 2026-05-20 (Patch — Mobile/desktop polish + React 19 hydration warning + D-27 amendment)
+
+Screenshot-driven smoke test of v0.13.1 surfaced layout regressions across mobile and desktop. Eight surgical fixes plus a cleanup of one React 19 hydration warning. D-27 amended (modals centered on mobile instead of bottom-sheet); D-1, D-7, D-18, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Build marker:** `2026-05-20-v0132-mobile-desktop-polish`
+
+### Fixed
+1. **React hydration warning eliminated.** `BillsSection`'s `BT` helper had a single-space text-node child between `</tr>;})}` and `<IAdd>` inside `<tbody>`. HTML disallows text nodes as `<tbody>` children; React 19 emits a warning. Deleted the space.
+2. **Desktop Calculators / Resources / About tiles too small.** v0.10.1's `auto-fill` + `minmax(240/260/300/250)` packed unused tracks on wide screens. Switched all four grids to `auto-fit` and raised mins to 280/300/340/280. Cards now stretch to fill available width.
+3. **Client Report Summary KPIs truncated on mobile** ("Net..." "$1..."). The 4-up grid in `SummaryReport` wasn't tagged `data-ga-grid="kpi-4"`, so v0.9.3's auto-collapse-to-2×2 CSS rule never fired. Added the attribute.
+4. **Cash Flow Statement two-column squeezed on mobile.** Tagged `CashFlowStatement`'s `1fr 1fr` grid with `data-ga-grid="two-col"` — stacks to 1-column on `(max-width:719px)`.
+5. **Portfolio Calculator Holdings/Controls squeezed on mobile.** Tagged the Holdings | Controls/chart split grid with `data-ga-grid="two-col"`. Holdings list, controls card, and growth chart now each get full width on mobile.
+6. **Income/Bills/Debt tables overflowed parent box on mobile.** Wrapped each table in `<div style="overflowX:auto;WebkitOverflowScrolling:touch">` with `minWidth` on the table (600/560/720). Table scrolls horizontally inside its container while the rest of the page stays viewport-bounded.
+7. **Investment Allocation pie chart cropped on mobile + Assets/Liabilities 4-card grid squeezed.** Both `1fr 1fr` grids tagged `data-ga-grid="two-col"`.
+
+### Changed (D-27 amendment)
+- **Modals centered on mobile (was bottom-sheet).** Mauricio's v0.13.1 smoke test showed bottom-sheet modals left dashboard content visible above the modal on smaller phones — looked broken rather than intentionally chrome-anchored. New mobile modal: centered both axes, 12px edge padding, uniform 16px border-radius, max-height 85dvh, downward-pointing shadow. Only the `Modal` component was edited; every modal in the app (NewClient, Profile, EmailReport, BackupImport, Export, etc.) inherits the new layout automatically. **AGENT.md §4 D-27 amended with full rationale.**
+
+### Out of scope (deferred)
+- Desktop Print/Save PDF "out of proportion" — needs print-CSS or server-PDF screenshot to diagnose.
+- Native iOS/Android distribution — discussed with Mauricio; path is Capacitor wrapping the existing PWA, queued as a separate post-launch project that doesn't touch App.jsx. D-1 retained.
+
+### Files changed
+- `src/App.jsx` (3,135 lines, +490 chars in place)
+- `AGENT.md` (§3 swap, §4 D-27 amendment, §8 build-marker example, footer)
+- `WORKPLAN.md` (§5 prepend, footer)
+- `src/translations.js` — unchanged
+- `vercel.json` — unchanged
+
+### Smoke tests (DevTools mobile emulator at 390×844 or actual phone)
+1. Hydration warning gone — open any client → Monthly Statement → DevTools console clear of "whitespace text nodes" warning.
+2. Sidebar tiles (desktop ≥1200px) — Calculators / Resources / About cards visibly larger and breathable.
+3. Client Report KPIs (mobile) — Open client → Report → Summary. Four KPI cards in a 2×2 with full labels and full numbers visible.
+4. Cash Flow Statement (mobile) — Open client → Financial Statements → Cash Flow → cards stack vertically.
+5. Portfolio Calculator (mobile) — Sidebar → Calculators → Portfolio Calculator. Holdings → controls → chart, each full-width.
+6. Modals (mobile + desktop) — New Client / Profile / Email Report all centered both axes. Mobile: 12px edge padding, no bottom-anchored sheet.
+7. Income/Bills/Debt tables (mobile) — Tables fit within page width; tables themselves scroll horizontally inside their container; page does not scroll horizontally.
+8. Assets pie chart (mobile) — Monthly Statement → Investment Allocation. Pie chart full-circle visible.
+
+---
+
+
 ## v0.13.1 — 2026-05-20 (Patch)
 FIXED — Three v0.13.0 smoke-test follow-ups
 Fix 1 — `/report` always in client URL. v0.13.0 omitted the default tab from the URL (`/clients/<id>` not `/clients/<id>/report`) on the grounds of brevity. Reverted per Mauricio — every tab is now explicit in the URL. `buildGAPath` always appends a tab segment when a client is selected.
