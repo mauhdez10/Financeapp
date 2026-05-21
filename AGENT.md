@@ -35,7 +35,65 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.13.2** — established 2026-05-20 (Patch — Mobile/desktop polish: 8 layout fixes + 1 React 19 hydration warning cleanup + D-27 amendment).
+**v0.13.3** — established 2026-05-20 (Patch — Continued grid-tagging pass from Mauricio's second smoke test + Strategy Plan label fix + bigger desktop sidebar tiles + header reflow on Assets/Savings & Debt).
+
+**What shipped:** Mauricio's v0.13.2 smoke test surfaced more layout regressions, mostly grids that should collapse on mobile but weren't tagged with the v0.9.3 `data-ga-grid` attributes. Sixteen surgical edits. No new locked decisions, no D-amendments. App.jsx 3,135 lines (in-place, +316 chars).
+
+**Fix 1 — "Min Debt Pay (All Loans)" → "Min Debt".** Mauricio's Image 3 showed this label wrapping to 3 lines on mobile due to its length. Shortened the fallback string in both call sites (FinancialPlanTab line 1180, PlanReportBlock line 1289). Translation key `minDebtPayAll` unchanged so if any future translation overrides exist, they still resolve.
+
+**Fix 2 — Strategy Plan KPI 4-up tagged `data-ga-grid="kpi-4"`** at both call sites. The 4-up grid (Net Income / Bills / Min Debt / Extra/mo) was rendering as 4-in-a-row on mobile, squeezing labels. Now collapses to 2×2 via v0.9.3 CSS rule.
+
+**Fix 3 — SummarySection KPI 4-up tagged `data-ga-grid="kpi-4"`.** Mauricio's Image 1 showed "Net I... $14,... Bills $2,... Min P... $244 Cash... $12,..." all truncated on the Monthly Report sub-tab. This is the same kpi-4 collapse fix — the grid wasn't tagged.
+
+**Fix 4 — SummarySection 2-col tagged `data-ga-grid="two-col"`.** The "Where Income Goes" pie + "Debt Trend" bar chart 2-column block now stacks on mobile.
+
+**Fix 5 — Balance Sheet 2-col tagged `data-ga-grid="two-col"`.** The Balance Sheet (Assets card | Liabilities & Net Worth card) — both in Financial Statements tab and in Complete Report's `fullPage` rendering — stacks vertically on mobile.
+
+**Fix 6 — Bills 1-15 / 16-31 in Complete Report tagged `two-col`.**
+
+**Fix 7 — Investment Allocation in report (rows | pie) tagged `two-col`.**
+
+**Fix 8 — Trends in Complete Report (Debt vs Savings | Cash Flow) tagged `two-col`.** Mauricio explicitly mentioned this — "Trends should be 1 graph under the other not one next to another."
+
+**Fix 9 — SummaryReport inner sections tagged `two-col`** (Client Report Summary). The inner 2-col block wrapping (Income + Bills) on left and (Debt + Accounts + Goals) on right now stacks on mobile per Mauricio's request.
+
+**Fix 10 — SavingsSection header reflow (Image 2).** The header row (`💰 ASSETS & SAVINGS` label + 3 SC cards: Assets/Liabilities/Net Worth) was a flex with `justify-content:space-between`. Added `flexWrap:"wrap"` + `gap:10` so on narrow viewports the label and the cards each take a full row. Inner cards container changed from `display:flex,gap:8` to `display:grid,gridTemplateColumns:repeat(3,1fr)` with `data-ga-grid="kpi-3"` and `flex:"1 1 320px"` so on mobile the 3 cards collapse to 2×1+1 grid (kpi-3 rule).
+
+**Fix 11 — DebtSection header reflow (Image 4).** Same pattern: outer flex gets `flexWrap:"wrap"`, inner button container also gets `flexWrap:"wrap"` so on narrow viewports the buttons wrap to additional rows rather than squishing.
+
+**Fix 12 — Desktop sidebar tiles bumped MORE aggressively.** v0.13.2 raised minmax floors from 240/260/300/250 to 280/300/340/280 — Mauricio reported "still the same on desktop side." Cards were still smallish at 1200-1920px viewports. v0.13.3 bumps to 360/360/420/320 with `auto-fit`. At 1400px viewport, Calculators now shows 3 columns at ~466px each (was 5×280=1400 = 280px each); Resources same. About advisor block: 3 columns at ~460px (was 4×340=1360 = 340px). About services: 4 columns at ~340px (was 5×280=1400 = 280px). Visibly larger and more breathable on common desktop sizes.
+
+**Out of scope (deferred to v0.13.4 or later):**
+- **Mobile column hiding for Income/Bills/Debt tables** (Mauricio's request: show only Source/Person/Net on mobile Income; Name/Person/Monthly on Bills; Name/Balance/Min on Debt). Requires conditional `<th>`/`<td>` rendering + adjusted colgroup widths + filtered IAdd cols. Non-trivial refactor. Deferred to its own focused patch.
+- **Print/Save PDF "background doesn't end / sections divided between pages"** — needs `@media print` rules with `page-break-inside:avoid` on cards + extended print background. Need a print-preview screenshot before fixing to avoid breaking what's already working.
+- **Monthly Statement Summary fully matching Client Report Summary** — v0.13.3's #3 and #4 made significant progress (KPI collapse + 2-col stack). Full structural match would require restructuring SummarySection to match SummaryReport, larger than appropriate for one patch.
+
+**Build marker:** `2026-05-20-v0133-grid-tags-plus-headers`. App.jsx 3,135 lines (in-place, +316 chars). `src/translations.js` unchanged. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Note on project knowledge file:** During this work, I detected that the project knowledge upload (`/mnt/project/App.jsx`) was still v0.12.6 baseline, while Mauricio is testing against the v0.13.2 deployed build. Continued from `/mnt/user-data/outputs/App.jsx` (the v0.13.2 deliverable from the prior session). **Mauricio should re-upload the latest App.jsx + AGENT.md + WORKPLAN.md to the project knowledge after deploying v0.13.3** so future Claude sessions start from the correct baseline.
+
+**Out-of-app actions required:**
+- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.3 entry.
+- Commit + push; Vercel auto-deploys.
+- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0133-grid-tags-plus-headers"`.
+- Re-upload current versions of App.jsx, AGENT.md, WORKPLAN.md to project knowledge.
+
+**Smoke tests:**
+1. **Strategy Plan label** — open any client → Financial Plan tab. The third KPI tile should read "🏦 Min Debt" (no "(All Loans)"). Mobile: 2×2 layout, all four cards readable.
+2. **Monthly Report KPIs (mobile)** — Image 1 fix. Open any client → Monthly Report sub-tab. The four KPI cards (Net Income / Bills / Min Pay / Cash Flow) should be 2×2 with full labels and values visible.
+3. **Where Income Goes + Debt Trend (mobile)** — same screen, scroll down. Pie chart and bar chart should each be full-width on mobile, stacked vertically.
+4. **Balance Sheet (mobile)** — Financial Statements tab → Balance Sheet sub-section. Assets card and Liabilities & Net Worth card should stack vertically.
+5. **Bills 1-15 / 16-31 in Complete Report (mobile)** — Complete Report → scroll to Bills & Expenses. Days 1-15 above, Days 16-31 below.
+6. **Investment Allocation in report (mobile)** — Complete Report → scroll to Investment Allocation. Allocation rows above, pie chart below.
+7. **Trends in Complete Report (mobile)** — Complete Report → scroll to Trends. Debt vs Savings bar chart above, Cash Flow bar chart below.
+8. **Client Report Summary (mobile)** — Report → Summary. Income + Bills cards above, Debt + Accounts + Goals cards below.
+9. **Assets & Savings header (mobile, Image 2 fix)** — Monthly Statement, Savings tab area. Label "💰 SAVINGS" on its own row at top; Assets / Liabilities / Net Worth cards on the row below in a 2×1+1 grid (3 cards collapsed to 2 columns on mobile per kpi-3 rule).
+10. **Debt header (mobile, Image 4 fix)** — Monthly Statement → Debt tab. Label "💳 DEBT" on its own row; buttons (+Add Debt/Card, Avalanche, Snowball) wrap underneath.
+11. **Desktop sidebar tiles (≥1400px width)** — Calculators / Resources / About cards visibly larger than v0.13.2. Calculators ~466px wide (3 cols at 1400px); Resources same; About advisor block ~460px wide (3 cols); About services ~340px wide (4 cols).
+
+---
+
+### Prior: v0.13.2 — 2026-05-20 (Patch — Mobile/desktop polish: 8 layout fixes + 1 React 19 hydration warning cleanup + D-27 amendment).
 
 **What shipped:** Mauricio's screenshot-driven smoke test of v0.13.1 surfaced a batch of layout regressions across mobile and desktop. v0.13.2 ships eight surgical fixes plus a clean-up of one React 19 hydration warning. No new locked decisions; D-27 (mobile bottom-sheet modals) gets an amendment, not a reversal.
 
@@ -387,7 +445,7 @@ Current (manual web UI):
 // In browser DevTools console, paste this:
 window.__GA_BUILD__
 ```
-Should return the build marker string (current: `"2026-05-20-v0132-mobile-desktop-polish"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
+Should return the build marker string (current: `"2026-05-20-v0133-grid-tags-plus-headers"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
 
 ---
 
@@ -713,7 +771,9 @@ npm run test:report          # open the HTML report from the last run
 
 ---
 
-*Last updated: 2026-05-20 — v0.13.2 (Patch — Mobile/desktop polish: 8 layout fixes + 1 React 19 hydration warning cleanup + D-27 amendment). Screenshot-driven smoke test of v0.13.1 surfaced layout regressions on mobile + desktop. **Fixes:** (1) BillsSection `BT` helper had a single-space text node inside `<tbody>` between `</tr>;})}` and `<IAdd>` — React 19 warns. Deleted the space. (2) Desktop Calculators/Resources/About tile grids: `auto-fill` → `auto-fit`, mins 240/260/300/250 → 280/300/340/280. (3) `SummaryReport` 4-up KPI grid tagged `data-ga-grid="kpi-4"`. (4) `CashFlowStatement` `1fr 1fr` tagged `data-ga-grid="two-col"`. (5) `PortfolioStandaloneCalc` Holdings/Controls split tagged `data-ga-grid="two-col"`. (6) `Modal` centered on mobile — **D-27 amended** from bottom-sheet to centered with edge padding (12px), max-height 85dvh, uniform 16px border-radius. (7) Income/Bills/Debt tables wrapped in `overflowX:auto` containers with `minWidth` set on the table. (8) `SavingsSection` alloc/pie 2-col + `AssetsLiabilitiesTab` 4-card grid both tagged `data-ga-grid="two-col"`. App.jsx 3,135 lines (in-place, +490 chars). translations.js + vercel.json unchanged. No SQL migration. No new pitfalls. **D-27 amended**; D-1, D-7, D-18, D-28, D-30, D-31, D-34, D-36 preserved. Build marker `2026-05-20-v0132-mobile-desktop-polish`. Out of scope: desktop Print/PDF "out of proportion" (needs print-CSS screenshot); native iOS/Android (Capacitor path, separate post-launch project — does not touch App.jsx; D-1 retained intentionally).*
+*Last updated: 2026-05-20 — v0.13.3 (Patch — Continued grid-tagging pass + Strategy Plan label fix + bigger desktop sidebar tiles + header reflow on Assets/Savings & Debt sections). Mauricio's v0.13.2 smoke test surfaced more grids that needed `data-ga-grid` collapsing on mobile. **Fixes:** (1) "Min Debt Pay (All Loans)" → "Min Debt" (shorter label fits 2×2 on mobile). (2) Strategy Plan KPI 4-up tagged `kpi-4` at both call sites. (3) SummarySection KPI 4-up (Monthly Report) tagged `kpi-4`. (4) SummarySection 2-col (income pie | debt trend) tagged `two-col`. (5) Balance Sheet tagged `two-col`. (6) Bills 1-15/16-31 in Complete Report tagged `two-col`. (7) Investment Allocation in report tagged `two-col`. (8) Trends in Complete Report tagged `two-col`. (9) SummaryReport inner (Client Report Summary) tagged `two-col`. (10) SavingsSection header: outer flex gets `flexWrap`, inner cards become 3-col grid with `kpi-3` collapse. (11) DebtSection header: outer + inner flex both get `flexWrap`. (12) Desktop sidebar tiles bumped 280→360 / 300→360 / 340→420 / 280→320 — visibly bigger at 1200-1920px viewports. App.jsx 3,135 lines (+316 chars). translations.js + vercel.json unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved. Build marker `2026-05-20-v0133-grid-tags-plus-headers`. **Deferred to v0.13.4+:** mobile column-hiding for Income/Bills/Debt tables (refactor); print CSS (needs print-preview screenshot); Monthly Summary fully matching Client Report Summary (overlaps with #3+#4 progress this patch).*
+
+*Prior update: 2026-05-20 — v0.13.2 (Patch — Mobile/desktop polish + D-27 amendment). Screenshot-driven smoke test of v0.13.1 surfaced layout regressions on mobile + desktop. **Fixes:** (1) BillsSection `BT` helper had a single-space text node inside `<tbody>` between `</tr>;})}` and `<IAdd>` — React 19 warns. Deleted the space. (2) Desktop Calculators/Resources/About tile grids: `auto-fill` → `auto-fit`, mins 240/260/300/250 → 280/300/340/280. (3) `SummaryReport` 4-up KPI grid tagged `data-ga-grid="kpi-4"`. (4) `CashFlowStatement` `1fr 1fr` tagged `data-ga-grid="two-col"`. (5) `PortfolioStandaloneCalc` Holdings/Controls split tagged `data-ga-grid="two-col"`. (6) `Modal` centered on mobile — **D-27 amended** from bottom-sheet to centered with edge padding (12px), max-height 85dvh, uniform 16px border-radius. (7) Income/Bills/Debt tables wrapped in `overflowX:auto` containers with `minWidth` set on the table. (8) `SavingsSection` alloc/pie 2-col + `AssetsLiabilitiesTab` 4-card grid both tagged `data-ga-grid="two-col"`. App.jsx 3,135 lines (in-place, +490 chars). translations.js + vercel.json unchanged. No SQL migration. No new pitfalls. **D-27 amended**; D-1, D-7, D-18, D-28, D-30, D-31, D-34, D-36 preserved. Build marker `2026-05-20-v0132-mobile-desktop-polish`. Out of scope: desktop Print/PDF "out of proportion" (needs print-CSS screenshot); native iOS/Android (Capacitor path, separate post-launch project — does not touch App.jsx; D-1 retained intentionally).*
 
 *Prior update: 2026-05-20 — v0.13.1 (Patch — Three v0.13.0 follow-up fixes). (1) Client URLs always include the tab — `/clients/<id>/report` not just `/clients/<id>`; `buildGAPath` no longer omits the default. (2) ClientDetail's internal `tab` state now syncs to `startTab` prop via `useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab)},[startTab])` — fixes Back/Forward changing the URL but not the visible tab. (3) Each calculator gets its own URL: `/calculators/<calc-id>` where `<calc-id>` is one of `retirement` / `portfolio` / `homeEquity` / `income` / `debtReduction` / `carLoan` / `affordability` / `interest` / `savings`. New `selectedCalc` state in App, plumbed through history snap + popstate + hydration + sidebar-nav-button clears + CalculatorsPage signature (now controlled by `activeCalc` + `onActiveChange` props with the same sync-useEffect pattern). `buildGAPath`/`parseGAPath` extended to handle the new path shape. Unknown calc id in URL silently bounces to the picker. App.jsx 3,117 → 3,135 lines. translations.js unchanged at 1,313 keys/side. vercel.json unchanged from v0.13.0. No SQL migration. No new locked decisions. No new pitfalls. Build marker `2026-05-20-v0131-deep-link-fixes`. D-1, D-7, D-18, D-27, D-28, D-30, D-31, D-34, D-36 preserved.*
 
