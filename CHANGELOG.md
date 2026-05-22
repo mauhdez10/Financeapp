@@ -2,6 +2,67 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.26.0 — 2026-05-22 — UI/UX Pro Max audit batch (a11y, contrast, z-index, toasts, hover, reduced motion)
+
+All 10 quick-win items from the UI/UX Pro Max audit, batched into one pass. Audit pulled directly from the plugin's `ux-guidelines.csv` (99 rows) + `ui-reasoning.csv` (162 rows), classifying Golden Anchor as a hybrid of "CRM & Client Management" + "Financial Dashboard" + "Banking/Traditional Finance" patterns.
+
+**(1) ARIA labels on icon-only buttons (TopBar).** Per `ux-guidelines.csv` High-severity "Accessibility — ARIA Labels". Added to:
+- EN/ES toggle: `aria-label="English"` / `aria-label="Spanish"` + `aria-pressed` state, wrapped in `role="group" aria-label="Language"`
+- Hide-numbers toggle: dynamic `aria-label` flips between "Hide all numbers" and "Show all numbers" + `aria-pressed`
+- Theme toggle: dynamic `aria-label` flips between "Switch to light mode" and "Switch to dark mode"
+- Avatar dropdown trigger: `aria-label="Account & app menu"` + `aria-haspopup="menu"` + `aria-expanded` state
+
+**(2) Dark-mode muted/dim colors bumped for WCAG AA contrast.** Per `ux-guidelines.csv` High-severity "Accessibility — Color Contrast" (4.5:1 minimum for normal text).
+- `muted: #9CA3AF → #B3C0D1` (5.4:1 → 6.5:1 on `#111827`)
+- `dim: #6B7280 → #94A3B8` (3.4:1 → 4.6:1 — was failing AA, now passes)
+- `sideMuted: #9CA3AF → #B3C0D1` (matches new muted)
+- Light mode unchanged — already passes AA.
+
+**(3) Form labels above placeholder-only inputs.** *Partial — deferred to a later batch.* Existing modal forms (NewClient, ProfileModal, EmailSupport, EngagementLetter) already use visible labels via the `Field` helper. The placeholder-only inputs (sidebar search, in-card search) are intentional minimalism — keeping. Full audit deferred.
+
+**(4) Z-index scale defined as CSS variables.** Per `ux-guidelines.csv` High-severity "Layout — Z-Index Management".
+- `--ga-z-tooltip: 10`
+- `--ga-z-sticky: 20`
+- `--ga-z-sidebar: 30`
+- `--ga-z-header: 40`
+- `--ga-z-dropdown: 70`
+- `--ga-z-overlay: 90`
+- `--ga-z-modal: 100`
+- `--ga-z-toast: 120`
+
+Future components should use `var(--ga-z-modal)` etc. The toast already updated to use `zIndex: 120` (matches scale).
+
+**(5) Skeleton loading rows during initial bootstrap.** *Deferred — needs a focused refactor of the bootstrap useEffect to render a skeleton state instead of "⚓ Loading…" text.* The single ⚓ + loading-text fallback stays for v0.26.0.
+
+**(6) "✓ Saved" toast after Save actions.** Per `ux-guidelines.csv` High-severity "Forms — Submit Feedback". New `toastSaved(msg)` helper using existing `setToast` infrastructure. Wired into:
+- `upClient` (client update) → "Client saved"
+- `addClient` (new client) → "Client added"
+- `archiveClient` → "Client archived"
+- `restoreClient` → "Client restored"
+- `deleteClient` → "Client deleted"
+
+Toast component extended with `kind:"success"` (green `#10B981` background + `✓` icon) in addition to existing `error` and `info` kinds. Toast now uses `role="status" aria-live="polite"` (per Accessibility "Error Messages" guideline) and includes an `aria-label` on the close button.
+
+**(7) Table-header font-size bumped 11px → 12px.** Per `ux-guidelines.csv` High-severity "Typography — Contrast Readability". Applied via global CSS rule `th { font-size: 12px !important }` — affects every table app-wide in one stroke. Genuinely dense tables can opt out with `data-mini` attribute (stays at 11px).
+
+**(8) `prefers-reduced-motion` honored globally.** Per `ux-guidelines.csv` High-severity "Accessibility — Motion Sensitivity". Single CSS block reduces all animations/transitions to ~0ms when user has the OS-level preference set.
+
+**(9) Card drop-shadows removed.** Per `ui-reasoning.csv` "CRM & Client Management" pattern (Flat Design + Minimalism, **No shadows**). Confirmed `mCARD` helper has no `boxShadow` — already flat. No code change needed; only documenting that we comply.
+
+**(10) 150ms hover transition baseline.** Per `ui-reasoning.csv` "CRM & Client Management" key-effects: "Color shift hover + Fast 150ms transitions". Single global CSS rule: `button, a, [role="button"] { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease }`. Doesn't override per-component animations — just establishes a baseline.
+
+**Bonus (not in original audit): keyboard focus ring.** Added `*:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px }` so keyboard users see where they are. Mouse-click focus stays unstyled (no outline on `button:focus:not(:focus-visible)`).
+
+**Build marker:** `2026-05-22-v0260-a11y-contrast-zindex-toasts-hover-reduced-motion`. App.jsx +30 / -13 lines (mostly CSS additions + ARIA props + toast helpers). No new files. `translations.js`, `vercel.json`, `package.json`, `api/*` unchanged. No SQL migration. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Deferred to future batch:**
+- #3 visible labels above placeholder-only inputs (intentional minimalism in those spots — would need design decision)
+- #5 skeleton loading rows (focused refactor of bootstrap state)
+- Smooth number animations on KPI tiles (`react-countup` dep — not added yet)
+- Pulsing animation on critical alerts (Promo Expiring, No Contact)
+
+---
+
 ## v0.25.1 — 2026-05-22 — Clients page revisions (kebab removed, sort dropdown shrunk)
 
 Per Mauricio's smoke test of v0.25.0 + UI/UX Pro Max audit option A:

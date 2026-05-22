@@ -33,7 +33,8 @@ async function gaMigrateLocalStorage(userId){if(!supabase||!userId)return false;
 
 /* ── THEMES ─────────────────────────────────────────────────────────────── */
 const GOLD="#C9A84C";
-const makeDark=(a=GOLD)=>({bg:"#111827",nav:"#1F2937",navBorder:"#374151",card:"#1F2937",cardBorder:"#374151",modal:"#1E293B",inp:"#111827",inpBorder:"#4B5563",text:"#F1F5F9",muted:"#9CA3AF",dim:"#6B7280",sideText:"#F1F5F9",sideMuted:"#9CA3AF",accent:a,pos:"#10B981",neg:"#EF4444",warn:"#F59E0B",blue:"#3B82F6"});
+// v0.26.0 — bumped muted/dim/sideMuted on dark mode to pass WCAG AA contrast (4.5:1+ on dark navy bg). Was #9CA3AF/#6B7280.
+const makeDark=(a=GOLD)=>({bg:"#111827",nav:"#1F2937",navBorder:"#374151",card:"#1F2937",cardBorder:"#374151",modal:"#1E293B",inp:"#111827",inpBorder:"#4B5563",text:"#F1F5F9",muted:"#B3C0D1",dim:"#94A3B8",sideText:"#F1F5F9",sideMuted:"#B3C0D1",accent:a,pos:"#10B981",neg:"#EF4444",warn:"#F59E0B",blue:"#3B82F6"});
 const makeLight=(a="#2563EB")=>({bg:"#F1F5F9",nav:"#1C3557",navBorder:"#2A4A73",card:"#FFFFFF",cardBorder:"#E2E8F0",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#CBD5E1",text:"#0F172A",muted:"#475569",dim:"#94A3B8",sideText:"#E2E8F0",sideMuted:"#94A3B8",accent:a,pos:"#059669",neg:"#DC2626",warn:"#D97706",blue:"#2563EB"});
 const DARK_ACCENTS=[{l:"Gold",v:"#C9A84C"},{l:"Blue",v:"#3B82F6"},{l:"Emerald",v:"#10B981"},{l:"Purple",v:"#8B5CF6"}];
 const LIGHT_ACCENTS=[{l:"Blue",v:"#2563EB"},{l:"Teal",v:"#0D9488"},{l:"Emerald",v:"#059669"},{l:"Purple",v:"#7C3AED"}];
@@ -2908,7 +2909,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0251-rm-row-kebab-shrink-sort";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0260-a11y-contrast-zindex-toasts-hover-reduced-motion";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3855,13 +3856,13 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div style={{display:"flex",border:`1px solid ${th.cardBorder}`,borderRadius:8,overflow:"hidden"}}>
-        {["en","es"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"5px 12px",fontSize:11,fontWeight:700,background:lang===l?th.accent+"22":"transparent",color:lang===l?th.accent:th.muted,border:"none",cursor:"pointer",letterSpacing:"0.05em",textTransform:"uppercase"}}>{l}</button>)}
+      <div role="group" aria-label={t?.languageSelector||"Language"} style={{display:"flex",border:`1px solid ${th.cardBorder}`,borderRadius:8,overflow:"hidden"}}>
+        {["en","es"].map(l=><button key={l} onClick={()=>setLang(l)} aria-pressed={lang===l} aria-label={l==="en"?(t?.langEn||"English"):(t?.langEs||"Spanish")} style={{padding:"5px 12px",fontSize:11,fontWeight:700,background:lang===l?th.accent+"22":"transparent",color:lang===l?th.accent:th.muted,border:"none",cursor:"pointer",letterSpacing:"0.05em",textTransform:"uppercase"}}>{l}</button>)}
       </div>
-      <button onClick={()=>setHide(!hideNumbers)} title={t?.hideNumbers||"Hide all numbers"} style={{background:hideNumbers?th.accent+"22":"transparent",color:hideNumbers?th.accent:th.muted,border:`1px solid ${hideNumbers?th.accent+"44":th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{hideNumbers?"👁️‍🗨️":"👁️"}</button>
-      <button onClick={()=>setDark(!isDark)} title={t?.theme||"Theme"} style={{background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{isDark?"🌙":"☀️"}</button>
+      <button onClick={()=>setHide(!hideNumbers)} title={t?.hideNumbers||"Hide all numbers"} aria-label={hideNumbers?(t?.showNumbers||"Show all numbers"):(t?.hideNumbers||"Hide all numbers")} aria-pressed={hideNumbers} style={{background:hideNumbers?th.accent+"22":"transparent",color:hideNumbers?th.accent:th.muted,border:`1px solid ${hideNumbers?th.accent+"44":th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{hideNumbers?"👁️‍🗨️":"👁️"}</button>
+      <button onClick={()=>setDark(!isDark)} title={t?.theme||"Theme"} aria-label={isDark?(t?.switchToLight||"Switch to light mode"):(t?.switchToDark||"Switch to dark mode")} style={{background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{isDark?"🌙":"☀️"}</button>
       <div ref={menuRef} style={{position:"relative"}}>
-        <button onClick={()=>setMenu(o=>!o)} title={t?.accountMenu||"Account & app menu"} style={{background:"transparent",border:menu?`2px solid ${GOLD}`:"2px solid transparent",padding:0,cursor:"pointer",lineHeight:0,borderRadius:999,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <button onClick={()=>setMenu(o=>!o)} title={t?.accountMenu||"Account & app menu"} aria-label={t?.accountMenu||"Account & app menu"} aria-haspopup="menu" aria-expanded={menu} style={{background:"transparent",border:menu?`2px solid ${GOLD}`:"2px solid transparent",padding:0,cursor:"pointer",lineHeight:0,borderRadius:999,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center"}}>
           {avatarId?<AvatarImg id={avatarId} size={30}/>:<div style={{width:30,height:30,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11}}>{avatarInitials||"MH"}</div>}
         </button>
         {menu&&<div style={{position:"absolute",top:42,right:0,background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:12,boxShadow:"0 12px 40px rgba(0,0,0,0.45)",width:280,zIndex:80,padding:6}}>
@@ -4103,6 +4104,20 @@ export default function App(){
       input[type=number]{-moz-appearance:textfield;appearance:textfield}
       *{-webkit-tap-highlight-color:transparent}
       html,body{overscroll-behavior-y:none}
+      /* v0.26.0 — z-index scale (UI/UX Pro Max High-severity guideline #4) */
+      :root{--ga-z-tooltip:10;--ga-z-sticky:20;--ga-z-sidebar:30;--ga-z-header:40;--ga-z-dropdown:70;--ga-z-overlay:90;--ga-z-modal:100;--ga-z-toast:120;}
+      /* v0.26.0 — Reduced motion (UI/UX Pro Max guideline #8) */
+      @media (prefers-reduced-motion: reduce){
+        *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+      }
+      /* v0.26.0 — 150ms hover transition baseline (CRM pattern) */
+      button,a,[role="button"]{transition:background-color 150ms ease,border-color 150ms ease,color 150ms ease,opacity 150ms ease}
+      /* v0.26.0 — Table header readability bump (11pt → 12pt) */
+      th{font-size:12px!important}
+      th[data-mini]{font-size:11px!important}/* opt-out for genuinely dense tables */
+      /* v0.26.0 — Focus ring for keyboard users (Accessibility guideline) */
+      *:focus-visible{outline:2px solid #C9A84C;outline-offset:2px;border-radius:6px}
+      button:focus:not(:focus-visible){outline:none}
       @supports(padding:env(safe-area-inset-top)){
         body{padding-top:env(safe-area-inset-top,0);padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0)}
       }
@@ -4181,12 +4196,14 @@ export default function App(){
     document.head.appendChild(s);
     return()=>{const el=document.getElementById("ga-styles");if(el)el.remove();};
   },[]);
-  const upClient=useCallback(c=>{const mc=mig(c);setClients(p=>p.map(x=>x.id===mc.id?mc:x));setSelected(mc);},[]);
-  const addClient=newC=>{const mc=mig(newC);setClients(p=>[...p,mc]);setAddOpen(false);setSelectedTab("monthly");setSelected(mc);setNav("clients");};
+  // v0.26.0 — "✓ Saved" toast helper (UI/UX Pro Max guideline #6 — Submit Feedback)
+  const toastSaved=useCallback((msg)=>setToast({kind:"success",msg:msg||(t.savedToast||"Saved"),ts:Date.now()}),[t]);
+  const upClient=useCallback(c=>{const mc=mig(c);setClients(p=>p.map(x=>x.id===mc.id?mc:x));setSelected(mc);toastSaved(t.savedClientToast||"Client saved");},[toastSaved,t]);
+  const addClient=newC=>{const mc=mig(newC);setClients(p=>[...p,mc]);setAddOpen(false);setSelectedTab("monthly");setSelected(mc);setNav("clients");toastSaved(t.savedClientAddedToast||"Client added");};
   const importMultiple=useCallback(cs=>{setClients(prev=>[...prev,...cs.map(mig)]);},[]);
-  const archiveClient=useCallback(id=>setClients(p=>p.map(c=>c.id===id?{...c,archived:!c.archived}:c)),[]);
-  const restoreClient=useCallback(id=>setClients(p=>p.map(c=>c.id===id?{...c,archived:false}:c)),[]);
-  const deleteClient=useCallback(id=>{setClients(p=>p.filter(c=>c.id!==id));setSelected(null);},[]);
+  const archiveClient=useCallback(id=>{setClients(p=>p.map(c=>c.id===id?{...c,archived:!c.archived}:c));toastSaved(t.archivedToast||"Client archived");},[toastSaved,t]);
+  const restoreClient=useCallback(id=>{setClients(p=>p.map(c=>c.id===id?{...c,archived:false}:c));toastSaved(t.restoredToast||"Client restored");},[toastSaved,t]);
+  const deleteClient=useCallback(id=>{setClients(p=>p.filter(c=>c.id!==id));setSelected(null);toastSaved(t.deletedToast||"Client deleted");},[toastSaved,t]);
   const restoreBackup=useCallback((backup,mode)=>{const mc=backup.clients.map(mig);if(mode==="replace"){setClients(mc);if(backup.settings)setSettings(s=>({...s,...backup.settings}));}else{setClients(prev=>{const newClients=[];const updated=[...prev];mc.forEach(bc=>{const dup=findDuplicate(bc,updated);if(dup){const idx=updated.findIndex(c=>c.id===dup.id);updated[idx]=smartMerge(dup,bc);}else newClients.push(bc);});return[...updated,...newClients];});}},[])
   const splitClient=(p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==selected?.id),p1,p2]);setSelected(null);setNav("clients");};
   const joinClients=(c1,c2)=>{const joined=mig({...c1,id:c1.id,partnerFirst:c2.firstName,partnerLast:c2.lastName,color2:c2.color1,incomeStreams:[...c1.incomeStreams,...c2.incomeStreams.map(s=>({...s,id:gid(),person:"p2"}))],bills:[...c1.bills,...c2.bills.filter(b=>!c1.bills.some(x=>x.name===b.name)).map(b=>({...b,id:gid(),assignedTo:"p2",split:{p1:0,p2:100}}))],cards:[...c1.cards,...c2.cards.map(cc=>({...cc,id:gid(),owedBy:"p2"}))],accounts:[...c1.accounts,...c2.accounts.map(a=>({...a,id:gid(),owner:"p2"}))],loans:[...c1.loans,...c2.loans.map(l=>({...l,id:gid(),owner:"p2"}))]});setClients(prev=>[...prev.filter(x=>x.id!==c1.id&&x.id!==c2.id),joined]);setSelected(joined);setNav("clients");};
@@ -4207,7 +4224,7 @@ export default function App(){
     {/* v0.5.2a — Idle warning modal */}
     {idleWarn&&<div style={{position:"fixed",inset:0,background:"#0008",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}><div style={{background:theme.modal,border:`2px solid ${theme.warn}`,borderRadius:14,padding:24,maxWidth:380,boxShadow:"0 32px 80px #0009"}}><div style={{fontSize:28,marginBottom:8,textAlign:"center"}}>⏰</div><div style={{fontSize:14,fontWeight:700,color:theme.text,marginBottom:8,textAlign:"center"}}>{t.idleWarnTitle||"You'll be signed out soon"}</div><div style={{fontSize:12,color:theme.muted,marginBottom:16,textAlign:"center",lineHeight:1.5}}>{t.idleWarnBody||"You've been inactive for a while. Click below to stay signed in, or you'll be logged out in 1 minute. Any in-flight client edits will be saved as a draft."}</div><button onClick={()=>{setIdleWarn(false);}} style={{width:"100%",padding:"10px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:theme.accent,color:"#0D1B2A",border:"none"}}>{t.stayLoggedIn||"Stay Signed In"}</button></div></div>}
     {/* v0.5.2a — Toast (save failures / info) */}
-    {toast&&<div style={{position:"fixed",bottom:24,right:24,maxWidth:380,zIndex:10000,background:toast.kind==="error"?"#EF4444":theme.accent,color:"#fff",padding:"12px 16px",borderRadius:10,boxShadow:"0 12px 40px #0008",fontSize:12,fontWeight:600,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:10}}><span style={{fontSize:16}}>{toast.kind==="error"?"⚠️":"ℹ️"}</span><span style={{flex:1}}>{toast.msg}</span><button onClick={()=>setToast(null)} style={{background:"transparent",border:"none",color:"#fff",cursor:"pointer",fontSize:14,padding:0,opacity:0.8}}>✕</button></div>}
+    {toast&&<div role="status" aria-live="polite" style={{position:"fixed",bottom:24,right:24,maxWidth:380,zIndex:120,background:toast.kind==="error"?"#EF4444":toast.kind==="success"?"#10B981":theme.accent,color:"#fff",padding:"12px 16px",borderRadius:10,boxShadow:"0 12px 40px #0008",fontSize:12,fontWeight:600,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:10}}><span style={{fontSize:16}}>{toast.kind==="error"?"⚠️":toast.kind==="success"?"✓":"ℹ️"}</span><span style={{flex:1}}>{toast.msg}</span><button onClick={()=>setToast(null)} aria-label={t.close||"Close"} style={{background:"transparent",border:"none",color:"#fff",cursor:"pointer",fontSize:14,padding:0,opacity:0.8}}>✕</button></div>}
     {importDupResolver&&<DuplicateResolverModal incoming={importDupResolver.incoming} existing={clients} onResolve={importDupResolver.resolver} onClose={()=>setImportDupResolver(null)} t={t}/>}{addOpen&&<NewClientModal onSave={addClient} onClose={()=>setAddOpen(false)} t={t}/>}
     {profileOpen&&<ProfileModal settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);}} onClose={()=>setProfileOpen(false)} t={t}/>}
     <AvatarPickerModal open={avatarPickerOpen} current={settings.avatarId||"mh-gold"} onPick={id=>{setSettings(s=>({...s,avatarId:id}));setAvatarPickerOpen(false);}} onClose={()=>setAvatarPickerOpen(false)} t={t} theme={theme}/>
