@@ -2,6 +2,50 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.17.0 — 2026-05-21 — TopBar + Settings page (match Claude design)
+
+Closes the gap between the live app and `ui_kits/advisor_app/index.html` for the two highest-visibility surfaces.
+
+**New `TopBar`** above every page (matches `ui_kits/advisor_app/TopBar.jsx`):
+- Title (and breadcrumb when a client is selected) on the left
+- EN/ES segmented switch, hide-numbers toggle, theme toggle, **avatar dropdown** on the right
+- Avatar is a gold initials bubble (`MH`) — click opens the big account menu: header card with name/email/Signed-in badge, then Profile · Settings · Security · Billing & plan · Backup data · Archived clients · What's new · Help & support · Sign out
+- Mobile: hamburger button on the left opens the existing drawer
+- Replaces the old slim mobile-only app bar that just showed the page title
+
+**New `nav==="settings"` route + `SettingsPage` component** (matches `SettingsView` in the kit's `index.html`):
+- Full-page replacement for the old scrollable `ProfileModal` as the *primary* settings surface
+- 2-column grid of read-only cards: 👤 Advisor Information / 🎨 Appearance / 🌍 Localization / 🔔 Reminders / 💼 Services & Stripe Links / 💾 Backup & Data
+- Each card has an **Edit** button that opens the existing `ProfileModal` (no change to the editor itself — only the entry point)
+- Auto-collapses to 1 column on mobile (`data-ga-grid="two-col"`)
+- Archived clients banner at the bottom when any exist
+
+**Wire-up changes:**
+- Sidebar bottom widget (mobile drawer + desktop sidebar) now navigates to `nav="settings"` instead of opening the modal
+- Avatar dropdown's "Profile" / "Settings" / "Security" / "Billing" / "Backup" / "Archived" all route to `nav="settings"` then open the relevant edit modal
+- Sign-out from the avatar dropdown calls `supabase.auth.signOut()` (same as the legacy sign-out)
+
+**New components:** `SettingsCard`, `SettingsPage`, `AvatarBubble`, `TopBar` (all defined above the `App()` function).
+
+**Build marker:** `2026-05-21-v0170-topbar-and-settings-page`. App.jsx 3,581 → 3,759 lines (+178). `src/translations.js`, `vercel.json`, `package.json`, `api/*` unchanged. No SQL migration. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Still pending (next iteration):**
+- Sidebar **Clients hamburger menu** (3-line button on the Clients nav row → dropdown with All clients / Add new / Send invite / Export CSV / Import CSV / Show archived / Sort by recent / Sort by debt). Matches `ui_kits/advisor_app/Sidebar.jsx:135-181`.
+- Sidebar **collapsed state** finishing pass — icons-only, narrower (64px vs current 62px), gold-tinted monogram tile up top, avatar-only at the bottom. Matches `ui_kits/advisor_app/Sidebar.jsx:52-66, 227-235`.
+- **PublicIntake Welcome screen** before step 1 — anchor logo + "GOLDEN ANCHOR" + tagline + Start intake / I have an invite token buttons. Matches `ui_kits/client_portal/index.html` WelcomeScreen.
+- **Side-by-side Advisor Alerts + Client Due panels** (currently still a single tabbed widget).
+- **Avatar picker** modal — change profile image from the dropdown.
+- Translation keys for the new labels in `SettingsPage` + `TopBar` (currently fall through to English fallbacks).
+
+**Smoke tests:**
+1. **TopBar visible on every page.** Open any nav section. The top of the content area shows the page title on the left, EN/ES + hide + theme + avatar on the right. The MH avatar is a gold initials bubble.
+2. **Avatar dropdown.** Click the MH avatar. A 280px-wide dropdown opens with your name/email/Signed-in badge at top, then Profile / Settings / Security / Billing / Backup / Archived clients / What's new / Help / Sign out items. Each shows an icon + label + optional sub-label.
+3. **Settings page.** Click the sidebar's bottom profile widget (avatar + name). Lands on a new full-page Profile & Settings view with 6 cards in a 2-column grid. Each card has its rows + an Edit button on the bottom-right.
+4. **Edit modal still works.** Click Edit on any card. The existing ProfileModal opens (unchanged). Make a change, Save. The card on the Settings page updates with the new value when you return.
+5. **Sign out from avatar.** Open the avatar dropdown, click Sign out (red). Supabase session is killed, login screen appears.
+
+---
+
 ## v0.16.1 — 2026-05-21 — SignaturePad default = typed, label cleanup
 
 Patch on top of v0.16.0 from Mauricio's smoke-test feedback.

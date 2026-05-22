@@ -2721,7 +2721,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0161-sig-default-typed";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0170-topbar-and-settings-page";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3243,6 +3243,160 @@ function parseGAPath(pathname){
   return{nav:"dashboard",clientId:null,selectedTab:"report",selectedCalc:null};
 }
 
+/* ── SettingsCard — 2-col read-only card for the Profile & Settings page.
+   Click "Edit" to open the ProfileModal scoped to that section.            */
+function SettingsCard({title,rows,onEdit,t,th}){
+  return <div style={{...mCARD(th),padding:16,minHeight:0}}>
+    <div style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:12}}>{title}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,paddingBottom:8,borderBottom:`1px dashed ${th.cardBorder}`,gap:10}}>
+        <span style={{color:th.muted,flexShrink:0}}>{k}</span>
+        <span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</span>
+      </div>)}
+    </div>
+    <div style={{marginTop:12,textAlign:"right"}}>
+      <button onClick={onEdit} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button>
+    </div>
+  </div>;
+}
+
+/* ── SettingsPage — full-page replacement for the old scrollable ProfileModal.
+   Matches ui_kits/advisor_app/index.html SettingsView (2-col card grid).    */
+function SettingsPage({settings,onEdit,onBackup,onRestoreBackup,t,clients}){
+  const th=useTh();
+  const numArchived=(clients||[]).filter(c=>c.archived).length;
+  const advisorRows=[
+    [t?.nameLbl||"Name", settings.advisorName||"—"],
+    [t?.emailLbl||"Email", settings.advisorEmail||"—"],
+    [t?.phoneLbl||"Phone", settings.advisorPhone||"—"],
+    [t?.instagram||"Instagram", settings.ig||"—"],
+    [t?.company||"Company", settings.companyName||"—"],
+  ];
+  const accent=(settings.darkAccent||GOLD).toString().toUpperCase();
+  const bg=((settings.darkBg)||"#111827").toString().toUpperCase();
+  const card=((settings.darkCard)||"#1F2937").toString().toUpperCase();
+  const appearanceRows=[
+    [t?.theme||"Theme", settings.darkMode!==false?(t?.darkMode||"Dark"):(t?.lightMode||"Light")],
+    [t?.accent||"Accent", `Gold ${accent}`],
+    [t?.background||"Background", `Navy ${bg}`],
+    [t?.card||"Card", `Navy 600 ${card}`],
+    [t?.appZoom||"App zoom", Math.round((settings.appZoom||1)*100)+"%"],
+  ];
+  const localizationRows=[
+    [t?.language||"Language", t?.englishEn||"English (EN)"],
+    [t?.dateFormat||"Date format", "Month DD, YYYY"],
+    [t?.currency||"Currency", "USD ($)"],
+  ];
+  const remindersRows=[
+    [t?.noContactThresh||"No-contact threshold", (settings.noContactDays||30)+" "+(t?.daysLbl||"days")],
+    [t?.highDsrAlert||"High DSR alert", settings.dsrAlert!==false?(t?.onLbl||"On"):(t?.offLbl||"Off")],
+    [t?.promoExpiringAlert||"Promo expiring alert", (settings.promoLeadDays||60)+" "+(t?.daysOutLbl||"days out")],
+    [t?.debtRisingAlert||"Debt-rising alert", settings.debtRisingAlert?(t?.onLbl||"On"):(t?.offLbl||"Off")],
+  ];
+  const svcList=Array.isArray(settings.services)&&settings.services.length?settings.services:[
+    {name:t?.initialCheckup||"Initial Checkup",price:"$149"},
+    {name:t?.quarterlyReview||"Quarterly Review",price:"$199"},
+    {name:t?.strategySession||"Strategy Session",price:"$129"},
+    {name:t?.monthlyLite||"Monthly Lite",price:"$49/mo"},
+    {name:t?.insuranceConsult||"Insurance Consult",price:"Free"}
+  ];
+  const servicesRows=svcList.slice(0,6).map(s=>[s.name||"Service",`${s.price||"—"} · ${s.stripeUrl?(t?.linkedLbl||"linked"):(t?.unlinkedLbl||"not linked")}`]);
+  const backupRows=[
+    [t?.lastBackupLbl||"Last verified backup", settings.lastBackupVerified||"—"],
+    [t?.autoBackup||"Auto-backup", t?.weeklyLbl||"Weekly"],
+    [t?.exportFormat||"Export format", "JSON + CSV"],
+  ];
+  return <div className="ga-np" style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
+    <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6,letterSpacing:"-0.01em"}}>{t?.profileSettings||"Profile & Settings"}</div>
+    <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.profileSettingsSub||"Edit any section to update your details, services, or theme."}</div>
+    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <SettingsCard title={"👤 "+(t?.advisorInformation||"Advisor Information")} rows={advisorRows} onEdit={()=>onEdit("profile")} t={t} th={th}/>
+      <SettingsCard title={"🎨 "+(t?.appearance||"Appearance")} rows={appearanceRows} onEdit={()=>onEdit("appearance")} t={t} th={th}/>
+      <SettingsCard title={"🌍 "+(t?.localization||"Localization")} rows={localizationRows} onEdit={()=>onEdit("localization")} t={t} th={th}/>
+      <SettingsCard title={"🔔 "+(t?.reminders||"Reminders")} rows={remindersRows} onEdit={()=>onEdit("reminders")} t={t} th={th}/>
+      <SettingsCard title={"💼 "+(t?.servicesAndStripeLinks||"Services & Stripe Links")} rows={servicesRows} onEdit={()=>onEdit("services")} t={t} th={th}/>
+      <SettingsCard title={"💾 "+(t?.backupAndData||"Backup & Data")} rows={backupRows} onEdit={()=>onEdit("backup")} t={t} th={th}/>
+    </div>
+    {numArchived>0 && <div style={{marginTop:14,padding:"10px 14px",background:th.warn+"11",border:`1px solid ${th.warn}33`,borderRadius:10,fontSize:11,color:th.muted}}>🗂 {numArchived} {t?.archivedClientsLbl||"archived clients"} · <button onClick={()=>onEdit("archived")} style={{background:"transparent",border:"none",color:th.accent,fontWeight:700,fontSize:11,cursor:"pointer",padding:0,textDecoration:"underline"}}>{t?.viewArchived||"View archived"}</button></div>}
+  </div>;
+}
+
+/* ── AvatarBubble — gold initials chip used in TopBar + sidebar footer ──── */
+function AvatarBubble({initials,size,ring,onClick,title}){
+  return <button onClick={onClick} title={title} style={{background:"transparent",border:ring?`2px solid ${GOLD}`:"2px solid transparent",padding:0,cursor:onClick?"pointer":"default",lineHeight:0,borderRadius:999,width:size+4,height:size+4,display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{width:size,height:size,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:Math.round(size*0.38),letterSpacing:"0.03em"}}>{initials||"MH"}</div>
+  </button>;
+}
+
+/* ── TopBar — global header. Matches ui_kits/advisor_app/TopBar.jsx.
+   Title + breadcrumb on the left; EN/ES + hide + theme + avatar dropdown on
+   the right. Avatar opens the big account menu (Profile, Settings, Security,
+   Billing, Backup, Archived clients, What's new, Help, Sign out).          */
+function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onOpenSettings,onSignOut,advisorName,advisorEmail,avatarInitials,th,isMobile,onOpenDrawer,t,version}){
+  const[menu,setMenu]=useState(false);
+  const menuRef=useRef();
+  useEffect(()=>{
+    const h=e=>{if(menuRef.current&&!menuRef.current.contains(e.target))setMenu(false);};
+    document.addEventListener("mousedown",h);
+    return()=>document.removeEventListener("mousedown",h);
+  },[]);
+  const items=[
+    {icon:"👤",label:t?.menuProfile||"Profile",sub:advisorName||"—",onClick:()=>onOpenSettings("profile")},
+    {icon:"⚙️",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, integrations",onClick:()=>onOpenSettings()},
+    {icon:"🛡️",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Password, sessions",onClick:()=>onOpenSettings("security")},
+    {icon:"🏷️",label:t?.menuBilling||"Billing & plan",sub:"Solo Advisor",onClick:()=>onOpenSettings("billing")},
+    {divider:true},
+    {icon:"💾",label:t?.menuBackup||"Backup data",onClick:()=>onOpenSettings("backup")},
+    {icon:"🗂",label:t?.menuArchived||"Archived clients",onClick:()=>onOpenSettings("archived")},
+    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version?(version+" · Phase 8 dashboard"):"v0.17.0",onClick:null},
+    {icon:"❓",label:t?.menuHelp||"Help & support",onClick:null},
+    {divider:true},
+    {icon:"🚪",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
+  ];
+  return <div className="ga-np" style={{padding:isMobile?"12px 14px":"16px 24px",borderBottom:`1px solid ${th.cardBorder}`,background:th.bg,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
+      {isMobile&&<button onClick={onOpenDrawer} title={t?.menu||"Menu"} aria-label={t?.menu||"Menu"} style={{background:th.accent+"22",border:`1px solid ${th.accent}44`,color:th.accent,borderRadius:8,padding:"8px 10px",cursor:"pointer",fontSize:16,lineHeight:1}}>☰</button>}
+      <div style={{minWidth:0}}>
+        {breadcrumb&&<div style={{fontSize:11,color:th.dim,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{breadcrumb}</div>}
+        <div style={{fontSize:isMobile?16:20,fontWeight:800,color:th.text,letterSpacing:"-0.01em",lineHeight:1.1}}>{title}</div>
+      </div>
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{display:"flex",border:`1px solid ${th.cardBorder}`,borderRadius:8,overflow:"hidden"}}>
+        {["en","es"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"5px 12px",fontSize:11,fontWeight:700,background:lang===l?th.accent+"22":"transparent",color:lang===l?th.accent:th.muted,border:"none",cursor:"pointer",letterSpacing:"0.05em",textTransform:"uppercase"}}>{l}</button>)}
+      </div>
+      <button onClick={()=>setHide(!hideNumbers)} title={t?.hideNumbers||"Hide all numbers"} style={{background:hideNumbers?th.accent+"22":"transparent",color:hideNumbers?th.accent:th.muted,border:`1px solid ${hideNumbers?th.accent+"44":th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{hideNumbers?"👁️‍🗨️":"👁️"}</button>
+      <button onClick={()=>setDark(!isDark)} title={t?.theme||"Theme"} style={{background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{isDark?"🌙":"☀️"}</button>
+      <div ref={menuRef} style={{position:"relative"}}>
+        <AvatarBubble initials={avatarInitials} size={30} ring={menu} onClick={()=>setMenu(o=>!o)} title={t?.accountMenu||"Account & app menu"}/>
+        {menu&&<div style={{position:"absolute",top:42,right:0,background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:12,boxShadow:"0 12px 40px rgba(0,0,0,0.45)",width:280,zIndex:80,padding:6}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 10px 12px",borderBottom:`1px solid ${th.cardBorder}`,marginBottom:4}}>
+            <div style={{width:36,height:36,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>{avatarInitials||"MH"}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:700,color:th.text}}>{advisorName||"Mauricio Hernandez"}</div>
+              <div style={{fontSize:10,color:th.muted,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{advisorEmail||"—"}</div>
+              {signedIn&&<div style={{marginTop:6,display:"inline-flex",alignItems:"center",gap:4,fontSize:9,fontWeight:700,letterSpacing:"0.06em",background:th.pos+"22",color:th.pos,border:`1px solid ${th.pos}44`,borderRadius:99,padding:"2px 7px",textTransform:"uppercase"}}>● {t?.signedIn||"Signed in"}</div>}
+            </div>
+          </div>
+          {items.map((it,i)=>it.divider?<div key={i} style={{height:1,background:th.cardBorder,margin:"4px 8px"}}/>:
+            <button key={i} onClick={()=>{setMenu(false);it.onClick&&it.onClick();}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",padding:"8px 10px",background:"transparent",border:"none",color:it.danger?th.neg:th.text,fontSize:12,cursor:"pointer",borderRadius:8,fontWeight:it.danger?700:500}} onMouseEnter={e=>{e.currentTarget.style.background=th.bg;}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
+              <span style={{width:18,fontSize:13,lineHeight:1,textAlign:"center"}}>{it.icon}</span>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:"block",lineHeight:1.2}}>{it.label}</span>
+                {it.sub&&<span style={{display:"block",fontSize:10,color:th.dim,marginTop:2,fontWeight:400,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{it.sub}</span>}
+              </span>
+            </button>
+          )}
+          <div style={{padding:"10px 10px 6px",borderTop:`1px solid ${th.cardBorder}`,marginTop:4,fontSize:9,color:th.dim,display:"flex",justifyContent:"space-between",letterSpacing:"0.04em"}}>
+            <span>Golden Anchor · {version||"v0.17.0"}</span>
+            <span>⚓ {t?.educationalCoaching||"Educational coaching"}</span>
+          </div>
+        </div>}
+      </div>
+    </div>
+  </div>;
+}
+
 export default function App(){
   const[authUser,setAuthUser]=useState(null);const[authReady,setAuthReady]=useState(false);const[bootstrapping,setBootstrapping]=useState(false);
   // v0.6.1 — Read persisted lang+isDark from settings so toggles survive refresh.
@@ -3541,7 +3695,7 @@ export default function App(){
         <button onClick={()=>setDark(d=>!d)} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode}</button>
         <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{width:"100%",padding:"6px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>🌐 EN | ES</button>
         {/* v0.16.0 Phase 8 — advisor profile widget at bottom (Claude design) */}
-        <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} style={{width:"100%",padding:"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
+        <button onClick={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",padding:"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
           <div style={{width:36,height:36,borderRadius:99,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}66`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{(settings.advisorName||authUser?.email||"M").slice(0,2).toUpperCase()}</div>
           <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
             <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
@@ -3559,7 +3713,7 @@ export default function App(){
           <button onClick={()=>setDark(d=>!d)} title={isDark?t.lightMode:t.darkMode} style={{width:"100%",padding:"6px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?(isDark?"☀️":"🌙"):(isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode)}</button>
           <button onClick={()=>setLang(l=>l==="en"?"es":"en")} title={t?.navLanguage||"Language"} style={{width:"100%",padding:"5px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?"🌐":"🌐 EN | ES"}</button>
           {/* v0.16.0 Phase 8 — advisor profile widget at bottom (Claude design). Collapses to just the avatar when sidebar is collapsed. */}
-          <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:sidebarCollapsed?"6px":"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:sidebarCollapsed?0:10,justifyContent:sidebarCollapsed?"center":"flex-start",textAlign:"left"}}>
+          <button onClick={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:sidebarCollapsed?"6px":"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:sidebarCollapsed?0:10,justifyContent:sidebarCollapsed?"center":"flex-start",textAlign:"left"}}>
             <div style={{width:sidebarCollapsed?28:36,height:sidebarCollapsed?28:36,borderRadius:99,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}66`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:sidebarCollapsed?11:13,flexShrink:0}}>{(settings.advisorName||authUser?.email||"M").slice(0,2).toUpperCase()}</div>
             {!sidebarCollapsed && <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
               <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
@@ -3569,14 +3723,33 @@ export default function App(){
           {!sidebarCollapsed&&supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} title={t.signOut||"Sign Out"} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
         </div>
       </div>}
-      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",minWidth:0,maxWidth:"100%"}}>{vp.isMobile&&<div id="ga-appbar" style={{position:"sticky",top:0,zIndex:50,background:theme.nav,borderBottom:`1px solid ${theme.navBorder}`,padding:"8px 12px",display:"flex",alignItems:"center",gap:10,minHeight:52}}><button onClick={()=>setDrawerOpen(true)} aria-label={t.menu||"Menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,fontSize:22,cursor:"pointer",padding:8,marginLeft:-4,minWidth:44,minHeight:44,borderRadius:8}}>☰</button><div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",overflow:"hidden"}}><span style={{fontSize:14,fontWeight:700,color:theme.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected?((selected.firstName||"")+(selected.lastName?" "+selected.lastName:"")):(NAV.find(n=>n.id===nav)?.l||"")}</span></div></div>}<div style={{flex:1,overflowY:"auto"}}>
+      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",minWidth:0,maxWidth:"100%"}}>
+        <TopBar
+          title={selected?((selected.firstName||"")+(selected.lastName?" "+selected.lastName:"")):(NAV.find(n=>n.id===nav)?.l?.replace(/^[^\sA-Za-z]+\s*/,"")||(nav==="settings"?(t?.profileSettings||"Profile & Settings"):""))}
+          breadcrumb={selected?((t?.clients||"Clients")+" · "+selected.firstName+" "+selected.lastName):null}
+          isDark={isDark} setDark={()=>setDark(d=>!d)}
+          lang={lang} setLang={setLang}
+          hideNumbers={settings.hideNumbers||false} setHide={v=>setSettings(s=>({...s,hideNumbers:v}))}
+          signedIn={!!authUser}
+          onOpenSettings={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}}
+          onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}setAuthUser(null);}}
+          advisorName={settings.advisorName||authUser?.email||"Mauricio Hernandez"}
+          advisorEmail={settings.advisorEmail||authUser?.email||""}
+          avatarInitials={(settings.advisorName||authUser?.email||"MH").trim().split(/\s+/).slice(0,2).map(p=>p[0]).join("").toUpperCase().slice(0,2)||"MH"}
+          th={theme}
+          isMobile={vp.isMobile} onOpenDrawer={()=>setDrawerOpen(true)}
+          t={t}
+          version="v0.17.0"
+        />
+        <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:
           nav==="dashboard"?<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>:
           nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
           nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} settings={settings} onConvert={c=>{addClient(c);}}/>:
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
           nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
-                    nav==="resources"?<ResourcesPage t={t}/>:
+          nav==="resources"?<ResourcesPage t={t}/>:
+          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={()=>setProfileOpen(true)} t={t}/>:
           <AboutPage t={t} settings={settings} lang={lang}/>}
       </div></div>
     </div>
