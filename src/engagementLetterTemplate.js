@@ -23,8 +23,8 @@
 
 export const ELT_DEFAULTS = {
   firmTagline: "Guiding you safely to financial freedom.",
-  ongoingFeeAmount: "1,200",
-  ongoingFeeQuarterly: "300",
+  ongoingFeeAmount: "500",
+  ongoingFeeMonthlyLite: "30",
   aumPct: "1.00%",
   aumFrequency: "quarterly"
 };
@@ -121,11 +121,7 @@ export const ENGAGEMENT_LETTER = {
           planLabel: "Comprehensive Financial Plan Flat Fee",
           planNote: "Includes data gathering, analysis, written plan, and initial presentation meeting. Includes the first annual plan review.",
           ongoingLabel: "Ongoing Planning/Monitoring Fee (after Year 1)",
-          ongoingValue: "${{ongoingFeeAmount}} annually (or ${{ongoingFeeQuarterly}} per quarter).",
-          aumLabel: "Investment Management (if applicable)",
-          aumValue: "{{aumPct}} of assets under management, billed {{aumFrequency}}.",
-          commissionsLabel: "Product Commissions (if applicable)",
-          commissionsValue: "If you purchase products such as insurance or certain investment vehicles through us, we may receive commissions. You will be informed of any such compensation prior to purchase.",
+          ongoingValue: "${{ongoingFeeAmount}} annually (or ${{ongoingFeeMonthlyLite}} per month under the Lite plan, if applicable).",
           referralLabel: "Referral Fees",
           referralValue: "We do not receive referral fees for introducing you to third-party professionals. If this ever changes, we will disclose it in writing before making a referral."
         },
@@ -208,11 +204,7 @@ export const ENGAGEMENT_LETTER = {
           planLabel: "Honorario Fijo del Plan Financiero Integral",
           planNote: "Incluye recopilación de datos, análisis, plan escrito y reunión de presentación inicial. Incluye la primera revisión anual.",
           ongoingLabel: "Honorario de Planificación Continua (después del Año 1)",
-          ongoingValue: "${{ongoingFeeAmount}} anuales (o ${{ongoingFeeQuarterly}} por trimestre).",
-          aumLabel: "Gestión de Inversiones (si aplica)",
-          aumValue: "{{aumPct}} de los activos bajo gestión, facturado {{aumFrequency}}.",
-          commissionsLabel: "Comisiones de Productos (si aplica)",
-          commissionsValue: "Si adquiere productos como seguros o ciertos instrumentos de inversión a través nuestro, podemos recibir comisiones. Se le informará antes de la compra.",
+          ongoingValue: "${{ongoingFeeAmount}} anuales (o ${{ongoingFeeMonthlyLite}} mensuales bajo el plan Lite, si aplica).",
           referralLabel: "Honorarios de Referidos",
           referralValue: "No recibimos honorarios de referidos por presentarle a profesionales externos. Si esto cambia, lo informaremos por escrito antes de la referencia."
         },

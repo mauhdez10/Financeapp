@@ -265,7 +265,7 @@ return<Modal title={t.profileSettings} onClose={onClose} width={520}>
 </Row2>
 
 <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.advisorSigHdr||"YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)"}</div>
-<SignaturePad value={s.advisorSignature?{kind:"drawn",dataUrl:s.advisorSignature}:null} onChange={v=>setS(p=>({...p,advisorSignature:v?v.dataUrl:""}))} t={t} theme={th} defaultName={s.advisorName}/>
+<SignaturePad value={typeof s.advisorSignature==="string"?(s.advisorSignature?{kind:"drawn",dataUrl:s.advisorSignature}:null):(s.advisorSignature||null)} onChange={v=>setS(p=>({...p,advisorSignature:v||""}))} t={t} theme={th} defaultName={s.advisorName}/>
 
 <div style={{...mCARD(th),padding:"10px 14px",marginTop:18,marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setThemeOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>🎨 {t.themeColors||"Theme Colors"} {themeOpen?"▲":"▼"}</span></div>
@@ -2540,8 +2540,8 @@ function ToSModal({onAccept,onCancel,t,theme}){
         <span style={{fontSize:12,color:theme.text,lineHeight:1.5}}>{t.tosAcceptMsg||"I have read and accept the Terms of Service and Privacy Policy"}</span>
       </label>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={onCancel} style={{flex:1,padding:"11px 14px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",background:"transparent",color:theme.muted,border:`1px solid ${theme.cardBorder}`}}>{t.tosRejectBtn||"Cancel"}</button>
-        <button onClick={()=>checked&&onAccept()} disabled={!checked} style={{flex:1,padding:"11px 14px",borderRadius:10,fontWeight:700,fontSize:12,cursor:checked?"pointer":"not-allowed",background:checked?theme.accent:theme.cardBorder,color:"#fff",border:"none",opacity:checked?1:0.5}}>{t.tosAcceptBtn||"Accept & Continue"}</button>
+        <button type="button" onClick={onCancel} style={{flex:1,padding:"14px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:"transparent",color:theme.muted,border:`1px solid ${theme.cardBorder}`,minHeight:48}}>{t.tosRejectBtn||"Cancel"}</button>
+        <button type="button" onClick={()=>{ if(checked) onAccept(); }} style={{flex:1,padding:"14px 16px",borderRadius:10,fontWeight:800,fontSize:14,cursor:checked?"pointer":"not-allowed",background:checked?GOLD:theme.cardBorder,color:checked?"#0D1B2A":"#fff",border:"none",opacity:checked?1:0.55,minHeight:48,touchAction:"manipulation"}}>{t.tosAcceptBtn||"Accept & Continue"}</button>
       </div>
     </div>
   </div>;
@@ -2566,7 +2566,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
     selectedServiceName: selectedService?.name || "—",
     selectedServicePrice: selectedService?.price || "—",
     ongoingFeeAmount: settings.ongoingFeeAmount || ELT_DEFAULTS.ongoingFeeAmount,
-    ongoingFeeQuarterly: settings.ongoingFeeQuarterly || ELT_DEFAULTS.ongoingFeeQuarterly,
+    ongoingFeeMonthlyLite: settings.ongoingFeeMonthlyLite || ELT_DEFAULTS.ongoingFeeMonthlyLite,
     aumPct: settings.aumPct || ELT_DEFAULTS.aumPct,
     aumFrequency: settings.aumFrequency || ELT_DEFAULTS.aumFrequency
   };
@@ -2591,7 +2591,14 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
     <div style={{marginBottom:6}}>{L.sincerely}</div>
     {/* Advisor signature */}
     <div style={{marginBottom:24,paddingBottom:6,borderBottom:`1px solid ${settings.advisorSignature?"transparent":"#94A3B8"}`,minHeight:60}}>
-      {settings.advisorSignature ? <img src={settings.advisorSignature} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/> : <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>}
+      {(() => {
+        const sig = settings.advisorSignature;
+        if (!sig) return <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>;
+        if (typeof sig === "string") return <img src={sig} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/>;
+        if (sig.kind === "drawn" && sig.dataUrl) return <img src={sig.dataUrl} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/>;
+        if (sig.kind === "typed" && sig.text) return <span style={{fontSize:26,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A"}}>{sig.text}</span>;
+        return <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>;
+      })()}
     </div>
     <div style={{fontSize:13,fontWeight:700,marginBottom:24,paddingTop:0}}>{fill(L.signatureLine)}</div>
     {/* Sections */}
@@ -2612,8 +2619,6 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
           <div style={{fontSize:12,fontStyle:"italic",color:"#475569",marginLeft:8,marginTop:2}}>{sec.section4.planNote}</div>
         </div>
         <div style={{marginBottom:8}}><b>{sec.section4.ongoingLabel}:</b> {fill(sec.section4.ongoingValue)}</div>
-        <div style={{marginBottom:8}}><b>{sec.section4.aumLabel}:</b> {fill(sec.section4.aumValue)}</div>
-        <div style={{marginBottom:8}}><b>{sec.section4.commissionsLabel}:</b> {sec.section4.commissionsValue}</div>
         <div><b>{sec.section4.referralLabel}:</b> {sec.section4.referralValue}</div>
       </div>}
       {sec.after && <div style={{marginTop:8,fontStyle:"italic",fontSize:12}}>{sec.after}</div>}
@@ -2650,7 +2655,55 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0150-design-system-port";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0151-intake-and-sig-fixes";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+
+/* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
+   IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
+   notes editors against a client-shaped draft, plus SSN + DOB + address +
+   how-heard fields. Restored in v0.15.1 — the component was referenced
+   since v0.7.1 but never defined (production bug: step 4 went blank). */
+function IntakeFormBody({draft,setDraft,t,TH,lang}){
+  const INP={width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"};
+  const LBL={fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600};
+  const Div=()=><div style={{height:1,background:TH.cardBorder,margin:"22px 0"}}/>;
+  const up=k=>e=>setDraft(d=>({...d,[k]:e.target.value}));
+  const hasP2=!!(draft.partnerFirst&&String(draft.partnerFirst).trim());
+  return <ThemeCtx.Provider value={TH}>
+    <div style={{fontSize:13,fontWeight:700,color:TH.text,marginBottom:8}}>{t.personalInfoHdr||"Personal information"}</div>
+    <div style={{marginBottom:10}}><div style={LBL}>{t.address||"Address"}</div><input style={INP} value={draft.address||""} onChange={up("address")}/></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+      <div><div style={LBL}>{t.dob||"Date of birth"}</div><input type="date" style={INP} value={draft.dob||""} onChange={up("dob")}/></div>
+      <div><div style={LBL}>{t.social||"SSN"}</div><input style={INP} value={draft.social||""} onChange={e=>setDraft(d=>({...d,social:fmtSSN?fmtSSN(e.target.value):e.target.value}))} placeholder="XXX-XX-XXXX" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
+    </div>
+    {hasP2 && <>
+      <div style={{fontSize:11,fontWeight:700,color:TH.dim,marginTop:14,marginBottom:8}}>👤 {draft.partnerFirst||"Partner"} — {t.personalInfoHdr||"Personal info"}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        <div><div style={LBL}>{t.dob||"Date of birth"}</div><input type="date" style={INP} value={draft.p2Dob||""} onChange={up("p2Dob")}/></div>
+        <div><div style={LBL}>{t.social||"SSN"}</div><input style={INP} value={draft.p2Social||""} onChange={e=>setDraft(d=>({...d,p2Social:fmtSSN?fmtSSN(e.target.value):e.target.value}))} placeholder="XXX-XX-XXXX" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></div>
+      </div>
+    </>}
+    <div style={{marginTop:12,marginBottom:10}}><div style={LBL}>{t.howHeardLbl||"How did you hear about us?"}</div><input style={INP} value={draft.howHeard||""} onChange={up("howHeard")} placeholder={t.howHeardPlaceholder||"Referral, ad, online search…"}/></div>
+    <Div/>
+    <IncomeSection client={draft} onUpdate={setDraft} t={t}/>
+    <Div/>
+    <BillsSection client={draft} onUpdate={setDraft} t={t}/>
+    <Div/>
+    <DebtSection client={draft} onUpdate={setDraft} t={t}/>
+    <Div/>
+    <CustomAssetsSection client={draft} onUpdate={setDraft} t={t}/>
+    <Div/>
+    <div style={{fontSize:13,fontWeight:700,color:TH.text,marginBottom:8}}>📝 {t.goalsAndNotesHdr||"Goals & notes"}</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+      <div><div style={LBL}>{t.shortTermLbl||"Short-term (0–1yr)"}</div><textarea style={{...INP,minHeight:60,fontFamily:"inherit",resize:"vertical"}} value={draft.notes?.shortTerm||""} onChange={e=>setDraft(d=>({...d,notes:{...(d.notes||{}),shortTerm:e.target.value}}))}/></div>
+      <div><div style={LBL}>{t.midTermLbl||"Mid-term (1–5yr)"}</div><textarea style={{...INP,minHeight:60,fontFamily:"inherit",resize:"vertical"}} value={draft.notes?.midTerm||""} onChange={e=>setDraft(d=>({...d,notes:{...(d.notes||{}),midTerm:e.target.value}}))}/></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+      <div><div style={LBL}>{t.longTermLbl||"Long-term (5+yr)"}</div><textarea style={{...INP,minHeight:60,fontFamily:"inherit",resize:"vertical"}} value={draft.notes?.longTerm||""} onChange={e=>setDraft(d=>({...d,notes:{...(d.notes||{}),longTerm:e.target.value}}))}/></div>
+      <div><div style={LBL}>{t.generalNotesLbl||"General notes / anything else we should know"}</div><textarea style={{...INP,minHeight:60,fontFamily:"inherit",resize:"vertical"}} value={draft.notes?.general||""} onChange={e=>setDraft(d=>({...d,notes:{...(d.notes||{}),general:e.target.value}}))}/></div>
+    </div>
+  </ThemeCtx.Provider>;
+}
+
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
@@ -3402,7 +3455,7 @@ export default function App(){
         them position:fixed relative to the viewport again. */}
     {vp.isMobile&&drawerOpen&&<div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,background:"#000a",zIndex:90,touchAction:"none"}} aria-hidden="true"/>}
     {vp.isMobile&&<div id="ga-sidebar-mobile" style={{width:260,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",transform:drawerOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.25s ease-out",zIndex:100,boxShadow:drawerOpen?"4px 0 32px #000a":"none",visibility:drawerOpen?"visible":"hidden"}}>
-      <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",letterSpacing:"0.02em",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
+      <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
       <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=><button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{n.l}</button>)}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
         <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} style={{width:"100%",padding:"9px",borderRadius:8,fontSize:13,cursor:"pointer",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,fontWeight:700,marginBottom:8,whiteSpace:"nowrap",overflow:"hidden"}}>⚙️ {t.profileSettings}</button>
@@ -3413,7 +3466,7 @@ export default function App(){
     </div>}
     <div style={{display:"flex",minHeight:"100vh",width:"100%",background:theme.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1)}}>
       {!vp.isMobile&&<div id="ga-sidebar" style={{width:sidebarCollapsed?62:222,flexShrink:0,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width 0.2s"}}>
-        <div style={{padding:sidebarCollapsed?"18px 10px":"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}>{sidebarCollapsed?<div style={{fontSize:22,color:GOLD,textAlign:"center"}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={22}/>:"⚓"}</div>:<><div style={{fontSize:16,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif",letterSpacing:"0.02em",whiteSpace:"nowrap",overflow:"visible",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></>}</div>{!sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(true)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:4}} title={t?.navCollapse||"Collapse"}>«</button>}</div>{sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(false)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:"8px 0",borderBottom:`1px solid ${theme.navBorder}`}} title={t?.navExpand||"Expand"}>»</button>}
+        <div style={{padding:sidebarCollapsed?"18px 10px":"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}>{sidebarCollapsed?<div style={{fontSize:22,color:GOLD,textAlign:"center"}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={22}/>:"⚓"}</div>:<><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"visible",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></>}</div>{!sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(true)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:4}} title={t?.navCollapse||"Collapse"}>«</button>}</div>{sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(false)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:"8px 0",borderBottom:`1px solid ${theme.navBorder}`}} title={t?.navExpand||"Expand"}>»</button>}
         <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?icon:n.l}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
           <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,fontWeight:700,marginBottom:8,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?"⚙️":"⚙️ "+t.profileSettings}</button>

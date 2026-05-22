@@ -35,7 +35,36 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.15.0** — established 2026-05-21 (Minor — Claude Design System port: Phases 1–4 from `HANDOFF.md`. Brand assets, type system, PDF rebuild, line/area charts).
+**v0.15.1** — established 2026-05-21 (Patch — v0.15.0 follow-up bugfix pass; 5 real bugs from Mauricio's smoke test).
+
+**What shipped:**
+1. **Missing `IntakeFormBody` component defined.** Referenced at App.jsx:2809 (PublicIntake step 4) and App.jsx:3066 (IntakeSubmissionEditor) since v0.7.1 but never actually written — production regression. Every public intake's step 4 ("Details") rendered blank because React crashed on the undefined component. New `IntakeFormBody({draft,setDraft,t,TH,lang})` placed before `PublicIntake` wraps `IncomeSection`/`BillsSection`/`DebtSection`/`CustomAssetsSection` against the draft state, plus address/DOB/SSN/partner-DOB-SSN/how-heard fields and short/mid/long-term + general notes textareas.
+2. **EngagementLetter Section 4 — Compensation & Fees** simplified per Mauricio. Removed Investment Management AUM line and Product Commissions line from both EN and ES `section4` objects in `src/engagementLetterTemplate.js`. Default `ongoingFeeAmount` changed `"1,200"` → `"500"`; new `ongoingFeeMonthlyLite: "30"` replaces `ongoingFeeQuarterly`. `ongoingValue` text reads "$500 annually (or $30 per month under the Lite plan, if applicable)." `EngagementLetter` JSX render simplified to two lines: Ongoing Fee + Referral Fees.
+3. **Sidebar wordmark → Newsreader italic uppercase.** v0.15.0 Phase 2 missed both sidebar wordmark sites (mobile drawer line 3405 + desktop sidebar line 3416). Fixed via `replace_all` — `fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",fontWeight:500`. Matches the brand spec from `colors_and_type.css .ga-wordmark`.
+4. **ToS modal Accept button.** Removed `disabled={!checked}` attribute (some mobile WebViews honor it unreliably during React rapid re-renders, causing the "I check the box but Accept still won't fire" symptom). Gating is now JS-only: `()=>{ if(checked) onAccept(); }`. Button bumped to 14px / `minHeight:48` / `touchAction:"manipulation"` for proper mobile tap target. Background uses literal `GOLD` (was `theme.accent` which can resolve to `undefined` in some theme contexts → invisible button), text flips to navy `#0D1B2A` when active for readable contrast on gold.
+5. **Advisor signature typed-mode persistence bug.** Profile & Settings `<SignaturePad>` `onChange` was saving `v.dataUrl` — for typed signatures `v.dataUrl` is `undefined` (typed mode has `v.text`), so saving wiped the signature back to `""`. Now persists the full object `v` (or `""` to clear), with a `value`-prop normalization that keeps legacy string-shaped `settings.advisorSignature` values working. `EngagementLetter`'s advisor signature render expanded to a 4-branch IIFE: empty → grey placeholder, string → legacy `<img src>`, `kind:"drawn"` → `<img src={sig.dataUrl}>`, `kind:"typed"` → cursive Brush Script MT text node.
+
+**Deferred (raised by Mauricio, not addressed in v0.15.1):**
+- **Dashboard layout restructure** to match the Claude design `ui_kits/advisor_app/index.html` mockup. Different KPI layout (4 wide cards vs current 6 narrow), INCOME VS SPENDING bars+line overlay chart (vs current smooth area), side-by-side ADVISOR ALERTS + CLIENT DUE panels (vs current single tabbed panel), advisor profile widget at bottom of sidebar (vs current Profile & Settings button). **Not in HANDOFF.md Phases 1–7** — the ui_kits were intentionally scoped as visual references for brand/chrome patterns, not as working component specs. Requires explicit Phase 8 sign-off to scope.
+- **Client signature (engagement step) draw mode visual feedback.** Mauricio reported "Signature on the 3rd page of the advisor agreement doesn't populate." If they meant the ADVISOR's signature at the top of the letter, v0.15.1's typed-mode fix addresses it. If they meant the CLIENT's signature on the engagement step's SignaturePad doesn't visually persist while drawing, that's a separate canvas-rendering issue that needs reproduction on Mauricio's specific device/browser to diagnose.
+
+**Build marker:** `2026-05-21-v0151-intake-and-sig-fixes`. App.jsx 3,417 → 3,469 lines (+52 for IntakeFormBody). `src/engagementLetterTemplate.js` -8 lines (section4 simplification). `vercel.json`, `package.json`, `translations.js` unchanged. No SQL migration. No new pitfalls. No new locked decisions. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Out-of-app actions required:**
+- Replace `src/App.jsx`, `src/engagementLetterTemplate.js`; replace `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.15.1 entry.
+- Commit + push; Vercel auto-deploys.
+- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0151-intake-and-sig-fixes"`.
+
+**Smoke tests:**
+1. **Intake step 4 renders.** Open `/intake?advisor=<your-uuid>` in incognito. Step through: household → service → engagement (sign as client) → click Continue. Step 4 ("Details / New Client Intake") should now render the full form (address / DOB / SSN / how-heard, income/bills/debt editors, notes textareas) instead of going blank.
+2. **Engagement letter Section 4.** On step 3 of the intake, scroll to "4. Compensation & Fees". You should see exactly TWO bullet items inside the gold-bordered box: Ongoing Planning/Monitoring Fee ($500 annually or $30 per month under the Lite plan) + Referral Fees. The AUM line and Commissions line should be GONE.
+3. **Sidebar wordmark.** Open the app — the sidebar header "Golden Anchor / ADVISOR PORTAL" should render in Newsreader italic uppercase, gold color, with 0.10em letter-spacing. Same on the mobile drawer (open via hamburger).
+4. **ToS modal.** Sign out, sign back in (or clear `settings.tosAcceptedAt`). The ToS modal appears. Check the "I have read and accept..." box → the Accept & Continue button changes from greyed-out to gold-with-navy-text. Click it. Modal dismisses, app loads. (If still broken after this fix, capture the browser console — there may be a deeper state issue.)
+5. **Advisor signature.** Profile & Settings → scroll to "YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)". Switch to "Type name + date" mode, type your name. Close + reopen Profile & Settings → the typed signature should persist (was wiping to blank before). Open any client's engagement letter → your typed name should render in cursive at the top.
+
+---
+
+### Prior: v0.15.0 — 2026-05-21 (Minor — Claude Design System port: Phases 1–4 from `HANDOFF.md`. Brand assets, type system, PDF rebuild, line/area charts).
 
 **What shipped:** The Claude Design handoff (`golden-anchor-design-system/` project) had been delivered but never applied to the live app. v0.15.0 ports four of the seven phases.
 
