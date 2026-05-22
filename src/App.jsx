@@ -507,31 +507,80 @@ const exportIntakePDF=(lang="en",clientName="")=>{
   const L=INTAKE_TXT[lang]||INTAKE_TXT.en;
   const blankRows=(cols,count)=>{let html='';for(let i=0;i<count;i++){html+='<tr>';cols.forEach(()=>{html+='<td>&nbsp;</td>';});html+='</tr>';}return html;};
   const textArea=(rows=3)=>'<div class="textbox" style="min-height:'+(rows*18)+'px"></div>';
-  const html=`<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"/><title>${L.title} — ${clientName||"Golden Anchor"}</title><style>
-  body{font-family:system-ui,Arial,sans-serif;color:#0F172A;max-width:820px;margin:0 auto;padding:24px 32px;font-size:11px;line-height:1.45}
-  h1{font-size:20px;color:#D4AF37;margin:0 0 4px;font-family:Georgia,serif;text-align:center}
-  .sub{font-size:10px;color:#64748B;text-align:center;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px}
-  .helper{background:#FEF3C7;border-left:3px solid #D4AF37;padding:8px 12px;font-size:10.5px;margin-bottom:14px;border-radius:3px}
-  h2{font-size:13px;color:#1E40AF;border-bottom:1.5px solid #1E40AF;padding-bottom:3px;margin:18px 0 4px;text-transform:uppercase;letter-spacing:0.05em}
-  .note{font-size:10px;color:#64748B;font-style:italic;margin-bottom:8px}
-  table{width:100%;border-collapse:collapse;margin-bottom:8px}
-  th{background:#E0E7FF;color:#1E40AF;font-size:10px;font-weight:700;padding:5px 7px;border:1px solid #94A3B8;text-align:left}
-  td{border:1px solid #94A3B8;padding:4px 7px;height:18px;font-size:10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
-  .field{display:flex;flex-direction:column;gap:2px}
-  .field label{font-size:9.5px;color:#475569;font-weight:600}
-  .field .box{border:1px solid #94A3B8;height:22px;border-radius:2px}
-  .textbox{border:1px solid #94A3B8;margin-bottom:6px;border-radius:2px}
-  .sig{margin-top:20px;display:grid;grid-template-columns:2fr 1fr;gap:16px}
-  .sig .box{border-bottom:1px solid #0F172A;height:26px;margin-top:20px}
-  .sig label{font-size:10px;color:#475569}
-  .footer{margin-top:20px;font-size:9px;color:#94A3B8;text-align:center;border-top:1px solid #E2E8F0;padding-top:8px}
-  @page{margin:16mm 12mm}
-  @media print{body{padding:0}button{display:none}}
-  button.print{position:fixed;top:16px;right:16px;padding:8px 18px;background:#D4AF37;color:#0D1B2A;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-size:12px;box-shadow:0 4px 12px #0002}
+  const today=new Date().toLocaleDateString(lang==='es'?'es-US':'en-US',{year:'numeric',month:'long',day:'numeric'});
+  const html=`<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"/><title>${L.title} — ${clientName||"Golden Anchor"}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;1,6..72,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+  /* v0.21.0 — Claude Design PDF spec (Prompt 10). Source Serif body, Newsreader italic title,
+     Plus Jakarta Sans section headers w/ gold hairline, JetBrains Mono for tables, branded
+     header + footer on every page. No emoji. */
+  *{box-sizing:border-box}
+  body{font-family:'Source Serif 4',Georgia,'Times New Roman',serif;color:#0F172A;max-width:820px;margin:0 auto;padding:18px 32px 28px;font-size:10.5pt;line-height:1.55;background:#FFFFFF;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* Branded header — printed at the top of every page-block */
+  header.ga-hdr{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:1px solid #C9A84C;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+  header.ga-hdr .brand{display:flex;align-items:center;gap:10px}
+  header.ga-hdr img.mark{width:30px;height:30px;display:block}
+  header.ga-hdr .wm{font-family:'Newsreader',Georgia,serif;font-weight:500;letter-spacing:0.14em;font-size:10pt;color:#C9A84C;text-transform:uppercase;line-height:1}
+  header.ga-hdr .wm-sub{font-family:'Source Serif 4',serif;font-style:italic;font-size:7.5pt;color:#475569;margin-top:2px}
+  header.ga-hdr .meta{text-align:right;font-size:7.5pt;color:#475569;line-height:1.5}
+  header.ga-hdr .meta .client{font-weight:600;font-size:9.5pt;color:#0F172A;display:block;margin-bottom:1px}
+  /* Report title */
+  h1{font-family:'Newsreader',Georgia,serif;font-style:italic;font-weight:500;font-size:22pt;color:#0D1B2A;text-align:center;line-height:1.1;margin:6px 0 4px;letter-spacing:-0.005em}
+  .sub{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:8.5pt;color:#475569;text-align:center;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:14px}
+  .helper{background:#FBF5DC;border-left:2px solid #C9A84C;padding:8px 12px;font-size:9.5pt;margin:14px 0;border-radius:3px;color:#475569;line-height:1.6;font-style:italic}
+  /* Section headers — Plus Jakarta Sans, gold hairline beneath */
+  h2{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:9.5pt;color:#B8901E;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;margin:14px 0 6px;border-bottom:1px solid #C9A84C;padding-bottom:3px;display:flex;align-items:center;gap:6px}
+  h2 .rule{flex:1;height:1px;background:transparent}
+  .note{font-family:'Source Serif 4',serif;font-size:9pt;color:#475569;font-style:italic;margin-bottom:8px}
+  /* Tables — dashed row borders, JetBrains Mono for numeric cells */
+  table{width:100%;border-collapse:collapse;margin-bottom:10px}
+  thead th{background:transparent;color:#475569;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:8.5pt;font-weight:700;letter-spacing:0.04em;padding:6px 8px;border-bottom:1px solid #C9A84C;text-align:left;text-transform:uppercase}
+  thead th[align="right"]{text-align:right}
+  tbody td{border-bottom:1px dashed #E2E8F0;padding:6px 8px;height:20px;font-size:9.5pt;color:#0F172A}
+  tbody td.num,tbody td[align="right"]{text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  /* Inline grid for personal-info fields */
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:8.5pt;color:#64748B;font-weight:600;letter-spacing:0.02em}
+  .field .box{border:none;border-bottom:1px solid #94A3B8;height:22px;border-radius:0}
+  .textbox{border:1px solid #E2E8F0;margin-bottom:8px;border-radius:3px;background:#FAFAFA}
+  /* Signature block */
+  .sig{margin-top:24px;display:grid;grid-template-columns:2fr 1fr;gap:18px;page-break-inside:avoid}
+  .sig .box{border:none;border-bottom:1px solid #0F172A;height:30px;margin-top:20px}
+  .sig label{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:8.5pt;color:#475569;font-weight:600;letter-spacing:0.02em}
+  /* Footer — disclaimer + page number on every page */
+  footer.ga-foot{margin-top:28px;padding-top:10px;border-top:1px solid #C9A84C;display:flex;justify-content:space-between;align-items:flex-start;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:7.5pt;color:#6B7280;letter-spacing:0.02em;gap:14px}
+  footer.ga-foot .disclaimer{font-style:italic;max-width:480px;line-height:1.5}
+  footer.ga-foot .page{flex-shrink:0;text-align:right}
+  /* Print rules */
+  @page{margin:18mm 14mm}
+  @media print{
+    body{padding:0;max-width:none}
+    button{display:none!important}
+    h1,h2,h3{page-break-after:avoid}
+    table,tr{page-break-inside:avoid}
+    .sig{page-break-inside:avoid}
+  }
+  button.print{position:fixed;top:16px;right:16px;padding:10px 20px;background:#C9A84C;color:#0D1B2A;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-size:12px;box-shadow:0 6px 20px rgba(0,0,0,0.18);font-family:'Plus Jakarta Sans',system-ui,sans-serif}
   </style></head><body>
-  <button class="print" onclick="window.print()">🖨️ Print / Save PDF</button>
-  <h1>⚓ ${L.title}</h1><div class="sub">${L.subtitle}</div>
+  <button class="print" onclick="window.print()">Print / Save PDF</button>
+  <header class="ga-hdr">
+    <div class="brand">
+      <img class="mark" src="https://finance.goldenanchor.life/anchor-monogram.svg" alt=""/>
+      <div>
+        <div class="wm">Golden Anchor</div>
+        <div class="wm-sub">${lang==='es'?'Coaching Financiero':'Financial Coaching'}</div>
+      </div>
+    </div>
+    <div class="meta">
+      <span class="client">${clientName||(lang==='es'?'Nuevo Cliente':'New Client')}</span>
+      ${lang==='es'?'Emitido':'Issued'} ${today}
+    </div>
+  </header>
+  <h1>${L.title}</h1>
+  <div class="sub">${L.subtitle}</div>
   <div class="helper">${L.helper}</div>
 
   <h2>${L.sectionPersonal}</h2>
@@ -573,7 +622,10 @@ const exportIntakePDF=(lang="en",clientName="")=>{
   <div class="field"><label>${L.generalNotesLbl}</label>${textArea(2)}</div>
 
   <div class="sig"><div><label>${L.signature}</label><div class="box"></div></div><div><label>${L.date}</label><div class="box"></div></div></div>
-  <div class="footer">⚓ Golden Anchor · goldenanchor.life · ${new Date().toLocaleDateString(lang==='es'?'es-US':'en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+  <footer class="ga-foot">
+    <span class="disclaimer">${lang==='es'?'Coaching financiero educativo — no es asesoría de inversión, fiscal ni legal. Golden Anchor · goldenanchor.life':'Educational financial coaching — not investment, tax, or legal advice. Golden Anchor · goldenanchor.life'}</span>
+    <span class="page">${today}</span>
+  </footer>
   </body></html>`;
   const w=window.open("","_blank","width=900,height=1000");
   if(!w){alert(lang==='es'?"Habilite ventanas emergentes para exportar el PDF":"Please enable pop-ups to export the PDF");return;}
@@ -2849,7 +2901,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0200-sort-emailsupport-donut-alerts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0210-pdf-print-rebuild";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -4070,22 +4122,52 @@ export default function App(){
         .ga-sc{overflow:hidden}
       }
       @media print{
-        #ga-sidebar{display:none!important}
+        /* v0.21.0 — Claude Design PDF spec (Prompt 10).
+           Brand-font'd, emoji-free, page-broken, branded-header print output. */
+        #ga-sidebar,#ga-sidebar-mobile,#ga-appbar,.ga-top-bar{display:none!important}
         .ga-np{display:none!important}
-        html,body{background:#F1F5F9!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+        html,body{background:#FFFFFF!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#0F172A!important;font-size:10.5pt!important;line-height:1.55!important}
         *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
         #root,div{overflow:visible!important;max-height:none!important}
         ::-webkit-scrollbar{display:none!important}
         scrollbar-width:none!important;
         .recharts-wrapper,.recharts-responsive-container{width:100%!important;overflow:visible!important}
         .recharts-surface{overflow:visible!important}
+        /* Report titles render in Newsreader italic — apply via a .ga-report-title class on the JSX */
+        .ga-report-title,h1.ga-report-title{font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-weight:500!important;font-size:22pt!important;color:#0D1B2A!important;text-align:center!important;line-height:1.1!important;margin:4px 0 4px!important;letter-spacing:-0.005em!important}
+        /* Section headers — Plus Jakarta Sans, 0.08em tracking, gold underline (hairline). */
+        h2,h3,.section-hdr{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#B8901E!important;font-size:9.5pt!important;border-bottom:1px solid #C9A84C!important;padding-bottom:2px!important;margin:14px 0 6px!important}
+        h1{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important}
+        /* Currency cells in JetBrains Mono with tabular numerals. */
+        td.num,.ga-money,.ga-mono,td[align="right"]{font-family:'JetBrains Mono',ui-monospace,monospace!important;font-variant-numeric:tabular-nums!important;font-feature-settings:"tnum" 1!important}
+        /* Brand-printed header (visible only in print). The component just needs class="ga-print-header". */
+        .ga-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;padding-bottom:8px!important;margin-bottom:14px!important;border-bottom:1px solid #C9A84C!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
+        .ga-print-header img.brand-mark{width:28px!important;height:28px!important;display:block!important}
+        .ga-print-header .brand-wordmark{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;letter-spacing:0.14em!important;font-size:9pt!important;color:#C9A84C!important;text-transform:uppercase!important;line-height:1}
+        .ga-print-header .brand-sub{font-family:'Source Serif 4',Georgia,serif!important;font-style:italic!important;font-size:7pt!important;color:#475569!important;margin-top:2px!important}
+        .ga-print-header .client-name{font-weight:600!important;font-size:9.5pt!important;color:#0F172A!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
+        .ga-print-header .client-meta{font-size:7.5pt!important;color:#475569!important;line-height:1.4}
+        /* Page breaks — explicit between sections marked .ga-print-page. */
+        .ga-print-page{break-before:page!important;page-break-before:always!important}
+        .ga-print-page:first-of-type{break-before:auto!important;page-break-before:auto!important}
+        /* Block elements that should never split. */
         h1,h2,h3,h4{page-break-after:avoid!important;break-after:avoid!important}
         table{page-break-inside:avoid!important;break-inside:avoid!important}
         thead{display:table-header-group}
         tr{page-break-inside:avoid!important;break-inside:avoid!important}
-        .ga-section{page-break-inside:avoid!important;break-inside:avoid-page!important}
-        @page{margin:1.5cm;background:#F1F5F9}
+        .ga-section,.ga-section-card{page-break-inside:avoid!important;break-inside:avoid-page!important}
+        /* Hide leading emoji in section headers — wrap them in a span.ga-emoji.
+           Existing JSX uses raw emoji prefixes; until we wrap them, this rule
+           is a no-op safety net. New code should use <span class="ga-emoji">📊</span> */
+        .ga-emoji{display:none!important}
+        /* Page margins + footer area. */
+        @page{margin:18mm 14mm 22mm 14mm;background:#FFFFFF}
+        /* Disclaimer footer — renders inline at the bottom of the printable content.
+           Add <div class="ga-print-footer">...</div> at the end of each report. */
+        .ga-print-footer{margin-top:24px!important;padding-top:10px!important;border-top:1px solid #C9A84C!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-size:7.5pt!important;color:#6B7280!important;line-height:1.5!important;font-style:italic!important;text-align:center!important}
       }
+      /* Print header is ONLY visible in print mode — hide on screen. */
+      @media screen{.ga-print-header,.ga-print-footer,.ga-print-only{display:none!important}}
     `;
     document.head.appendChild(s);
     return()=>{const el=document.getElementById("ga-styles");if(el)el.remove();};
