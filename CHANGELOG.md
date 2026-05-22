@@ -2,6 +2,22 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.25.1 — 2026-05-22 — Clients page revisions (kebab removed, sort dropdown shrunk)
+
+Per Mauricio's smoke test of v0.25.0 + UI/UX Pro Max audit option A:
+
+**(1) Per-row kebab on Clients page rows: removed.** v0.25.0 added a kebab between `$/mo` and the chevron on each client row. Visually noisy and redundant — the row click already opens the client; bulk actions live in the section kebab; per-client actions live inside ClientDetail's header kebab. Removed.
+
+**(2) Sort dropdown shrunk + cleaner labels.** Was full-natural-width with "Sort: Sort by name" in every option (label repeated). Now:
+- Fixed width `190px` on desktop, full-width on mobile
+- Options show just the sort target with a `⇅` glyph: `⇅ Name` · `⇅ Recent activity` · `⇅ Debt (high→low)` · `⇅ Income (high→low)` · `⇅ Net worth (high→low)`
+- `aria-label="Sort clients by"` added for screen readers (per UI/UX Pro Max High-severity guideline "ARIA Labels")
+- Right-padding `28px` so the native chevron has clearance
+
+**Build marker:** `2026-05-22-v0251-rm-row-kebab-shrink-sort`. App.jsx +9 / -8 lines. No new files. `translations.js`, `vercel.json`, `package.json`, `api/*` unchanged. No SQL migration. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+---
+
 ## v0.25.0 — 2026-05-22 — Medium-polish batch (Clients header, per-row kebab, trend overlap, sub-tab wrap, Services fit)
 
 Follow-up to v0.24.0 — the medium-polish list from the audit.
