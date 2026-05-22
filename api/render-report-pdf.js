@@ -607,25 +607,33 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
 
   // ── Final HTML document
   return `<!DOCTYPE html><html lang="${isEs ? 'es' : 'en'}"><head><meta charset="utf-8"><title>${htmlEscape(L.title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   @page { size: Letter; margin: 0.5in; background: ${PAGE_BG}; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: ${TEXT}; margin: 0; padding: 0; background: ${PAGE_BG}; }
-  h1, h2, h3, h4 { margin: 0; }
+  body { font-family: "Source Serif 4", Georgia, "Times New Roman", serif; color: ${TEXT}; margin: 0; padding: 0; background: ${PAGE_BG}; font-feature-settings: "tnum" 1; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, h4 { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
   .section { page-break-inside: avoid; margin-top: 18px; background: #fff; border: 1px solid ${BORDER}; border-radius: 8px; padding: 14px; }
-  .section-hdr { font-size: 13px; font-weight: 700; color: ${TEXT}; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 6px; border-bottom: 2px solid ${GOLD}; margin-bottom: 8px; }
-  .header-bar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid ${BORDER}; margin-bottom: 14px; }
+  .section-hdr { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 11px; font-weight: 800; color: ${TEXT}; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; border-bottom: 1px solid ${GOLD}; margin-bottom: 10px; }
+  .report-title { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 500; font-size: 26px; color: ${TEXT}; letter-spacing: -0.005em; }
+  .header-bar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid ${GOLD}; margin-bottom: 14px; }
   .brand { display:flex; align-items:center; gap:10px; }
-  .brand-mark { font-size:28px; }
-  .brand-name { font-family: Georgia, serif; font-size: 18px; color: ${GOLD}; font-weight: 700; }
-  .brand-sub { font-size: 8px; color: ${MUTED}; letter-spacing: 0.2em; text-transform: uppercase; }
-  .meta { font-size: 10px; color: ${MUTED}; text-align: right; line-height: 1.5; }
-  .disclaimer { font-size: 8px; color: ${MUTED}; line-height: 1.5; border-top: 1px solid ${BORDER}; padding-top: 8px; margin-top: 20px; font-style: italic; background: #fff; border-radius: 8px; padding: 12px; }
+  .brand-mark { width:32px; height:32px; }
+  .brand-mark img { width:100%; height:100%; object-fit:contain; }
+  .brand-name { font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 20px; color: ${GOLD}; font-weight: 500; letter-spacing: 0.10em; text-transform: uppercase; }
+  .brand-sub { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8px; color: ${MUTED}; letter-spacing: 0.2em; text-transform: uppercase; }
+  .meta { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 10px; color: ${MUTED}; text-align: right; line-height: 1.5; }
+  .meta strong { font-weight: 600; }
+  .mono, .money, td.num { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .disclaimer { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8px; color: ${MUTED}; line-height: 1.5; border-top: 1px solid ${BORDER}; padding-top: 8px; margin-top: 20px; font-style: italic; background: #fff; border-radius: 8px; padding: 12px; }
+  .page-footer { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8px; color: ${MUTED}; text-align: center; margin-top: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
   table { border-collapse: collapse; }
 </style></head><body>
 
 <div class="header-bar">
   <div class="brand">
-    <div class="brand-mark">⚓</div>
+    <div class="brand-mark"><img src="https://finance.goldenanchor.life/anchor-monogram.svg" alt="Golden Anchor"/></div>
     <div>
       <div class="brand-name">Golden Anchor</div>
       <div class="brand-sub">${isEs ? 'Asesoría Financiera' : 'Financial Advisory'}</div>
@@ -638,60 +646,60 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   </div>
 </div>
 
-<div style="margin:14px 0 0;background:#fff;border:1px solid ${BORDER};border-radius:8px;padding:14px">
-  <div style="font-size:18px;font-weight:800;color:${TEXT}">${htmlEscape(L.title)}</div>
-  <div style="font-size:11px;color:${MUTED};margin-top:2px">${htmlEscape(L.snapshot)}</div>
+<div style="margin:14px 0 0;background:#fff;border:1px solid ${BORDER};border-radius:8px;padding:18px">
+  <div class="report-title">${htmlEscape(L.title)}</div>
+  <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:11px;color:${MUTED};margin-top:6px;letter-spacing:0.04em">${htmlEscape(L.snapshot)}</div>
 </div>
 
 ${kpiHTML}
 
 ${inc.income ? `<div class="section">
-  <div class="section-hdr">💼 ${htmlEscape(L.incomeHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.incomeHdr)}</div>
   ${incomeChart}
   ${incomeTable}
 </div>` : ''}
 
 ${inc.bills ? `<div class="section">
-  <div class="section-hdr">💳 ${htmlEscape(L.billsHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.billsHdr)}</div>
   ${billsChart}
   ${billsTable}
 </div>` : ''}
 
 ${inc.debt ? `<div class="section">
-  <div class="section-hdr">🏦 ${htmlEscape(L.debtHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.debtHdr)}</div>
   ${debtBar}
   ${debtsTable}
 </div>` : ''}
 
 ${inc.assets ? `<div class="section">
-  <div class="section-hdr">📊 ${htmlEscape(L.assetsHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.assetsHdr)}</div>
   ${assetsTable}
 </div>` : ''}
 
 ${inc.investAllocation && investAllocHTML ? `<div class="section">
-  <div class="section-hdr">📈 ${htmlEscape(L.investAllocationHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.investAllocationHdr)}</div>
   ${investAllocHTML}
 </div>` : ''}
 
 ${inc.financialRatios && financialRatiosHTML ? `<div class="section">
-  <div class="section-hdr">📐 ${htmlEscape(L.financialRatiosHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.financialRatiosHdr)}</div>
   ${financialRatiosHTML}
 </div>` : ''}
 
 ${inc.cashFlow && cashFlowHTML ? `<div class="section">
-  <div class="section-hdr">💰 ${htmlEscape(L.cashFlowHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.cashFlowHdr)}</div>
   ${cashFlowHTML}
 </div>` : ''}
 
 ${inc.strategyPlan && (debtPayoffHTML || roadmapHTML || projectionHTML) ? `<div class="section">
-  <div class="section-hdr">📋 ${htmlEscape(L.strategyPlanHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.strategyPlanHdr)}</div>
   ${debtPayoffHTML}
   ${roadmapHTML}
   ${projectionHTML}
 </div>` : ''}
 
 ${inc.notes && notesHTML ? `<div class="section">
-  <div class="section-hdr">📝 ${htmlEscape(L.notesHdr)}</div>
+  <div class="section-hdr">${htmlEscape(L.notesHdr)}</div>
   ${notesHTML}
 </div>` : ''}
 
@@ -718,10 +726,10 @@ Golden Anchor Financial Advisory
 ${advEmail}`;
 
   const html = `
-    <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;color:#0F172A;line-height:1.55">
+    <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:560px;margin:0 auto;color:#0F172A;line-height:1.55">
       <div style="text-align:center;padding:24px 0 16px;border-bottom:1px solid #E2E8F0">
-        <div style="font-size:36px">⚓</div>
-        <div style="font-family:Georgia,serif;font-size:22px;color:#B8860B;font-weight:700;margin-top:4px">Golden Anchor</div>
+        <img src="https://finance.goldenanchor.life/anchor-monogram.svg" alt="Golden Anchor" style="width:44px;height:44px"/>
+        <div style="font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:22px;color:#B8860B;font-weight:500;letter-spacing:0.10em;text-transform:uppercase;margin-top:4px">Golden Anchor</div>
         <div style="font-size:10px;color:#64748B;letter-spacing:0.18em;margin-top:4px;text-transform:uppercase">${subTxt}</div>
       </div>
       <p>${escMsg}</p>

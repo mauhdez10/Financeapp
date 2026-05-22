@@ -35,7 +35,54 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.13.5** — established 2026-05-21 (Patch — `PlanReportBlock` restructured into 5 self-contained cards to fix print BG-repaint failure on page splits).
+**v0.15.0** — established 2026-05-21 (Minor — Claude Design System port: Phases 1–4 from `HANDOFF.md`. Brand assets, type system, PDF rebuild, line/area charts).
+
+**What shipped:** The Claude Design handoff (`golden-anchor-design-system/` project) had been delivered but never applied to the live app. v0.15.0 ports four of the seven phases.
+
+**Phase 1 — Brand assets in `public/`.** `assets/logo-anchor.png` and `assets/anchor-monogram.svg` copied into `public/`. `index.html` favicon now points at the SVG monogram first (`<link rel="icon" type="image/svg+xml" href="/anchor-monogram.svg" />`); PNG favicons kept as legacy fallback. `LogoImg` (App.jsx:2468–2472, was: settings logo → ⚓ emoji fallback) rewritten with size-aware fallback: size ≤ 48 uses `/anchor-monogram.svg`, size > 48 uses `/logo-anchor.png`, ⚓ emoji is the final fallback only if the image fails to load (handled via `onError`).
+
+**Phase 2 — Type system (Google Fonts).** `index.html` gets a `<link>` to Google Fonts loading Newsreader, Source Serif 4, Plus Jakarta Sans, and JetBrains Mono. The three `fontFamily:"system-ui,sans-serif"` declarations in App.jsx (line 2746 — intake confirmation; line 2758 — intake form body; line 3416 — main app shell) all become `"'Plus Jakarta Sans',system-ui,sans-serif"`. The main app shell additionally gets `fontVariantNumeric:"tabular-nums"` and `fontFeatureSettings:"'tnum' 1"` so every currency value inherits aligned numerals. Wordmark sites (`Login` line 2461, intake confirmation line 2748, intake form header line 2766) become Newsreader italic with `letterSpacing:"0.10em"` and `textTransform:"uppercase"` — `font-family:"'Newsreader',Georgia,serif"`. EngagementLetter body still uses `Georgia,serif` (printed letter, intentional).
+
+**Phase 3 — `api/render-report-pdf.js` rebuild.** The print-HTML `buildPrintHTML` gets a brand-font upgrade in the `<style>` block. Body now uses `"Source Serif 4", Georgia, serif`. Section headers (`.section-hdr`) use `"Plus Jakarta Sans"`, weight 800, letter-spacing 0.08em, with the gold underline shrunk from `2px solid ${GOLD}` to a `1px solid ${GOLD}` hairline per the spec. New `.report-title` class uses Newsreader italic at 26px for the main report title block. The brand mark changes from `<div class="brand-mark">⚓</div>` to `<img src="https://finance.goldenanchor.life/anchor-monogram.svg">`. Brand name becomes Newsreader italic uppercase with 0.10em letter-spacing. All nine `<div class="section-hdr">EMOJI ${L.fooHdr}</div>` sites have the leading emoji stripped (income / bills / debt / assets / investAllocation / financialRatios / cashFlow / strategyPlan / notes). Header bar bottom-border switches from neutral border to a 1px gold rule. New `.mono`, `.money`, `td.num` classes use JetBrains Mono with `tabular-nums` (selector-based — current tables don't carry these classes yet, so this is a hook for future selective application without touching all table render code). Email signature in `buildEmailBody` also gets the same brand-font treatment (Newsreader italic wordmark + SVG monogram).
+
+**Phase 4 — Recharts charts: BarChart → AreaChart everywhere.** Six BarChart sites swapped to AreaChart with a single 2px stroke, fill at 33-alpha, no point dots (dot:false), small activeDot on hover, and tooltip retained:
+- `Dashboard` (line ~2191) — 5-up debt-trend mini-chart at top of dashboard
+- `SummarySection` (line ~586) — Monthly Statement Summary "Debt Trend" right-side card
+- `ClientDetail` (line ~2423) — 2-up Debt vs Savings / Cash Flow trend cards above the client tab strip
+- `FullReport` (line ~732) — Trends section Debt vs Savings chart
+- `FullReport` (line ~732) — Trends section Cash Flow chart
+- `YearCompareView` (line ~1445) — 4 small year-aggregate KPI charts (Debt / Savings / Cash Flow / Income)
+
+All `<LabelList>` value labels above bars removed per spec — exact numbers now surface only via the tooltip on hover (and via the data tables already rendered alongside the chart). Recharts imports `Bar`, `BarChart`, and `LabelList` retained but unused — tree-shaken at build, harmless to leave.
+
+**Out of scope (per user direction, 2026-05-21):**
+- Phase 5 — responsive scroll-snap tab rows etc. Already largely shipped v0.9.x–v0.13.x.
+- Phase 6 — Spanish polish. Closed v0.12.2 (Chat 8).
+- Phase 7 — Lucide icon swap. Marketing surface only; not in product.
+- Three-up KPI strip override for Monthly tab in print. Current PDF builds a 5-up; the Monthly variant uses a different `reportType` branch in `buildPrintHTML` but the KPI grid is shared. Deferred — would require splitting `kpiHTML` per reportType.
+- Page-number footer via Puppeteer `displayHeaderFooter`. Requires editing the `launch()`/`pdf()` calls, deferred.
+- Anchor-monogram inline-base64 embed in the print HTML (currently fetched from public URL). Works in production where `finance.goldenanchor.life/anchor-monogram.svg` is live; would break for dev-only PDF previews. Acceptable for v0.15.0.
+
+**Folded in this version: v0.14.0 (engagement-letter / ToS / services editor).** A parallel chat shipped the code (`SignaturePad` App.jsx:2474, `ToSModal` App.jsx:2518, `EngagementLetter` App.jsx:2548, plus settings.tosAcceptedAt / settings.tosVersion / client.engagementLetter schema) but never updated AGENT.md or CHANGELOG.md. The referenced `AGENT_v0.14.0_UPDATES.md` was never created. v0.15.0 documents v0.14.0 retroactively in CHANGELOG.md; no new locked decisions added since the code matched the O-14 Chat 11 spec verbatim. The "in-app DocuSign-style signing flow + per-agent uploaded template" remains a D-23 multi-tenant deferred item.
+
+**Build marker:** `2026-05-21-v0150-design-system-port`. App.jsx 3,417 lines (no line-count change — net edits cancel; brand assets are external files). `api/render-report-pdf.js` ~+30 lines (font CSS additions and brand-mark SVG swap). `index.html` +5 lines (favicon + Google Fonts link). New files: `public/logo-anchor.png`, `public/anchor-monogram.svg`. `src/translations.js` unchanged at 1,313 keys/side. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Out-of-app actions required:**
+- Replace `src/App.jsx`, `api/render-report-pdf.js`, `index.html`; add new `public/logo-anchor.png` + `public/anchor-monogram.svg`; replace `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.14.0 + v0.15.0 entries.
+- Commit + push; Vercel auto-deploys.
+- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0150-design-system-port"`.
+- Re-upload current App.jsx + AGENT.md + WORKPLAN.md to project knowledge.
+
+**Smoke tests:**
+1. **Fonts loaded** — open the app, DevTools → Computed → `font-family` on the page body should resolve to "Plus Jakarta Sans" (not system-ui). Login screen wordmark "GOLDEN ANCHOR" renders in Newsreader italic uppercase with letter-spacing.
+2. **Favicon SVG** — open a fresh tab, browser tab icon shows the geometric anchor monogram (sharp at any zoom). Older browsers fall back to the PNG silently.
+3. **Charts** — Dashboard's debt-trend chart, Monthly Statement Summary, Client Detail header trends, Complete Report → Trends section, Year Comparison: every chart is a smooth filled area with a 2px stroke (not bars). No values printed above the line. Hover any point → tooltip shows the exact number.
+4. **PDF report** — Complete Report → 📧 Email button → send to yourself. Open the PDF: report title at top in Newsreader italic, no emojis in section headers, body in Source Serif 4, gold 1px hairline under each section header, brand mark is the SVG anchor (not the ⚓ emoji).
+5. **No regressions** — v0.14.0 engagement-letter / ToS flows still work: open a client with no signed engagement letter → amber "Mark as signed today" pill appears; click it → green pill with today's date. First-login modal still shows "I have read and accept the Terms of Service…" if `settings.tosAcceptedAt` is unset.
+
+---
+
+### Prior: v0.13.5 — 2026-05-21 (Patch — `PlanReportBlock` restructured into 5 self-contained cards to fix print BG-repaint failure on page splits).
 
 **What shipped:** v0.13.4 added `breakInside:"avoid"` to `mCARD` to control WHERE page breaks happen on print. Mauricio's smoke test confirmed: with "Background graphics" enabled in Chrome's print dialog, the break now happens cleanly between mCARDs (good), but the Strategy Plan section's OUTER container background still ends mid-page on page splits — DEBT PAYOFF ORDER cards on page 8 have dark BG, FINANCIAL ROADMAP + Phase cards on page 9 floating on white. Same root cause as Image 5/6 from the v0.13.3 patch turn.
 
