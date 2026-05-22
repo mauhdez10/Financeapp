@@ -6,6 +6,75 @@
 
 ---
 
+## 🗓 Session handoff — last update 2026-05-22
+
+### Currently shipped (live on Vercel)
+
+**v0.26.0** — `2026-05-22-v0260-a11y-contrast-zindex-toasts-hover-reduced-motion`
+
+Verify the live build is current:
+```bash
+curl -s "https://finance.goldenanchor.life/" | grep -oE 'index-[A-Za-z0-9_-]+\.js'
+curl -s "https://finance.goldenanchor.life/assets/<that-hash>.js" | grep -oE 'v[0-9]{3,4}-[a-z0-9-]+' | sort -u
+```
+
+### Recent versions (newest first)
+
+| Version | What shipped |
+|---|---|
+| **v0.26.0** | UI/UX Pro Max audit batch: ARIA labels on TopBar buttons, WCAG AA contrast bump (`muted #9CA3AF → #B3C0D1`, `dim #6B7280 → #94A3B8`), z-index CSS variable scale, success toast on client save/add/archive/restore/delete, `th { font-size: 12px }` global, `prefers-reduced-motion` honored, 150ms hover baseline, focus-visible gold ring |
+| **v0.25.1** | Removed per-row kebab from Clients list (was added in v0.25.0, judged visually noisy). Shrunk sort dropdown to 190px with cleaner `⇅ Name / Recent activity / Debt / Income / Net worth` options + `aria-label` |
+| **v0.25.0** | Medium-polish: Clients page header in one row, trend chart header no longer overlaps range pills, MonthlyTab sub-tabs wrap instead of truncating, SettingsCard values wrap instead of `...` truncating |
+| **v0.24.0** | Audit-driven: removed duplicate page titles from 11 pages (TopBar already shows them), Dashboard X-axis disambiguates duplicate months (`Jan '25` / `Jan '26`), alert card titles emoji-stripped via regex, first KPI "Total" → "Clients", Settings phone formats via fmtPh, EmailSupport modal "Recipient" → "Reply-to" + destination hint, TopBar avatar footer version parses `window.__GA_BUILD__` dynamically |
+| v0.23.0 | (parallel chat) Client Due search input, T&C gate runs before login flash, public intake Welcome screen, Calculators 3-col compact grid, Resources tighter grid, About page monogram SVG + Newsreader |
+| v0.21.0 | PDF print rebuild — Source Serif 4 body, Newsreader italic titles, JetBrains Mono currency cells, branded `.ga-print-header` + `.ga-print-footer`, intake-form PDF template rebuilt |
+| v0.17.0–v0.20.0 | TopBar with avatar dropdown, 6 new dropdown pages (Settings/Security/Billing/Backup/Archived/WhatsNew/Help), avatar picker with 12 SVG presets, in-app Email Support modal via Resend backend (`api/send-support-email.js`), Dashboard Net Worth Distribution donut |
+
+### Pending work (priority order)
+
+**Deferred from the v0.26.0 audit batch (Mauricio approved all 10, 8 shipped):**
+
+1. **Skeleton loading rows during initial bootstrap.** Replace the ⚓ + "Loading clients…" text with proper skeleton placeholders. Focused refactor of the bootstrap useEffect block.
+2. **Visible labels above the few remaining placeholder-only inputs.** Mostly search bars in card headers — design decision (minimalism vs. accessibility). Most form fields already use the labeled `Field` helper.
+
+**Nice-to-have polish (audit suggested, not yet promised):**
+
+3. **Smooth number animations on KPI tiles** — `npm i react-countup` and wrap the `fmt()` output on the 4 Dashboard KPIs + ClientDetail KPIs.
+4. **Pulsing animation on critical alert pills** ("Promo Expiring", "No Contact") — 1.5s ease-in-out, subtle opacity pulse.
+5. **Public intake `/intake?invite=<token>` end-to-end test.** Last verified in v0.16.0; should re-verify with v0.26.0 changes (especially the v0.23.0 Welcome screen + T&C gate flow).
+
+**Open bugs (low-confidence — needs Mauricio reproduction):**
+
+- **Hide-numbers ON by default on first login.** Likely data, not code — the test account's `settings.hideNumbers` is `true` in Supabase. One toggle fixes it for the account.
+
+### Infrastructure ready in this folder
+
+- **`CLAUDE.md`** (this file) — auto-loaded by Claude Code
+- **`.env.local`** — Supabase URL + anon key set; dev server can log in. NEVER edit/commit this file. `.env.local.example` is the template that ships in repo.
+- **`AGENT.md` / `SKILL.md` / `WORKPLAN.md`** — full decision log + procedure manual. Read on demand.
+- **Two-folder workflow**: edit in `golden-anchor/` (working copy, has design system extras), then copy + push from `financeapp-deploy/` (real git clone).
+- **Plugins installed**: `claude-mem`, `vercel`, `playwright`, `ui-ux-pro-max`, `github`, `gitlab`. The vercel + playwright MCPs may need a Claude Code restart to load. Once active, USE them to verify deploys + run e2e tests instead of manual.
+
+### Communication shortcuts (per WORKPLAN §1)
+
+- **Direct, no compliments, no "Great question!"**
+- Treat as finance professional. Don't over-explain.
+- Default English. Spanish only if Mauricio writes Spanish first.
+- Numbered shorthand answers are valid (e.g. "1. yes 2. a 3. skip").
+- NEVER date-suffix or version-suffix files. One canonical name per file.
+- **Always `git pull origin main` before editing** (parallel chats push too).
+- **Always `npm run build` after edits.**
+- **Always verify with the build marker**, not the docs — docs sometimes lag the code.
+
+### First moves in a new session
+
+1. `cd C:\Users\mauhd\financeapp-deploy && git pull origin main && git log --oneline -5`
+2. Open `C:\Users\mauhd\golden-anchor\CLAUDE.md` (this file)
+3. Confirm current build marker: `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx`
+4. Ask Mauricio: which pending item to tackle, or wait for new bugs from his testing.
+
+---
+
 ## What this is
 
 **Golden Anchor Finance** — a single-file React/Vite SPA + Vercel Serverless Functions + Supabase, deployed at **https://finance.goldenanchor.life**.
