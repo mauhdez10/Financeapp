@@ -62,13 +62,48 @@ export default async function handler(req, res) {
     if (row.status === "submitted") {
       return res.status(409).json({ ok: false, error: "Invite already submitted" });
     }
+
+    // v0.16.0: pull the advisor's public branding subset so the public intake's
+    // EngagementLetter can show the advisor's signature, company name, logos,
+    // services, and Stripe payment links. Curated whitelist only — do not leak
+    // sensitive fields (anything not in this list stays server-side).
+    let advisorProfile = null;
+    try {
+      const { data: srow } = await admin.from("settings").select("data").eq("user_id", row.user_id).maybeSingle();
+      const sd = (srow && srow.data) || {};
+      advisorProfile = {
+        advisorName:       sd.advisorName       || "",
+        advisorEmail:      sd.advisorEmail      || "",
+        advisorPhone:      sd.advisorPhone      || "",
+        companyName:       sd.companyName       || "",
+        companyPhone:      sd.companyPhone      || "",
+        has_companyPhone:  !!sd.has_companyPhone,
+        businessAddress:   sd.businessAddress   || "",
+        has_businessAddress: !!sd.has_businessAddress,
+        website:           sd.website           || "",
+        has_website:       !!sd.has_website,
+        ig:                sd.ig                || "",
+        logoLight:         sd.logoLight         || "",
+        logoDark:          sd.logoDark          || "",
+        advisorSignature:  sd.advisorSignature  || "",
+        services:          Array.isArray(sd.services) ? sd.services : null,
+        stripeLinks:       sd.stripeLinks       || {},
+        ongoingFeeAmount:        sd.ongoingFeeAmount        || "",
+        ongoingFeeMonthlyLite:   sd.ongoingFeeMonthlyLite   || ""
+      };
+    } catch (e) {
+      // Non-fatal — fall back to defaults baked into the EngagementLetter component.
+      advisorProfile = null;
+    }
+
     return res.status(200).json({
       ok: true,
       advisorId: row.user_id,
       prospectName: row.prospect_name || "",
       prospectEmail: row.prospect_email || "",
       prospectPhone: row.prospect_phone || "",
-      lang: row.lang || "en"
+      lang: row.lang || "en",
+      advisorProfile
     });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });

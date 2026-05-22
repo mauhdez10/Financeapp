@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, createContext, useContext } from "react";
-import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid } from "recharts";
+import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 import { T } from "./translations";
@@ -215,7 +215,22 @@ function SaveBar({onSave,onCancel,onDelete,t,saveLabel}){const[conf,setConf]=use
 function IAdd({cols,onSave,label="＋ Add row…"}){const th=useTh();const[open,setOpen]=useState(false);const[vals,setVals]=useState({});const u=k=>e=>setVals(p=>({...p,[k]:e.target.value}));const save=()=>{if(onSave(vals)){setVals({});setOpen(false);}};if(!open)return<tr onClick={()=>setOpen(true)} style={{cursor:"pointer"}}><td colSpan={cols.length+1} style={{...mTD(th),color:th.dim,fontStyle:"italic",padding:"8px 0"}}>{label}</td></tr>;return<tr style={{background:th.bg+"88"}}>{cols.map(c=><td key={c.key} style={{...mTD(th),paddingRight:6}}>{c.type==="select"?<select value={vals[c.key]||c.default||""} onChange={u(c.key)} style={{...mIIN(th),padding:"3px 6px"}}>{c.options.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>:<input type={c.type||"text"} placeholder={c.placeholder||""} value={vals[c.key]||""} onChange={u(c.key)} onKeyDown={c.numeric?bE:undefined} style={mIIN(th)} onKeyUp={e=>e.key==="Enter"&&save()}/>}</td>)}<td style={{...mTDR(th),whiteSpace:"nowrap"}}><button onClick={save} style={{fontSize:12,padding:"3px 10px",borderRadius:6,background:GOLD,color:"#0D1B2A",border:"none",cursor:"pointer",fontWeight:700,marginRight:4}}>✓</button><button onClick={()=>setOpen(false)} style={{fontSize:12,padding:"3px 8px",borderRadius:6,background:th.inp,color:th.muted,border:"none",cursor:"pointer"}}>×</button></td></tr>;}
 
 /* ── PROFILE MODAL ───────────────────────────────────────────────────────── */
-function ProfileModal({settings,onSave,onClose,t}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
+/* ── ProfileToggleField — extracted to a stable top-level component so the
+   input inside doesn't unmount on every ProfileModal re-render. The previous
+   in-body definition caused a one-character-at-a-time typing bug on every
+   ToggleField input (company phone, business address, etc.). */
+function ProfileToggleField({k,label,s,setS,th,INP}){
+  const hasIt=!!s["has_"+k];
+  return <div style={{marginBottom:10}}>
+    <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:hasIt?6:0}}>
+      <input type="checkbox" checked={hasIt} onChange={e=>setS(p=>({...p,["has_"+k]:e.target.checked,...(e.target.checked?{}:{[k]:""})}))} style={{cursor:"pointer"}}/>
+      <span style={{fontSize:11,color:th.muted,fontWeight:600}}>{label}</span>
+    </label>
+    {hasIt && <input style={INP} value={s[k]||""} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} placeholder={label}/>}
+  </div>;
+}
+
+function ProfileModal({settings,onSave,onClose,t}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
 const services = s.services && s.services.length ? s.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:(v.en||""),price:(v.price||""),stripeUrl:(s.stripeLinks||{})[v.id]||""}));
 const updateService=(idx,field,val)=>{const next=services.map((sv,i)=>i===idx?{...sv,[field]:val}:sv);setS(p=>({...p,services:next}));};
 const addService=()=>{const next=[...services,{id:"svc-"+Date.now(),icon:"💼",name:"",price:"",stripeUrl:""}];setS(p=>({...p,services:next}));};
@@ -224,14 +239,9 @@ const uploadLogo=(mode)=>(e)=>{const f=e.target.files&&e.target.files[0];if(!f)r
 const clearLogo=(mode)=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:""}));};
 const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fontSize:11,color:th.muted,marginBottom:6}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(p=><div key={p.v} onClick={()=>setS(prev=>({...prev,[k]:p.v}))} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}}><div style={{width:26,height:26,borderRadius:"50%",background:p.v,border:s[k]===p.v?"3px solid white":"2px solid transparent",boxShadow:s[k]===p.v?`0 0 0 2px ${p.v}`:"0 0 0 1px #0002"}}/><span style={{fontSize:9,color:th.dim}}>{t["color"+p.l]||p.l}</span></div>)}<input type="color" value={s[k]||presets[0].v} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:26,height:26,cursor:"pointer",border:"none",borderRadius:4}}/><input value={s[k]||''} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:80,fontFamily:"monospace",fontSize:11}} placeholder="#000000"/></div></div>;
 const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:9}}><div style={{fontSize:10,color:th.muted,marginBottom:5}}>{label}</div><div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:24,height:24,borderRadius:6,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 2px ${th.accent}44`:"none"}}/>)}<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:24,height:24,cursor:"pointer",border:"none",borderRadius:4,padding:0}}/><input value={v||""} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:78,fontFamily:"monospace",fontSize:10}} placeholder="#000000"/></div></div>;};
-const ToggleField=({k,label})=>{const hasIt=!!s["has_"+k];return<div style={{marginBottom:10}}>
-<label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:hasIt?6:0}}>
-  <input type="checkbox" checked={hasIt} onChange={e=>setS(p=>({...p,["has_"+k]:e.target.checked,...(e.target.checked?{}:{[k]:""})}))} style={{cursor:"pointer"}}/>
-  <span style={{fontSize:11,color:th.muted,fontWeight:600}}>{label}</span>
-</label>
-{hasIt && <input style={INP} value={s[k]||""} onChange={u(k)} placeholder={label}/>}
-</div>;};
-return<Modal title={t.profileSettings} onClose={onClose} width={520}>
+// ToggleField extracted to top-level ProfileToggleField — see comment above ProfileModal.
+// Call sites pass {k,label,s,setS,th,INP} directly so the component type stays stable.
+return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBackdropClose={true}>
 
 <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.07em"}}>{t.appZoom||"APP ZOOM"}</div>
 <div style={{marginBottom:18}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}><input type="range" min={50} max={200} step={10} value={Math.round((s.appZoom||1)*100)} onChange={e=>setS(p=>({...p,appZoom:(+e.target.value||100)/100}))} style={{flex:1,accentColor:th.accent,cursor:"pointer"}}/><span style={{fontSize:13,fontWeight:700,color:th.accent,minWidth:52}}>{Math.round((s.appZoom||1)*100)}%</span></div></div>
@@ -241,31 +251,41 @@ return<Modal title={t.profileSettings} onClose={onClose} width={520}>
 <Row2><Field label={t.advisorPhone||"Personal Phone"}><input style={INP} value={s.advisorPhone||""} onChange={u("advisorPhone")} placeholder="(305) 555-1234"/></Field><Field label={t.settingsInstagram||"Instagram"}><div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:th.dim,fontSize:12}}>@</span><input style={{...INP,paddingLeft:28}} value={s.ig||""} onChange={u("ig")}/></div></Field></Row2>
 <Field label={t.companyName||"Company Name"}><input style={INP} value={s.companyName||""} onChange={u("companyName")} placeholder="Golden Anchor Financial Planning & Wealth Management"/></Field>
 
-<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.optionalFieldsHdr||"OPTIONAL — CHECK TO ADD"}</div>
-<ToggleField k="companyPhone" label={t.companyPhone||"Company Phone"}/>
-<ToggleField k="businessAddress" label={t.businessAddress||"Business Address"}/>
-<ToggleField k="googleMapsUrl" label={t.googleMapsUrl||"Google Maps URL"}/>
-<ToggleField k="website" label={t.website||"Website"}/>
+{/* OPTIONAL — collapsible */}
+<div style={{...mCARD(th),padding:"10px 14px",marginTop:14,marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setOptionalOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>➕ {t.optionalFieldsHdr||"Optional fields"} {optionalOpen?"▲":"▼"}</span></div>
+  {optionalOpen && <div style={{marginTop:10}}>
+    <ProfileToggleField k="companyPhone" label={t.companyPhone||"Company Phone"} s={s} setS={setS} th={th} INP={INP}/>
+    <ProfileToggleField k="businessAddress" label={t.businessAddress||"Business Address"} s={s} setS={setS} th={th} INP={INP}/>
+    <ProfileToggleField k="googleMapsUrl" label={t.googleMapsUrl||"Google Maps URL"} s={s} setS={setS} th={th} INP={INP}/>
+    <ProfileToggleField k="website" label={t.website||"Website"} s={s} setS={setS} th={th} INP={INP}/>
+  </div>}
+</div>
 
-<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.logoHdr||"LOGOS (LIGHT & DARK)"}</div>
-<div style={{fontSize:10,color:th.dim,marginBottom:10,fontStyle:"italic",lineHeight:1.5}}>{t.logoHelp||"Upload a logo for each theme. Used in app header and engagement letter. Max 500KB per image."}</div>
-<Row2>
-  <div>
-    <div style={{fontSize:10,color:th.muted,marginBottom:4,fontWeight:600}}>☀️ {t.lightModeLogo||"Light mode logo"}</div>
-    <div style={{...mCARD(th),padding:10,background:"#FFFFFF",border:`1px dashed ${th.cardBorder}`,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}>{s.logoLight?<img src={s.logoLight} alt="light" style={{maxHeight:70,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.logoNone||"No logo set"}</span>}</div>
-    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={uploadLogo("light")} style={{fontSize:11,width:"100%"}}/>
-    {s.logoLight && <button type="button" onClick={()=>clearLogo("light")} style={{fontSize:10,marginTop:4,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.clearLogo||"Clear"}</button>}
-  </div>
-  <div>
-    <div style={{fontSize:10,color:th.muted,marginBottom:4,fontWeight:600}}>🌙 {t.darkModeLogo||"Dark mode logo"}</div>
-    <div style={{...mCARD(th),padding:10,background:"#0D1B2A",border:`1px dashed ${th.cardBorder}`,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}>{s.logoDark?<img src={s.logoDark} alt="dark" style={{maxHeight:70,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>{t.logoNone||"No logo set"}</span>}</div>
-    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={uploadLogo("dark")} style={{fontSize:11,width:"100%"}}/>
-    {s.logoDark && <button type="button" onClick={()=>clearLogo("dark")} style={{fontSize:10,marginTop:4,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.clearLogo||"Clear"}</button>}
-  </div>
-</Row2>
-
-<div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.advisorSigHdr||"YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)"}</div>
-<SignaturePad value={typeof s.advisorSignature==="string"?(s.advisorSignature?{kind:"drawn",dataUrl:s.advisorSignature}:null):(s.advisorSignature||null)} onChange={v=>setS(p=>({...p,advisorSignature:v||""}))} t={t} theme={th} defaultName={s.advisorName}/>
+{/* BRANDING — collapsible (Logos + Signature inside) */}
+<div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setBrandingOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>🎨 {t.brandingHdr||"Branding"} {brandingOpen?"▲":"▼"}</span></div>
+  {brandingOpen && <div style={{marginTop:10}}>
+    <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.07em"}}>{t.logoHdr||"LOGOS (LIGHT & DARK)"}</div>
+    <div style={{fontSize:10,color:th.dim,marginBottom:10,fontStyle:"italic",lineHeight:1.5}}>{t.logoHelp||"Upload a logo for each theme. Used in app header and engagement letter. Max 500KB per image."}</div>
+    <Row2>
+      <div>
+        <div style={{fontSize:10,color:th.muted,marginBottom:4,fontWeight:600}}>☀️ {t.lightModeLogo||"Light mode logo"}</div>
+        <div style={{...mCARD(th),padding:10,background:"#FFFFFF",border:`1px dashed ${th.cardBorder}`,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}>{s.logoLight?<img src={s.logoLight} alt="light" style={{maxHeight:70,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.logoNone||"No logo set"}</span>}</div>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={uploadLogo("light")} style={{fontSize:11,width:"100%"}}/>
+        {s.logoLight && <button type="button" onClick={()=>clearLogo("light")} style={{fontSize:10,marginTop:4,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.clearLogo||"Clear"}</button>}
+      </div>
+      <div>
+        <div style={{fontSize:10,color:th.muted,marginBottom:4,fontWeight:600}}>🌙 {t.darkModeLogo||"Dark mode logo"}</div>
+        <div style={{...mCARD(th),padding:10,background:"#0D1B2A",border:`1px dashed ${th.cardBorder}`,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}>{s.logoDark?<img src={s.logoDark} alt="dark" style={{maxHeight:70,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>{t.logoNone||"No logo set"}</span>}</div>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={uploadLogo("dark")} style={{fontSize:11,width:"100%"}}/>
+        {s.logoDark && <button type="button" onClick={()=>clearLogo("dark")} style={{fontSize:10,marginTop:4,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>↺ {t.clearLogo||"Clear"}</button>}
+      </div>
+    </Row2>
+    <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.advisorSigHdr||"YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)"}</div>
+    <SignaturePad value={typeof s.advisorSignature==="string"?(s.advisorSignature?{kind:"drawn",dataUrl:s.advisorSignature}:null):(s.advisorSignature||null)} onChange={v=>setS(p=>({...p,advisorSignature:v||""}))} t={t} theme={th} defaultName={s.advisorName}/>
+  </div>}
+</div>
 
 <div style={{...mCARD(th),padding:"10px 14px",marginTop:18,marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setThemeOpen(o=>!o)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>🎨 {t.themeColors||"Theme Colors"} {themeOpen?"▲":"▼"}</span></div>
@@ -2188,7 +2208,48 @@ function Dashboard({clients,t,settings,setSettings,onSelect,onAdd,onImportNew,on
   const[trendRange,setTrendRange]=useState("12");// "3" | "6" | "12" | "all"
   const getDebtForMode=sn=>{if(!sn?.data)return sn?.debt||0;const d=sn.data;if(trendMode==="all")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).reduce((a,l)=>a+(+l.balance||0),0);if(trendMode==="revolving")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0);// "current": revolving + short-term loans (personal/student), excludes mortgage/auto
 return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!l.linkedAssetId&&l.type!=="mortgage"&&l.type!=="vehicle").reduce((a,l)=>a+(+l.balance||0),0);};
-  const _allLabels=Array.from(new Set(clients.flatMap(c=>(c.monthSnapshots||[]).map(s=>s.label))));const _labelKey=lbl=>{const parts=lbl.split(" ");const yr=parseInt(parts[1])||new Date().getFullYear();const mo=MS.indexOf(parts[0]);return yr*12+(mo>=0?mo:0);};const _sortedLabels=_allLabels.slice().sort((a,b)=>_labelKey(a)-_labelKey(b));const _rangeCount=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:_sortedLabels.length;const _shownLabels=_sortedLabels.slice(-_rangeCount);const trend=(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>({m:m.split(" ")[0]+(m.split(" ")[1]?("’"+m.split(" ")[1].slice(-2)):""),debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+getDebtForMode(sn);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.savings||0);},0)}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isMobile?14:20,gap:8,flexWrap:"wrap"}}><h2 style={{fontSize:isMobile?16:18,fontWeight:800,color:th.text,margin:0}}>📊 {t.dashboard}</h2><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><button onClick={onToggleHide} style={{fontSize:11,padding:"7px 12px",borderRadius:8,cursor:"pointer",background:hideNumbers?th.warn+"22":"transparent",color:hideNumbers?th.warn:th.muted,border:`1px solid ${hideNumbers?th.warn:th.cardBorder}`,fontWeight:600}}>{hideNumbers?("👁 "+(t.show||"Show")):("👁‍🗨 "+(t.hide||"Hide"))}</button><Kebab items={[{label:"📥 "+(t.kebabImportClients||"Import Clients"),onClick:()=>setImportOpen(true)},{label:"⬇️ "+(t.kebabExportClients||"Export Clients"),onClick:()=>setExportOpen(true)},{divider:true},{label:"💾 "+(t.kebabExportBackup||"Backup All (JSON)")+" (JSON)",onClick:()=>expBackup(clients,settings)},{label:"📥 "+(t.kebabRestoreBackup||"Restore Backup"),onClick:()=>setRestoreOpen(true)}]} t={t}/><button onClick={onAdd} style={{fontSize:12,padding:"8px 16px",borderRadius:10,background:th.accent,color:"#fff",fontWeight:700,border:"none",cursor:"pointer"}}>＋ {t.addClient}</button></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:isMobile?14:20}}><SC label={"👥 "+(t?.totalClientsLbl||"Total")} value={clients.length} color={th.accent} sub={`${active.length} active`}/><SC label={"💼 "+t.totalIncome} value={fmt(ti)} color={th.pos}/><SC label={"🏦 "+t.totalDebt} value={fmt(td)} color={th.neg}/><SC label={"📈 "+(t.improving||"Improving")} value={improvCount} color={th.pos}/><SC label={"➖ "+(t.stable||"Stable")} value={stableCount} color={th.muted}/><SC label={"📉 "+(t.underperforming||"Underperforming")} value={worseCount} color={worseCount>0?th.neg:th.muted}/></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12,marginBottom:4}}>{[[{name:t.financeOnly,value:fO,color:th.blue},{name:t.financeAndHealth,value:fH,color:th.pos}],[{name:t.hasDebt||"Has Debt",value:clients.filter(c=>totalL(c)>0).length,color:th.neg},{name:t.debtFreeHeading||"Debt Free",value:clients.filter(c=>totalL(c)===0).length,color:th.pos}]].map((data,ci)=><div key={ci} style={{...mCARD(th),padding:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>{ci===0?("👥 "+(t.clientType||"Client Type").toUpperCase()):("🏦 "+(t.debtStatus||"Debt Status").toUpperCase())}</div><div style={{display:"flex",alignItems:"center",gap:16}}><ResponsiveContainer width={90} height={90} style={{outline:"none"}}><PieChart><Pie data={data} cx="50%" cy="50%" innerRadius={22} outerRadius={40} paddingAngle={3} dataKey="value">{data.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}</Pie></PieChart></ResponsiveContainer><div>{data.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{fontSize:11,color:th.muted}}>{d.name}: <span style={{fontWeight:700,color:d.color}}>{d.value}</span></span></div>)}</div></div></div>)}<div style={{...mCARD(th),padding:14}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:11,fontWeight:700,color:th.dim}}>📈 {t.debtTrend}</span><div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>{[["3","3mo"],["6","6mo"],["12","12mo"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendRange===v?th.blue+"22":"transparent",color:trendRange===v?th.blue:th.dim,border:`1px solid ${trendRange===v?th.blue:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}<div style={{width:1,height:14,background:th.cardBorder,margin:"0 2px"}}/>{[["all",(t.filterAll||"All")],["revolving",(t.filterRevolving||"Revolving")],["current",(t.filterCurrent||"Current")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendMode===v?th.accent+"22":"transparent",color:trendMode===v?th.accent:th.dim,border:`1px solid ${trendMode===v?th.accent:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}</div></div><ResponsiveContainer width="100%" height={100} style={{outline:"none"}}><AreaChart data={trend} margin={{top:16,right:8,left:0,bottom:0}}><XAxis dataKey="m" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:10}} formatter={v=>fmt(v)}/><Area type="monotone" dataKey="debt" name="Debt" stroke={th.neg} strokeWidth={2} fill={th.neg+"33"} dot={false} activeDot={{r:3,strokeWidth:0,fill:th.neg}}/><Area type="monotone" dataKey="savings" name="Savings" stroke={th.pos} strokeWidth={2} fill={th.pos+"33"} dot={false} activeDot={{r:3,strokeWidth:0,fill:th.pos}}/></AreaChart></ResponsiveContainer></div></div><RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:20,marginBottom:10,gap:8,flexWrap:"wrap"}}><div style={{fontSize:12,fontWeight:700,color:th.dim}}>👥 {active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={"🔍 "+(t.searchClients||"Search clients...")} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:isMobile?12:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
+  const _allLabels=Array.from(new Set(clients.flatMap(c=>(c.monthSnapshots||[]).map(s=>s.label))));const _labelKey=lbl=>{const parts=lbl.split(" ");const yr=parseInt(parts[1])||new Date().getFullYear();const mo=MS.indexOf(parts[0]);return yr*12+(mo>=0?mo:0);};const _sortedLabels=_allLabels.slice().sort((a,b)=>_labelKey(a)-_labelKey(b));const _rangeCount=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:_sortedLabels.length;const _shownLabels=_sortedLabels.slice(-_rangeCount);const trend=(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>({m:m.split(" ")[0]+(m.split(" ")[1]?("’"+m.split(" ")[1].slice(-2)):""),debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+getDebtForMode(sn);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.savings||0);},0)}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isMobile?14:20,gap:8,flexWrap:"wrap"}}><h2 style={{fontSize:isMobile?16:18,fontWeight:800,color:th.text,margin:0}}>📊 {t.dashboard}</h2><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><button onClick={onToggleHide} style={{fontSize:11,padding:"7px 12px",borderRadius:8,cursor:"pointer",background:hideNumbers?th.warn+"22":"transparent",color:hideNumbers?th.warn:th.muted,border:`1px solid ${hideNumbers?th.warn:th.cardBorder}`,fontWeight:600}}>{hideNumbers?("👁 "+(t.show||"Show")):("👁‍🗨 "+(t.hide||"Hide"))}</button><Kebab items={[{label:"📥 "+(t.kebabImportClients||"Import Clients"),onClick:()=>setImportOpen(true)},{label:"⬇️ "+(t.kebabExportClients||"Export Clients"),onClick:()=>setExportOpen(true)},{divider:true},{label:"💾 "+(t.kebabExportBackup||"Backup All (JSON)")+" (JSON)",onClick:()=>expBackup(clients,settings)},{label:"📥 "+(t.kebabRestoreBackup||"Restore Backup"),onClick:()=>setRestoreOpen(true)}]} t={t}/><button onClick={onAdd} style={{fontSize:12,padding:"8px 16px",borderRadius:10,background:th.accent,color:"#fff",fontWeight:700,border:"none",cursor:"pointer"}}>＋ {t.addClient}</button></div></div>{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
+<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
+  <SC label={"👥 "+(t?.totalClientsLbl||"Clients")} value={clients.length} color={th.accent} sub={`${active.length} ${(t.active||"active")} · ${clients.length-active.length} ${(t.archivedLbl||"archived")}`}/>
+  <SC label={"💼 "+(t.combinedNetMo||"Combined Net / mo")} value={hideNumbers?"●●●":fmt(ti)} color={th.pos}/>
+  <SC label={"🏦 "+(t.combinedDebt||"Combined Debt")} value={hideNumbers?"●●●":fmt(td)} color={th.neg}/>
+  <SC label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmt(active.reduce((s,c)=>s+liquidA(c),0))} color={GOLD} sub={t.checkingSavingsLbl||"checking + savings"}/>
+</div>
+
+{/* v0.16.0 Phase 8 — INCOME VS SPENDING composed chart (bars + net line overlay) */}
+<div style={{...mCARD(th),padding:isMobile?14:18,marginBottom:14}}>
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+    <div>
+      <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>📊 {t.incomeVsSpendingHdr||"Income vs Spending"}</div>
+      <div style={{display:"flex",gap:14,marginTop:6,flexWrap:"wrap"}}>
+        <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.pos}}/>{t.income||"Income"}</span>
+        <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.neg}}/>{t.spending||"Spending"}</span>
+        <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,background:GOLD,borderRadius:1}}/>{t.netLbl||"Net"}</span>
+      </div>
+    </div>
+    <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+      {[["3","3mo"],["6","6mo"],["12","12mo"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}
+      <div style={{width:1,height:14,background:th.cardBorder,margin:"0 2px"}}/>
+      {[["all",(t.filterAll||"All")],["revolving",(t.filterRevolving||"Revolving")],["current",(t.filterCurrent||"Current")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendMode===v?th.accent+"22":"transparent",color:trendMode===v?th.accent:th.dim,border:`1px solid ${trendMode===v?th.accent:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}
+    </div>
+  </div>
+  <ResponsiveContainer width="100%" height={isMobile?200:260} style={{outline:"none"}}>
+    <ComposedChart data={(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>{
+      const monthKey = m.split(" ")[0];
+      const income = clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);
+      const spending = clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);
+      return {m:monthKey, income, spending, net: income-spending};
+    })} margin={{top:12,right:12,left:0,bottom:0}}>
+      <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false}/>
+      <XAxis dataKey="m" tick={{fontSize:11,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
+      <YAxis tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtS(v)} width={50}/>
+      <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/>
+      <Bar dataKey="income" name={t.income||"Income"} fill={th.pos} radius={[3,3,0,0]} maxBarSize={32}/>
+      <Bar dataKey="spending" name={t.spending||"Spending"} fill={th.neg} radius={[3,3,0,0]} maxBarSize={32}/>
+      <Line type="monotone" dataKey="net" name={t.netLbl||"Net"} stroke={GOLD} strokeWidth={2.5} dot={{r:3,fill:GOLD,strokeWidth:0}} activeDot={{r:5,fill:GOLD,strokeWidth:0}}/>
+    </ComposedChart>
+  </ResponsiveContainer>
+</div><RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:20,marginBottom:10,gap:8,flexWrap:"wrap"}}><div style={{fontSize:12,fontWeight:700,color:th.dim}}>👥 {active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={"🔍 "+(t.searchClients||"Search clients...")} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:isMobile?12:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
 
 /* ── PAGES ───────────────────────────────────────────────────────────────── */
 /* ── CLIENT LIST ─ v0.8.0 action-first bulk actions (WORKPLAN §3 Chat 4) ── */
@@ -2573,15 +2634,17 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
   const fill=(s)=>fillTokens(s,ctx);
   const isCouple=!!(clientName2&&clientName2.trim());
   return <div style={{background:"#FFFFFF",color:"#0F172A",padding:"28px 26px",borderRadius:12,fontFamily:"Georgia,serif",lineHeight:1.6,fontSize:13}}>
-    {/* Header with logo */}
+    {/* Header: advisor name on top, company name below, then contact line (no labels) */}
     <div style={{textAlign:"center",borderBottom:"2px solid #D4A017",paddingBottom:16,marginBottom:18}}>
       <div style={{marginBottom:8}}><LogoImg settings={settings} mode="light" size={56}/></div>
-      <div style={{fontSize:20,fontWeight:800,color:"#1F2937"}}>{L.headerFirm}</div>
-      <div style={{fontSize:13,fontStyle:"italic",color:"#475569",marginTop:4}}>{L.headerSub}</div>
+      <div style={{fontSize:24,fontWeight:800,color:"#1F2937",letterSpacing:"0.01em"}}>{ctx.advisorName}</div>
+      <div style={{fontSize:14,color:"#475569",marginTop:4}}>{ctx.firmName}</div>
+      <div style={{fontSize:13,fontStyle:"italic",color:"#64748B",marginTop:6}}>{L.headerSub}</div>
     </div>
-    {/* Firm block */}
-    <div style={{textAlign:"center",fontSize:12,color:"#475569",marginBottom:14,lineHeight:1.8}}>
-      {L.firmBlock.map((line,i)=><div key={i}>{fill(line)}</div>)}
+    {/* Contact line — phone · email, no labels */}
+    <div style={{textAlign:"center",fontSize:12,color:"#475569",marginBottom:14}}>
+      {[ctx.firmPhone, ctx.firmEmail].filter(v=>v&&v!=="—").join(" · ")}
+      {ctx.firmTagline && <div style={{fontSize:12,fontStyle:"italic",color:"#94A3B8",marginTop:4}}>{ctx.firmTagline}</div>}
     </div>
     <div style={{fontSize:12,marginBottom:16,fontWeight:600}}>{fill(L.dateLabel)}</div>
     {/* Greeting */}
@@ -2655,7 +2718,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0151-intake-and-sig-fixes";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0160-phase8-dashboard-and-fixes";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -2727,7 +2790,7 @@ function PublicIntake(){
   const[err,setErr]=useState("");
   const[inviteResolved,setInviteResolved]=useState(!inviteToken);
   const[inviteError,setInviteError]=useState("");
-  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.advisorSettings)setResolvedSettings(r.advisorSettings);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
+  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.advisorProfile)setResolvedSettings(r.advisorProfile);else if(r.advisorSettings)setResolvedSettings(r.advisorSettings);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
   const[mode,setMode]=useState(()=>{if(typeof window==="undefined")return "dark";try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}});
   const isDark=mode==="dark";
   const TH=isDark?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}:{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
@@ -2738,7 +2801,11 @@ function PublicIntake(){
   const selectedService = services.find(sv=>sv.id===selectedServiceId);
   if(!advisorId){return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}><div style={{fontSize:48,color:GOLD}}>⚓</div><div style={{fontSize:16,fontWeight:700,maxWidth:480}}>{t.intakeInvalidLink||"This intake link is invalid or expired."}</div><div style={{fontSize:12,color:TH.muted,maxWidth:480}}>{t.intakeContactAdvisor||"Please contact your advisor directly."}</div></div>;}
   const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:TH.accent,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:TH.blue};
-  const goSubmit=async()=>{
+  // v0.16.0: split submit/pay flow. `goSubmit(payNow)` submits the intake and
+  // ONLY redirects to Stripe when the client explicitly hits "Submit & pay
+  // now". Default submit just records the intake — advisor follows up with a
+  // payment link (Pay Later / cash). Stripe URL validation is non-blocking.
+  const goSubmit=async(payNow)=>{
     setErr("");
     setSubmitting(true);
     const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null,householdType,selectedServiceId,promoCode,engagementLetter:{signedAt:new Date().toISOString(),signature1:sig1,signature2:householdType==="couple"?sig2:null,version:"v1"}};
@@ -2746,15 +2813,20 @@ function PublicIntake(){
     const res=await gaSubmitIntake(advisorId,lang,payload);
     if(res.ok){
       if(inviteToken&&res.submissionId){gaMarkIntakeInviteSubmitted(inviteToken,res.submissionId);}
-      // Redirect to Stripe payment link if available
-      const stripeUrl = selectedService && selectedService.stripeUrl;
-      if(stripeUrl){
-        try{
-          const url = new URL(stripeUrl);
-          if(promoCode) url.searchParams.set("prefilled_promo_code", promoCode);
-          if(draft.email) url.searchParams.set("prefilled_email", draft.email);
-          setTimeout(()=>{window.location.href=url.toString();},800);
-        }catch(e){}
+      if(payNow){
+        const stripeUrl = selectedService && selectedService.stripeUrl;
+        if(stripeUrl){
+          try{
+            const url = new URL(stripeUrl);
+            if(promoCode) url.searchParams.set("prefilled_promo_code", promoCode);
+            if(draft.email) url.searchParams.set("prefilled_email", draft.email);
+            setTimeout(()=>{window.location.href=url.toString();},800);
+          }catch(e){
+            setErr(t.intakeStripeUrlBad||"Payment link is invalid. Your intake was submitted — your advisor will follow up.");
+          }
+        } else {
+          setErr(t.intakeNoStripeLink||"No payment link configured for this service. Your intake was submitted — your advisor will follow up.");
+        }
       }
       setSubmitted(true);
     }else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
@@ -2784,7 +2856,7 @@ function PublicIntake(){
       if(householdType==="couple"&&!sig2){setErr(t.intakeSig2Required||"Both signatures are required for a couple.");return;}
       setStep("intake");return;
     }
-    if(step==="intake"){goSubmit();return;}
+    if(step==="intake"){goSubmit(false);return;}
   };
   const back=()=>{
     setErr("");
@@ -2868,10 +2940,15 @@ function PublicIntake(){
           </div>}
         </div>
         {err && <div style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:12,marginBottom:12}}>⚠️ {err}</div>}
-        <div style={{display:"flex",gap:8,marginTop:14}}>
+        <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
           {step!=="household" && <button onClick={back} disabled={submitting} style={{flex:"0 0 100px",padding:"14px",borderRadius:10,background:"transparent",color:TH.text,fontWeight:700,fontSize:13,border:"1px solid "+TH.cardBorder,cursor:"pointer"}}>← {t.backBtn||"Back"}</button>}
-          <button onClick={next} disabled={submitting} style={{flex:1,padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(step==="intake"?(selectedService&&selectedService.stripeUrl?(t.intakeSubmitPay||"Submit & pay"):(t.intakeSubmit||"Submit Intake")):(t.continueBtn||"Continue"))} {step!=="intake"&&"→"}</button>
+          {step!=="intake" && <button onClick={next} disabled={submitting} style={{flex:1,padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.continueBtn||"Continue")} →</button>}
+          {step==="intake" && <>
+            <button onClick={()=>goSubmit(false)} disabled={submitting} style={{flex:"1 1 220px",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.intakeSubmit||"Submit intake")}</button>
+            {selectedService && selectedService.stripeUrl && <button onClick={()=>goSubmit(true)} disabled={submitting} style={{flex:"1 1 220px",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:"transparent",color:submitting?TH.muted:GOLD,fontWeight:800,fontSize:14,border:`2px solid ${GOLD}`,cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>💳 {t.intakePayNow||"Submit & pay now"}</button>}
+          </>}
         </div>
+        {step==="intake" && <div style={{fontSize:11,color:TH.dim,marginTop:8,textAlign:"center",lineHeight:1.5}}>{t.intakePayLaterHint||"You can pay later, by check, or in cash — your advisor will follow up."}</div>}
         <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
       </div>
     </div>
@@ -3458,10 +3535,17 @@ export default function App(){
       <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
       <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=><button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{n.l}</button>)}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
-        <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} style={{width:"100%",padding:"9px",borderRadius:8,fontSize:13,cursor:"pointer",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,fontWeight:700,marginBottom:8,whiteSpace:"nowrap",overflow:"hidden"}}>⚙️ {t.profileSettings}</button>
-        <button onClick={()=>setDark(d=>!d)} style={{width:"100%",padding:"8px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode}</button>
-        <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>🌐 EN | ES</button>
-        <div style={{fontSize:11,color:theme.sideMuted,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",overflow:"hidden"}}><div style={{width:8,height:8,borderRadius:99,background:GOLD,flexShrink:0}}/>{settings.advisorName||authUser?.email||"Mauricio"}</div>{supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} style={{width:"100%",marginTop:8,padding:"7px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
+        <button onClick={()=>setDark(d=>!d)} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode}</button>
+        <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{width:"100%",padding:"6px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>🌐 EN | ES</button>
+        {/* v0.16.0 Phase 8 — advisor profile widget at bottom (Claude design) */}
+        <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} style={{width:"100%",padding:"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
+          <div style={{width:36,height:36,borderRadius:99,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}66`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{(settings.advisorName||authUser?.email||"M").slice(0,2).toUpperCase()}</div>
+          <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
+            <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
+            <div style={{fontSize:10,color:GOLD,marginTop:1}}>⚙️ {t.profileSettings}</div>
+          </div>
+        </button>
+        {supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} style={{width:"100%",marginTop:8,padding:"6px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
       </div>
     </div>}
     <div style={{display:"flex",minHeight:"100vh",width:"100%",background:theme.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1)}}>
@@ -3469,10 +3553,17 @@ export default function App(){
         <div style={{padding:sidebarCollapsed?"18px 10px":"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}>{sidebarCollapsed?<div style={{fontSize:22,color:GOLD,textAlign:"center"}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={22}/>:"⚓"}</div>:<><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"visible",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></>}</div>{!sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(true)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:4}} title={t?.navCollapse||"Collapse"}>«</button>}</div>{sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(false)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:"8px 0",borderBottom:`1px solid ${theme.navBorder}`}} title={t?.navExpand||"Expand"}>»</button>}
         <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?icon:n.l}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
-          <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,fontWeight:700,marginBottom:8,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?"⚙️":"⚙️ "+t.profileSettings}</button>
           <button onClick={()=>setDark(d=>!d)} title={isDark?t.lightMode:t.darkMode} style={{width:"100%",padding:"6px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?(isDark?"☀️":"🌙"):(isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode)}</button>
           <button onClick={()=>setLang(l=>l==="en"?"es":"en")} title={t?.navLanguage||"Language"} style={{width:"100%",padding:"5px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?"🌐":"🌐 EN | ES"}</button>
-          <div style={{fontSize:11,color:theme.sideMuted,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",overflow:"hidden"}}><div style={{width:8,height:8,borderRadius:99,background:GOLD,flexShrink:0}}/>{!sidebarCollapsed&&(settings.advisorName||authUser?.email||"Mauricio")}</div>{!sidebarCollapsed&&supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} title={t.signOut||"Sign Out"} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
+          {/* v0.16.0 Phase 8 — advisor profile widget at bottom (Claude design). Collapses to just the avatar when sidebar is collapsed. */}
+          <button onClick={()=>{setProfileOpen(true);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:sidebarCollapsed?"6px":"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:sidebarCollapsed?0:10,justifyContent:sidebarCollapsed?"center":"flex-start",textAlign:"left"}}>
+            <div style={{width:sidebarCollapsed?28:36,height:sidebarCollapsed?28:36,borderRadius:99,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}66`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:sidebarCollapsed?11:13,flexShrink:0}}>{(settings.advisorName||authUser?.email||"M").slice(0,2).toUpperCase()}</div>
+            {!sidebarCollapsed && <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
+              <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
+              <div style={{fontSize:10,color:GOLD,marginTop:1,whiteSpace:"nowrap"}}>⚙️ {t.profileSettings}</div>
+            </div>}
+          </button>
+          {!sidebarCollapsed&&supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} title={t.signOut||"Sign Out"} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
         </div>
       </div>}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",minWidth:0,maxWidth:"100%"}}>{vp.isMobile&&<div id="ga-appbar" style={{position:"sticky",top:0,zIndex:50,background:theme.nav,borderBottom:`1px solid ${theme.navBorder}`,padding:"8px 12px",display:"flex",alignItems:"center",gap:10,minHeight:52}}><button onClick={()=>setDrawerOpen(true)} aria-label={t.menu||"Menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,fontSize:22,cursor:"pointer",padding:8,marginLeft:-4,minWidth:44,minHeight:44,borderRadius:8}}>☰</button><div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",overflow:"hidden"}}><span style={{fontSize:14,fontWeight:700,color:theme.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected?((selected.firstName||"")+(selected.lastName?" "+selected.lastName:"")):(NAV.find(n=>n.id===nav)?.l||"")}</span></div></div>}<div style={{flex:1,overflowY:"auto"}}>

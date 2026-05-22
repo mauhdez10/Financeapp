@@ -35,7 +35,73 @@ When the user uploads App.jsx in a new chat, **read it before proposing changes*
 
 ## 3. Current version
 
-**v0.15.1** — established 2026-05-21 (Patch — v0.15.0 follow-up bugfix pass; 5 real bugs from Mauricio's smoke test).
+**v0.16.0** — established 2026-05-21 (Minor — Phase 8: dashboard restructure to match Claude design + 7 bugfixes from Mauricio's smoke test).
+
+**What shipped:**
+
+**Phase 8 — Dashboard restructure (visual match to `ui_kits/advisor_app/index.html`).**
+- **6 narrow KPIs → 4 wide KPIs.** Replaced `Total / Net Income / Total Debt / Improving / Stable / Underperforming` with `Clients (X active · Y archived) / Combined Net / mo / Combined Debt / Liquid Assets (checking + savings)`. Liquid Assets value computed via existing `liquidA(client)` summed across active clients. Grid switches `repeat(auto-fit,minmax(140px,1fr))` → `repeat(4,1fr)` desktop, `repeat(2,1fr)` mobile. Tagged `data-ga-grid="kpi-4"` so the existing v0.9.3 mobile-collapse rule applies.
+- **Income vs Spending composed chart.** Replaced the 3-column row (2 small donut cards + 100px AreaChart) with a single ~260px Recharts `<ComposedChart>` showing two `<Bar>` series (income green, spending red) plus a `<Line>` net overlay in gold. Data computed per-month from `monthSnapshots` (income from `sn.income`, spending = `sn.bills + min payments from sn.data.cards`). Mono Y-axis with `fmtS()` ticks. Light cartesian grid via `strokeDasharray="2 4"`. Inline legend chips above the chart match the Claude mockup. Range + filter pills retained.
+- **Recharts imports extended.** Added `ComposedChart, Line, Legend` to the existing import line. No other chart sites changed (Phase 4's area charts elsewhere are intentional — only the dashboard's main chart switches to bars+line per the Claude mockup).
+- **Sidebar advisor profile widget at bottom.** Replaced the "⚙️ Profile & Settings" button + tiny green-dot name row with a single tile: gold-bordered avatar circle (first two letters of `settings.advisorName` or auth email) + name + small gold "⚙️ Profile & settings" sub-label. Click opens ProfileModal. Mobile drawer + desktop sidebar both updated. Desktop sidebar collapses cleanly when `sidebarCollapsed` (just the avatar). Theme + Language buttons moved above the profile widget.
+
+**Bugfix pass (7 real bugs Mauricio reported in v0.15.0 / v0.15.1 smoke tests).**
+
+1. **One-character-at-a-time on `ToggleField` inputs.** `ToggleField` was defined inside `ProfileModal`'s body as `const ToggleField=({k,label})=>...`. Every parent re-render created a new component function reference → React saw a type change → unmounted + remounted the entire `<input>` subtree → focus lost after each keystroke → user could only type one character at a time. Extracted to a top-level `ProfileToggleField({k,label,s,setS,th,INP})` component above `ProfileModal`. All 4 call sites updated to pass `s={s} setS={setS} th={th} INP={INP}` explicitly. **New pitfall #17 candidate** (defining components inside other components' bodies) — see WORKPLAN.
+
+2. **Profile & Settings backdrop click closed the modal, losing draft changes.** Added `disableBackdropClose={true}` to the `<Modal>` in `ProfileModal`. The Modal component already supported this prop (v0.12.5, used by EmailReportModal). User must click the ✕ button or Save explicitly.
+
+3. **Profile reorg into collapsible sections.** "OPTIONAL" + "LOGOS" + "YOUR SIGNATURE" were always-expanded inline blocks. Two new collapsible cards:
+   - **➕ Optional fields** (collapsed by default) — wraps the 4 ProfileToggleField checkboxes (companyPhone / businessAddress / googleMapsUrl / website)
+   - **🎨 Branding** (collapsed by default) — wraps the Logos (light + dark, with upload + clear), the dashed "SIGNATURE FOR ENGAGEMENT LETTERS" header, and the SignaturePad
+   Both use the same card chrome pattern as Theme Colors / Background Colors (light gold tint background, accent border, ▲/▼ toggle).
+
+4. **Advisor signature didn't show on the public intake engagement letter.** Root cause: `api/resolve-intake-invite.js` returned only `{advisorId, prospectName, prospectEmail, prospectPhone, lang}` — the advisor's `settings.advisorSignature` was never exposed to the public intake. PublicIntake's `advisorSettings` was effectively empty, so EngagementLetter's `settings.advisorSignature` check always fell to the placeholder. Fix:
+   - Server endpoint now does a service-role `from("settings").select("data").eq("user_id", row.user_id).maybeSingle()` after resolving the invite, then returns a **curated public subset** as `advisorProfile`: advisorName, advisorEmail, advisorPhone, companyName, companyPhone, has_companyPhone, businessAddress, has_businessAddress, website, has_website, ig, logoLight, logoDark, advisorSignature, services, stripeLinks, ongoingFeeAmount, ongoingFeeMonthlyLite. **No sensitive fields** (no SSN, no DOB, no client lists, no internal flags).
+   - PublicIntake's resolve handler reads `r.advisorProfile` (falls back to legacy `r.advisorSettings` if present).
+   - EngagementLetter now correctly renders the advisor's signature from `settings.advisorSignature` (drawn dataUrl, typed object, or legacy string — all 3 handled per v0.15.1).
+
+5. **Engagement letter header redesigned.** The old top read: anchor logo + `headerFirm` (big bold) + `headerSub` (italic). Then below: a centered block with `Firm: …` / `Phone: …` / `Email: …` / `Tagline: …` — labeled `Firm:`/`Phone:`/etc. lines that read like a form. New header per Mauricio:
+   - Anchor logo
+   - **Advisor name** big bold (was: firm name)
+   - Firm name below in lighter weight
+   - Document subtitle italic
+   - Gold rule
+   - Contact line: `(305) 555-1234 · advisor@example.com` (phone · email, no labels)
+   - Tagline below in italic muted, if set
+   The `firmBlock` array in `engagementLetterTemplate.js` is no longer rendered (kept in the template for future use; can be deleted later if confirmed unused).
+
+6. **Public intake submit/pay flow split.** `goSubmit()` previously auto-redirected to Stripe whenever `selectedService.stripeUrl` was set — gave the client no choice. Now `goSubmit(payNow)` is parameterized:
+   - **Submit intake** (gold button) → records intake, advisor follows up out-of-band.
+   - **💳 Submit & pay now** (gold-outlined button, only when stripeUrl is set) → records intake AND redirects to Stripe.
+   Error paths fixed too: invalid Stripe URL or missing payment link no longer silently throws — surfaces "Payment link is invalid / not configured. Your intake was submitted — your advisor will follow up." Small italic helper below the buttons reads "You can pay later, by check, or in cash — your advisor will follow up." Step 1–3 "Continue →" button unchanged.
+
+7. **Build marker** bumped to `2026-05-21-v0160-phase8-dashboard-and-fixes`.
+
+**Out of scope (deferred to future):**
+- **Side-by-side ADVISOR ALERTS + CLIENT DUE panels.** The Claude mockup shows two separate panels. The current `RemindersPanel` is a single tabbed widget. Splitting it requires refactoring the panel into two presentational components driven by the same `getAdvRem`/`getClientDue` helpers — significant change. Current `RemindersPanel` retained unchanged for v0.16.0 — covers the same data, just in a single tabbed UI. Will revisit if user pushes back.
+- **Client signature canvas draw on touch devices.** No bug reproduction so far. If it surfaces, debug the SignaturePad `onTouchEnd` event firing on the specific device.
+- **Translation keys for new labels** (`combinedNetMo`, `combinedDebt`, `liquidAssets`, `incomeVsSpendingHdr`, `spending`, `netLbl`, `archivedLbl`, `intakePayNow`, `intakePayLaterHint`, `intakeStripeUrlBad`, `intakeNoStripeLink`, `brandingHdr`, `personalInfoHdr`, `goalsAndNotesHdr`, `shortTermLbl`, `midTermLbl`, `longTermLbl`, `generalNotesLbl`, `howHeardLbl`, `howHeardPlaceholder`, `checkingSavingsLbl`, `active`) — currently fall through to English fallbacks via `t.foo||"…"`. ES users will see English for these specific labels. **Translation pass deferred to a separate chat.**
+
+**Build marker:** `2026-05-21-v0160-phase8-dashboard-and-fixes`. App.jsx 3,469 → 3,548 lines (+79 for Phase 8 + bugfixes). `src/engagementLetterTemplate.js` (-8 lines net from v0.15.1). `api/resolve-intake-invite.js` +30 lines (advisor profile join). `vercel.json`, `package.json`, `translations.js` unchanged. No SQL migration. No new pitfalls (pitfall #17 candidate above can be folded in at next versioning). No new locked decisions. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Out-of-app actions required:**
+- Replace `src/App.jsx`, `src/engagementLetterTemplate.js`, `api/resolve-intake-invite.js`; replace `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.16.0 entry.
+- Commit + push; Vercel auto-deploys (auto-redeploys the `api/` function too).
+- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0160-phase8-dashboard-and-fixes"`.
+
+**Smoke tests:**
+1. **Dashboard layout.** Open Dashboard. Four wide KPI cards across the top (Clients / Combined Net / Combined Debt / Liquid Assets). Below: a big Income vs Spending chart with green income bars, red spending bars, and a gold net line overlay. Legend chips above the chart show the three colors. Range pills (3mo / 6mo / 12mo / All) and filter pills (All / Revolving / Current) still work.
+2. **Sidebar profile widget.** Bottom of the sidebar shows your initials in a gold-bordered circle, your name, and "⚙️ Profile & settings" in gold underneath. Click opens Profile & Settings modal. Collapse the sidebar (« button) — only the avatar shows.
+3. **Profile & Settings doesn't close on backdrop click.** Open Profile & Settings, click outside the modal in the dark area — nothing happens (was: modal closed, draft lost). Click the ✕ to close.
+4. **One-char-at-a-time bug gone.** Profile & Settings → expand Optional fields → check "Company Phone" → type a multi-digit number in the field. Should type all digits in one go, not one at a time.
+5. **Advisor signature on public intake.** Profile & Settings → expand Branding → draw or type a signature → close + save. Open `/intake?invite=<token>` in incognito → step through to step 3 (engagement). The top of the engagement letter should show YOUR signature (drawn or typed) — not the grey placeholder.
+6. **Engagement letter header.** On step 3 of the intake, scroll to the top of the engagement letter. Should read: anchor logo / **Your Name** (big) / Company name (smaller) / "Financial Planning Engagement Letter" italic / gold rule / "phone · email" with no labels. No "Firm:" "Phone:" "Email:" "Tagline:" prefixes anywhere.
+7. **Submit vs Pay split.** Walk through the intake to step 4. Two gold buttons appear: "Submit intake" (filled) and "💳 Submit & pay now" (outlined, only if a Stripe link is configured for the selected service). Clicking Submit intake submits without redirecting. Clicking Submit & pay submits AND redirects to Stripe (or shows a clear error if the link is bad). Italic note below: "You can pay later, by check, or in cash."
+
+---
+
+### Prior: v0.15.1 — 2026-05-21 (Patch — v0.15.0 follow-up bugfix pass; 5 real bugs from Mauricio's smoke test).
 
 **What shipped:**
 1. **Missing `IntakeFormBody` component defined.** Referenced at App.jsx:2809 (PublicIntake step 4) and App.jsx:3066 (IntakeSubmissionEditor) since v0.7.1 but never actually written — production regression. Every public intake's step 4 ("Details") rendered blank because React crashed on the undefined component. New `IntakeFormBody({draft,setDraft,t,TH,lang})` placed before `PublicIntake` wraps `IncomeSection`/`BillsSection`/`DebtSection`/`CustomAssetsSection` against the draft state, plus address/DOB/SSN/partner-DOB-SSN/how-heard fields and short/mid/long-term + general notes textareas.
