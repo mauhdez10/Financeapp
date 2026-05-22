@@ -24,6 +24,7 @@ async function gaLoadIntakeInvites(userId){if(!supabase||!userId)return[];try{co
 async function gaDeleteIntakeInvite(id){if(!supabase||!id)return false;try{const{error}=await supabase.from("intake_invites").delete().eq("id",id);if(error){console.error("[GA] delete invite error",error);return false;}return true;}catch(e){console.error("[GA] delete invite exception",e);return false;}}
 async function gaDeleteAllIntakeInvites(userId){if(!supabase||!userId)return false;try{const{error}=await supabase.from("intake_invites").delete().eq("user_id",userId);if(error){console.error("[GA] clear invites error",error);return false;}return true;}catch(e){console.error("[GA] clear invites exception",e);return false;}}
 async function gaSendIntakeInvite(payload){if(!supabase)return{ok:false,error:"no-supabase"};try{const{data:sess}=await supabase.auth.getSession();const jwt=sess?.session?.access_token;if(!jwt)return{ok:false,error:"Not signed in. Please log out and back in."};const r=await fetch("/api/send-intake-invite",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return{ok:false,error:j.error||("HTTP "+r.status),detail:j};return{ok:true,...j};}catch(e){console.error("[GA] send invite exception",e);return{ok:false,error:String(e&&e.message||e)};}}
+async function gaSendSupportEmail(payload){if(!supabase)return{ok:false,error:"no-supabase"};try{const{data:sess}=await supabase.auth.getSession();const jwt=sess?.session?.access_token;if(!jwt)return{ok:false,error:"Not signed in. Please log out and back in."};const r=await fetch("/api/send-support-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return{ok:false,error:j.error||("HTTP "+r.status),detail:j};return{ok:true,...j};}catch(e){console.error("[GA] send support exception",e);return{ok:false,error:String(e&&e.message||e)};}}
 async function gaResolveIntakeInvite(token){try{const r=await fetch("/api/resolve-intake-invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return{ok:false,error:j.error||("HTTP "+r.status)};return{ok:true,...j};}catch(e){console.error("[GA] resolve invite exception",e);return{ok:false,error:String(e&&e.message||e)};}}
 async function gaMarkIntakeInviteSubmitted(token,submissionId){try{await fetch("/api/mark-intake-invite-submitted",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,submissionId})});}catch(e){console.error("[GA] mark invite submitted exception",e);}}
 async function gaEmailCompleteReport(payload){if(!supabase)return{ok:false,error:"no-supabase"};try{const{data:sess}=await supabase.auth.getSession();const jwt=sess?.session?.access_token;if(!jwt)return{ok:false,error:"Not signed in. Please log out and back in."};const r=await fetch("/api/render-report-pdf",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return{ok:false,error:j.error||("HTTP "+r.status),detail:j};return{ok:true,...j};}catch(e){console.error("[GA] email report exception",e);return{ok:false,error:String(e&&e.message||e)};}}
@@ -1559,12 +1560,11 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
   const showAdvMore=sAdv.length>5;
   const showCliMore=sCli.length>5;
   return<>{settingsOpen&&<AlertsSettingsModal settings={settings} onSave={onSettingsChange} onClose={()=>setSettingsOpen(false)} t={t}/>}<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:16}}>
-    {/* ── Advisor Alerts card ── */}
+    {/* ── Advisor Alerts card (v0.20.0 — single icon: gear-only header per user feedback) ── */}
     <div style={{...mCARD(th),padding:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"wrap"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>🔔 {t.advisorAlertsLbl||"Advisor Alerts"}</span>
-          {sAdv.length>0&&<span style={{background:th.warn,color:"#fff",borderRadius:99,padding:"0 7px",fontSize:10,fontWeight:700}}>{sAdv.length}</span>}
+          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>{t.advisorAlertsLbl||"Advisor Alerts"}{sAdv.length>0&&<span style={{marginLeft:8,color:th.warn,fontFamily:"'JetBrains Mono',monospace",fontWeight:800}}>· {sAdv.length}</span>}</span>
         </div>
         <button onClick={()=>setSettingsOpen(true)} title={t.alertSettingsTitle||"Alert Settings"} style={{...SEL,fontSize:13,padding:"3px 8px"}}>⚙️</button>
       </div>
@@ -1586,13 +1586,13 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
         <button onClick={()=>setExpanded(e=>!e)} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:"transparent",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>{expanded?"▲ "+(t?.showLess||"Show Less"):"▼ "+(t?.showMore||"Show More")+` (${sAdv.length-5})`}</button>
       </div>}
     </div>
-    {/* ── Client Due card ── */}
+    {/* ── Client Due card (v0.20.0 — gear added, leading emoji removed for visual parity) ── */}
     <div style={{...mCARD(th),padding:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"wrap"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>👥 {t.clientDueLbl||"Client Due"}</span>
-          {sCli.length>0&&<span style={{background:th.warn,color:"#fff",borderRadius:99,padding:"0 7px",fontSize:10,fontWeight:700}}>{sCli.length}</span>}
+          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>{t.clientDueLbl||"Client Due"}{sCli.length>0&&<span style={{marginLeft:8,color:th.warn,fontFamily:"'JetBrains Mono',monospace",fontWeight:800}}>· {sCli.length}</span>}</span>
         </div>
+        <button onClick={()=>setSettingsOpen(true)} title={t.alertSettingsTitle||"Alert Settings"} style={{...SEL,fontSize:13,padding:"3px 8px"}}>⚙️</button>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
         <select value={sortC} onChange={e=>setSortC(e.target.value)} style={{...SEL,flex:1}}><option value="default">{t.dueDateOpt||"Due Date"}</option><option value="client">{t.client||"Client"}</option><option value="amount">{t?.amount||"Amount"}</option></select>
@@ -2273,39 +2273,86 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
   <SC label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmt(active.reduce((s,c)=>s+liquidA(c),0))} color={GOLD} sub={t.checkingSavingsLbl||"checking + savings"}/>
 </div>
 
-{/* v0.16.0 Phase 8 — INCOME VS SPENDING composed chart (bars + net line overlay) */}
-<div style={{...mCARD(th),padding:isMobile?14:18,marginBottom:14}}>
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-    <div>
-      <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>📊 {t.incomeVsSpendingHdr||"Income vs Spending"}</div>
-      <div style={{display:"flex",gap:14,marginTop:6,flexWrap:"wrap"}}>
-        <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.pos}}/>{t.income||"Income"}</span>
-        <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.neg}}/>{t.spending||"Spending"}</span>
-        <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,background:GOLD,borderRadius:1}}/>{t.netLbl||"Net"}</span>
+{/* v0.20.0 — Two-chart dashboard row: Income vs Spending (composed, 3fr) +
+    Net Worth Distribution donut (2fr). Stacks on mobile. */}
+<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"3fr 2fr",gap:12,marginBottom:14}}>
+  {/* ── Left: Income vs Spending (composed bars + net line) ── */}
+  <div style={{...mCARD(th),padding:isMobile?14:16}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>📊 {t.incomeVsSpendingHdr||"Income vs Spending"}</div>
+        <div style={{display:"flex",gap:14,marginTop:6,flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.pos}}/>{t.income||"Income"}</span>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.neg}}/>{t.spending||"Spending"}</span>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,background:GOLD,borderRadius:1}}/>{t.netLbl||"Net"}</span>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+        {[["3","3mo"],["6","6mo"],["12","12mo"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}
       </div>
     </div>
-    <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-      {[["3","3mo"],["6","6mo"],["12","12mo"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}
-      <div style={{width:1,height:14,background:th.cardBorder,margin:"0 2px"}}/>
-      {[["all",(t.filterAll||"All")],["revolving",(t.filterRevolving||"Revolving")],["current",(t.filterCurrent||"Current")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendMode===v?th.accent+"22":"transparent",color:trendMode===v?th.accent:th.dim,border:`1px solid ${trendMode===v?th.accent:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}
-    </div>
+    <ResponsiveContainer width="100%" height={isMobile?200:230} style={{outline:"none"}}>
+      <ComposedChart data={(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>{
+        const monthKey = m.split(" ")[0];
+        const income = clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);
+        const spending = clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);
+        return {m:monthKey, income, spending, net: income-spending};
+      })} margin={{top:12,right:12,left:0,bottom:0}}>
+        <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false}/>
+        <XAxis dataKey="m" tick={{fontSize:11,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
+        <YAxis tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtS(v)} width={50}/>
+        <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/>
+        <Bar dataKey="income" name={t.income||"Income"} fill={th.pos} radius={[3,3,0,0]} maxBarSize={32}/>
+        <Bar dataKey="spending" name={t.spending||"Spending"} fill={th.neg} radius={[3,3,0,0]} maxBarSize={32}/>
+        <Line type="monotone" dataKey="net" name={t.netLbl||"Net"} stroke={GOLD} strokeWidth={2.5} dot={{r:3,fill:GOLD,strokeWidth:0}} activeDot={{r:5,fill:GOLD,strokeWidth:0}}/>
+      </ComposedChart>
+    </ResponsiveContainer>
   </div>
-  <ResponsiveContainer width="100%" height={isMobile?200:260} style={{outline:"none"}}>
-    <ComposedChart data={(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>{
-      const monthKey = m.split(" ")[0];
-      const income = clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);
-      const spending = clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);
-      return {m:monthKey, income, spending, net: income-spending};
-    })} margin={{top:12,right:12,left:0,bottom:0}}>
-      <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false}/>
-      <XAxis dataKey="m" tick={{fontSize:11,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
-      <YAxis tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtS(v)} width={50}/>
-      <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/>
-      <Bar dataKey="income" name={t.income||"Income"} fill={th.pos} radius={[3,3,0,0]} maxBarSize={32}/>
-      <Bar dataKey="spending" name={t.spending||"Spending"} fill={th.neg} radius={[3,3,0,0]} maxBarSize={32}/>
-      <Line type="monotone" dataKey="net" name={t.netLbl||"Net"} stroke={GOLD} strokeWidth={2.5} dot={{r:3,fill:GOLD,strokeWidth:0}} activeDot={{r:5,fill:GOLD,strokeWidth:0}}/>
-    </ComposedChart>
-  </ResponsiveContainer>
+  {/* ── Right: Practice Net Worth Distribution donut ── */}
+  {(()=>{
+    const tiers={neg:0,low:0,mid:0,high:0};
+    let totalNW=0;
+    active.forEach(c=>{const nw=totalA(c)-totalL(c);totalNW+=nw;if(nw<0)tiers.neg++;else if(nw<50000)tiers.low++;else if(nw<250000)tiers.mid++;else tiers.high++;});
+    const donutData=[
+      {name:t.tierNeg||"Negative",value:tiers.neg,color:th.neg},
+      {name:t.tierLow||"$0–50K",value:tiers.low,color:th.warn},
+      {name:t.tierMid||"$50K–250K",value:tiers.mid,color:th.blue},
+      {name:t.tierHigh||"$250K+",value:tiers.high,color:GOLD},
+    ].filter(d=>d.value>0);
+    return <div style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column"}}>
+      <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>💎 {t.netWorthDistributionHdr||"Net Worth Distribution"}</div>
+      <div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthDistributionSub||"Active clients grouped by current net worth tier."}</div>
+      <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minHeight:isMobile?180:200}}>
+        <div style={{flex:"0 0 auto",position:"relative",width:isMobile?130:150,height:isMobile?130:150}}>
+          {active.length===0?
+            <div style={{width:"100%",height:"100%",borderRadius:999,border:`2px dashed ${th.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:th.dim,textAlign:"center"}}>{t.noClientsYet||"No clients yet"}</div>
+          :<>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={donutData.length?donutData:[{name:"—",value:1,color:th.cardBorder}]} cx="50%" cy="50%" innerRadius={isMobile?44:52} outerRadius={isMobile?64:72} paddingAngle={donutData.length>1?2:0} dataKey="value" stroke="none">
+                  {(donutData.length?donutData:[{color:th.cardBorder}]).map((e,i)=><Cell key={i} fill={e.color}/>)}
+                </Pie>
+                <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={(v,n)=>[`${v} ${v===1?(t.client||"client"):(t.clients||"clients")}`,n]}/>
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none"}}>
+              <div style={{fontSize:9,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:700}}>{t.totalNet||"Total Net"}</div>
+              <div style={{fontSize:isMobile?14:16,color:totalNW>=0?GOLD:th.neg,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.1,marginTop:2}}>{fmtS(totalNW)}</div>
+            </div>
+          </>}
+        </div>
+        <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:8}}>
+          {donutData.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"Add clients to populate."}</div>:
+            donutData.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}>
+              <span style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/>
+              <span style={{color:th.muted,flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.name}</span>
+              <span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{d.value}</span>
+            </div>)
+          }
+        </div>
+      </div>
+    </div>;
+  })()}
 </div><RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:20,marginBottom:10,gap:8,flexWrap:"wrap"}}><div style={{fontSize:12,fontWeight:700,color:th.dim}}>👥 {active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={"🔍 "+(t.searchClients||"Search clients...")} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:isMobile?12:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
 
 /* ── PAGES ───────────────────────────────────────────────────────────────── */
@@ -2329,9 +2376,18 @@ function ClientList({clients,t,onSelect,onAdd,onRestore,onImportNew,onRestoreBac
   const[pickSearch,setPickSearch]=useState("");
   const[splitTarget,setSplitTarget]=useState(null);
   const[joinTarget,setJoinTarget]=useState(null);
+  const[sortBy,setSortBy]=useState("name"); // v0.20.0 — sort options moved here from sidebar hamburger
   const active=clients.filter(c=>!c.archived);
   const archived=clients.filter(c=>c.archived);
-  const filtered=active.filter(c=>`${c.firstName} ${c.lastName} ${c.email}`.toLowerCase().includes(search.toLowerCase()));
+  const _searchHit=c=>`${c.firstName} ${c.lastName} ${c.email}`.toLowerCase().includes(search.toLowerCase());
+  const _sortFn=(a,b)=>{
+    if(sortBy==="debt"){return totalL(b)-totalL(a);}
+    if(sortBy==="income"){return sumN(b.incomeStreams||[])-sumN(a.incomeStreams||[]);}
+    if(sortBy==="recent"){const aR=Math.max(0,...(a.monthSnapshots||[]).map(s=>+new Date(s.savedAt||0)));const bR=Math.max(0,...(b.monthSnapshots||[]).map(s=>+new Date(s.savedAt||0)));return bR-aR;}
+    if(sortBy==="netWorth"){return(totalA(b)-totalL(b))-(totalA(a)-totalL(a));}
+    return(a.lastName||"").localeCompare(b.lastName||"")||(a.firstName||"").localeCompare(b.firstName||"");
+  };
+  const filtered=active.filter(_searchHit).sort(_sortFn);
   // Per-mode selectability — Archive targets active clients, Restore targets archived, Delete targets either.
   const activeSelectable=mode==="archive"||mode==="delete";
   const archivedSelectable=mode==="restore"||mode==="delete";
@@ -2396,6 +2452,13 @@ function ClientList({clients,t,onSelect,onAdd,onRestore,onImportNew,onRestoreBac
       <h2 style={{fontSize:isMobile?16:18,fontWeight:800,color:th.text,margin:0}}>👥 {t.clients}</h2>
       <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",width:isMobile?"100%":"auto"}}>
         <input placeholder={"🔍 "+(t.searchClients||"Search...")} value={search} onChange={e=>setSearch(e.target.value)} style={{...mINP(th),flex:isMobile?"1 1 100%":"0 0 200px",width:isMobile?"100%":200,padding:"6px 12px",boxSizing:"border-box"}}/>
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} title={t?.sortBy||"Sort by"} style={{...mINP(th),padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer",flex:isMobile?"1 1 auto":"0 0 auto"}}>
+          <option value="name">{(t?.sortBy||"Sort")}: {t?.sortByName||"Name"}</option>
+          <option value="recent">{(t?.sortBy||"Sort")}: {t?.sortByRecent||"Recent activity"}</option>
+          <option value="debt">{(t?.sortBy||"Sort")}: {t?.sortByDebt||"Debt"}</option>
+          <option value="income">{(t?.sortBy||"Sort")}: {t?.sortByIncome||"Income"}</option>
+          <option value="netWorth">{(t?.sortBy||"Sort")}: {t?.sortByNetWorth||"Net worth"}</option>
+        </select>
         <Kebab items={kebabItems} t={t}/>
         <button onClick={onAdd} style={{fontSize:12,padding:"8px 16px",borderRadius:10,background:th.accent,color:"#fff",fontWeight:700,border:"none",cursor:"pointer",flex:isMobile?1:"none"}}>＋ {t.addClient}</button>
       </div>
@@ -2786,7 +2849,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0190-sidebar-hamburger-collapsed-tabs-alerts-i18n";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0200-sort-emailsupport-donut-alerts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3525,13 +3588,74 @@ const FAQ_ENTRIES=[
   {q:"How do I change my password?",a:"Avatar dropdown (top right) → Security. Type a new password (8+ characters) and confirm. Other devices stay signed in until their sessions expire."},
   {q:"Why are some numbers blurred?",a:"You've turned on \"Hide all numbers\" — the 👁 button in the top bar. Click it again to show numbers. This is for screen-sharing or showing the app to non-clients."}
 ];
-function HelpSupportPage({t,settings}){
+/* ── EmailSupportModal — in-app contact form. Sends via Resend through
+   /api/send-support-email to finance@goldenanchor.life. v0.20.0           */
+function EmailSupportModal({onClose,t,settings,authUser}){
+  const th=useTh();
+  const[subject,setSubject]=useState(t?.emailSupportDefaultSubject||"Question about the app");
+  const[message,setMessage]=useState("");
+  const[busy,setBusy]=useState(false);
+  const[err,setErr]=useState("");
+  const[done,setDone]=useState(false);
+  const INP={width:"100%",padding:"10px 12px",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+  const send=async()=>{
+    setErr("");
+    if(!message.trim()||message.trim().length<5){setErr(t?.emailSupportTooShort||"Please write at least a few words about your question.");return;}
+    setBusy(true);
+    const r=await gaSendSupportEmail({
+      subject:subject.trim()||"Golden Anchor app — support request",
+      message:message.trim(),
+      advisorName:settings?.advisorName||"",
+      advisorEmail:settings?.advisorEmail||authUser?.email||"",
+      buildMarker:(typeof window!=="undefined"&&window.__GA_BUILD__)||"—"
+    });
+    setBusy(false);
+    if(r.ok){setDone(true);setTimeout(()=>onClose(),1800);}
+    else setErr(r.error||"Send failed.");
+  };
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.67)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:14}}>
+    <div style={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:16,boxShadow:"0 32px 80px rgba(0,0,0,0.55)",width:"min(560px,100%)",maxHeight:"90vh",overflowY:"auto",padding:22}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+        <div>
+          <div style={{fontSize:18,fontWeight:800,color:th.text}}>📧 {t?.emailSupportTitle||"Email support"}</div>
+          <div style={{fontSize:11,color:th.muted,marginTop:4,lineHeight:1.5}}>{t?.emailSupportHelp||"Sends your message to finance@goldenanchor.life. We'll reply to your advisor email on file."}</div>
+        </div>
+        <button onClick={onClose} title={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:4}}>×</button>
+      </div>
+      {!done?<>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:th.muted,marginBottom:4,fontWeight:600}}>{t?.emailReportTo||"Reply-to"}</div>
+          <div style={{fontSize:12,color:th.text,padding:"8px 12px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontFamily:"'JetBrains Mono',monospace"}}>{settings?.advisorEmail||authUser?.email||"(no email on file)"}</div>
+        </div>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:th.muted,marginBottom:4,fontWeight:600}}>{t?.emailReportSubject||"Subject"}</div>
+          <input value={subject} onChange={e=>setSubject(e.target.value)} style={INP}/>
+        </div>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,color:th.muted,marginBottom:4,fontWeight:600}}>{t?.emailReportMessage||"Message"}</div>
+          <textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder={t?.emailSupportPh||"Describe your question or issue. Include screenshots if useful by replying to the email after sending."} style={{...INP,minHeight:140,resize:"vertical"}}/>
+        </div>
+        {err&&<div style={{fontSize:11,color:th.neg,padding:"8px 10px",background:th.neg+"11",borderRadius:8,marginBottom:10}}>⚠️ {err}</div>}
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <button onClick={onClose} disabled={busy} style={{padding:"10px 16px",borderRadius:8,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",fontSize:12,fontWeight:600}}>{t?.cancel||"Cancel"}</button>
+          <button onClick={send} disabled={busy} style={{padding:"10px 18px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:busy?"wait":"pointer",opacity:busy?0.6:1}}>{busy?(t?.intakeSubmitting||"Sending…"):"📧 "+(t?.send||"Send")}</button>
+        </div>
+      </>:
+      <div style={{textAlign:"center",padding:"30px 10px"}}>
+        <div style={{fontSize:48,color:th.pos,marginBottom:10}}>✓</div>
+        <div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:6}}>{t?.emailSupportSent||"Message sent!"}</div>
+        <div style={{fontSize:12,color:th.muted}}>{t?.emailSupportSentSub||"Our team will reply to your advisor email shortly."}</div>
+      </div>}
+    </div>
+  </div>;
+}
+
+function HelpSupportPage({t,settings,authUser}){
   const th=useTh();
   const[open,setOpen]=useState(null);
-  const supportEmail="finance@goldenanchor.life";
-  const subject="Golden Anchor app — support request";
-  const body=`Hi Golden Anchor support team,\n\n[Describe your question or issue here]\n\n---\nSent from the Golden Anchor app\nAdvisor: ${settings?.advisorName||"—"}\nAccount email: ${settings?.advisorEmail||"—"}\nBuild: ${(typeof window!=="undefined"&&window.__GA_BUILD__)||"—"}`;
+  const[modalOpen,setModalOpen]=useState(false);
   return <div className="ga-np" style={{padding:24,maxWidth:820,margin:"0 auto"}}>
+    {modalOpen&&<EmailSupportModal onClose={()=>setModalOpen(false)} t={t} settings={settings} authUser={authUser}/>}
     <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6}}>❓ {t?.helpHdr||"Help & Support"}</div>
     <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.helpSub||"Common questions. Can't find an answer? Email support directly."}</div>
     <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
@@ -3545,8 +3669,8 @@ function HelpSupportPage({t,settings}){
     </div>
     <div style={{...mCARD(th),padding:18,background:GOLD+"08",border:`1px solid ${GOLD}33`}}>
       <div style={{fontSize:13,fontWeight:700,color:th.text,marginBottom:6}}>📧 {t?.stillNeedHelp||"Still need help?"}</div>
-      <div style={{fontSize:12,color:th.muted,marginBottom:12,lineHeight:1.6}}>{(t?.stillNeedHelpSub||"Email {email} with your question — our support team will get back to you.").replace("{email}",supportEmail)}</div>
-      <a href={`mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`} style={{display:"inline-block",padding:"10px 16px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,fontSize:12,textDecoration:"none"}}>📧 {t?.emailSupport||"Email support"}</a>
+      <div style={{fontSize:12,color:th.muted,marginBottom:12,lineHeight:1.6}}>{t?.stillNeedHelpSubInApp||"Open a support request directly from the app — our team will reply to your advisor email."}</div>
+      <button onClick={()=>setModalOpen(true)} style={{display:"inline-block",padding:"10px 16px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,fontSize:12,border:"none",cursor:"pointer"}}>📧 {t?.emailSupport||"Email support"}</button>
     </div>
   </div>;
 }
@@ -4037,37 +4161,7 @@ export default function App(){
             </>
           }
         </div>
-        <nav style={{flex:1,padding:10,overflowY:"auto",overflowX:"visible"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");const active=nav===n.id&&!selected;const hasMenu=n.id==="clients"&&!sidebarCollapsed;return<div key={n.id} id={n.id==="clients"?"ga-clients-menu":undefined} style={{position:"relative",display:"flex",alignItems:"center",gap:2,marginBottom:2}}>
-          <button onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{flex:1,display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:active?GOLD+"22":"transparent",color:active?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",whiteSpace:"nowrap",overflow:"hidden",position:"relative"}}>
-            {active&&!sidebarCollapsed&&<span style={{position:"absolute",left:0,top:"22%",bottom:"22%",width:3,background:GOLD,borderRadius:"0 3px 3px 0"}}/>}
-            {sidebarCollapsed?icon:n.l}
-          </button>
-          {hasMenu&&<button onClick={(e)=>{e.stopPropagation();setClientsMenuOpen(o=>!o);}} title={t?.clientsMenu||"Client options"} style={{width:28,height:28,flexShrink:0,background:clientsMenuOpen?GOLD+"26":"transparent",border:`1px solid ${clientsMenuOpen?GOLD+"55":"transparent"}`,color:clientsMenuOpen?GOLD:theme.sideMuted,borderRadius:6,cursor:"pointer",marginRight:2,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block"}}>
-              <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
-            </svg>
-          </button>}
-          {n.id==="clients"&&clientsMenuOpen&&!sidebarCollapsed&&<div style={{position:"absolute",top:38,right:4,left:"auto",background:theme.modal,border:`1px solid ${theme.cardBorder}`,borderRadius:10,boxShadow:"0 12px 32px rgba(0,0,0,0.45)",minWidth:230,zIndex:70,padding:4}}>
-            {[
-              {icon:"👥",label:t?.allClients||"All clients",onClick:()=>{setNav("clients");setSelected(null);setClientsMenuOpen(false);}},
-              {icon:"＋",label:t?.addNewClient||"Add new client",onClick:()=>{setAddOpen(true);setClientsMenuOpen(false);}},
-              {icon:"📨",label:t?.sendInvite||"Send invite",onClick:()=>{setNav("intake-submissions");setSelected(null);setClientsMenuOpen(false);}},
-              {divider:true},
-              {icon:"📤",label:t?.exportAllCsv||"Export all (CSV)",onClick:()=>{try{const rows=[["First","Last","Email","Phone","Archived","Income/mo","Total Debt"]];clients.forEach(c=>{rows.push([c.firstName||"",c.lastName||"",c.email||"",c.phone||"",c.archived?"yes":"",Math.round(sumN(c.incomeStreams||[])),Math.round(totalL(c))]);});const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_clients_${new Date().toISOString().slice(0,10)}.csv`;a.click();}catch(e){alert("Export failed: "+e.message);}setClientsMenuOpen(false);}},
-              {icon:"📥",label:t?.importCsv||"Import (CSV)",onClick:()=>{setSidebarImportOpen(true);setClientsMenuOpen(false);}},
-              {icon:"🗂",label:(t?.showArchived||"Show archived")+` (${clients.filter(c=>c.archived).length})`,onClick:()=>{setNav("archived");setSelected(null);setClientsMenuOpen(false);}},
-              {divider:true},
-              {icon:"🔀",label:(clientsSort==="recent"?"✓ ":"")+(t?.sortByRecent||"Sort by recent activity"),onClick:()=>{setClientsSort("recent");setClientsMenuOpen(false);}},
-              {icon:"🔀",label:(clientsSort==="debt"?"✓ ":"")+(t?.sortByDebt||"Sort by debt"),onClick:()=>{setClientsSort("debt");setClientsMenuOpen(false);}},
-              {icon:"🔀",label:(clientsSort==="name"?"✓ ":"")+(t?.sortByName||"Sort by name"),onClick:()=>{setClientsSort("name");setClientsMenuOpen(false);}},
-            ].map((it,i)=>it.divider?<div key={i} style={{height:1,background:theme.cardBorder,margin:"4px 6px"}}/>:
-              <button key={i} onClick={it.onClick} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",padding:"7px 12px",background:"transparent",border:"none",color:theme.sideText,fontSize:12,cursor:"pointer",borderRadius:6,fontWeight:500}} onMouseEnter={e=>{e.currentTarget.style.background=theme.bg;}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
-                <span style={{width:16,fontSize:13,lineHeight:1,textAlign:"center"}}>{it.icon}</span>
-                <span>{it.label}</span>
-              </button>
-            )}
-          </div>}
-        </div>;})}</nav>
+        <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:active?GOLD+"22":"transparent",color:active?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",position:"relative"}}>{active&&!sidebarCollapsed&&<span style={{position:"absolute",left:0,top:"22%",bottom:"22%",width:3,background:GOLD,borderRadius:"0 3px 3px 0"}}/>}{sidebarCollapsed?icon:n.l}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
           {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
               moved to the TopBar avatar dropdown so they don't duplicate. */}
@@ -4124,7 +4218,7 @@ export default function App(){
           nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
           nav==="archived"?<ArchivedClientsPage clients={clients} onRestore={restoreClient} onDelete={deleteClient} t={t}/>:
           nav==="whats-new"?<WhatsNewPage t={t}/>:
-          nav==="help"?<HelpSupportPage t={t} settings={settings}/>:
+          nav==="help"?<HelpSupportPage t={t} settings={settings} authUser={authUser}/>:
           <AboutPage t={t} settings={settings} lang={lang}/>}
       </div></div>
     </div>
