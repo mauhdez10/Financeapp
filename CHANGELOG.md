@@ -2,6 +2,46 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.27.0 — 2026-05-22 — Skeleton bootstrap, animated KPIs, alert pulse, search a11y
+
+Closes the remaining items deferred from the v0.26.0 UI/UX Pro Max audit batch.
+
+**Bootstrap skeleton (replaces "⚓ Loading…" text).**
+- New top-level `BootstrapSkeleton` component renders during `bootstrapping` instead of the centered emoji + text.
+- Layout mirrors the live dashboard silhouette: fake topbar (logo + 3 chips + avatar) → 4-up KPI tile grid → 3fr/2fr chart row → 1-1 alerts row → 4-row client list strip. Reduces perceived CLS when real content arrives.
+- Two new primitives: `Skel` (matte shimmer block, `.ga-skel` class) and the skeleton scaffold itself.
+- New `@keyframes ga-skel-shimmer` (1.4s ease-in-out infinite, 200% background slide). Frozen by the existing `prefers-reduced-motion` guard.
+- `role="status" aria-live="polite"` on the wrapper + visually-hidden `Loading clients…` for screen readers.
+
+**Animated KPI tiles (`SC` count-up).**
+- New `useAnimatedDisplay` hook tweens the digit portion of any `value` prop on `<SC>` toward its new target over 600ms ease-out cubic (`1 - (1-k)^3`).
+- Detects currency strings (`$` prefix) vs plain numbers and formats each frame via `Intl.NumberFormat`.
+- Skips animation on first render (`prevRef === null`), on non-numeric values (`"●●●"` hide-numbers placeholder), and under `prefers-reduced-motion`.
+- All 6 existing `<SC>` call sites pick this up for free — no call-site changes.
+- Verified live: 76 mutation-observer frames captured tweening Combined Net `$28,467 → $14,750` over ~600ms after a search filter.
+- Inlined; **did not** add `react-countup` dependency (per single-file architecture D-1; tween logic is ~25 lines and integrates cleanly with the existing `fmt()` formatter).
+
+**Pulse on critical alert pills.**
+- `Pill` component gains an optional `pulse` prop (boolean). When true, applies `.ga-pill-pulse` → `@keyframes ga-pill-pulse` (1.5s ease-in-out infinite, opacity 1 → 0.55 → 1).
+- Wired at the only critical-alert call site (`RemindersPanel` advisor list, App.jsx:1736): pulses when `priority === "high"` AND `type === "noContact" || type === "promo"`. So only severe no-contact (>60d) and near-expiry (≤14d) promos pulse. Medium-priority alerts do not.
+- Frozen by reduced-motion guard. Opacity bottom stays above 0.2 (per `opacity-threshold` rule).
+
+**Search input a11y (8 inputs).**
+- Added `aria-label` to every placeholder-only search input: Advisor Alerts, Client Due, Dashboard client search, Clients-page search, CSV picker, Backup importer, Export selector, Split-pick, Join-pick.
+- Two new translation keys: `searchAdvisorAlertsAria` / `searchClientDueAria` (EN+ES). Re-used `searchClientsPh` for the seven client-search inputs to avoid translation bloat.
+- Sighted users keep the existing 🔍-prefixed placeholder; screen readers now get an explicit, scoped label instead of relying on placeholder text (unreliable across SR engines).
+- Visible labels intentionally *not* added — flagged as a "minimalism vs accessibility" design call; aria-label gets the a11y win without the visual disruption. Standard pattern for search inputs (Google/GitHub/Amazon).
+
+**Build marker:** `2026-05-22-v0270-skeleton-aria-search-animated-kpi-pulse-pills`. App.jsx +~70 lines (skeleton component + hook + CSS keyframes + 8 aria-label additions + Pill pulse prop + call site). `translations.js` +4 keys. No new files, no new dependencies, no SQL. D-1, D-3 (EN+ES symmetry), D-7, D-17 (top-level components only), D-27-amended, D-36 preserved.
+
+**Smoke tests:**
+1. **Skeleton.** Throttle network in DevTools to "Slow 3G" → hard refresh https://finance.goldenanchor.life — sees shimmering dashboard scaffold for ~1-2s before real content. Layout doesn't jump on hand-off.
+2. **KPI count-up.** Sign in, dashboard loads. Type in the bottom-page client search ("Miguel"). The 4 top KPI tiles should tween smoothly to the filtered totals (~600ms). Clear search, they tween back.
+3. **Pulse pills.** Dashboard alerts panel — high-priority "⏰ Promo Expiring" and ">60d No Contact" pills should pulse softly (0.55-1 opacity, 1.5s). Medium-priority "39d No Contact" / "36d No Contact" should not pulse.
+4. **Search a11y.** DevTools → Accessibility tree → click any search input. Computed name should be "Search advisor alerts" / "Search bills and cards due" / "Search clients" — not the placeholder.
+5. **Reduced motion.** macOS Settings → Accessibility → Reduce motion ON → reload. Shimmer freezes, pulse freezes, KPIs jump to final value (no tween). All content still legible.
+6. **EN/ES toggle.** Switch to ES → aria-labels become "Buscar alertas del asesor" / "Buscar facturas y pagos pendientes" / "Buscar clientes".
+
 ## v0.26.0 — 2026-05-22 — UI/UX Pro Max audit batch (a11y, contrast, z-index, toasts, hover, reduced motion)
 
 All 10 quick-win items from the UI/UX Pro Max audit, batched into one pass. Audit pulled directly from the plugin's `ux-guidelines.csv` (99 rows) + `ui-reasoning.csv` (162 rows), classifying Golden Anchor as a hybrid of "CRM & Client Management" + "Financial Dashboard" + "Banking/Traditional Finance" patterns.
