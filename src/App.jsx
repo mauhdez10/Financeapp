@@ -161,8 +161,14 @@ const parseCSV=(text,existing=null)=>{const lines=text.split('\n').map(l=>l.trim
 const p=d.profile||{};return mig({...(existing||{}),firstName:p.firstName||'',lastName:p.lastName||'',email:p.email||'',phone:p.phone||'',address:p.address||'',dob:p.dob||'',social:p.social||'',clientType:p.clientType||'financeOnly',recommendedBy:p.recommendedBy||'',partnerFirst:p.partnerFirst||null,partnerLast:p.partnerLast||null,id:existing?.id||gid(),incomeStreams:d.income.map((s,i)=>({id:gid()+i,person:s.person||'p1',label:s.label,gross:+s.gross||0,net:+s.net||0,freq:s.frequency||s.freq||'monthly2'})),bills:d.bills.map((b,i)=>({id:gid()+i,name:b.name,assignedTo:b.assignedTo||'joint',cost:+b.cost||0,type:b.type||'regular',freq:b.frequency||b.freq||'monthly2',dueDay:+b.dueDay||1,split:{p1:+(b.splitP1??50),p2:+(b.splitP2??50)}})),cards:d.debt.map((c,i)=>{let promos=[];try{promos=JSON.parse(c.promos||'[]');}catch{}return{id:gid()+i,name:c.name,balance:+c.balance||0,apr:+c.apr||0,min:+(c.minPayment||c.min)||0,limit:+c.limit||0,owedBy:c.owedBy||'joint',dueDay:+c.dueDay||null,promos};}),accounts:d.accounts.map((a,i)=>({id:gid()+i,name:a.name,type:a.type||'checking',value:+a.value||0,owner:a.owner||'joint'})),loans:d.loans.map((l,i)=>({id:gid()+i,name:l.name,type:l.type||'personal',balance:+l.balance||0,owner:l.owner||'joint',apr:+l.apr||0}))});};
 
 /* ── REMINDERS ───────────────────────────────────────────────────────────── */
-function getClientRem(clients){const today=new Date();const day=today.getDate();const out=[];clients.forEach(c=>{(c.bills||[]).forEach(b=>{if(b.type!=="annual"&&b.dueDay){const diff=b.dueDay>=day?b.dueDay-day:b.dueDay+(31-day);if(diff<=7)out.push({clientName:`${c.firstName} ${c.lastName}`,name:b.name,dueDay:b.dueDay,amount:toM(b.cost,b.freq||"monthly2"),type:"bill",task:"Bill Due",daysUntil:diff});}});(c.cards||[]).forEach(cc=>{if(cc.min>0)out.push({clientName:`${c.firstName} ${c.lastName}`,name:cc.name,dueDay:cc.dueDay||null,amount:cc.min,type:"card",task:"Card Min",daysUntil:cc.dueDay?Math.max(0,cc.dueDay-day):null});});});return out;}
-function getAdvRem(clients,settings){const today=new Date();const out=[];clients.forEach(c=>{const snaps=c.monthSnapshots||[];if(settings.reminderAdvisor?.noContact){const last=snaps[snaps.length-1];const days=last?.savedAt?Math.floor((today-new Date(last.savedAt))/86400000):(snaps.length===0?999:0);if(days>=(settings.noContactDays||30))out.push({type:"noContact",priority:days>60?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`Last review ${days===999?"never":`${days}d ago`}`,task:"📞 No Contact"});}if(settings.reminderAdvisor?.highDebt){const net=sumN(c.incomeStreams);const dsr=net>0?sumMin(c.cards)/net:0;if(dsr>0.36)out.push({type:"highDebt",priority:dsr>0.5?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`DSR ${(dsr*100).toFixed(0)}%`,task:"⚠️ High DSR"});}if(settings.reminderAdvisor?.promoExpiring){(c.cards||[]).forEach(cc=>{(cc.promos||[]).forEach(p=>{if(p.end){const dLeft=Math.floor((new Date(p.end)-today)/86400000);if(dLeft>=0&&dLeft<=60)out.push({type:"promo",priority:dLeft<=14?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`${cc.name} "${p.label||"Promo"}" — ${dLeft}d`,task:"⏰ Promo Expiring"});}});});}if(settings.reminderAdvisor?.debtIncreasing){if(snaps.length>=2&&snaps[snaps.length-1].debt>snaps[0].debt)out.push({type:"debtRising",priority:"med",clientName:`${c.firstName} ${c.lastName}`,detail:`+${fmt(snaps[snaps.length-1].debt-snaps[0].debt)}`,task:"📈 Debt Rising"});}});return out;}
+// v0.28.0 — alerts now carry a stable `key` so they can be dismissed/muted via
+// settings.alertDismissals. Bills/cards key embeds YYYY-MM so the next billing
+// cycle naturally produces a new key (auto-re-emerges). Advisor alerts key by
+// clientId+type (sometimes +cardId+promoId) — these snooze for a duration.
+const _ymKey=(d=new Date())=>d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0");
+function isAlertDismissed(key,dismissals,nowMs=Date.now()){if(!key||!Array.isArray(dismissals))return false;const d=dismissals.find(x=>x&&x.key===key);if(!d)return false;if(!d.until)return true;/* forever */ return new Date(d.until).getTime()>nowMs;}
+function getClientRem(clients){const today=new Date();const day=today.getDate();const ym=_ymKey(today);const out=[];clients.forEach(c=>{(c.bills||[]).forEach(b=>{if(b.type!=="annual"&&b.dueDay){const diff=b.dueDay>=day?b.dueDay-day:b.dueDay+(31-day);if(diff<=7)out.push({clientId:c.id,refId:b.id,key:`billDue:${c.id}:${b.id}:${ym}`,clientName:`${c.firstName} ${c.lastName}`,name:b.name,dueDay:b.dueDay,amount:toM(b.cost,b.freq||"monthly2"),type:"bill",task:"Bill Due",daysUntil:diff});}});(c.cards||[]).forEach(cc=>{if(cc.min>0)out.push({clientId:c.id,refId:cc.id,key:`cardDue:${c.id}:${cc.id}:${ym}`,clientName:`${c.firstName} ${c.lastName}`,name:cc.name,dueDay:cc.dueDay||null,amount:cc.min,type:"card",task:"Card Min",daysUntil:cc.dueDay?Math.max(0,cc.dueDay-day):null});});});return out;}
+function getAdvRem(clients,settings){const today=new Date();const out=[];clients.forEach(c=>{const snaps=c.monthSnapshots||[];if(settings.reminderAdvisor?.noContact){const last=snaps[snaps.length-1];const days=last?.savedAt?Math.floor((today-new Date(last.savedAt))/86400000):(snaps.length===0?999:0);if(days>=(settings.noContactDays||30))out.push({type:"noContact",clientId:c.id,key:`noContact:${c.id}`,priority:days>60?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`Last review ${days===999?"never":`${days}d ago`}`,task:"📞 No Contact"});}if(settings.reminderAdvisor?.highDebt){const net=sumN(c.incomeStreams);const dsr=net>0?sumMin(c.cards)/net:0;if(dsr>0.36)out.push({type:"highDebt",clientId:c.id,key:`highDSR:${c.id}`,priority:dsr>0.5?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`DSR ${(dsr*100).toFixed(0)}%`,task:"⚠️ High DSR"});}if(settings.reminderAdvisor?.promoExpiring){(c.cards||[]).forEach(cc=>{(cc.promos||[]).forEach(p=>{if(p.end){const dLeft=Math.floor((new Date(p.end)-today)/86400000);if(dLeft>=0&&dLeft<=60)out.push({type:"promo",clientId:c.id,cardId:cc.id,promoId:p.id,key:`promo:${c.id}:${cc.id}:${p.id||p.label||"_"}`,priority:dLeft<=14?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`${cc.name} "${p.label||"Promo"}" — ${dLeft}d`,task:"⏰ Promo Expiring"});}});});}if(settings.reminderAdvisor?.debtIncreasing){if(snaps.length>=2&&snaps[snaps.length-1].debt>snaps[0].debt)out.push({type:"debtRising",clientId:c.id,key:`debtRising:${c.id}`,priority:"med",clientName:`${c.firstName} ${c.lastName}`,detail:`+${fmt(snaps[snaps.length-1].debt-snaps[0].debt)}`,task:"📈 Debt Rising"});}});return out;}
 
 /* ── PRIMITIVES ──────────────────────────────────────────────────────────── */
 function Pill({children,color="#94A3B8",pulse=false}){return<span className={pulse?"ga-pill-pulse":undefined} style={{background:color+"22",color,border:`1px solid ${color}44`,borderRadius:99,padding:"1px 8px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{children}</span>;}
@@ -1685,7 +1691,16 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
   const[page,setPage]=useState(1);
   const[expanded,setExpanded]=useState(false);
   const[settingsOpen,setSettingsOpen]=useState(false);
+  // v0.28.0 — Dismiss/mute expander state (per panel)
+  const[showMutedAdv,setShowMutedAdv]=useState(false);
+  const[showMutedCli,setShowMutedCli]=useState(false);
   const alertTypes=settings.alertTypes||{noContact:true,highDSR:true,promoExpiring:true,debtRising:true,billDue:true,lowCashFlow:true,lowEF:true,missedSnap:true};
+  // v0.28.0 — dismissal storage. Each entry: {key, until (ISO|null=forever), dismissedAt}
+  const dismissals=settings.alertDismissals||[];
+  // Cleanup expired dismissals on mount (no-op if list is clean).
+  useEffect(()=>{const now=Date.now();const cleaned=dismissals.filter(d=>d&&d.key&&(!d.until||new Date(d.until).getTime()>now));if(cleaned.length!==dismissals.length)onSettingsChange({...settings,alertDismissals:cleaned});/* eslint-disable-next-line react-hooks/exhaustive-deps */},[]);
+  const dismissAlert=(key,kind)=>{let until,toastMsg;if(kind==="due"){const d=new Date();until=new Date(d.getFullYear(),d.getMonth()+1,1).toISOString();toastMsg=t?.dismissedCycleToast||"Marked handled for this cycle — re-appears next month";}else if(kind==="forever"){until=null;toastMsg=t?.dismissedForeverToast||"Muted forever";}else if(kind==="snooze30"){until=new Date(Date.now()+30*86400000).toISOString();toastMsg=t?.dismissed30dToast||"Snoozed for 30 days";}else{until=new Date(Date.now()+7*86400000).toISOString();toastMsg=t?.dismissed7dToast||"Snoozed for 7 days";}const nextList=[...dismissals.filter(x=>x.key!==key),{key,until,dismissedAt:new Date().toISOString()}];onSettingsChange({...settings,alertDismissals:nextList});if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("ga-toast",{detail:{kind:"success",msg:toastMsg}}));};
+  const restoreAlert=key=>{onSettingsChange({...settings,alertDismissals:dismissals.filter(x=>x.key!==key)});if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("ga-toast",{detail:{kind:"success",msg:t?.restoredAlertToast||"Alert restored"}}));};
   let adv=getAdvRem(clients,settings);
   // Filter by enabled types — we match by task keyword
   const typeKeyMap={"No Contact":"noContact","High DSR":"highDSR","Promo":"promoExpiring","Debt Rising":"debtRising","Bill Due":"billDue","Cash Flow":"lowCashFlow","Emergency":"lowEF","Snapshot":"missedSnap"};
@@ -1697,10 +1712,16 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
   let sAdv=[...adv].sort((a,b)=>sortA==="priority"?(a.priority==="high"&&b.priority!=="high"?-1:1):sortA==="client"?a.clientName.localeCompare(b.clientName):a.task.localeCompare(b.task));
   let sCli=[...cRem].sort((a,b)=>sortC==="client"?a.clientName.localeCompare(b.clientName):sortC==="task"?a.task.localeCompare(b.task):sortC==="amount"?b.amount-a.amount:(a.daysUntil??99)-(b.daysUntil??99));
   if(filtDue)sCli=sCli.filter(u=>(u.clientName+" "+(u.name||"")+" "+(u.task||"")).toLowerCase().includes(filtDue.toLowerCase()));
+  // v0.28.0 — partition into active vs muted using dismissal lookup
+  const _isDis=k=>isAlertDismissed(k,dismissals);
+  const activeAdv=sAdv.filter(a=>!_isDis(a.key));
+  const activeCli=sCli.filter(u=>!_isDis(u.key));
+  const mutedAdv=sAdv.filter(a=>_isDis(a.key));
+  const mutedCli=sCli.filter(u=>_isDis(u.key));
   const pC=p=>p==="high"?th.neg:th.warn;
   const SEL={fontSize:11,padding:"3px 8px",borderRadius:7,background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",outline:"none"};
   // Pagination logic: 3 lines compact, 10 per page expanded
-  const currentList=tab==="advisor"?sAdv:sCli;
+  const currentList=tab==="advisor"?activeAdv:activeCli;
   const total=currentList.length;
   const perPage=expanded?10:3;
   const startIdx=(page-1)*perPage;
@@ -1709,52 +1730,76 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
   // v0.19.0 — side-by-side Advisor Alerts + Client Due cards (Claude design).
   // Both cards always render; no tab switching. Search/sort/expand stay per panel
   // via the existing shared state (filtClient applies to whichever side is open).
-  const advVisible=sAdv.slice(0,expanded?20:5);
-  const cliVisible=sCli.slice(0,expanded?20:5);
-  const showAdvMore=sAdv.length>5;
-  const showCliMore=sCli.length>5;
+  // v0.28.0 — `advVisible` / `cliVisible` now drawn from active (non-dismissed) lists.
+  const advVisible=activeAdv.slice(0,expanded?20:5);
+  const cliVisible=activeCli.slice(0,expanded?20:5);
+  const showAdvMore=activeAdv.length>5;
+  const showCliMore=activeCli.length>5;
+  // v0.28.0 — small ✕ dismiss button (transparent, low-vis, expands on focus)
+  const DISMISS_BTN={background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:13,padding:"2px 6px",borderRadius:6,lineHeight:1,flexShrink:0,opacity:0.55,transition:"opacity 150ms ease,background-color 150ms ease"};
+  const dismissLbl=t?.dismissAlert||"Dismiss";
+  const restoreLbl=t?.restoreAlert||"Restore";
+  const mutedExpanderLbl=n=>(t?.mutedAlertsLbl||"({n} muted)").replace("{n}",n);
+  // Tiny human label of a dismissal's remaining duration
+  const _untilLabel=k=>{const d=dismissals.find(x=>x.key===k);if(!d)return "";if(!d.until)return t?.mutedForeverLbl||"muted";const ms=new Date(d.until)-Date.now();if(ms<=0)return "";const days=Math.ceil(ms/86400000);return days===1?(t?.muted1dLbl||"1d"):(t?.mutedNdLbl||"{n}d").replace("{n}",days);};
   return<>{settingsOpen&&<AlertsSettingsModal settings={settings} onSave={onSettingsChange} onClose={()=>setSettingsOpen(false)} t={t}/>}<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:16}}>
     {/* ── Advisor Alerts card (v0.20.0 — single icon: gear-only header per user feedback) ── */}
     <div style={{...mCARD(th),padding:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"wrap"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>{(t.advisorAlertsLbl||"Advisor Alerts").replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u,"")}{sAdv.length>0&&<span style={{marginLeft:8,color:th.warn,fontFamily:"'JetBrains Mono',monospace",fontWeight:800}}>· {sAdv.length}</span>}</span>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"nowrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0,flex:1}}>
+          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{(t.advisorAlertsLbl||"Advisor Alerts").replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u,"")}{activeAdv.length>0&&<span style={{marginLeft:8,color:th.warn,fontFamily:"'JetBrains Mono',monospace",fontWeight:800}}>· {activeAdv.length}</span>}</span>
         </div>
-        <button onClick={()=>setSettingsOpen(true)} title={t.alertSettingsTitle||"Alert Settings"} style={{...SEL,fontSize:13,padding:"3px 8px"}}>⚙️</button>
+        <button onClick={()=>setSettingsOpen(true)} title={t.alertSettingsTitle||"Alert Settings"} style={{...SEL,fontSize:13,padding:"3px 8px",flexShrink:0}}>⚙️</button>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
         <input placeholder={"🔍 "+(t?.searchPh||"Search...")} aria-label={t?.searchAdvisorAlertsAria||"Search advisor alerts"} value={filtClient} onChange={e=>setFiltClient(e.target.value)} style={{...mINP(th),fontSize:11,padding:"4px 10px",flex:"1 1 120px",minWidth:0}}/>
         <select value={sortA} onChange={e=>setSortA(e.target.value)} style={SEL}><option value="priority">{t?.sortPriority||"Priority"}</option><option value="client">{t.client||"Client"}</option></select>
       </div>
-      {sAdv.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"8px 0"}}>{t?.noAdvisorAlerts||"No advisor alerts."}</div>:
+      {mutedAdv.length>0&&<button onClick={()=>setShowMutedAdv(v=>!v)} style={{background:"transparent",border:"none",color:th.dim,fontSize:10,cursor:"pointer",padding:"2px 0",textTransform:"none",letterSpacing:0,alignSelf:"flex-start",marginBottom:6}} aria-expanded={showMutedAdv}>{showMutedAdv?"▴ ":"▾ "}{mutedExpanderLbl(mutedAdv.length)}</button>}
+      {activeAdv.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"8px 0"}}>{t?.noAdvisorAlerts||"No advisor alerts."}</div>:
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {advVisible.map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:pC(a.priority)+"11",border:`1px solid ${pC(a.priority)}22`}}>
+          {advVisible.map((a,i)=><div key={a.key||i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:pC(a.priority)+"11",border:`1px solid ${pC(a.priority)}22`}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:12,fontWeight:700,color:th.text,overflow:"hidden",textOverflow:"ellipsis"}}>{a.clientName}</div>
               <div style={{fontSize:11,color:th.muted,overflow:"hidden",textOverflow:"ellipsis"}}>{a.detail}</div>
             </div>
             <Pill color={pC(a.priority)} pulse={a.priority==="high"&&(a.type==="noContact"||a.type==="promo")}>{a.task}</Pill>
+            <button onClick={()=>dismissAlert(a.key,"snooze7")} title={dismissLbl+" — "+(t?.dismissAdvHint||"snooze 7 days")} aria-label={dismissLbl+" "+a.task+" "+(t?.forClientLbl||"for")+" "+a.clientName} style={DISMISS_BTN} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="0.55"}>✕</button>
           </div>)}
         </div>}
+      {showMutedAdv&&mutedAdv.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px dashed ${th.cardBorder}`}}>
+        <div style={{fontSize:10,fontWeight:700,color:th.dim,letterSpacing:".06em",textTransform:"uppercase",marginBottom:6}}>{t?.mutedHdr||"Muted"}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          {mutedAdv.map((a,i)=><div key={a.key||i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:7,background:th.cardBorder+"15",fontSize:11,opacity:0.85}}>
+            <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+              <span style={{color:th.muted,fontWeight:600}}>{a.clientName}</span>
+              <span style={{color:th.dim,marginLeft:6}}>· {a.task.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u,"")}</span>
+            </div>
+            <span style={{fontSize:9,color:th.dim,flexShrink:0,fontFamily:"'JetBrains Mono',monospace"}}>{_untilLabel(a.key)}</span>
+            <button onClick={()=>restoreAlert(a.key)} title={restoreLbl} aria-label={restoreLbl+" "+a.task+" "+(t?.forClientLbl||"for")+" "+a.clientName} style={{...DISMISS_BTN,color:th.accent,opacity:0.7}}>↺</button>
+          </div>)}
+        </div>
+      </div>}
       {showAdvMore&&<div style={{marginTop:8,textAlign:"center"}}>
-        <button onClick={()=>setExpanded(e=>!e)} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:"transparent",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>{expanded?"▲ "+(t?.showLess||"Show Less"):"▼ "+(t?.showMore||"Show More")+` (${sAdv.length-5})`}</button>
+        <button onClick={()=>setExpanded(e=>!e)} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:"transparent",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>{expanded?"▲ "+(t?.showLess||"Show Less"):"▼ "+(t?.showMore||"Show More")+` (${activeAdv.length-5})`}</button>
       </div>}
     </div>
     {/* ── Client Due card (v0.20.0 — gear added, leading emoji removed for visual parity) ── */}
     <div style={{...mCARD(th),padding:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"wrap"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>{(t.clientDueLbl||"Client Due").replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u,"")}{sCli.length>0&&<span style={{marginLeft:8,color:th.warn,fontFamily:"'JetBrains Mono',monospace",fontWeight:800}}>· {sCli.length}</span>}</span>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"nowrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0,flex:1}}>
+          <span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{(t.clientDueLbl||"Client Due").replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u,"")}{activeCli.length>0&&<span style={{marginLeft:8,color:th.warn,fontFamily:"'JetBrains Mono',monospace",fontWeight:800}}>· {activeCli.length}</span>}</span>
         </div>
-        <button onClick={()=>setSettingsOpen(true)} title={t.alertSettingsTitle||"Alert Settings"} style={{...SEL,fontSize:13,padding:"3px 8px"}}>⚙️</button>
+        <button onClick={()=>setSettingsOpen(true)} title={t.alertSettingsTitle||"Alert Settings"} style={{...SEL,fontSize:13,padding:"3px 8px",flexShrink:0}}>⚙️</button>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
         <input placeholder={"🔍 "+(t?.searchPh||"Search...")} aria-label={t?.searchClientDueAria||"Search bills and cards due"} value={filtDue} onChange={e=>setFiltDue(e.target.value)} style={{...mINP(th),fontSize:11,padding:"4px 10px",flex:"1 1 120px",minWidth:0}}/>
         <select value={sortC} onChange={e=>setSortC(e.target.value)} style={SEL}><option value="default">{t.dueDateOpt||"Due Date"}</option><option value="client">{t.client||"Client"}</option><option value="amount">{t?.amount||"Amount"}</option></select>
       </div>
-      {sCli.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"8px 0"}}>{t?.noBillsDueSoon||"No bills or cards due soon."}</div>:
+      {mutedCli.length>0&&<button onClick={()=>setShowMutedCli(v=>!v)} style={{background:"transparent",border:"none",color:th.dim,fontSize:10,cursor:"pointer",padding:"2px 0",textTransform:"none",letterSpacing:0,alignSelf:"flex-start",marginBottom:6}} aria-expanded={showMutedCli}>{showMutedCli?"▴ ":"▾ "}{mutedExpanderLbl(mutedCli.length)}</button>}
+      {activeCli.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"8px 0"}}>{t?.noBillsDueSoon||"No bills or cards due soon."}</div>:
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
-          {cliVisible.map((u,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:u.type==="card"?th.warn+"08":th.neg+"08",border:`1px solid ${u.type==="card"?th.warn:th.neg}22`,fontSize:11,gap:8}}>
+          {cliVisible.map((u,i)=><div key={u.key||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:u.type==="card"?th.warn+"08":th.neg+"08",border:`1px solid ${u.type==="card"?th.warn:th.neg}22`,fontSize:11,gap:8}}>
             <div style={{minWidth:0,flex:1}}>
               <span style={{fontWeight:600,color:th.text}}>{u.name}</span>
               <span style={{color:th.dim,marginLeft:6}}>— {u.clientName}</span>
@@ -1763,10 +1808,25 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
               <span style={{color:th.warn,fontWeight:700}}>{fmtD(u.amount)}</span>
               {u.dueDay&&<span style={{fontSize:9,color:th.dim,display:"block"}}>{(t?.dayPrefix||"Day")} {u.dueDay}</span>}
             </div>
+            <button onClick={()=>dismissAlert(u.key,"due")} title={(t?.markPaidHint||"Mark handled this cycle")} aria-label={(t?.markPaidHint||"Mark handled this cycle")+" — "+u.name+" "+(t?.forClientLbl||"for")+" "+u.clientName} style={DISMISS_BTN} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="0.55"}>✕</button>
           </div>)}
         </div>}
+      {showMutedCli&&mutedCli.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px dashed ${th.cardBorder}`}}>
+        <div style={{fontSize:10,fontWeight:700,color:th.dim,letterSpacing:".06em",textTransform:"uppercase",marginBottom:6}}>{t?.mutedHdr||"Muted"}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          {mutedCli.map((u,i)=><div key={u.key||i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:7,background:th.cardBorder+"15",fontSize:11,opacity:0.85}}>
+            <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+              <span style={{color:th.muted,fontWeight:600}}>{u.name}</span>
+              <span style={{color:th.dim,marginLeft:6}}>— {u.clientName}</span>
+            </div>
+            <span style={{color:th.dim,fontWeight:600}}>{fmtD(u.amount)}</span>
+            <span style={{fontSize:9,color:th.dim,flexShrink:0,fontFamily:"'JetBrains Mono',monospace"}}>{_untilLabel(u.key)}</span>
+            <button onClick={()=>restoreAlert(u.key)} title={restoreLbl} aria-label={restoreLbl+" "+u.name+" "+(t?.forClientLbl||"for")+" "+u.clientName} style={{...DISMISS_BTN,color:th.accent,opacity:0.7}}>↺</button>
+          </div>)}
+        </div>
+      </div>}
       {showCliMore&&<div style={{marginTop:8,textAlign:"center"}}>
-        <button onClick={()=>setExpanded(e=>!e)} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:"transparent",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>{expanded?"▲ "+(t?.showLess||"Show Less"):"▼ "+(t?.showMore||"Show More")+` (${sCli.length-5})`}</button>
+        <button onClick={()=>setExpanded(e=>!e)} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:"transparent",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>{expanded?"▲ "+(t?.showLess||"Show Less"):"▼ "+(t?.showMore||"Show More")+` (${activeCli.length-5})`}</button>
       </div>}
     </div>
   </div></>;}
@@ -3009,7 +3069,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0270-skeleton-aria-search-animated-kpi-pulse-pills";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0280-dismiss-alerts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -4016,10 +4076,12 @@ export default function App(){
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
   const[clients,setClients]=useState(()=>{try{const s=localStorage.getItem("ga_v3");return s?JSON.parse(s).map(mig):SEED.map(mig);}catch{return SEED.map(mig);}});
   // v0.5.2a — Listen for save-failure events (dispatched by gaSaveClient/gaSaveSettings on error)
+  // v0.28.0 — Also listen for ga-toast events (alert dismiss/restore feedback)
   useEffect(()=>{
     const onSaveFail=(e)=>{const which=e?.detail?.which||"data";setToast({kind:"error",msg:(t.saveFailedToast||"Couldn't save {x} — your changes are local only. Reload and try again.").replace("{x}",which),ts:Date.now()});};
-    if(typeof window!=="undefined")window.addEventListener("ga-save-failed",onSaveFail);
-    return()=>{if(typeof window!=="undefined")window.removeEventListener("ga-save-failed",onSaveFail);};
+    const onToast=(e)=>{const d=e?.detail||{};setToast({kind:d.kind||"success",msg:d.msg||"",ts:Date.now()});};
+    if(typeof window!=="undefined"){window.addEventListener("ga-save-failed",onSaveFail);window.addEventListener("ga-toast",onToast);}
+    return()=>{if(typeof window!=="undefined"){window.removeEventListener("ga-save-failed",onSaveFail);window.removeEventListener("ga-toast",onToast);}};
   },[t]);
   // v0.5.2a — Auto-dismiss toast after 6s
   useEffect(()=>{if(!toast)return;const id=setTimeout(()=>setToast(null),6000);return()=>clearTimeout(id);},[toast]);

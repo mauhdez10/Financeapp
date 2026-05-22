@@ -2,6 +2,46 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.28.0 — 2026-05-22 — Dismiss / mute alerts
+
+Adds a per-row dismiss button on every advisor alert and client-due row, plus a small expander to restore muted alerts. Driven by the "paid the credit card so the alert goes away" UX request.
+
+**Alert keys (foundation).**
+- `getAdvRem()` and `getClientRem()` now emit a stable `key` field on each alert.
+- Bill/card keys embed the current `YYYY-MM` (e.g. `cardDue:abc123:cc-789:2026-05`) so the next billing cycle naturally produces a new key — the dismissal stops applying without any explicit "reset" logic.
+- Advisor alert keys are scoped to client + type + (for promos) card + promo id, so multiple alerts on the same client don't collide.
+- New helper `isAlertDismissed(key, dismissals, nowMs?)` — checks for a matching dismissal that is either `until === null` (mute forever) or has a future `until` ISO date.
+
+**Storage.**
+- `settings.alertDismissals: [{ key, until, dismissedAt }]` — persists to Supabase via the existing `gaSaveSettings` path.
+- On mount, RemindersPanel cleans up dismissals whose `until` has passed.
+
+**UX (per panel).**
+- Each advisor alert row gets a small low-vis `✕` (opacity 0.55, full opacity on hover). Click → snoozes for 7 days, toast "✓ Snoozed for 7 days".
+- Each client-due row gets the same `✕`. Click → dismisses until the **first of next month**, toast "✓ Marked handled for this cycle — re-appears next month". This is the credit-card-paid case.
+- Each card header now has a separate row directly under the search/sort row: `▾ (N muted)`. Clicking expands an inline list of muted entries — dim, italic-feeling — each with the alert summary, the time remaining (e.g. `7d`, `18d`, or `muted` for forever), and a `↺` restore button. Restore → toast "✓ Alert restored".
+- The header count (`ADVISOR ALERTS · 3`) now reflects **active** (non-muted) alerts only. Muted ones are counted separately in the expander label.
+
+**Toast plumbing.**
+- New global `ga-toast` window event mirroring the existing `ga-save-failed` pattern. RemindersPanel dispatches it; the App-level listener in `useEffect` surfaces it via the existing `setToast` infrastructure (success kind, 6s auto-dismiss, `role="status" aria-live="polite"`).
+- The muted expander itself serves as the Undo path (one-click restore brings the alert back), so no explicit "Undo" button on the toast.
+
+**Translations.**
+- 15 new keys EN+ES: `dismissAlert`, `dismissAdvHint`, `markPaidHint`, `restoreAlert`, `mutedAlertsLbl`, `mutedHdr`, `mutedForeverLbl`, `muted1dLbl`, `mutedNdLbl`, `forClientLbl`, `dismissedCycleToast`, `dismissedForeverToast`, `dismissed30dToast`, `dismissed7dToast`, `restoredAlertToast`.
+
+**Layout fix caught in flight.**
+- The first cut put `(N muted)` inside the card header next to the title. When both were present on Advisor Alerts, the gear icon wrapped to its own row (broken `space-between` under `flex-wrap`). Moved the muted toggle to its own row directly below the search/sort row — keeps headers tight and symmetrical between the two cards.
+
+**Build marker:** `2026-05-22-v0280-dismiss-alerts`. App.jsx +~120 lines (key generation in 2 functions, `isAlertDismissed` helper, dismissal state + cleanup + dismiss/restore handlers in RemindersPanel, `✕` button per row, muted expander UI per panel, header-layout adjustments, global `ga-toast` event listener). `translations.js` +15 EN + 15 ES keys. No new dependencies, no new files, no SQL. D-1, D-3, D-7, D-17, D-27-amended, D-36 preserved.
+
+**Smoke tests:**
+1. **Dismiss a card-due alert.** Dashboard → Client Due card → click `✕` on any row. Toast "✓ Marked handled for this cycle — re-appears next month". Count drops by 1. `▾ (1 muted)` appears below the search row.
+2. **Restore from muted expander.** Click `▾ (1 muted)` → list expands showing the dismissed entry + time remaining + `↺`. Click `↺` → alert reappears in the active list, toast "✓ Alert restored".
+3. **Dismiss advisor alert.** Dashboard → Advisor Alerts → click `✕` on any row. Toast "✓ Snoozed for 7 days". Same flow.
+4. **Auto-recycle next month (manual test).** Dismiss a card-due. Edit `settings.alertDismissals[0].until` in DevTools to a past date OR change the system clock to a different month. Reload — alert is back. (For automation: rely on the YYYY-MM key change.)
+5. **Persistence.** Dismiss, hard-refresh — dismissals are still there (loaded from Supabase via existing settings save path).
+6. **EN/ES.** Switch to ES — dismiss buttons say "Descartar", header expander says "(N silenciadas)", toast says "Marcado como atendido este ciclo — reaparecerá el próximo mes".
+
 ## v0.27.0 — 2026-05-22 — Skeleton bootstrap, animated KPIs, alert pulse, search a11y
 
 Closes the remaining items deferred from the v0.26.0 UI/UX Pro Max audit batch.
