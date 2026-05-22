@@ -2538,7 +2538,10 @@ function LogoImg({settings,mode,size,fallbackColor}){
 
 /* ── SignaturePad — Canvas draw OR typed name+date toggle ── */
 function SignaturePad({value,onChange,t,theme,label,defaultName}){
-  const [mode,setMode]=useState((value&&value.kind==="typed")?"typed":"draw");
+  // v0.16.1: default mode is "typed" (was "draw"). Most users prefer typing
+  // their name; drawing is opt-in. Mode flips to "draw" only if there's
+  // already a drawn-shape value persisted.
+  const [mode,setMode]=useState((value&&value.kind==="drawn")?"draw":"typed");
   const [typed,setTyped]=useState(value?.kind==="typed"?(value.text||""):(defaultName||""));
   const canvasRef=useRef(null);
   const isDrawingRef=useRef(false);
@@ -2565,7 +2568,7 @@ function SignaturePad({value,onChange,t,theme,label,defaultName}){
     {label&&<div style={{fontSize:11,fontWeight:700,color:TH.muted||"#475569",marginBottom:8}}>{label}</div>}
     <div style={{display:"flex",gap:4,marginBottom:8}}>
       <button type="button" onClick={()=>setMode("draw")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="draw"?(TH.accent||GOLD):"transparent",color:mode==="draw"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="draw"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>✍️ {t.sigDrawTab||"Draw signature"}</button>
-      <button type="button" onClick={()=>setMode("typed")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="typed"?(TH.accent||GOLD):"transparent",color:mode==="typed"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="typed"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>⌨️ {t.sigTypedTab||"Type name + date"}</button>
+      <button type="button" onClick={()=>setMode("typed")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="typed"?(TH.accent||GOLD):"transparent",color:mode==="typed"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="typed"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>⌨️ {t.sigTypedTab||"Type name"}</button>
     </div>
     {mode==="draw"?<div>
       <canvas ref={canvasRef} width={500} height={140} style={{width:"100%",height:140,background:"#FFFFFF",border:`1px dashed ${TH.cardBorder||"#CBD5E1"}`,borderRadius:8,touchAction:"none",cursor:"crosshair",display:"block"}} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
@@ -2718,7 +2721,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0160-phase8-dashboard-and-fixes";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0161-sig-default-typed";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
