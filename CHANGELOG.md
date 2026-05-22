@@ -2,6 +2,89 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.18.0 — 2026-05-21 — Avatar picker + 6 new TopBar dropdown pages, sidebar cleanup
+
+The MH avatar dropdown now actually goes somewhere. Each item in the menu opens its own dedicated page instead of being a dead placeholder.
+
+**New: AvatarPicker modal.**
+- 12 SVG presets organized in 3 groups: Brand (MH gold, MH navy, anchor, monogram cream), Finance (gold coin, growth chart, briefcase, key), Animal (fox, owl, whale, bear).
+- SVGs copied from `assets/avatars/` to `public/avatars/`.
+- "Profile" item in avatar dropdown opens the picker.
+- Selected avatar persists in `settings.avatarId` and shows in TopBar + sidebar bottom widget (replaces the gold initials chip).
+
+**New: SecurityPage** (`nav="security"`).
+- Change password via `supabase.auth.updateUser({password})`. New password + confirm.
+- 8-char minimum. Mismatch detection. Shows success on completion.
+- Other devices' sessions stay signed in until they expire.
+
+**New: BillingPage** (`nav="billing"`) — services & Stripe links editor.
+- Replaces the old Services & Stripe section that was buried inside ProfileModal.
+- Service catalog as an editable list: name + price + Stripe URL per row.
+- Add service / Delete service buttons.
+
+**New: BackupPage** (`nav="backup"`).
+- Download all clients + settings as JSON (one click — uses existing `expBackup` helper).
+- Restore from a backup JSON via `BackupImportModal` (merge or replace prompt).
+
+**New: ArchivedClientsPage** (`nav="archived"`).
+- Lists all clients where `archived === true`.
+- Each row: avatar + name + email + Restore button (green) + Delete button (red, with confirm).
+- Empty state when nothing is archived.
+
+**New: WhatsNewPage** (`nav="whats-new"`).
+- Hardcoded list of recent versions (v0.18 / v0.17 / v0.16 / v0.15) with bullet points.
+- Edit `WHATS_NEW_ENTRIES` array in App.jsx to add new entries.
+
+**New: HelpSupportPage** (`nav="help"`).
+- 6 seed FAQ entries (collapsible accordions): how to add a client, why isn't my signature showing, how to send an intake invite, how to export, how to change password, why are numbers blurred.
+- Edit `FAQ_ENTRIES` array to add more.
+- Gold-tinted callout at the bottom with a mailto link to the advisor's settings.advisorEmail (defaults to mauricio@goldenanchor.life).
+
+**TopBar dropdown rewired.** Each menu item now navigates to its dedicated page via the new `onNav` prop:
+- 🖼 Profile → opens AvatarPickerModal
+- ⚙️ Settings → nav="settings"
+- 🛡️ Security → nav="security"
+- 🏷️ Billing & plan → nav="billing"
+- 💾 Backup data → nav="backup"
+- 🗂 Archived clients (N) → nav="archived" (N is the live count)
+- 📥 What's new → nav="whats-new"
+- ❓ Help & support → nav="help"
+- 🚪 Sign out → Supabase signOut
+
+The TopBar avatar itself is now a real `AvatarImg` (showing the chosen SVG) instead of the gold initials chip when one is set.
+
+**Sidebar cleanup.**
+- Removed Theme toggle from the sidebar bottom (lives in TopBar).
+- Removed EN/ES toggle from the sidebar bottom (lives in TopBar).
+- Removed Sign Out button from the sidebar bottom (lives in the avatar dropdown).
+- Sidebar bottom is now just the profile widget: avatar (chosen SVG) + advisor name + small gold "⚙️ Profile & settings ›" link. Click → navigates to Settings page.
+- Mobile drawer + desktop sidebar both updated identically.
+- Sidebar bottom widget no longer uses initials — uses the chosen `AvatarImg` from `settings.avatarId`.
+
+**Promotions** — already had a "＋ New Promotion" button at App.jsx:2383, no change needed.
+
+**Build marker:** `2026-05-21-v0180-avatar-security-billing-backup-archived-whatsnew-help`. App.jsx 3,759 → ~4,070 lines (+~310 for AvatarPicker + 6 page components + AvatarImg + AVATAR_PRESETS + WHATS_NEW_ENTRIES + FAQ_ENTRIES). `public/avatars/*.svg` (12 new files). `src/translations.js`, `vercel.json`, `package.json`, `api/*` unchanged. No SQL migration. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
+
+**Still pending (next iteration):**
+- Sidebar Clients hamburger menu (3-line button on Clients row → All clients / Add new / Send invite / Export / Import / Show archived / Sort dropdown). Matches `ui_kits/advisor_app/Sidebar.jsx:135-181`.
+- Collapsed sidebar finishing pass — 64px wide, gold-tinted monogram tile, true icons-only nav.
+- ClientDetail tab scroll arrows + reorganized sub-tabs (Prompt 5 from spec).
+- PDF rebuild (Prompt 10 from spec) — emoji-free, Newsreader italic titles, gold hairlines, per-page branded header + footer.
+- Side-by-side ADVISOR ALERTS + CLIENT DUE panels (currently still single tabbed widget).
+- Translation keys for all new labels (currently fall through to English fallbacks).
+
+**Smoke tests:**
+1. **Avatar picker.** Top-right MH → Profile. Modal opens with 12 avatars in 3 groups. Click one. Modal closes. TopBar + sidebar bottom now show the chosen SVG instead of MH initials.
+2. **Security.** MH dropdown → Security. Type a new password twice. Click Update. Should show success message; you stay logged in.
+3. **Billing & Plan.** MH dropdown → Billing & plan. See your services catalog. Add a service, set name + price + Stripe URL. Delete one.
+4. **Backup.** MH dropdown → Backup data. Click Download backup → JSON file downloads. Upload one → see merge/replace prompt.
+5. **Archived clients.** MH dropdown → Archived clients (N). List of archived clients with Restore + Delete buttons.
+6. **What's new.** MH dropdown → What's new. See the v0.18.0 / v0.17.0 / v0.16.x / v0.15.x release notes.
+7. **Help & support.** MH dropdown → Help & support. Click any FAQ to expand. Click Email Mauricio → opens your email client with mauricio@goldenanchor.life pre-filled.
+8. **Sidebar cleanup.** Sidebar bottom shows ONLY the profile widget (avatar + name + Profile & settings link). No Sign Out, no Theme toggle, no EN/ES — all in the TopBar now.
+
+---
+
 ## v0.17.0 — 2026-05-21 — TopBar + Settings page (match Claude design)
 
 Closes the gap between the live app and `ui_kits/advisor_app/index.html` for the two highest-visibility surfaces.

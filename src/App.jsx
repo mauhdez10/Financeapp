@@ -2721,7 +2721,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0170-topbar-and-settings-page";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-21-v0180-avatar-security-billing-backup-archived-whatsnew-help";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3243,6 +3243,247 @@ function parseGAPath(pathname){
   return{nav:"dashboard",clientId:null,selectedTab:"report",selectedCalc:null};
 }
 
+/* ── AVATARS — preset profile images (v0.18.0). Mirrors design-system
+   Avatar.jsx. SVGs live in /public/avatars/ (copied from assets/avatars). */
+const AVATAR_PRESETS=[
+  {group:"Brand",  id:"mh-gold",       label:"MH · gold"},
+  {group:"Brand",  id:"mh-navy",       label:"MH · navy"},
+  {group:"Brand",  id:"anchor-gold",   label:"Anchor"},
+  {group:"Brand",  id:"monogram-cream",label:"GA · cream"},
+  {group:"Finance",id:"coin",          label:"Gold coin"},
+  {group:"Finance",id:"chart",         label:"Growth"},
+  {group:"Finance",id:"briefcase",     label:"Briefcase"},
+  {group:"Finance",id:"key",           label:"Key"},
+  {group:"Animal", id:"fox",           label:"Fox"},
+  {group:"Animal", id:"owl",           label:"Owl"},
+  {group:"Animal", id:"whale",         label:"Whale"},
+  {group:"Animal", id:"bear",          label:"Bear"},
+];
+function AvatarImg({id,size,ring}){
+  const valid=AVATAR_PRESETS.find(p=>p.id===id);
+  const src=valid?`/avatars/${valid.id}.svg`:null;
+  if(!src) return <div style={{width:size,height:size,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:Math.round(size*0.4),boxShadow:ring?`0 0 0 2px ${GOLD}`:"none"}}>MH</div>;
+  return <img src={src} alt="" width={size} height={size} style={{display:"block",borderRadius:999,background:"transparent",boxShadow:ring?`0 0 0 2px ${GOLD}`:"none"}}/>;
+}
+function AvatarPickerModal({open,current,onPick,onClose,t,theme}){
+  if(!open) return null;
+  const th=theme;
+  const groups=["Brand","Finance","Animal"];
+  const groupLabels={Brand:t?.brandLbl||"Brand",Finance:t?.financeLbl||"Finance",Animal:t?.animalsLbl||"Animals"};
+  return <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.67)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:16}}>
+    <div onClick={e=>e.stopPropagation()} style={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:16,boxShadow:"0 32px 80px rgba(0,0,0,0.55)",width:"min(540px, 100%)",maxHeight:"90vh",overflowY:"auto",padding:22}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+        <div>
+          <div style={{fontSize:18,fontWeight:800,color:th.text}}>{t?.chooseProfileImage||"Choose a profile image"}</div>
+          <div style={{fontSize:11,color:th.muted,marginTop:4}}>{t?.chooseProfileImageHelp||"Click any image to set it as your avatar — it updates the top bar and sidebar instantly."}</div>
+        </div>
+        <button onClick={onClose} title={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:4}}>×</button>
+      </div>
+      {groups.map(g=><div key={g} style={{marginTop:18}}>
+        <div style={{fontSize:10,fontWeight:700,color:th.accent,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}}>{groupLabels[g]}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:10}}>
+          {AVATAR_PRESETS.filter(p=>p.group===g).map(p=>{
+            const active=p.id===current;
+            return <button key={p.id} onClick={()=>onPick(p.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,background:active?th.accent+"1A":"transparent",border:`1px solid ${active?th.accent+"66":th.cardBorder}`,borderRadius:10,padding:"10px 6px",cursor:"pointer"}}>
+              <img src={`/avatars/${p.id}.svg`} alt="" width="64" height="64" style={{display:"block",borderRadius:999}}/>
+              <span style={{fontSize:10,color:active?th.accent:th.muted,fontWeight:active?700:500}}>{p.label}</span>
+            </button>;
+          })}
+        </div>
+      </div>)}
+      <div style={{marginTop:18,padding:"10px 12px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:10,fontSize:10,color:th.dim,fontStyle:"italic",lineHeight:1.6}}>{t?.avatarPickerFooter||"Live in /public/avatars/ — drop in your own SVGs (80×80, circular) to extend the set."}</div>
+    </div>
+  </div>;
+}
+
+/* ── SecurityPage — change password (Supabase). v0.18.0 ─────────────────── */
+function SecurityPage({t}){
+  const th=useTh();
+  const[pw,setPw]=useState("");const[pw2,setPw2]=useState("");const[busy,setBusy]=useState(false);
+  const[err,setErr]=useState("");const[msg,setMsg]=useState("");
+  const INP={width:"100%",padding:"10px 12px",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"};
+  const go=async()=>{
+    setErr("");setMsg("");
+    if(!pw||pw.length<8){setErr(t?.passwordMin8||"Password must be at least 8 characters.");return;}
+    if(pw!==pw2){setErr(t?.passwordMismatch||"Passwords don't match.");return;}
+    if(!supabase){setErr(t?.supabaseError||"Connection error.");return;}
+    setBusy(true);
+    try{
+      const{error}=await supabase.auth.updateUser({password:pw});
+      if(error)setErr(error.message||"Update failed.");
+      else{setMsg(t?.passwordUpdated||"Password updated successfully.");setPw("");setPw2("");}
+    }catch(e){setErr(e?.message||"Update failed.");}
+    setBusy(false);
+  };
+  return <div className="ga-np" style={{padding:24,maxWidth:520,margin:"0 auto"}}>
+    <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6}}>🛡️ {t?.securityHdr||"Security"}</div>
+    <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.securitySub||"Change your account password. Sessions on other devices stay signed in until they expire."}</div>
+    <div style={{...mCARD(th),padding:18}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:14}}>{t?.changePassword||"Change Password"}</div>
+      <div style={{marginBottom:12}}><div style={{fontSize:11,color:th.muted,marginBottom:4,fontWeight:600}}>{t?.newPassword||"New password"}</div><input type="password" value={pw} onChange={e=>setPw(e.target.value)} style={INP} autoComplete="new-password"/></div>
+      <div style={{marginBottom:12}}><div style={{fontSize:11,color:th.muted,marginBottom:4,fontWeight:600}}>{t?.confirmPassword||"Confirm new password"}</div><input type="password" value={pw2} onChange={e=>setPw2(e.target.value)} style={INP} autoComplete="new-password" onKeyDown={e=>e.key==="Enter"&&!busy&&go()}/></div>
+      {err&&<div style={{fontSize:11,color:th.neg,padding:"8px 10px",background:th.neg+"11",borderRadius:8,marginBottom:10}}>{err}</div>}
+      {msg&&<div style={{fontSize:11,color:th.pos,padding:"8px 10px",background:th.pos+"11",borderRadius:8,marginBottom:10}}>{msg}</div>}
+      <button onClick={go} disabled={busy} style={{width:"100%",padding:"11px",borderRadius:10,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:busy?"wait":"pointer",opacity:busy?0.7:1}}>{busy?"…":(t?.updatePassword||"Update password")}</button>
+    </div>
+    <div style={{marginTop:14,fontSize:11,color:th.dim,fontStyle:"italic",lineHeight:1.6}}>{t?.securityNote||"Tip: use a password manager. We do not store your password directly — Supabase Auth handles hashing."}</div>
+  </div>;
+}
+
+/* ── BillingPage — services & Stripe links editor. v0.18.0 ──────────────── */
+function BillingPage({settings,onSettingsChange,t}){
+  const th=useTh();
+  const services=Array.isArray(settings.services)?settings.services:[];
+  const INP={padding:"8px 10px",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,fontSize:12,outline:"none",boxSizing:"border-box"};
+  const set=(i,k,v)=>onSettingsChange({...settings,services:services.map((s,idx)=>idx===i?{...s,[k]:v}:s)});
+  const addSvc=()=>onSettingsChange({...settings,services:[...services,{id:"svc-"+Date.now(),name:"New Service",price:"$0",stripeUrl:""}]});
+  const delSvc=i=>{if(!confirm("Delete this service?"))return;onSettingsChange({...settings,services:services.filter((_,idx)=>idx!==i)});};
+  return <div className="ga-np" style={{padding:24,maxWidth:900,margin:"0 auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6,flexWrap:"wrap",gap:10}}>
+      <div>
+        <div style={{fontSize:22,fontWeight:800,color:th.text}}>🏷️ {t?.billingHdr||"Billing & Plan"}</div>
+        <div style={{fontSize:12,color:th.muted,marginTop:4}}>{t?.billingSub||"Manage your service catalog and Stripe payment links."}</div>
+      </div>
+      <button onClick={addSvc} style={{padding:"8px 14px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,fontSize:12,border:"none",cursor:"pointer"}}>＋ {t?.addService||"Add service"}</button>
+    </div>
+    <div style={{...mCARD(th),padding:16,marginTop:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:12}}>{t?.serviceCatalog||"Service Catalog"}</div>
+      {services.length===0?<div style={{fontSize:12,color:th.dim,fontStyle:"italic",padding:14,textAlign:"center"}}>{t?.noServices||"No services configured yet. Click \"Add service\" to start."}</div>:
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {services.map((s,i)=><div key={s.id||i} style={{display:"grid",gridTemplateColumns:"1.4fr 0.6fr 2fr auto",gap:8,alignItems:"center"}}>
+            <input style={INP} value={s.name||""} onChange={e=>set(i,"name",e.target.value)} placeholder={t?.serviceNamePh||"Service name"}/>
+            <input style={{...INP,fontFamily:"'JetBrains Mono',monospace"}} value={s.price||""} onChange={e=>set(i,"price",e.target.value)} placeholder="$0"/>
+            <input style={{...INP,fontFamily:"'JetBrains Mono',monospace",fontSize:11}} value={s.stripeUrl||""} onChange={e=>set(i,"stripeUrl",e.target.value)} placeholder={t?.stripeUrlPh||"https://buy.stripe.com/..."}/>
+            <button onClick={()=>delSvc(i)} title={t?.delete||"Delete"} style={{padding:"6px 10px",borderRadius:6,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer",fontSize:12}}>🗑</button>
+          </div>)}
+        </div>}
+    </div>
+    <div style={{marginTop:14,fontSize:11,color:th.dim,fontStyle:"italic",lineHeight:1.6}}>{t?.billingNote||"Stripe payment links are created in your Stripe dashboard. Paste the full URL into the field above — clients will be redirected there when they click \"Submit & pay now\" on the intake form."}</div>
+  </div>;
+}
+
+/* ── BackupPage — download + restore all data. v0.18.0 ─────────────────── */
+function BackupPage({clients,settings,onRestoreBackup,t}){
+  const th=useTh();
+  const[restoreOpen,setRestoreOpen]=useState(false);
+  return <div className="ga-np" style={{padding:24,maxWidth:680,margin:"0 auto"}}>
+    {restoreOpen&&<BackupImportModal onImport={(b,m)=>{onRestoreBackup(b,m);setRestoreOpen(false);}} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}
+    <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6}}>💾 {t?.backupHdr||"Backup & Restore"}</div>
+    <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.backupSub||"Export every client and your settings as a single JSON file. Keep a copy somewhere safe — Supabase has its own backups but a manual export is your fallback."}</div>
+    <div style={{...mCARD(th),padding:18,marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:8}}>{t?.downloadEverything||"Download Everything"}</div>
+      <div style={{fontSize:12,color:th.muted,marginBottom:12,lineHeight:1.5}}>{(t?.downloadEverythingHelp||"Downloads {n} clients + all your settings as a single JSON file.").replace("{n}",clients.length)}</div>
+      <button onClick={()=>expBackup(clients,settings)} style={{width:"100%",padding:"12px",borderRadius:10,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:"pointer"}}>⬇ {t?.downloadBackup||"Download backup (JSON)"}</button>
+    </div>
+    <div style={{...mCARD(th),padding:18,marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:8}}>{t?.restoreFromBackup||"Restore from Backup"}</div>
+      <div style={{fontSize:12,color:th.muted,marginBottom:12,lineHeight:1.5}}>{t?.restoreFromBackupHelp||"Upload a backup JSON file. You'll be asked whether to merge with current data or replace it."}</div>
+      <button onClick={()=>setRestoreOpen(true)} style={{width:"100%",padding:"12px",borderRadius:10,background:"transparent",color:th.text,fontWeight:700,fontSize:13,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>📂 {t?.uploadBackup||"Upload backup JSON"}</button>
+    </div>
+    <div style={{fontSize:11,color:th.dim,fontStyle:"italic",lineHeight:1.6}}>{t?.backupNote||"Backups never include passwords or session tokens — only client data and app settings."}</div>
+  </div>;
+}
+
+/* ── ArchivedClientsPage — list + restore + permanent delete. v0.18.0 ──── */
+function ArchivedClientsPage({clients,onRestore,onDelete,t}){
+  const th=useTh();
+  const archived=clients.filter(c=>c.archived);
+  return <div className="ga-np" style={{padding:24,maxWidth:880,margin:"0 auto"}}>
+    <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6}}>🗂 {t?.archivedClientsHdr||"Archived Clients"}</div>
+    <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{(t?.archivedClientsSub||"{n} client(s) currently archived. Restore them back to the active list, or delete permanently. Deleted clients cannot be recovered.").replace("{n}",archived.length)}</div>
+    {archived.length===0?<div style={{...mCARD(th),padding:30,textAlign:"center",color:th.dim,fontStyle:"italic"}}>{t?.noArchivedClients||"No archived clients."}</div>:
+      <div style={{...mCARD(th),padding:0,overflow:"hidden"}}>
+        {archived.map((c,i)=><div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderTop:i===0?"none":`1px solid ${th.cardBorder}`}}>
+          <div style={{width:40,height:40,borderRadius:99,background:GOLD+"22",color:GOLD,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,border:`2px solid ${GOLD}44`,flexShrink:0}}>{(c.firstName||"?")[0]}{(c.lastName||"?")[0]}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}{c.partnerFirst?` & ${c.partnerFirst}`:""}</div>
+            <div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email||"—"}</div>
+          </div>
+          <button onClick={()=>onRestore(c.id)} title={t?.restore||"Restore"} style={{padding:"6px 12px",borderRadius:8,background:th.pos+"22",color:th.pos,fontWeight:700,fontSize:11,border:`1px solid ${th.pos}44`,cursor:"pointer"}}>↩ {t?.restoreLbl||"Restore"}</button>
+          <button onClick={()=>{if(confirm(`Permanently delete ${c.firstName} ${c.lastName}? This cannot be undone.`))onDelete(c.id);}} title={t?.deletePermanent||"Delete permanently"} style={{padding:"6px 12px",borderRadius:8,background:"transparent",color:th.neg,fontWeight:700,fontSize:11,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>🗑 {t?.delete||"Delete"}</button>
+        </div>)}
+      </div>}
+  </div>;
+}
+
+/* ── WhatsNewPage — release notes. v0.18.0 — hardcoded, edit this array. ─ */
+const WHATS_NEW_ENTRIES=[
+  {v:"v0.18.0",date:"2026-05-21",title:"Avatar picker + Security/Billing/Backup/Help pages",bullets:[
+    "Profile in the top-right menu now opens an Avatar Picker (12 SVG presets — Brand, Finance, Animal).",
+    "Security page lets you change your password in-app.",
+    "Billing & Plan replaces the old Services & Stripe section — add/edit/delete services and paste Stripe links.",
+    "Backup page exposes one-click JSON download + restore.",
+    "Archived Clients page with Restore + permanent Delete per row.",
+    "Help & Support page with FAQ + email-the-advisor link.",
+    "Sidebar cleanup: theme, EN/ES, and Sign Out moved to the top bar where they belong."
+  ]},
+  {v:"v0.17.0",date:"2026-05-21",title:"TopBar + Settings page (Claude design Phase 8)",bullets:[
+    "New TopBar on every page with title, EN/ES, theme, and gold MH avatar dropdown.",
+    "Settings became a full page (6 cards) instead of a modal."
+  ]},
+  {v:"v0.16.x",date:"2026-05-21",title:"Phase 8 dashboard + bugfix pass",bullets:[
+    "Dashboard: 4 wide KPIs, Income vs Spending composed chart, sidebar profile widget.",
+    "Defined the missing IntakeFormBody — step 4 of public intake no longer goes blank.",
+    "Engagement letter Section 4 simplified ($500/yr or $30/mo Lite; AUM + Commissions lines removed).",
+    "Public intake submit/pay split into two buttons."
+  ]},
+  {v:"v0.15.x",date:"2026-05-21",title:"Claude Design System port (Phases 1-4)",bullets:[
+    "Brand assets, Plus Jakarta Sans + Newsreader fonts, PDF rebuild, area charts everywhere."
+  ]}
+];
+function WhatsNewPage({t}){
+  const th=useTh();
+  return <div className="ga-np" style={{padding:24,maxWidth:820,margin:"0 auto"}}>
+    <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6}}>📥 {t?.whatsNewHdr||"What's New"}</div>
+    <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.whatsNewSub||"Recent updates to the app. Full changelog lives in the GitHub repo."}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {WHATS_NEW_ENTRIES.map(e=><div key={e.v} style={{...mCARD(th),padding:18}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:6,flexWrap:"wrap"}}>
+          <span style={{fontSize:14,fontWeight:800,color:GOLD,fontFamily:"'JetBrains Mono',monospace"}}>{e.v}</span>
+          <span style={{fontSize:10,color:th.dim,letterSpacing:"0.04em"}}>{e.date}</span>
+        </div>
+        <div style={{fontSize:13,fontWeight:700,color:th.text,marginBottom:10}}>{e.title}</div>
+        <ul style={{margin:"0 0 0 18px",padding:0,fontSize:12,color:th.muted,lineHeight:1.7}}>
+          {e.bullets.map((b,i)=><li key={i} style={{marginBottom:4}}>{b}</li>)}
+        </ul>
+      </div>)}
+    </div>
+  </div>;
+}
+
+/* ── HelpSupportPage — FAQ + email link. v0.18.0 ────────────────────────── */
+const FAQ_ENTRIES=[
+  {q:"How do I add a new client?",a:"From the Clients tab or Dashboard, click the gold \"+ Add\" button at the top right. Fill in name + email at minimum. You can also send an intake invite from Intake Forms → \"New invite\" and the prospect fills out their own info."},
+  {q:"Why isn't my signature showing on engagement letters?",a:"Open the avatar dropdown (top right) → Settings → Branding → draw or type your signature. Save. Open any client's engagement letter — your signature should appear at the top. If the public intake doesn't show it, check that you've signed at least once in Profile & Settings."},
+  {q:"How do I send an intake invite to a prospect?",a:"Go to Intake Forms (sidebar) → click the gold \"New invite\" button. Enter the prospect's name, email, and phone, pick a language, and choose Email or SMS. Click Send."},
+  {q:"How do I export a single client's data?",a:"Open the client → click the kebab (⋯) in the top-right of the header → Export CSV. To back up ALL clients at once, open the avatar dropdown → Backup data → Download backup."},
+  {q:"How do I change my password?",a:"Avatar dropdown (top right) → Security. Type a new password (8+ characters) and confirm. Other devices stay signed in until their sessions expire."},
+  {q:"Why are some numbers blurred?",a:"You've turned on \"Hide all numbers\" — the 👁 button in the top bar. Click it again to show numbers. This is for screen-sharing or showing the app to non-clients."}
+];
+function HelpSupportPage({t,settings}){
+  const th=useTh();
+  const[open,setOpen]=useState(null);
+  const supportEmail=settings?.advisorEmail||"mauricio@goldenanchor.life";
+  return <div className="ga-np" style={{padding:24,maxWidth:820,margin:"0 auto"}}>
+    <div style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:6}}>❓ {t?.helpHdr||"Help & Support"}</div>
+    <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.helpSub||"Common questions. Can't find an answer? Email Mauricio directly."}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
+      {FAQ_ENTRIES.map((e,i)=><div key={i} style={{...mCARD(th),padding:0,overflow:"hidden"}}>
+        <button onClick={()=>setOpen(o=>o===i?null:i)} style={{width:"100%",textAlign:"left",padding:"14px 16px",background:"transparent",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <span style={{fontSize:13,fontWeight:700,color:th.text}}>{e.q}</span>
+          <span style={{fontSize:14,color:th.muted,flexShrink:0}}>{open===i?"−":"+"}</span>
+        </button>
+        {open===i&&<div style={{padding:"0 16px 16px",fontSize:12,color:th.muted,lineHeight:1.7,borderTop:`1px solid ${th.cardBorder}`,paddingTop:14}}>{e.a}</div>}
+      </div>)}
+    </div>
+    <div style={{...mCARD(th),padding:18,background:GOLD+"08",border:`1px solid ${GOLD}33`}}>
+      <div style={{fontSize:13,fontWeight:700,color:th.text,marginBottom:6}}>📧 {t?.stillNeedHelp||"Still need help?"}</div>
+      <div style={{fontSize:12,color:th.muted,marginBottom:12,lineHeight:1.6}}>{(t?.stillNeedHelpSub||"Email {email} with your question — Mauricio reads every message personally.").replace("{email}",supportEmail)}</div>
+      <a href={`mailto:${supportEmail}?subject=${encodeURIComponent("Golden Anchor app support")}`} style={{display:"inline-block",padding:"10px 16px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,fontSize:12,textDecoration:"none"}}>{t?.emailMauricio||"Email Mauricio"}</a>
+    </div>
+  </div>;
+}
+
 /* ── SettingsCard — 2-col read-only card for the Profile & Settings page.
    Click "Edit" to open the ProfileModal scoped to that section.            */
 function SettingsCard({title,rows,onEdit,t,th}){
@@ -3332,7 +3573,7 @@ function AvatarBubble({initials,size,ring,onClick,title}){
    Title + breadcrumb on the left; EN/ES + hide + theme + avatar dropdown on
    the right. Avatar opens the big account menu (Profile, Settings, Security,
    Billing, Backup, Archived clients, What's new, Help, Sign out).          */
-function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onOpenSettings,onSignOut,advisorName,advisorEmail,avatarInitials,th,isMobile,onOpenDrawer,t,version}){
+function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onNav,onPickAvatar,onSignOut,advisorName,advisorEmail,avatarId,avatarInitials,th,isMobile,onOpenDrawer,t,version,archivedCount}){
   const[menu,setMenu]=useState(false);
   const menuRef=useRef();
   useEffect(()=>{
@@ -3341,15 +3582,15 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     return()=>document.removeEventListener("mousedown",h);
   },[]);
   const items=[
-    {icon:"👤",label:t?.menuProfile||"Profile",sub:advisorName||"—",onClick:()=>onOpenSettings("profile")},
-    {icon:"⚙️",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, integrations",onClick:()=>onOpenSettings()},
-    {icon:"🛡️",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Password, sessions",onClick:()=>onOpenSettings("security")},
-    {icon:"🏷️",label:t?.menuBilling||"Billing & plan",sub:"Solo Advisor",onClick:()=>onOpenSettings("billing")},
+    {icon:"🖼",label:t?.menuProfile||"Profile",sub:t?.menuProfileSub||"Change profile image",onClick:onPickAvatar},
+    {icon:"⚙️",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, info",onClick:()=>onNav("settings")},
+    {icon:"🛡️",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Change password",onClick:()=>onNav("security")},
+    {icon:"🏷️",label:t?.menuBilling||"Billing & plan",sub:t?.menuBillingSub||"Services & Stripe links",onClick:()=>onNav("billing")},
     {divider:true},
-    {icon:"💾",label:t?.menuBackup||"Backup data",onClick:()=>onOpenSettings("backup")},
-    {icon:"🗂",label:t?.menuArchived||"Archived clients",onClick:()=>onOpenSettings("archived")},
-    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version?(version+" · Phase 8 dashboard"):"v0.17.0",onClick:null},
-    {icon:"❓",label:t?.menuHelp||"Help & support",onClick:null},
+    {icon:"💾",label:t?.menuBackup||"Backup data",sub:t?.menuBackupSub||"Download / restore JSON",onClick:()=>onNav("backup")},
+    {icon:"🗂",label:t?.menuArchived||"Archived clients"+(archivedCount?` (${archivedCount})`:""),onClick:()=>onNav("archived")},
+    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version||"v0.18.0",onClick:()=>onNav("whats-new")},
+    {icon:"❓",label:t?.menuHelp||"Help & support",onClick:()=>onNav("help")},
     {divider:true},
     {icon:"🚪",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
   ];
@@ -3368,10 +3609,12 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
       <button onClick={()=>setHide(!hideNumbers)} title={t?.hideNumbers||"Hide all numbers"} style={{background:hideNumbers?th.accent+"22":"transparent",color:hideNumbers?th.accent:th.muted,border:`1px solid ${hideNumbers?th.accent+"44":th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{hideNumbers?"👁️‍🗨️":"👁️"}</button>
       <button onClick={()=>setDark(!isDark)} title={t?.theme||"Theme"} style={{background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{isDark?"🌙":"☀️"}</button>
       <div ref={menuRef} style={{position:"relative"}}>
-        <AvatarBubble initials={avatarInitials} size={30} ring={menu} onClick={()=>setMenu(o=>!o)} title={t?.accountMenu||"Account & app menu"}/>
+        <button onClick={()=>setMenu(o=>!o)} title={t?.accountMenu||"Account & app menu"} style={{background:"transparent",border:menu?`2px solid ${GOLD}`:"2px solid transparent",padding:0,cursor:"pointer",lineHeight:0,borderRadius:999,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {avatarId?<AvatarImg id={avatarId} size={30}/>:<div style={{width:30,height:30,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11}}>{avatarInitials||"MH"}</div>}
+        </button>
         {menu&&<div style={{position:"absolute",top:42,right:0,background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:12,boxShadow:"0 12px 40px rgba(0,0,0,0.45)",width:280,zIndex:80,padding:6}}>
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 10px 12px",borderBottom:`1px solid ${th.cardBorder}`,marginBottom:4}}>
-            <div style={{width:36,height:36,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>{avatarInitials||"MH"}</div>
+            {avatarId?<AvatarImg id={avatarId} size={36}/>:<div style={{width:36,height:36,borderRadius:999,background:GOLD,color:"#0D1B2A",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>{avatarInitials||"MH"}</div>}
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,fontWeight:700,color:th.text}}>{advisorName||"Mauricio Hernandez"}</div>
               <div style={{fontSize:10,color:th.muted,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{advisorEmail||"—"}</div>
@@ -3415,7 +3658,7 @@ export default function App(){
   const _idleWarnTimerRef=useRef(null);
   const _baseTh=isDark?makeDark(settings.darkAccent||GOLD):makeLight(settings.lightAccent||"#2563EB");const theme={..._baseTh,bg:(isDark?settings.darkBg:settings.lightBg)||_baseTh.bg,card:(isDark?settings.darkCard:settings.lightCard)||_baseTh.card};const t=T[lang]||T.en; // EN/ES toggle wired in v0.2.0; v0.8.1 page/card bg overrides
   const[nav,setNav]=useState("dashboard");const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState("report");const[selectedCalc,setSelectedCalc]=useState(null);// v0.13.1 — which calculator is open inside the /calculators page
-  const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
+  const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   const[clients,setClients]=useState(()=>{try{const s=localStorage.getItem("ga_v3");return s?JSON.parse(s).map(mig):SEED.map(mig);}catch{return SEED.map(mig);}});
   // v0.5.2a — Listen for save-failure events (dispatched by gaSaveClient/gaSaveSettings on error)
   useEffect(()=>{
@@ -3682,6 +3925,7 @@ export default function App(){
     {toast&&<div style={{position:"fixed",bottom:24,right:24,maxWidth:380,zIndex:10000,background:toast.kind==="error"?"#EF4444":theme.accent,color:"#fff",padding:"12px 16px",borderRadius:10,boxShadow:"0 12px 40px #0008",fontSize:12,fontWeight:600,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:10}}><span style={{fontSize:16}}>{toast.kind==="error"?"⚠️":"ℹ️"}</span><span style={{flex:1}}>{toast.msg}</span><button onClick={()=>setToast(null)} style={{background:"transparent",border:"none",color:"#fff",cursor:"pointer",fontSize:14,padding:0,opacity:0.8}}>✕</button></div>}
     {importDupResolver&&<DuplicateResolverModal incoming={importDupResolver.incoming} existing={clients} onResolve={importDupResolver.resolver} onClose={()=>setImportDupResolver(null)} t={t}/>}{addOpen&&<NewClientModal onSave={addClient} onClose={()=>setAddOpen(false)} t={t}/>}
     {profileOpen&&<ProfileModal settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);}} onClose={()=>setProfileOpen(false)} t={t}/>}
+    <AvatarPickerModal open={avatarPickerOpen} current={settings.avatarId||"mh-gold"} onPick={id=>{setSettings(s=>({...s,avatarId:id}));setAvatarPickerOpen(false);}} onClose={()=>setAvatarPickerOpen(false)} t={t} theme={theme}/>
     {/* v0.9.1 — mobile drawer + scrim live OUTSIDE the zoom-applying flex below.
         CSS `zoom` creates a containing block for position:fixed in WebKit/iOS,
         which was trapping the drawer inside the zoomed parent and clipping it
@@ -3692,17 +3936,15 @@ export default function App(){
       <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
       <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=><button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{n.l}</button>)}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
-        <button onClick={()=>setDark(d=>!d)} style={{width:"100%",padding:"7px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode}</button>
-        <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{width:"100%",padding:"6px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>🌐 EN | ES</button>
-        {/* v0.16.0 Phase 8 — advisor profile widget at bottom (Claude design) */}
+        {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
+            now live in the TopBar avatar dropdown so they don't duplicate. */}
         <button onClick={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",padding:"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
-          <div style={{width:36,height:36,borderRadius:99,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}66`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{(settings.advisorName||authUser?.email||"M").slice(0,2).toUpperCase()}</div>
+          <AvatarImg id={settings.avatarId||"mh-gold"} size={36}/>
           <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
             <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
-            <div style={{fontSize:10,color:GOLD,marginTop:1}}>⚙️ {t.profileSettings}</div>
+            <div style={{fontSize:10,color:GOLD,marginTop:1}}>⚙️ {t.profileSettings||"Profile & settings"} ›</div>
           </div>
         </button>
-        {supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} style={{width:"100%",marginTop:8,padding:"6px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
       </div>
     </div>}
     <div style={{display:"flex",minHeight:"100vh",width:"100%",background:theme.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1)}}>
@@ -3710,36 +3952,46 @@ export default function App(){
         <div style={{padding:sidebarCollapsed?"18px 10px":"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}>{sidebarCollapsed?<div style={{fontSize:22,color:GOLD,textAlign:"center"}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={22}/>:"⚓"}</div>:<><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"visible",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></>}</div>{!sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(true)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:4}} title={t?.navCollapse||"Collapse"}>«</button>}</div>{sidebarCollapsed&&<button onClick={()=>setSidebarCollapsed(false)} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:14,padding:"8px 0",borderBottom:`1px solid ${theme.navBorder}`}} title={t?.navExpand||"Expand"}>»</button>}
         <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?icon:n.l}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
-          <button onClick={()=>setDark(d=>!d)} title={isDark?t.lightMode:t.darkMode} style={{width:"100%",padding:"6px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,marginBottom:6,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?(isDark?"☀️":"🌙"):(isDark?"☀️ "+t.lightMode:"🌙 "+t.darkMode)}</button>
-          <button onClick={()=>setLang(l=>l==="en"?"es":"en")} title={t?.navLanguage||"Language"} style={{width:"100%",padding:"5px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:700,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden"}}>{sidebarCollapsed?"🌐":"🌐 EN | ES"}</button>
-          {/* v0.16.0 Phase 8 — advisor profile widget at bottom (Claude design). Collapses to just the avatar when sidebar is collapsed. */}
+          {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
+              moved to the TopBar avatar dropdown so they don't duplicate. */}
           <button onClick={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:sidebarCollapsed?"6px":"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:sidebarCollapsed?0:10,justifyContent:sidebarCollapsed?"center":"flex-start",textAlign:"left"}}>
-            <div style={{width:sidebarCollapsed?28:36,height:sidebarCollapsed?28:36,borderRadius:99,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}66`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:sidebarCollapsed?11:13,flexShrink:0}}>{(settings.advisorName||authUser?.email||"M").slice(0,2).toUpperCase()}</div>
+            <AvatarImg id={settings.avatarId||"mh-gold"} size={sidebarCollapsed?28:36}/>
             {!sidebarCollapsed && <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
               <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
-              <div style={{fontSize:10,color:GOLD,marginTop:1,whiteSpace:"nowrap"}}>⚙️ {t.profileSettings}</div>
+              <div style={{fontSize:10,color:GOLD,marginTop:1,whiteSpace:"nowrap"}}>⚙️ {t.profileSettings||"Profile & settings"} ›</div>
             </div>}
           </button>
-          {!sidebarCollapsed&&supabase&&<button onClick={async()=>{await supabase.auth.signOut();setAuthUser(null);}} title={t.signOut||"Sign Out"} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:8,fontSize:11,cursor:"pointer",background:"transparent",color:theme.sideMuted,border:`1px solid ${theme.navBorder}`,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden"}}>↪ {t.signOut||"Sign Out"}</button>}
         </div>
       </div>}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",minWidth:0,maxWidth:"100%"}}>
         <TopBar
-          title={selected?((selected.firstName||"")+(selected.lastName?" "+selected.lastName:"")):(NAV.find(n=>n.id===nav)?.l?.replace(/^[^\sA-Za-z]+\s*/,"")||(nav==="settings"?(t?.profileSettings||"Profile & Settings"):""))}
+          title={selected?((selected.firstName||"")+(selected.lastName?" "+selected.lastName:"")):(
+            nav==="settings"?(t?.profileSettings||"Profile & Settings"):
+            nav==="security"?(t?.securityHdr||"Security"):
+            nav==="billing"?(t?.billingHdr||"Billing & Plan"):
+            nav==="backup"?(t?.backupHdr||"Backup & Restore"):
+            nav==="archived"?(t?.archivedClientsHdr||"Archived Clients"):
+            nav==="whats-new"?(t?.whatsNewHdr||"What's New"):
+            nav==="help"?(t?.helpHdr||"Help & Support"):
+            (NAV.find(n=>n.id===nav)?.l?.replace(/^[^\sA-Za-z]+\s*/,"")||"")
+          )}
           breadcrumb={selected?((t?.clients||"Clients")+" · "+selected.firstName+" "+selected.lastName):null}
           isDark={isDark} setDark={()=>setDark(d=>!d)}
           lang={lang} setLang={setLang}
           hideNumbers={settings.hideNumbers||false} setHide={v=>setSettings(s=>({...s,hideNumbers:v}))}
           signedIn={!!authUser}
-          onOpenSettings={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}}
+          onNav={(n)=>{setNav(n);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}}
+          onPickAvatar={()=>setAvatarPickerOpen(true)}
           onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}setAuthUser(null);}}
           advisorName={settings.advisorName||authUser?.email||"Mauricio Hernandez"}
           advisorEmail={settings.advisorEmail||authUser?.email||""}
+          avatarId={settings.avatarId||"mh-gold"}
           avatarInitials={(settings.advisorName||authUser?.email||"MH").trim().split(/\s+/).slice(0,2).map(p=>p[0]).join("").toUpperCase().slice(0,2)||"MH"}
           th={theme}
           isMobile={vp.isMobile} onOpenDrawer={()=>setDrawerOpen(true)}
           t={t}
-          version="v0.17.0"
+          archivedCount={clients.filter(c=>c.archived).length}
+          version="v0.18.0"
         />
         <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:
@@ -3750,6 +4002,12 @@ export default function App(){
           nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="resources"?<ResourcesPage t={t}/>:
           nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={()=>setProfileOpen(true)} t={t}/>:
+          nav==="security"?<SecurityPage t={t}/>:
+          nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:
+          nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
+          nav==="archived"?<ArchivedClientsPage clients={clients} onRestore={restoreClient} onDelete={deleteClient} t={t}/>:
+          nav==="whats-new"?<WhatsNewPage t={t}/>:
+          nav==="help"?<HelpSupportPage t={t} settings={settings}/>:
           <AboutPage t={t} settings={settings} lang={lang}/>}
       </div></div>
     </div>

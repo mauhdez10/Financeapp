@@ -1,0 +1,6 @@
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="cg" cx="32%" cy="28%" r="78%"><stop offset="0%" stop-color="#EDD594"></stop><stop offset="100%" stop-color="#C9A84C"></stop></radialGradient></defs>
+  <circle cx="40" cy="40" r="40" fill="url(#cg)"></circle>
+  <circle cx="40" cy="40" r="32" fill="none" stroke="#755023" stroke-width="1.4" opacity="0.45"></circle>
+  <text x="40" y="56" text-anchor="middle" fill="#755023" font-family="Newsreader,Georgia,serif" font-size="46" font-weight="600">$</text>
+</svg>
