@@ -2,6 +2,20 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.29.1 — 2026-05-22 — Hotfix: typed signature auto-commit
+
+Two coupled fixes for the engagement-letter signature flow that prospects were running into immediately after v0.29.0.
+
+**Root cause.** SignaturePad pre-fills its typed-mode input from `defaultName` (the prospect's first+last name pulled forward from step 1). The prospect sees their name already in the field and assumes they've signed. But `defaultName` only seeded local state — it never fired `onChange` — so the parent's `sig1` stayed `null`. Clicking Continue then errored with `Your signature is required.` even though the field was visibly filled. That matched Mauricio's "typed signature is not working" report.
+
+**Fix #1 — Auto-commit on mount.** SignaturePad gains a mount-only `useEffect` that, if mode is `"typed"`, no existing `value`, and a non-empty prefilled `typed` string, fires `onChange({kind:"typed", text, signedAt})`. The visible name now actually counts as the signature.
+
+**Fix #2 — Stronger validation.** PublicIntake step-3 advance check was `if(!sig1)` — only rejected null. An empty typed sig (`{kind:"typed", text:""}`) was a truthy object and would slip through. New helper `sigEmpty(s)` also rejects empty `text.trim()` and empty `dataUrl`. Closes the implicit "blank typed signature" loophole and applies symmetrically to the partner signature on couples.
+
+**Build marker:** `2026-05-22-v0291-sig-autocommit`. App.jsx +~15 lines (1 effect in SignaturePad + 3-line helper in PublicIntake next()).
+
+**Smoke test.** Open `/intake?advisor=<id>` in incognito → Step 1: Just me · fill name + email · Continue. Step 2: pick any service · Continue. Step 3: engagement letter loads, the SignaturePad shows your name prefilled in the cursive field. Click Continue without touching anything → advances to Step 4 (Details). Previously: errored with "Your signature is required."
+
 ## v0.29.0 — 2026-05-22 — Intake admin rebuild + New Invite modal + brand tokens
 
 First commit of the Claude Design 7-phase workplan. Covers Phases 1-3 + a foundational brand-tokens file. Phases 4-6 (public intake redesign / charts library / PDF rebuild) shipped in follow-up commits.

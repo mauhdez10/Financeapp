@@ -2903,6 +2903,19 @@ function SignaturePad({value,onChange,t,theme,label,defaultName}){
   const isDrawingRef=useRef(false);
   const lastRef=useRef(null);
   const TH=theme||{};
+  // v0.29.1 — Auto-commit the prefilled `defaultName` to parent state on mount.
+  // Without this, the prospect sees their name in the input (from `defaultName`)
+  // but the parent's signature state stays null because no onChange has fired.
+  // Clicking Continue then errors "Your signature is required" even though the
+  // input is visibly filled. This effect closes that gap by treating a prefilled
+  // typed input as an implicit signature on mount.
+  useEffect(()=>{
+    if(mode==="typed"&&!value&&defaultName&&typed&&typed.trim()){
+      onChange&&onChange({kind:"typed",text:typed,signedAt:new Date().toISOString()});
+    }
+    // mount-only — intentionally not depending on value/typed/onChange
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
   useEffect(()=>{
     const c=canvasRef.current; if(!c) return;
     const ctx=c.getContext("2d");
@@ -3077,7 +3090,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0290-intake-admin-rebuild";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0291-sig-autocommit";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3211,8 +3224,12 @@ function PublicIntake(){
       setStep("engagement");return;
     }
     if(step==="engagement"){
-      if(!sig1){setErr(t.intakeSigRequired||"Your signature is required.");return;}
-      if(householdType==="couple"&&!sig2){setErr(t.intakeSig2Required||"Both signatures are required for a couple.");return;}
+      // v0.29.1 — Stronger signature check. Was just `if(!sig1)` which let
+      // empty typed sigs (kind:"typed", text:"") slip through because the
+      // wrapper object was truthy. Now also rejects empty text + empty dataUrl.
+      const sigEmpty=s=>!s||(s.kind==="typed"&&!s.text?.trim())||(s.kind==="drawn"&&!s.dataUrl);
+      if(sigEmpty(sig1)){setErr(t.intakeSigRequired||"Your signature is required.");return;}
+      if(householdType==="couple"&&sigEmpty(sig2)){setErr(t.intakeSig2Required||"Both signatures are required for a couple.");return;}
       setStep("intake");return;
     }
     if(step==="intake"){goSubmit(false);return;}
