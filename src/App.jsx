@@ -777,6 +777,101 @@ function MonthSelector({client,value,onChange,t}){const th=useTh();const snaps=c
 function PrintBtn({label="🖨️ Print / Save PDF",style={}}){const th=useTh();return<button className="ga-np" onClick={()=>window.print()} style={{fontSize:12,padding:"7px 16px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,border:"none",cursor:"pointer",...style}}>{label}</button>;}
 function NoDataMsg({snap}){const th=useTh();return<div style={{...mCARD(th),padding:24,textAlign:"center"}}><div style={{fontSize:18,marginBottom:8}}>📊</div><div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:12}}>{snap?.label}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16,maxWidth:400,margin:"0 auto 16px"}}>{[["Income",snap?.income,th.pos],["Bills",snap?.bills,th.neg],["Debt",snap?.debt,th.warn],["Savings",snap?.savings,th.blue]].map(([l,v,c])=><div key={l}><div style={{fontSize:10,color:th.dim,marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:800,color:c}}>{fmt(v||0)}</div></div>)}</div><div style={{fontSize:11,color:th.dim}}>Full detail data was not saved for this snapshot.<br/>Only summary totals are available.</div></div>;}
 function ReportHdr({client,selMonth,isCur,t}){const th=useTh();const now=new Date();const curLabel=`${MS[now.getMonth()]} ${now.getFullYear()}`;const displayMonth=isCur?curLabel:selMonth;return<div style={{...mCARD(th),padding:20,marginBottom:20,background:`linear-gradient(135deg,${th.nav},#1F2937)`}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><div style={{fontSize:22,fontWeight:800,color:"#FFFFFF"}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:"rgba(255,255,255,0.7)",fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:4}}>{client.email}{client.phone?` · ${client.phone}`:""}{client.address?` · ${client.address}`:""}</div></div><div style={{textAlign:"right"}}><div style={{fontSize:22,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif"}}>⚓ Golden Anchor</div><div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:2}}>{mLabel(displayMonth,_gaLang())}{isCur&&<span style={{opacity:0.7}}> · {t.liveSuffix||"Live"}</span>} · {fmtDate(new Date(),_gaLang())}</div></div></div></div>;}
+/* ── v0.35.0 — Phase 5 Charts: Donut ───────────────────────────────────────
+   Pure-SVG donut chart with optional center value/label and 4-row legend
+   (positioned by the caller — Donut just renders the SVG). Replaces the
+   Recharts PieChart/Pie/Cell combo on the Dashboard's Net Worth Distribution.
+   Slices use the colors passed in; padding angle stays subtle (~1.5°). */
+function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,centerValue,centerColor,placeholder}){
+  const th=useTh();
+  const filtered=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.value||0)>0);
+  if(filtered.length===0){
+    return<div style={{width:size,height:size,borderRadius:999,border:`2px dashed ${th.cardBorder||"#E2E8F0"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:th.dim||"#94A3B8",textAlign:"center",padding:8,lineHeight:1.3}}>{placeholder||"No data"}</div>;
+  }
+  const total=filtered.reduce((s,d)=>s+(+d.value||0),0);
+  const r=size/2;
+  const ir=r*innerRatio;
+  const cx=r,cy=r;
+  let angle=-Math.PI/2;
+  const gapRad=paddingAngle*Math.PI/180;
+  const segs=filtered.map(d=>{
+    const frac=(+d.value||0)/total;
+    const startA=angle+gapRad/2;
+    const endA=angle+frac*2*Math.PI-gapRad/2;
+    angle+=frac*2*Math.PI;
+    const large=endA-startA>Math.PI?1:0;
+    const x1=cx+r*Math.cos(startA),y1=cy+r*Math.sin(startA);
+    const x2=cx+r*Math.cos(endA),y2=cy+r*Math.sin(endA);
+    const x3=cx+ir*Math.cos(endA),y3=cy+ir*Math.sin(endA);
+    const x4=cx+ir*Math.cos(startA),y4=cy+ir*Math.sin(startA);
+    const path=`M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} L${x3} ${y3} A${ir} ${ir} 0 ${large} 0 ${x4} ${y4} Z`;
+    return{...d,path};
+  });
+  return<div style={{position:"relative",width:size,height:size}}>
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block"}}>
+      {segs.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="none"/>)}
+    </svg>
+    {(centerLabel||centerValue)&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none",textAlign:"center"}}>
+      {centerLabel&&<div style={{fontSize:9,color:th.dim||"#94A3B8",letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:700}}>{centerLabel}</div>}
+      {centerValue&&<div style={{fontSize:size<=120?13:16,color:centerColor||GOLD,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.1,marginTop:2}}>{centerValue}</div>}
+    </div>}
+  </div>;
+}
+
+/* ── v0.35.0 — Phase 5 Charts: Waterfall ──────────────────────────────────
+   Pure-SVG cash-flow waterfall — segments stacked Income → −Bills → −Debt →
+   +Save → Net. Each segment is a vertical bar from the running cumulative to
+   the new value; positive segments grow up (gold or green), negative segments
+   shrink down (orange or red). Dashed connector lines link consecutive
+   segments. The final "Net" bar is the full-height baseline-to-net total in gold. */
+function Waterfall({segments,height=180,width=600,bg}){
+  const th=useTh();
+  bg=bg||th.card||"transparent";
+  const segs=Array.isArray(segments)?segments.filter(s=>s):[];
+  if(segs.length===0)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
+  // Compute running cumulative for each non-net segment; the last segment is the Net total.
+  let cum=0;
+  const items=segs.map((s,i)=>{
+    if(s.kind==="total"){
+      // Net total bar — from 0 to the cumulative sum so far (or s.value if provided).
+      const v=s.value!=null?+s.value:cum;
+      return{...s,start:0,end:v,delta:v,isTotal:true};
+    }
+    const v=+s.value||0;
+    const start=cum,end=cum+v;
+    cum=end;
+    return{...s,start,end,delta:v,isTotal:false};
+  });
+  const minV=Math.min(0,...items.map(it=>Math.min(it.start,it.end)));
+  const maxV=Math.max(...items.map(it=>Math.max(it.start,it.end)),0);
+  const range=Math.max(1,maxV-minV);
+  const padT=16,padB=36,padL=12,padR=12;
+  const innerW=width-padL-padR,innerH=height-padT-padB;
+  const barW=Math.min(48,(innerW-(items.length-1)*8)/items.length);
+  const yAt=v=>padT+innerH*(1-(v-minV)/range);
+  const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*8)/2+i*(barW+8);
+  const goldDeep="#755023";
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      {/* baseline */}
+      <line x1={padL} y1={yAt(0)} x2={width-padR} y2={yAt(0)} stroke={th.dim} strokeOpacity="0.3" strokeDasharray="3 3"/>
+      {/* connectors (between bars) */}
+      {items.map((it,i)=>{if(i===items.length-1)return null;const x1=xAt(i)+barW,x2=xAt(i+1);const yEnd=it.isTotal?yAt(0):yAt(it.end);return<line key={"c"+i} x1={x1} y1={yEnd} x2={x2} y2={yEnd} stroke={th.dim} strokeOpacity="0.45" strokeDasharray="2 3"/>;})}
+      {/* bars */}
+      {items.map((it,i)=>{
+        const color=it.isTotal?GOLD:(it.delta>=0?(it.color||GOLD):(it.color||"#ED7D31"));
+        const y=it.isTotal?yAt(Math.max(it.end,0)):Math.min(yAt(it.start),yAt(it.end));
+        const h=it.isTotal?Math.abs(yAt(it.end)-yAt(0)):Math.abs(yAt(it.end)-yAt(it.start));
+        return<g key={i}>
+          <rect x={xAt(i)} y={y} width={barW} height={Math.max(1,h)} fill={color} rx="3"/>
+          <text x={xAt(i)+barW/2} y={height-22} textAnchor="middle" fontSize="9" fontWeight="700" fill={th.muted}>{it.label||""}</text>
+          <text x={xAt(i)+barW/2} y={height-9} textAnchor="middle" fontSize="9" fill={th.dim}>{(it.delta>=0?"+":"")+(it.delta>=1000||it.delta<=-1000?Math.round(it.delta/1000)+"K":Math.round(it.delta))}</text>
+        </g>;
+      })}
+    </svg>
+  </div>;
+}
+
 /* ── v0.34.0 — Phase 5 Charts: SmoothAreaLine ──────────────────────────────
    Pure-SVG two-curve area chart. Replaces the Recharts AreaChart in
    SummarySection's debt/savings trend per the Claude Design spec:
@@ -900,7 +995,27 @@ function CmpModal({snapshots,onClose,t}){const th=useTh();const n=snapshots.leng
 function VHModal({snap,onRestore,onClose,t}){const th=useTh();const versions=snap.previousVersions||[];return<Modal title={`🕒 ${t.versionHistory} — ${snap.label}`} onClose={onClose} width={540}>{!versions.length?<div style={{textAlign:"center",padding:20,color:th.dim}}>{t.noPrevVer||"No previous versions saved."}</div>:versions.slice().reverse().map((v,i)=><div key={i} style={{...mCARD(th),padding:14,marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{fontSize:12,color:th.muted}}>{t.savedAt}: {v.savedAt?new Date(v.savedAt).toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Unknown"}</span><Btn small onClick={()=>{onRestore(v);onClose();}} color={th.pos}>{t.restoreVersion}</Btn></div><div style={{display:"flex",gap:16,fontSize:11,flexWrap:"wrap"}}>{[["Income",v.income,th.pos],["Bills",v.bills,th.neg],["Debt",v.debt,th.warn],["Savings",v.savings,th.blue]].map(([l,val,c])=><div key={l}><span style={{color:th.dim}}>{l}: </span><span style={{color:c,fontWeight:700}}>{fmt(val)}</span></div>)}</div></div>)}<div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}><Btn onClick={onClose}>{t.cancel}</Btn></div></Modal>;}
 function MDrop({client,selected,onSelect,t}){const th=useTh();const[open,setOpen]=useState(false);const snaps=client.monthSnapshots||[];const byY={};snaps.forEach(s=>{if(!byY[s.year])byY[s.year]=[];byY[s.year].push(s);});return<div style={{position:"relative"}}><button onClick={()=>setOpen(o=>!o)} style={{fontSize:13,fontWeight:700,color:th.text,background:th.inp,border:`1px solid ${th.inpBorder}`,borderRadius:8,padding:"6px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{selected==="current"?"▶ Current (Live)":selected} <span style={{color:th.dim,fontSize:10}}>▾</span></button>{open&&<div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>}{open&&<div style={{position:"absolute",top:"calc(100% + 4px)",left:0,background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:10,padding:6,zIndex:100,minWidth:220,maxHeight:320,overflowY:"auto",boxShadow:"0 12px 40px #000a"}}><button onClick={()=>{onSelect("current");setOpen(false);}} style={{display:"block",width:"100%",textAlign:"left",padding:"7px 12px",fontSize:12,borderRadius:8,cursor:"pointer",background:selected==="current"?th.accent+"22":"transparent",color:selected==="current"?th.accent:th.text,border:"none",fontWeight:700}}>▶ Current (Live) <span style={{fontSize:10,color:th.pos}}>●</span></button>{Object.entries(byY).sort(([a],[b])=>+b-+a).map(([yr,sn])=><div key={yr}><div style={{fontSize:10,fontWeight:700,color:th.dim,padding:"6px 12px 2px"}}>{yr}</div>{sn.slice().reverse().map(s=><button key={s.label} onClick={()=>{onSelect(s.label);setOpen(false);}} style={{display:"block",width:"100%",textAlign:"left",padding:"5px 12px 5px 20px",fontSize:12,borderRadius:8,cursor:"pointer",background:selected===s.label?th.accent+"22":"transparent",color:selected===s.label?th.accent:th.muted,border:"none",fontWeight:selected===s.label?700:400}}>{s.label}{s.data&&<span style={{fontSize:9,marginLeft:4,color:th.pos}}>●</span>}</button>)}</div>)}{!snaps.length&&<div style={{fontSize:11,color:th.dim,padding:"8px 12px",fontStyle:"italic"}}>{t.noData}</div>}</div>}</div>;}
 function HistView({snap,client,onUpdate,t,settings}){const th=useTh();const[vm,setVm]=useState(false);const snaps=client.monthSnapshots||[];const doR=v=>{onUpdate({...client,monthSnapshots:snaps.map(s=>s.label===snap.label?{...snap,...v,savedAt:v.savedAt}:s)});};return<div>{vm&&<VHModal snap={snap} onRestore={doR} onClose={()=>setVm(false)} t={t}/>}<div style={{...mCARD(th),padding:10,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{display:"flex",gap:16,fontSize:11}}>{[["Inc",snap.income,th.pos],["Bills",snap.bills,th.neg],["Debt",snap.debt,th.warn],["Sav",snap.savings,th.blue]].map(([l,v,c])=><span key={l} style={{color:th.dim}}>{l}: <b style={{color:c}}>{fmtS(v||0)}</b></span>)}</div>{(snap.previousVersions||[]).length>0&&<Btn small onClick={()=>setVm(true)} color={th.warn}>🕒</Btn>}</div>{snap.data?<FullMonthView hClient={getClientForMonth(client,snap.label).hClient||client} onHUpdate={updated=>saveHistoricalUpdate(client,snap.label,onUpdate,updated)} selMonth={snap.label} snap={snap} isCur={false} t={t} fullPage={true} settings={settings}/>:<NoDataMsg snap={snap}/>}</div>;}
-function FullMonthView({hClient,onHUpdate,selMonth,snap,isCur,t,fullPage,lang,reportMode,settings}){const th=useTh();const[sec,setSec]=useState("summary");const secs=[{id:"summary",l:"📊 "+t.summary},{id:"income",l:"💼 "+t.income},{id:"bills",l:"💳 "+t.bills},{id:"debt",l:"🏦 "+t.debt},{id:"savings",l:"💰 "+t.savings},{id:"notes",l:"📝 "+t.notes}];const EditBanner=()=>!isCur?<div style={{background:th.warn+"11",border:`1px solid ${th.warn}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:th.warn,marginBottom:12}}>✏️ Editing <b>{selMonth}</b> — changes update this month's snapshot.</div>:null;const SD=()=><div style={{height:1,background:th.cardBorder,margin:"24px 0"}}/>;if(fullPage){return<div><EditBanner/><IncomeSection client={hClient} onUpdate={onHUpdate} t={t}/><SD/><BillsSection client={hClient} onUpdate={onHUpdate} t={t}/><SD/><DebtSection client={hClient} onUpdate={onHUpdate} t={t}/><SD/><SavingsSection key={hClient.id+(selMonth||"cur")+"-sv-fp"} client={hClient} onUpdate={onHUpdate} t={t} reportMode={true}/><SD/><CustomAssetsSection client={hClient} onUpdate={onHUpdate} t={t}/>{(hClient.notes?.goals||hClient.notes?.shortTerm||hClient.notes?.midTerm||hClient.notes?.longTerm||hClient.notes?.setbacks||hClient.notes?.general)&&<><SD/><NotesSection client={hClient} onUpdate={onHUpdate} t={t} reportMode={reportMode||false} settings={settings}/></>}</div>;}return<div><EditBanner/>{/* v0.25.0 — sub-tab row wraps to a second line instead of truncating */}<div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",paddingBottom:4}}>{secs.map(s=><button key={s.id} onClick={()=>setSec(s.id)} style={{fontSize:11,padding:"5px 12px",borderRadius:8,whiteSpace:"nowrap",cursor:"pointer",background:sec===s.id?th.accent:"transparent",color:sec===s.id?"#fff":th.muted,fontWeight:sec===s.id?700:400,border:`1px solid ${sec===s.id?th.accent:th.cardBorder}`,flexShrink:0}}>{s.l}</button>)}</div><div style={{background:th.bg+"99",border:`1px solid ${th.cardBorder}`,borderRadius:12,padding:18}}>{sec==="summary"&&<SummarySection client={hClient} lang={lang} t={t}/>}{sec==="income"&&<IncomeSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="bills"&&<BillsSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="debt"&&<DebtSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="savings"&&<SavingsSection key={hClient.id+(selMonth||"cur")+"-sv"} client={hClient} onUpdate={onHUpdate} t={t} reportMode={false}/>}{sec==="customAssets"&&<CustomAssetsSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="notes"&&<NotesSection client={hClient} onUpdate={onHUpdate} t={t} settings={settings}/>}</div></div>;}
+function FullMonthView({hClient,onHUpdate,selMonth,snap,isCur,t,fullPage,lang,reportMode,settings}){const th=useTh();const[sec,setSec]=useState("summary");const secs=[{id:"summary",l:"📊 "+t.summary},{id:"income",l:"💼 "+t.income},{id:"bills",l:"💳 "+t.bills},{id:"debt",l:"🏦 "+t.debt},{id:"savings",l:"💰 "+t.savings},{id:"notes",l:"📝 "+t.notes}];const EditBanner=()=>!isCur?<div style={{background:th.warn+"11",border:`1px solid ${th.warn}33`,borderRadius:8,padding:"8px 12px",fontSize:11,color:th.warn,marginBottom:12}}>✏️ Editing <b>{selMonth}</b> — changes update this month's snapshot.</div>:null;const SD=()=><div style={{height:1,background:th.cardBorder,margin:"24px 0"}}/>;if(fullPage){
+    /* v0.35.0 — Phase 6: each major section wrapped in .ga-print-page so printed
+       PDFs get one topic per page. Class is no-op on screen; only the @media print
+       rule turns it into a hard page break. */
+    return<div>
+      <EditBanner/>
+      <div className="ga-print-page"><IncomeSection client={hClient} onUpdate={onHUpdate} t={t}/></div>
+      <SD/>
+      <div className="ga-print-page"><BillsSection client={hClient} onUpdate={onHUpdate} t={t}/></div>
+      <SD/>
+      <div className="ga-print-page"><DebtSection client={hClient} onUpdate={onHUpdate} t={t}/></div>
+      <SD/>
+      <div className="ga-print-page"><SavingsSection key={hClient.id+(selMonth||"cur")+"-sv-fp"} client={hClient} onUpdate={onHUpdate} t={t} reportMode={true}/></div>
+      <SD/>
+      <div className="ga-print-page"><CustomAssetsSection client={hClient} onUpdate={onHUpdate} t={t}/></div>
+      {(hClient.notes?.goals||hClient.notes?.shortTerm||hClient.notes?.midTerm||hClient.notes?.longTerm||hClient.notes?.setbacks||hClient.notes?.general)&&<>
+        <SD/>
+        <div className="ga-print-page"><NotesSection client={hClient} onUpdate={onHUpdate} t={t} reportMode={reportMode||false} settings={settings}/></div>
+      </>}
+    </div>;
+  }return<div><EditBanner/>{/* v0.25.0 — sub-tab row wraps to a second line instead of truncating */}<div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",paddingBottom:4}}>{secs.map(s=><button key={s.id} onClick={()=>setSec(s.id)} style={{fontSize:11,padding:"5px 12px",borderRadius:8,whiteSpace:"nowrap",cursor:"pointer",background:sec===s.id?th.accent:"transparent",color:sec===s.id?"#fff":th.muted,fontWeight:sec===s.id?700:400,border:`1px solid ${sec===s.id?th.accent:th.cardBorder}`,flexShrink:0}}>{s.l}</button>)}</div><div style={{background:th.bg+"99",border:`1px solid ${th.cardBorder}`,borderRadius:12,padding:18}}>{sec==="summary"&&<SummarySection client={hClient} lang={lang} t={t}/>}{sec==="income"&&<IncomeSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="bills"&&<BillsSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="debt"&&<DebtSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="savings"&&<SavingsSection key={hClient.id+(selMonth||"cur")+"-sv"} client={hClient} onUpdate={onHUpdate} t={t} reportMode={false}/>}{sec==="customAssets"&&<CustomAssetsSection client={hClient} onUpdate={onHUpdate} t={t}/>}{sec==="notes"&&<NotesSection client={hClient} onUpdate={onHUpdate} t={t} settings={settings}/>}</div></div>;}
 function MonthlyTab({client,onUpdate,lang,t,settings}){const th=useTh();const[nmO,setNmO]=useState(false);const[cmpO,setCmpO]=useState(false);const[vmO,setVmO]=useState(null);const[view,setView]=useState("current");const snaps=client.monthSnapshots||[];const isCur=view==="current";const snap=!isCur?snaps.find(s=>s.label===view):null;const saveSnap=snap=>{const i=snaps.findIndex(s=>s.label===snap.label);const upd=i>=0?snaps.map((s,idx)=>idx===i?snap:s):[...snaps,snap];onUpdate({...client,monthSnapshots:upd});setNmO(false);};const now=new Date();const curLabel=`${MS[now.getMonth()]} ${now.getFullYear()}`;const curSnap=snaps.find(s=>s.label===curLabel);return<div>{nmO&&<NMModal client={client} onSave={saveSnap} onClose={()=>setNmO(false)} t={t}/>}{cmpO&&snaps.length>=2&&<CmpModal snapshots={snaps} onClose={()=>setCmpO(false)} t={t}/>}{vmO&&<VHModal snap={vmO} onRestore={v=>{const i=snaps.findIndex(s=>s.label===vmO.label);if(i>=0)onUpdate({...client,monthSnapshots:snaps.map((s,idx)=>idx===i?{...s,...v,savedAt:v.savedAt}:s)});setVmO(null);}} onClose={()=>setVmO(null)} t={t}/>}<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><MDrop client={client} selected={view} onSelect={setView} t={t}/><div style={{display:"flex",gap:8}}>{curSnap&&(curSnap.previousVersions||[]).length>0&&<Btn small onClick={()=>setVmO(curSnap)} color={th.warn}>🕒 {t.recoverMonth}</Btn>}{snaps.length>=2&&<Btn small onClick={()=>setCmpO(true)}>{t.compareMonths}</Btn>}<Btn small onClick={()=>setNmO(true)} color={th.pos}>＋ {t.newMonth}</Btn></div></div>{!isCur&&snap?<><div style={{...mCARD(th),padding:10,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontWeight:700,color:th.muted}}>📅 {snap.label}</span><button onClick={()=>setView("current")} style={{fontSize:11,padding:"3px 10px",borderRadius:8,background:"none",color:th.accent,border:`1px solid ${th.accent}`,cursor:"pointer"}}>{t.back}</button></div><HistView snap={snap} client={client} onUpdate={onUpdate} t={t} settings={settings}/></>:<><FullMonthView hClient={client} onHUpdate={onUpdate} selMonth="current" snap={null} isCur={true} t={t} lang={lang} settings={settings}/></>}</div>;}
 /* ── CASH FLOW STATEMENT ─────────────────────────────────────────────────── */
 function CashFlowStatement({client,t}){const th=useTh();const net=sumN(client.incomeStreams);const bills=sumB(client.bills);const minD=sumMin(client.cards);const operCF=net-bills-minD;const alloc=client.alloc||{};const committed=client.committed||{};const avail=Math.max(0,operCF);
@@ -2671,24 +2786,18 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>💎 {t.netWorthDistributionHdr||"Net Worth Distribution"}</div>
       <div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthDistributionSub||"Active clients grouped by current net worth tier."}</div>
       <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minHeight:isMobile?180:200}}>
-        <div style={{flex:"0 0 auto",position:"relative",width:isMobile?130:150,height:isMobile?130:150}}>
-          {active.length===0?
-            <div style={{width:"100%",height:"100%",borderRadius:999,border:`2px dashed ${th.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:th.dim,textAlign:"center"}}>{t.noClientsYet||"No clients yet"}</div>
-          :<>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={donutData.length?donutData:[{name:"—",value:1,color:th.cardBorder}]} cx="50%" cy="50%" innerRadius={isMobile?44:52} outerRadius={isMobile?64:72} paddingAngle={donutData.length>1?2:0} dataKey="value" stroke="none">
-                  {(donutData.length?donutData:[{color:th.cardBorder}]).map((e,i)=><Cell key={i} fill={e.color}/>)}
-                </Pie>
-                <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={(v,n)=>[`${v} ${v===1?(t.client||"client"):(t.clients||"clients")}`,n]}/>
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none"}}>
-              <div style={{fontSize:9,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:700}}>{t.totalNet||"Total Net"}</div>
-              <div style={{fontSize:isMobile?14:16,color:totalNW>=0?GOLD:th.neg,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.1,marginTop:2}}>{fmtS(totalNW)}</div>
-            </div>
-          </>}
-        </div>
+        {/* v0.35.0 — Phase 5 Donut replaces the Recharts PieChart here. Same data,
+           same center overlay, but rendered as pure SVG with the brand padding angle. */}
+        <Donut
+          data={donutData}
+          size={isMobile?130:150}
+          innerRatio={isMobile?(44/65):(52/75)}
+          paddingAngle={donutData.length>1?2:0}
+          centerLabel={t.totalNet||"Total Net"}
+          centerValue={fmtS(totalNW)}
+          centerColor={totalNW>=0?GOLD:th.neg}
+          placeholder={t.noClientsYet||"No clients yet"}
+        />
         <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:8}}>
           {donutData.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"Add clients to populate."}</div>:
             donutData.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}>
@@ -3249,7 +3358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0340-smooth-area-line";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0350-donut-waterfall-print-breaks";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/

@@ -2,6 +2,25 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.35.0 — 2026-05-23 — Phase 5 (Donut + Waterfall) + Phase 6 (per-topic page breaks)
+
+Two charts from the Phase 5 library plus the first Phase 6 print-output upgrade beyond what v0.21.0 already did.
+
+**Phase 5 — Donut.** New top-level pure-SVG `Donut` component. Configurable size, inner radius, padding angle (~1.5°), optional center label + value, optional empty-state dashed-ring placeholder. **Replaces the Recharts PieChart/Pie/Cell combo on the Dashboard's "Net Worth Distribution" donut.** The center overlay (Total Net label + tabular-num currency value) is preserved; the only visible difference is sharper anti-aliasing and that the donut is no longer wrapped in a `ResponsiveContainer`. Component lives next to `SmoothAreaLine` (added in v0.34.0) so future donuts (e.g., the "Where Income Goes" pie on Monthly Summary, the Investment Allocation pie on Strategy Plan) can drop it in without another Recharts import.
+
+**Phase 5 — Waterfall.** New top-level pure-SVG `Waterfall` component for cash-flow rendering — `Income → −Bills → −Debt → +Save → Net`. Positive segments use gold, negative segments use orange (`#ED7D31`), the final "Net" total bar uses full-height gold from baseline. Dashed connector lines between consecutive bars to show cumulative running total. JetBrains Mono mini-labels above each bar with the delta in thousands. Not wired into any view in this commit — component is ready for the Monthly Snapshot or Cash Flow Statement when we want to swap the existing table-driven layout.
+
+**Phase 6 — Per-topic page breaks in `FullMonthView`.** Each of the 6 major report sections (Income, Bills, Debt, Savings, Custom Assets, Notes) is now wrapped in `<div className="ga-print-page">`. The existing `@media print` CSS rule from v0.21.0 turns that class into a hard `break-before: page` so printed Monthly Reports / Complete Reports get one topic per page instead of the current dense single-page squeeze. Screen rendering is unchanged — the class is a CSS no-op outside print.
+
+**Deferred to v0.36.** Emoji-strip in print routes (the existing `.ga-emoji` rule from v0.21.0 is in place as a no-op safety net, but applying it requires wrapping ~200 emoji prefixes across report headers in `<span class="ga-emoji">…</span>`). Will do that as a focused refactor.
+
+**Build marker:** `2026-05-23-v0350-donut-waterfall-print-breaks`. App.jsx +~100 lines (Donut, Waterfall components + per-topic page-break wrappers in FullMonthView) / -16 lines (Recharts donut swap). No new deps, no API changes, no DB migration.
+
+**Smoke tests:**
+1. Open Dashboard — Net Worth Distribution donut renders as crisp SVG with `0 0 150 150` viewBox and the same center "TOTAL NET / $237K" overlay. Slices use the same red/amber/blue/gold tier colors.
+2. Open any client → Monthly Report → 🖨️ Print/Save PDF — preview shows Income on page 1, Bills on page 2, Debt on page 3, Savings on page 4, Custom Assets on page 5, Notes on page 6.
+3. Browser print preview should still respect the branded `.ga-print-header` from v0.21.0 on every page.
+
 ## v0.34.0 — 2026-05-23 — Phase 5 charts: SmoothAreaLine (replaces 3 Recharts AreaCharts)
 
 First chart from Claude Design's Phase 5 charts library. The two-curve area chart that's been the canonical pattern in the design spec ("savings gold, debt orange, soft gold gradient under savings, crossover dot marker") now ships as a pure-SVG component and replaces the existing Recharts AreaChart in three locations.
