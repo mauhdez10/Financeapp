@@ -25,7 +25,7 @@
 
 ## 2. Source of truth
 
-The actual app is a **single React file**: `src/App.jsx` (~4,500 lines as of v0.28.0 / 2026-05-22) plus three pure-data carve-outs allowed by D-1: `src/translations.js` (EN+ES dictionary), `src/engagementLetterTemplate.js` (engagement-letter body + tokens), and the `api/*.js` serverless functions (per D-30). PWA static assets (`public/manifest.json`, `public/sw.js`, `public/icon-*.png`, `public/apple-touch-icon.png`, `public/favicon-32.png`) sit in `public/`. `index.html` registers the service worker and links the manifest.
+The actual app is a **single React file**: `src/App.jsx` (~5,270 lines as of v0.36.0 / 2026-05-23) plus three pure-data carve-outs allowed by D-1: `src/translations.js` (EN+ES dictionary, ~119 KB single-line), `src/engagementLetterTemplate.js` (engagement-letter body + tokens), and the `api/*.js` serverless functions (per D-30). `src/colors_and_type.css` (brand tokens added in v0.29.0) and the standard `src/App.css` / `src/index.css` are stylesheet-only. PWA static assets (`public/manifest.json`, `public/sw.js`, `public/icon-*.png`, `public/apple-touch-icon.png`, `public/favicon-32.png`) sit in `public/`. `index.html` registers the service worker and links the manifest.
 
 Everything else is supporting infrastructure (build config, deploy config, this doc, the changelog). When the user asks "update the app," they mean App.jsx (and occasionally translations.js).
 
@@ -35,16 +35,26 @@ When working in a fresh session, **read App.jsx before proposing changes**. Don'
 
 ## 3. Current version
 
-**v0.28.0** — established 2026-05-22 (Minor — Alert dismiss/mute with month-keyed auto-recycle).
+**v0.36.0** — established 2026-05-23 (Minor — Doc hygiene + dead code cleanup; no behavior changes).
 
-**Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` should return `2026-05-22-v0280-dismiss-alerts`. If it doesn't, refresh before working.
+**Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` should return `2026-05-23-v0360-doc-hygiene`. If it doesn't, refresh before working.
 
-For the per-version log (v0.17.0 → v0.28.0 and everything before), read `CHANGELOG.md` — newest entry on top. This section preserves only the v0.16.0 deep-dive below as a historical reference; for current-state work, trust the CHANGELOG and the build marker.
+For the per-version log (v0.17.0 → v0.36.0 and everything before), read `CHANGELOG.md` — newest entry on top. This section preserves only the v0.16.0 deep-dive below as a historical reference; for current-state work, trust the CHANGELOG and the build marker.
 
 **Highlights since v0.16.0** (full detail in CHANGELOG.md):
 
 | Version | What shipped |
 |---|---|
+| v0.36.0 | Doc hygiene + dead-code pass. Deduped 3 silent-overwrite translation keys (totalLbl / partnerEmailLbl / close). Added 11 missing EN+ES keys (D-3). Backfilled WHATS_NEW_ENTRIES for v0.29-v0.35. Deleted dead IntakeFormV2 (~64 lines). Refreshed AGENT.md §3 + CLAUDE.md session handoff. No behavior changes. |
+| v0.35.1 | Hotfix: hoisted `fmtSSN` to module scope. Was throwing ReferenceError on every keystroke into the prospect's SSN field on public intake step 4 (defensive `fmtSSN?` ternary still does a bare identifier read). |
+| v0.35.0 | Phase 5 + 6. New pure-SVG `Donut` (replaces Recharts PieChart on Dashboard's Net Worth Distribution) + `Waterfall` (component ready, not yet wired). Phase 6: `.ga-print-page` wrappers around the 6 FullMonthView sections — each prints on its own page. |
+| v0.34.0 | Phase 5 first chart. New pure-SVG `SmoothAreaLine` (Catmull-Rom-to-Bezier, gold area gradient, JetBrains Mono Y-ticks, crossover dot marker). Replaces 3 Recharts AreaCharts: SummarySection's Debt vs Savings + ClientDetail's "● live" Debt vs Savings + Cash Flow Trend pair. |
+| v0.33.0 | Public intake unified on the gold palette regardless of light/dark mode. `synthTheme.accent` and `synthTheme.blue` hard-pinned to `GOLD` (#C9A84C) so the restored IntakeFormBody chrome matches the welcome/service/engagement stages. |
+| v0.32.0 | Couple invites end-to-end. New Invite modal gains a Just-me / Partner & me toggle + partner fields. `api/send-intake-invite.js` and `api/resolve-intake-invite.js` ferry the partner data through. Engagement letter copy email cleaned up (removed duplicate FL Lic + bottom disclaimer). Required Supabase migration `2026-05-23-invite-partner.sql`. |
+| v0.31.0 | Public-intake hardening pass — typed-only signature with inline cursive display, Pay Now always clickable, Done modal cleanup (no ref token, no Submit-another, added "you can close this tab"), Welcome whitespace tightened, New Invite phone format, browser back navigates stages, post-submit engagement-copy email (`api/send-engagement-copy.js`), Tab 4 restored to the line-item advisor-style IntakeFormBody. Required Supabase migration `2026-05-22-engagement-emailed.sql`. |
+| v0.30.0 | Public intake redesign — 5-stage flow (Welcome → Service → Engagement → Your information → Done modal). New top-level helpers: `IntakeWelcomeStage`, `IntakeStepRail`, `IntakeSelectedServiceCard`, `IntakeFormSection`, `IntakeCurrencyInput`, `IntakeDoneModal`. Sticky service sidebar on web. ~50 new EN+ES translation keys. |
+| v0.29.1 | Hotfix: SignaturePad auto-commits the prefilled `defaultName` to parent state on mount. Prospects were seeing their name in the typed-mode input but hitting "signature required" because no onChange had fired. Stronger validation rejects empty typed text + empty drawn dataUrl. |
+| v0.29.0 | Intake Forms admin rebuild + New Invite modal. Phase 1+2+3 of Claude Design workplan. Public URL collapsible card. Filter pills (All/Pending/Reviewed/Approved). Per-row ⋯ kebab with 10 actions. SERVICES catalog now carries `payUrl`. Brand-tokens CSS file. Required Supabase migration `2026-05-22-intake-status.sql`. |
 | v0.28.0 | Per-row ✕ dismiss on advisor + client-due alerts. Month-keyed dismissals so "paid the credit card" auto-recycles next billing cycle. `▾ (N muted)` expander per panel with one-click restore. Toast feedback via new global `ga-toast` event. |
 | v0.27.0 | Bootstrap shimmer skeleton (replaces ⚓ loading text). Count-up tween on KPI tiles via `useAnimatedDisplay` hook. Pulse animation on high-priority "No Contact" + "Promo Expiring" pills. `aria-label` on 8 placeholder-only search inputs. |
 | v0.26.0 | UI/UX Pro Max audit batch (10 items): ARIA labels on TopBar icon-buttons, dark-mode contrast bump to WCAG AA, z-index CSS-var scale, ✓ Saved toast on client save/add/archive/restore/delete, `th{font-size:12px}`, `prefers-reduced-motion` guard, 150ms hover baseline, focus-visible gold ring. |

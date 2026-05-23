@@ -3362,7 +3362,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0351-fmtssn-hotfix";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0360-doc-hygiene";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3536,74 +3536,12 @@ function IntakeCurrencyInput({value,onChange,placeholder,TH}){
 // Field label primitive — caps + tracking matches Claude Design.
 function IntakeFieldLabel({children}){const TH=useTh();return<div style={{fontSize:10,fontWeight:700,color:TH.muted,marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase"}}>{children}</div>;}
 
-// New simplified 5-section intake form. Replaces the heavy IntakeFormBody for the
-// public intake. Captures 12 currency totals + 2 textareas → stored on
-// draft.intakeSnapshot. The advisor still gets full edit capability via the
-// existing IntakeFormBody when reviewing a submission.
-function IntakeFormV2({draft,setDraft,t,TH,lang,prefilledNotice=true}){
-  const snap=draft.intakeSnapshot||{};
-  const setSnap=(k,v)=>setDraft(d=>({...d,intakeSnapshot:{...(d.intakeSnapshot||{}),[k]:v}}));
-  const setField=k=>e=>setDraft(d=>({...d,[k]:e.target.value}));
-  const INP={width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"};
-  const TXT={...INP,minHeight:96,fontFamily:"inherit",resize:"vertical",lineHeight:1.5};
-  const isCouple=draft.householdType==="couple";
-  return<ThemeCtx.Provider value={TH}>
-    {/* 1 — Contact */}
-    <IntakeFormSection n={1} title={t.intakeSection1Title||(lang==="es"?"Contacto":"Contact")}>
-      {prefilledNotice&&<div style={{padding:"10px 14px",background:GOLD+"11",border:`1px solid ${GOLD}33`,borderRadius:10,fontSize:12,color:TH.text,marginBottom:14,lineHeight:1.5}}>✨ {t.intakePrefilledNote||(lang==="es"?"Tu asesor pre-llenó tu nombre, correo y teléfono desde la invitación. Revísalos y ajústalos si hace falta.":"Your advisor pre-filled your name, email, and phone from the invitation. Review them and tweak if needed.")}</div>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.firstNameLbl||"First name"} *</IntakeFieldLabel><input style={INP} value={draft.firstName||""} onChange={setField("firstName")}/></div>
-        <div><IntakeFieldLabel>{t.lastNameLbl||"Last name"} *</IntakeFieldLabel><input style={INP} value={draft.lastName||""} onChange={setField("lastName")}/></div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.emailLbl||"Email"} *</IntakeFieldLabel><input type="email" style={INP} value={draft.email||""} onChange={setField("email")}/></div>
-        <div><IntakeFieldLabel>{t.phoneLbl||"Phone"}</IntakeFieldLabel><input style={INP} value={draft.phone||""} onChange={setField("phone")}/></div>
-      </div>
-      <div style={{marginBottom:12}}><IntakeFieldLabel>{t.intakeHouseholdLbl||(lang==="es"?"¿Aplicas como individuo o pareja?":"Are you applying as an individual or a couple?")}</IntakeFieldLabel>
-        <div style={{display:"flex",gap:8}}>
-          {[{id:"single",lbl:t.householdSingle||(lang==="es"?"Solo yo":"Just me"),emoji:"👤"},{id:"couple",lbl:t.householdCouple||(lang==="es"?"Mi pareja y yo":"My partner & me"),emoji:"💑"}].map(opt=><button key={opt.id} type="button" onClick={()=>setDraft(d=>({...d,householdType:opt.id}))} style={{flex:1,padding:"12px 16px",borderRadius:8,border:`2px solid ${draft.householdType===opt.id?GOLD:TH.cardBorder}`,background:draft.householdType===opt.id?GOLD+"22":"transparent",color:TH.text,cursor:"pointer",fontSize:13,fontWeight:600,textAlign:"left",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>{opt.emoji}</span>{opt.lbl}</button>)}
-        </div>
-      </div>
-      {isCouple&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.partnerFirstNameLbl||(lang==="es"?"Nombre de tu pareja":"Partner first name")} *</IntakeFieldLabel><input style={INP} value={draft.partnerFirst||""} onChange={setField("partnerFirst")}/></div>
-        <div><IntakeFieldLabel>{t.partnerLastNameLbl||(lang==="es"?"Apellido":"Partner last name")}</IntakeFieldLabel><input style={INP} value={draft.partnerLast||""} onChange={setField("partnerLast")}/></div>
-      </div>}
-    </IntakeFormSection>
-    {/* 2 — Income */}
-    <IntakeFormSection n={2} title={t.intakeSection2Title||(lang==="es"?"Ingresos":"Income")}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.intakeMonthlyNetLbl||(lang==="es"?"Ingreso neto mensual":"Monthly net income")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.monthlyNet} onChange={v=>setSnap("monthlyNet",v)} TH={TH}/><div style={{fontSize:10,color:TH.dim,marginTop:4,fontStyle:"italic"}}>{t.intakeMonthlyNetHint||(lang==="es"?"Después de impuestos — lo que llega a tu cuenta.":"After taxes — what hits your bank account.")}</div></div>
-        {isCouple&&<div><IntakeFieldLabel>{t.intakePartnerNetLbl||(lang==="es"?"Neto mensual de tu pareja":"Partner monthly net")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.partnerMonthlyNet} onChange={v=>setSnap("partnerMonthlyNet",v)} TH={TH}/></div>}
-      </div>
-      <div><IntakeFieldLabel>{t.intakeOtherIncomeLbl||(lang==="es"?"Otros ingresos (renta, extras, etc.)":"Other income (rental, side, etc.)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.otherIncome} onChange={v=>setSnap("otherIncome",v)} TH={TH}/></div>
-    </IntakeFormSection>
-    {/* 3 — Debts */}
-    <IntakeFormSection n={3} title={t.intakeSection3Title||(lang==="es"?"Deudas y obligaciones":"Debts & liabilities")}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.intakeTotalCardsLbl||(lang==="es"?"Balance total de tarjetas de crédito":"Total credit-card balances")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.totalCards} onChange={v=>setSnap("totalCards",v)} TH={TH}/></div>
-        <div><IntakeFieldLabel>{t.intakeTotalLoansLbl||(lang==="es"?"Préstamos (auto, estudios, personales)":"Total loans (car, student, personal)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.totalLoans} onChange={v=>setSnap("totalLoans",v)} TH={TH}/></div>
-      </div>
-      <div><IntakeFieldLabel>{t.intakeMortgageLbl||(lang==="es"?"Saldo de hipoteca":"Mortgage balance")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.mortgage} onChange={v=>setSnap("mortgage",v)} TH={TH}/></div>
-    </IntakeFormSection>
-    {/* 4 — Assets */}
-    <IntakeFormSection n={4} title={t.intakeSection4Title||(lang==="es"?"Activos e inversiones":"Assets & investments")}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.intakeCheckingLbl||(lang==="es"?"Cuenta corriente y ahorros":"Checking & savings")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.checking} onChange={v=>setSnap("checking",v)} TH={TH}/></div>
-        <div><IntakeFieldLabel>{t.intakeRetirementLbl||(lang==="es"?"Cuentas de retiro (401k / IRA)":"Retirement accounts (401k / IRA)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.retirement} onChange={v=>setSnap("retirement",v)} TH={TH}/></div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-        <div><IntakeFieldLabel>{t.intakeBrokerageLbl||(lang==="es"?"Inversiones de corretaje / brokerage":"Brokerage / taxable investments")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.brokerage} onChange={v=>setSnap("brokerage",v)} TH={TH}/></div>
-        <div><IntakeFieldLabel>{t.intakeHomeEquityLbl||(lang==="es"?"Equity de la casa (valor − hipoteca)":"Real-estate equity (home value − mortgage)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.homeEquity} onChange={v=>setSnap("homeEquity",v)} TH={TH}/></div>
-      </div>
-      <div><IntakeFieldLabel>{t.intakeOtherAssetsLbl||(lang==="es"?"Otros activos (carros, joyas, valiosos)":"Other assets (vehicles, valuables)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.otherAssets} onChange={v=>setSnap("otherAssets",v)} TH={TH}/></div>
-    </IntakeFormSection>
-    {/* 5 — Goals */}
-    <IntakeFormSection n={5} title={t.intakeSection5Title||(lang==="es"?"Metas y notas":"Goals & notes")}>
-      <div style={{marginBottom:14}}><IntakeFieldLabel>{t.intakeGoalsHelpLbl||(lang==="es"?"¿Con qué quieres que tu asesor te ayude?":"What do you want help with?")}</IntakeFieldLabel><textarea style={TXT} rows={4} value={snap.goalsHelp||""} onChange={e=>setSnap("goalsHelp",e.target.value)} placeholder={t.intakeGoalsHelpPh||(lang==="es"?"p. ej. bajar deudas de tarjeta, comprar casa en 18 meses…":"e.g. pay down credit cards, buy a home in 18 months…")}/></div>
-      <div><IntakeFieldLabel>{t.intakeOtherInfoLbl||(lang==="es"?"¿Algo más que tu asesor deba saber?":"Anything else your advisor should know?")}</IntakeFieldLabel><textarea style={TXT} rows={4} value={snap.otherInfo||""} onChange={e=>setSnap("otherInfo",e.target.value)} placeholder={t.intakeOtherInfoPh||(lang==="es"?"Cambios de trabajo, eventos próximos, dependientes, salud…":"Upcoming life events, job changes, dependents, health considerations…")}/></div>
-    </IntakeFormSection>
-  </ThemeCtx.Provider>;
-}
+// v0.30.0 → v0.31.0 — IntakeFormV2 (the simplified 12-totals + 2-textareas form)
+// shipped briefly in v0.30.0, then was replaced in v0.31.0 by the restored
+// IntakeFormBody + inline Contact block to give prospects line-item entry like
+// the advisor side. The IntakeFormV2 function body was removed in v0.36.0 as
+// dead code (~64 lines). IntakeFormSection + IntakeCurrencyInput + IntakeFieldLabel
+// are still used directly by the inline Contact block in PublicIntake.
 
 // Done modal — overlay confirmation that keeps the underlying form mounted.
 // Triggered when Submit or Pay Now lands. v0.31.0: dropped reference token +
@@ -4469,6 +4407,49 @@ function ArchivedClientsPage({clients,onRestore,onDelete,t}){
 
 /* ── WhatsNewPage — release notes. v0.18.0 — hardcoded, edit this array. ─ */
 const WHATS_NEW_ENTRIES=[
+  {v:"v0.35.0",date:"2026-05-23",title:"Cleaner charts (Donut, smooth lines) + better PDF page breaks",bullets:[
+    "Net Worth Distribution donut on the Dashboard now renders crisper edges — same data, hand-drawn SVG.",
+    "Cash-flow Waterfall component is wired up and ready to drop into the next Monthly Snapshot rebuild.",
+    "Printing a Monthly or Complete report now gives each section its own page — Income on page 1, Bills on 2, Debt on 3, and so on."
+  ]},
+  {v:"v0.34.0",date:"2026-05-23",title:"Smooth two-curve charts on client trends",bullets:[
+    "The 'Debt vs Savings' and 'Cash Flow Trend' charts on every client's profile are now hand-drawn SVG with smooth curves, a gold area gradient, and a gold dot marker where the curves cross.",
+    "Y-axis labels stamped in JetBrains Mono with nice-rounded values (0 / 17K / 33K / 50K).",
+    "Range pills (3m / 6m / 12m / All) and filter pills (All / Rev / Cur) now tint gold instead of blue when active."
+  ]},
+  {v:"v0.33.0",date:"2026-05-23",title:"Public intake unified on the brand gold palette",bullets:[
+    "The structured intake form on prospect's Tab 4 now matches the welcome/service/engagement stages — gold instead of the previous blue/brown mix.",
+    "Section headers, totals, '+ Add Income / + Add Bill' buttons, and Avalanche/Snowball strategy pills all use the brand gold.",
+    "Semantic colors (green for positive cashflow, red for debt, amber for warnings) kept intact."
+  ]},
+  {v:"v0.32.0",date:"2026-05-23",title:"Couple invites — partner data flows end-to-end",bullets:[
+    "New Invite modal now has a Just-me / Partner & me toggle. Pick 'Partner & me' to add partner name (required) + email + phone.",
+    "When the prospect opens their link: both names land in the engagement letter greeting, both signature pads auto-prefill, and Tab 4 Contact shows both rows pre-filled.",
+    "Prospect name is now required on every invite (was: only email). That was the root cause of the prefill not working before.",
+    "Engagement letter copy email cleaned up — removed the duplicate Florida license parenthetical and the redundant bottom disclaimer."
+  ]},
+  {v:"v0.31.0",date:"2026-05-22",title:"Intake hardening pass — signature, back button, PDF email, plus more",bullets:[
+    "Signature is typed-only now (drawing was confusing on mobile). Your name appears in cursive on the 'Client signature:' line as you type.",
+    "Browser back works through the intake stages — Welcome → Service → Engagement → Details — predictable navigation.",
+    "Pay Now is always clickable (was disabled when no payment link). If no link is set, the Done modal explains the advisor will send it directly.",
+    "Done modal removed the reference token + 'Submit another' button, added a 'You can safely close this tab' line.",
+    "After submission, the prospect (and advisor) receive a copy of the signed engagement letter by email automatically.",
+    "Welcome screen tightened — less whitespace, larger anchor image.",
+    "Tab 4 'Your information' now uses the full advisor-style intake (add line-item credit cards / income streams / debts / accounts / goals) instead of the simplified totals form."
+  ]},
+  {v:"v0.30.0",date:"2026-05-22",title:"Public intake redesign — 5-stage flow",bullets:[
+    "New flow: Welcome → Service → Engagement → Your information → Done modal.",
+    "Welcome stage shows the brand-gold hero card with the anchor logo + tagline.",
+    "Step rail at the top of every stage shows progress; past steps get a ✓, current step is gold.",
+    "Sticky service sidebar on web during the engagement + intake stages.",
+    "Done modal overlays the form instead of replacing it — Esc resets cleanly back to Welcome."
+  ]},
+  {v:"v0.29.0",date:"2026-05-22",title:"Intake Forms admin page rebuild + New Invite modal",bullets:[
+    "Intake Forms (sidebar) rebuilt with a clean header — pending count, public URL toggle, and ＋ New invite button.",
+    "Public intake URL is collapsed by default — click the toggle to reveal EN + ES copy links with one-tap copy buttons.",
+    "Submissions table with filter pills (All / Pending / Reviewed / Approved) and a per-row ⋯ kebab with 10 actions (Open submission / Resend invite EN+ES / Copy intake link / Message prospect / Mark reviewed / Mark approved / Convert to client / Archive).",
+    "New Invite modal — language picker + name + email + phone + personal note. Stripe links auto-populate per service."
+  ]},
   {v:"v0.28.0",date:"2026-05-22",title:"Dismiss or mute alerts",bullets:[
     "Each advisor alert + client-due row now has a small ✕ — click to snooze.",
     "Credit-card / bill alerts dismiss until next billing cycle and re-appear automatically next month — perfect for the 'I paid it' case.",
@@ -4769,7 +4750,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     {divider:true},
     {icon:"💾",label:t?.menuBackup||"Backup data",sub:t?.menuBackupSub||"Download / restore JSON",onClick:()=>onNav("backup")},
     {icon:"🗂",label:t?.menuArchived||"Archived clients"+(archivedCount?` (${archivedCount})`:""),onClick:()=>onNav("archived")},
-    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version||"v0.28.0",onClick:()=>onNav("whats-new")},
+    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version||"v0.36.0",onClick:()=>onNav("whats-new")},
     {icon:"❓",label:t?.menuHelp||"Help & support",onClick:()=>onNav("help")},
     {divider:true},
     {icon:"🚪",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
@@ -4811,7 +4792,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
             </button>
           )}
           <div style={{padding:"10px 10px 6px",borderTop:`1px solid ${th.cardBorder}`,marginTop:4,fontSize:9,color:th.dim,display:"flex",justifyContent:"space-between",letterSpacing:"0.04em"}}>
-            <span>Golden Anchor · {version||"v0.28.0"}</span>
+            <span>Golden Anchor · {version||"v0.36.0"}</span>
             <span>⚓ {t?.educationalCoaching||"Educational coaching"}</span>
           </div>
         </div>}
@@ -5248,7 +5229,7 @@ export default function App(){
           isMobile={vp.isMobile} onOpenDrawer={()=>setDrawerOpen(true)}
           t={t}
           archivedCount={clients.filter(c=>c.archived).length}
-          version={(()=>{const b=typeof window!=="undefined"?(window.__GA_BUILD__||""):"";/* v0.28.0 — regex bumped to \d{2} for minor so v0280 → v0.28.0 (was buggy: parsed as v0.2.80). */const m=b.match(/v(\d)(\d{2})(\d+)-/);return m?`v${m[1]}.${parseInt(m[2],10)}.${parseInt(m[3],10)}`:"v0.28.0";})()}
+          version={(()=>{const b=typeof window!=="undefined"?(window.__GA_BUILD__||""):"";/* v0.28.0 — regex bumped to \d{2} for minor so v0280 → v0.28.0 (was buggy: parsed as v0.2.80). */const m=b.match(/v(\d)(\d{2})(\d+)-/);return m?`v${m[1]}.${parseInt(m[2],10)}.${parseInt(m[3],10)}`:"v0.36.0";})()}
         />
         <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:

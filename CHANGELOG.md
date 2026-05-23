@@ -2,6 +2,33 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.36.0 — 2026-05-23 — Doc hygiene + dead-code cleanup (autonomous audit pass)
+
+Surfaced during an autonomous audit while Mauricio was away. All fixes are no-behavior-change, no new features, no migrations.
+
+**Translation hygiene.**
+- 6 duplicate declarations removed (3 keys × EN+ES): `totalLbl` (kept "Total" / dropped "total"), `partnerEmailLbl`, `close`. Each was silently overwriting the other; pattern is the same one we dedup'd in v0.27.0's hygiene pass.
+- 11 missing keys added EN+ES, closing 22 D-3 (EN/ES symmetry) violations the audit found: `personalInfoHdr`, `howHeardLbl`, `howHeardPlaceholder`, `stepIntakeHelpV2`, `taglineSecuring`, `savedToast`, `savedClientToast`, `savedClientAddedToast`, `archivedToast`, `restoredToast`, `deletedToast`. ES users were seeing English fallbacks for all of these. Now they don't.
+
+**Dead code removed.**
+- `IntakeFormV2` function (App.jsx ~3543–3606, ~64 lines). Shipped briefly in v0.30.0 as the simplified 12-totals intake form, then replaced in v0.31.0 by the restored advisor-style `IntakeFormBody` + inline Contact block. Never instantiated since. Replaced with a 7-line comment block explaining the history. `IntakeFormSection`, `IntakeCurrencyInput`, `IntakeFieldLabel` (used directly by the inline Contact block) all stay.
+- Misleading "v2" comments at App.jsx:3535 and :3642 cleaned up.
+
+**Version-footer hygiene.**
+- Three hard-coded `"v0.28.0"` fallback strings in App.jsx (TopBar avatar menu sub-label, footer wordmark, regex-fallback) bumped to `"v0.36.0"`. These only render when the build-marker regex fails — cosmetic but worth keeping current.
+
+**WHATS_NEW_ENTRIES backfilled.**
+- 7 new entries prepended: v0.29.0, v0.30.0, v0.31.0, v0.32.0, v0.33.0, v0.34.0, v0.35.0. Each is a user-facing 3-5 bullet summary (no internal architecture chatter). The in-app "What's new" page on the avatar menu now reflects the last 10 versions.
+
+**AGENT.md + CLAUDE.md refresh.**
+- AGENT.md §2 line count bumped (~4,500 → ~5,270). §3 current version bumped to v0.36.0. Per-version summary table extended with rows for v0.29-v0.35.
+- CLAUDE.md session handoff "Currently shipped" line bumped from v0.26.0 → v0.36.0. Recent-versions table rewritten with 10 newest entries. Pending-work section rewritten from the v0.26.0 leftover audit list (all closed by v0.27.0) to the actual current backlog: Phase 5 chart components remaining, Phase 6 emoji-strip refactor, Phase 6 three-up KPI print strip.
+- CLAUDE.md file-map row for AGENT.md/SKILL.md/WORKPLAN cleaned up — now correctly references `WORKPLAN-archive-2026-05.md`.
+
+**Build marker:** `2026-05-23-v0360-doc-hygiene`. App.jsx +~65 lines (WHATS_NEW backfill) / -78 lines (IntakeFormV2 removal). translations.js -6 lines (dupes) / +11 EN + 11 ES. AGENT.md / CLAUDE.md / CHANGELOG.md / App.jsx footer string updates. No new dependencies, no API changes, no DB migration. D-1, D-3 (now satisfied for the 11 prev-missing keys), D-7, D-8, D-17 all preserved.
+
+**Smoke tests:** Hard-refresh https://finance.goldenanchor.life — build marker should be `v0360-doc-hygiene`. Open the avatar menu → "What's new" should show v0.35.0 at the top with the 10 most-recent versions. Spanish users (EN/ES toggle in TopBar) should see Spanish for the previously-missing keys (e.g. Settings page "Información personal" instead of "Personal information").
+
 ## v0.35.1 — 2026-05-23 — Hotfix: fmtSSN ReferenceError on public intake
 
 Audit-discovered bug. `fmtSSN` was defined as a local `const` inside the `SSNInput` component body, but the structured intake form (`IntakeFormBody` at App.jsx:3379 and :3385) referenced it from the outer scope via a defensive `fmtSSN?fmtSSN(e.target.value):e.target.value` pattern. JavaScript treats `fmtSSN` as a bare identifier read — so the *check* itself threw `ReferenceError: fmtSSN is not defined` on every keystroke into the prospect's SSN field on public intake step 4.

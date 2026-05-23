@@ -6,11 +6,11 @@
 
 ---
 
-## 🗓 Session handoff — last update 2026-05-22
+## 🗓 Session handoff — last update 2026-05-23
 
 ### Currently shipped (live on Vercel)
 
-**v0.26.0** — `2026-05-22-v0260-a11y-contrast-zindex-toasts-hover-reduced-motion`
+**v0.36.0** — `2026-05-23-v0360-doc-hygiene`
 
 Verify the live build is current:
 ```bash
@@ -22,36 +22,40 @@ curl -s "https://finance.goldenanchor.life/assets/<that-hash>.js" | grep -oE 'v[
 
 | Version | What shipped |
 |---|---|
-| **v0.26.0** | UI/UX Pro Max audit batch: ARIA labels on TopBar buttons, WCAG AA contrast bump (`muted #9CA3AF → #B3C0D1`, `dim #6B7280 → #94A3B8`), z-index CSS variable scale, success toast on client save/add/archive/restore/delete, `th { font-size: 12px }` global, `prefers-reduced-motion` honored, 150ms hover baseline, focus-visible gold ring |
-| **v0.25.1** | Removed per-row kebab from Clients list (was added in v0.25.0, judged visually noisy). Shrunk sort dropdown to 190px with cleaner `⇅ Name / Recent activity / Debt / Income / Net worth` options + `aria-label` |
-| **v0.25.0** | Medium-polish: Clients page header in one row, trend chart header no longer overlaps range pills, MonthlyTab sub-tabs wrap instead of truncating, SettingsCard values wrap instead of `...` truncating |
-| **v0.24.0** | Audit-driven: removed duplicate page titles from 11 pages (TopBar already shows them), Dashboard X-axis disambiguates duplicate months (`Jan '25` / `Jan '26`), alert card titles emoji-stripped via regex, first KPI "Total" → "Clients", Settings phone formats via fmtPh, EmailSupport modal "Recipient" → "Reply-to" + destination hint, TopBar avatar footer version parses `window.__GA_BUILD__` dynamically |
-| v0.23.0 | (parallel chat) Client Due search input, T&C gate runs before login flash, public intake Welcome screen, Calculators 3-col compact grid, Resources tighter grid, About page monogram SVG + Newsreader |
-| v0.21.0 | PDF print rebuild — Source Serif 4 body, Newsreader italic titles, JetBrains Mono currency cells, branded `.ga-print-header` + `.ga-print-footer`, intake-form PDF template rebuilt |
-| v0.17.0–v0.20.0 | TopBar with avatar dropdown, 6 new dropdown pages (Settings/Security/Billing/Backup/Archived/WhatsNew/Help), avatar picker with 12 SVG presets, in-app Email Support modal via Resend backend (`api/send-support-email.js`), Dashboard Net Worth Distribution donut |
+| **v0.36.0** | Doc hygiene + dead-code pass. Deduped 3 silent-overwrite translations (`totalLbl` / `partnerEmailLbl` / `close`). Added 11 missing EN+ES keys. Backfilled WHATS_NEW_ENTRIES for v0.29-v0.35. Deleted IntakeFormV2 (~64 lines dead code from the v0.31 restore). Refreshed AGENT.md §3 + this handoff. No behavior changes. |
+| **v0.35.1** | Hotfix: `fmtSSN` was a local const inside `SSNInput`, throwing `ReferenceError` on every keystroke into the prospect SSN field on public intake. Hoisted to module scope alongside `fmtPh`. |
+| **v0.35.0** | Phase 5 + 6. New pure-SVG `Donut` (replaces Recharts PieChart on Dashboard's Net Worth Distribution) + `Waterfall` component (built, not yet wired). `.ga-print-page` wrappers around the 6 FullMonthView sections — each prints on its own page. |
+| **v0.34.0** | Phase 5 first chart. New pure-SVG `SmoothAreaLine` (Catmull-Rom-to-Bezier, gold area gradient, JetBrains Mono Y-ticks, crossover dot marker). Replaces 3 Recharts AreaCharts on ClientDetail's "● live" trend pair + SummarySection. |
+| **v0.33.0** | Public intake unified on the gold palette regardless of light/dark mode. `synthTheme.accent` / `.blue` hard-pinned to `GOLD`. |
+| **v0.32.0** | Couple invites end-to-end — partner fields in New Invite modal, ferry through `send-intake-invite.js` + `resolve-intake-invite.js`, populate `draft.partnerFirst` etc. on the prospect side. Removed duplicate FL Lic + redundant disclaimer from engagement-copy email. Required Supabase migration `2026-05-23-invite-partner.sql`. |
+| **v0.31.0** | Intake hardening pass — typed-only signature with inline cursive display, Pay Now always clickable, Done modal cleanup ("you can close this tab"), browser back walks stages, post-submit engagement-copy email (`api/send-engagement-copy.js`), Tab 4 restored to advisor-style IntakeFormBody. Required Supabase migration `2026-05-22-engagement-emailed.sql`. |
+| **v0.30.0** | Public intake redesign — 5-stage flow (Welcome → Service → Engagement → Your information → Done modal). |
+| v0.29.1 | Hotfix: SignaturePad auto-commits prefilled `defaultName` on mount. |
+| v0.29.0 | Intake Forms admin rebuild + New Invite modal (Phase 1+2+3 of Claude Design workplan). Required Supabase migration `2026-05-22-intake-status.sql`. |
+| v0.28.0 | Per-row ✕ dismiss on advisor + client-due alerts. Month-keyed dismissals so "paid the credit card" auto-recycles next billing cycle. |
+| v0.27.0 | Bootstrap shimmer skeleton, KPI count-up tween, pulse on critical alert pills, aria-label on placeholder-only search inputs. |
 
 ### Pending work (priority order)
 
-**Deferred from the v0.26.0 audit batch (Mauricio approved all 10, 8 shipped):**
+**Phase 5 charts library — remaining (Claude Design workplan):**
 
-1. **Skeleton loading rows during initial bootstrap.** Replace the ⚓ + "Loading clients…" text with proper skeleton placeholders. Focused refactor of the bootstrap useEffect block.
-2. **Visible labels above the few remaining placeholder-only inputs.** Mostly search bars in card headers — design decision (minimalism vs. accessibility). Most form fields already use the labeled `Field` helper.
+1. **Wire `Waterfall`** (built v0.35.0, not yet integrated). Drop into Cash Flow Statement or Monthly Snapshot to replace the table-driven layout.
+2. **Remaining chart components** — `KPITileRow`, `RankedHBars`, `GoalProgressList`, `RadialProgress3`, `HeatmapMonth`, `SparklineRow`, `Radar5`, `Candlestick`, `CircularBar`, `PackedBubble`, `TimelinePins`, `RadialHistogram`, `PairedBars`, `StackedBars`, `GroupedYoY`, `NetWorthAgePyramid`, `Pie`, `PyramidChart`, `PictorialFraction`, `ProcessCycle`, `SplineChart`, `StackedArea`. ~22 components left. Build incrementally.
 
-**Nice-to-have polish (audit suggested, not yet promised):**
+**Phase 6 PDF print — remaining:**
 
-3. **Smooth number animations on KPI tiles** — `npm i react-countup` and wrap the `fmt()` output on the 4 Dashboard KPIs + ClientDetail KPIs.
-4. **Pulsing animation on critical alert pills** ("Promo Expiring", "No Contact") — 1.5s ease-in-out, subtle opacity pulse.
-5. **Public intake `/intake?invite=<token>` end-to-end test.** Last verified in v0.16.0; should re-verify with v0.26.0 changes (especially the v0.23.0 Welcome screen + T&C gate flow).
+3. **Emoji-strip refactor** (deferred from v0.35.0). Wrap ~200 leading emojis in report headers with `<span class="ga-emoji">…</span>` so the existing `@media print { .ga-emoji { display:none } }` rule actually fires. Will give cleaner emoji-free PDF exports.
+4. **Three-up KPI strip on Monthly Snapshot print view** (per Phase 6 spec). Net Income / Bills / Discretionary tiles at the top of each Monthly Snapshot PDF page.
 
 **Open bugs (low-confidence — needs Mauricio reproduction):**
 
-- **Hide-numbers ON by default on first login.** Likely data, not code — the test account's `settings.hideNumbers` is `true` in Supabase. One toggle fixes it for the account.
+- **Hide-numbers ON by default on first login** — likely data, not code (the test account's `settings.hideNumbers` is `true` in Supabase). One toggle fixes it for the account.
 
 ### Infrastructure ready in this folder
 
 - **`CLAUDE.md`** (this file) — auto-loaded by Claude Code
 - **`.env.local`** — Supabase URL + anon key set; dev server can log in. NEVER edit/commit this file. `.env.local.example` is the template that ships in repo.
-- **`AGENT.md` / `SKILL.md` / `WORKPLAN.md`** — full decision log + procedure manual. Read on demand.
+- **`AGENT.md`** — full decision log + locked decisions (D-1 to D-36) + pitfalls (#1-#17). Read on demand. `SKILL.md` is the design-system manifest (Claude.ai/design only). `WORKPLAN-archive-2026-05.md` is preserved historical only.
 - **Two-folder workflow**: edit in `golden-anchor/` (working copy, has design system extras), then copy + push from `financeapp-deploy/` (real git clone).
 - **Plugins installed**: `claude-mem`, `vercel`, `playwright`, `ui-ux-pro-max`, `github`, `gitlab`. The vercel + playwright MCPs may need a Claude Code restart to load. Once active, USE them to verify deploys + run e2e tests instead of manual.
 
