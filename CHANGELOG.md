@@ -2,6 +2,18 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.33.0 — 2026-05-23 — Public intake gold-palette override
+
+Tiny but visible fix. The restored advisor-style intake form (IntakeFormBody, brought back in v0.31.0) used `th.accent` and `th.blue` from the public intake's `synthTheme`. In light mode those resolved to `#B8860B` (dark goldenrod) and `#2563EB` (blue) — reading on screen as a brown/blue mix that clashed with the gold-and-cream design Mauricio wants on the prospect-facing pages.
+
+`synthTheme` now hard-codes `accent` and `blue` to `GOLD` (`#C9A84C`) regardless of the user's light/dark preference. The structured intake sections (Income, Bills, Debt, Assets) now read as gold throughout — totals, "+ Add row" buttons, the Avalanche/Snowball strategy pills, KPI tile borders, and per-row sort indicators all switch over. Semantic colors stay intact: `pos` (green for positive cashflow), `neg` (red for debt), `warn` (amber for promo expiry).
+
+Side-effect: hardcoded line-item icons like `ACCT_META.checking.c` (`#3B82F6`) and `LOAN_META.student.c` (`#3B82F6`) are still blue because they're constants outside the theme system. They show up as small icons next to individual account/loan rows — keeping them intentionally semantic, not chrome.
+
+**Build marker:** `2026-05-23-v0330-intake-gold-palette`. One-line change to `synthTheme` in PublicIntake. No DB migration, no API changes, no translation changes.
+
+**Smoke test:** Open `/intake?invite=<token>` → walk through to Tab 4 → confirm the "+ Add Income / + Add Bill / + Add Card" buttons, sort arrows, table totals, KPI tiles, and tab headers all use gold instead of blue.
+
 ## v0.32.0 — 2026-05-23 — Invite prefill chain (couple support) + email cleanup
 
 Closes the two issues Mauricio filed against v0.31.0.

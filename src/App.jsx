@@ -3139,7 +3139,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0320-invite-partner-prefill";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0330-intake-gold-palette";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3499,7 +3499,14 @@ function PublicIntake(){
   const services = (advisorSettings.services && advisorSettings.services.length) ? advisorSettings.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:lang==="es"?v.es:v.en,price:v.price,stripeUrl:(advisorSettings.stripeLinks||{})[v.id]||v.payUrl||"",payUrl:(advisorSettings.stripeLinks||{})[v.id]||v.payUrl||"",desc:lang==="es"?v.descEs:v.desc}));
   const selectedService = services.find(sv=>sv.id===selectedServiceId);
   if(!advisorId){return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}><div style={{fontSize:48,color:GOLD}}>⚓</div><div style={{fontSize:16,fontWeight:700,maxWidth:480}}>{t.intakeInvalidLink||"This intake link is invalid or expired."}</div><div style={{fontSize:12,color:TH.muted,maxWidth:480}}>{t.intakeContactAdvisor||"Please contact your advisor directly."}</div></div>;}
-  const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:TH.accent,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:TH.blue};
+  // v0.33.0 — Public intake unified on the Claude Design gold palette regardless
+  // of light/dark mode. The advisor-side IntakeFormBody (income/bills/debt/assets
+  // sections) used `th.accent` (dark goldenrod #B8860B in light, plain GOLD in dark)
+  // and `th.blue` (#2563EB) for some accents — both reading as wrong on the prospect's
+  // intake. Force `accent`, `blue`, and a couple of neutral tones onto the brand gold
+  // chain so the restored advisor-form chrome matches the welcome/service/engagement
+  // stages above it.
+  const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:GOLD,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:GOLD};
   // Submit fires from the Intake stage's Submit or Pay Now buttons. Done modal
   // (overlay) renders on success — form stays mounted underneath so Esc/back
   // resets cleanly.
