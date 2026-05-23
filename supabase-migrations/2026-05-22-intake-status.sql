@@ -41,5 +41,6 @@ BEGIN
 END$$;
 
 -- Index for the common "show pending first" filter on the advisor admin page
-CREATE INDEX IF NOT EXISTS intake_submissions_user_status_idx
-  ON public.intake_submissions (user_id, status, submitted_at DESC);
+-- (NB: this table uses `advisor_id` + `created_at`, not user_id + submitted_at.)
+CREATE INDEX IF NOT EXISTS intake_submissions_advisor_status_idx
+  ON public.intake_submissions (advisor_id, status, created_at DESC);
