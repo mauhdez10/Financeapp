@@ -237,6 +237,12 @@ export default async function handler(req, res) {
   // v0.11.1 — advisor signature fields (optional; buildEmailBody falls back if absent)
   const advisorName = String(body.advisorName || "").trim().slice(0, 120);
   const advisorEmail = String(body.advisorEmail || "").trim().slice(0, 200);
+  // v0.32.0 — optional partner fields (couple invites). Stored on the invite
+  // row so resolve-intake-invite can hand them back to PublicIntake.
+  const householdType = body.householdType === "couple" ? "couple" : "single";
+  const partnerName = String(body.partnerName || "").trim().slice(0, 120);
+  const partnerEmail = String(body.partnerEmail || "").trim().slice(0, 200);
+  const partnerPhone = String(body.partnerPhone || "").trim().slice(0, 32);
 
   if (!channelEmail && !channelSms) {
     return res.status(400).json({ ok: false, error: "At least one channel must be selected" });
@@ -269,6 +275,10 @@ export default async function handler(req, res) {
       prospect_name: prospectName || null,
       prospect_email: prospectEmail || null,
       prospect_phone: prospectPhone || null,
+      household_type: householdType,
+      partner_name: partnerName || null,
+      partner_email: partnerEmail || null,
+      partner_phone: partnerPhone || null,
       lang,
       channel_email: channelEmail,
       channel_sms: channelSms,

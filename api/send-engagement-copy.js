@@ -81,8 +81,8 @@ function buildHtml({ advisor, submission, lang }) {
         : "Thank you for choosing " + htmlEscape(firmName) + ". This letter confirms the terms under which we will provide educational financial coaching services."}</p>
       <p style="margin:0 0 12px"><strong>${lang === "es" ? "Servicio seleccionado" : "Selected service"}:</strong> ${htmlEscape(serviceName)}</p>
       <p style="margin:0 0 12px">${lang === "es"
-        ? "Le proporcionaremos orientación general sobre presupuestos, deudas, ahorros, metas y seguros (Lic. FL 0215). No proporcionamos asesoría de inversión, fiduciaria, fiscal o legal."
-        : "We will provide general guidance on budgeting, debt, savings, goals, and insurance (FL Lic. 0215). We do not provide investment, fiduciary, tax, or legal advice."}</p>
+        ? "Le proporcionaremos orientación general sobre presupuestos, deudas, ahorros, metas y seguros. No proporcionamos asesoría de inversión, fiduciaria, fiscal o legal."
+        : "We will provide general guidance on budgeting, debt, savings, goals, and insurance. We do not provide investment, fiduciary, tax, or legal advice."}</p>
       <p style="margin:0 0 12px">${lang === "es"
         ? "Su información permanece encriptada y solo es accedida por su asesor asignado. No la compartimos con terceros sin su consentimiento, excepto según lo exija la ley."
         : "Your information stays encrypted and is only accessed by your assigned advisor. We do not share it with third parties without your consent, except as required by law."}</p>
@@ -107,11 +107,6 @@ function buildHtml({ advisor, submission, lang }) {
         <div style="margin-top:6px;font-size:11px;color:#475569">${htmlEscape(partnerName)}</div>
       </td></tr>` : ""}
     </table>
-    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #E2E8F0;font-size:10px;color:#94A3B8;font-style:italic;line-height:1.5;text-align:center">
-      ${lang === "es"
-        ? "Coaching financiero educativo — no es asesoría de inversión, impuestos ni legal. Florida Lic. 0215."
-        : "Educational financial coaching — not investment, tax, or legal advice. Florida Lic. 0215."}
-    </div>
   </div>
 </body></html>`;
 }

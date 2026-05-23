@@ -102,6 +102,11 @@ export default async function handler(req, res) {
       prospectName: row.prospect_name || "",
       prospectEmail: row.prospect_email || "",
       prospectPhone: row.prospect_phone || "",
+      // v0.32.0 — partner fields surfaced for couple invites
+      householdType: row.household_type || "single",
+      partnerName: row.partner_name || "",
+      partnerEmail: row.partner_email || "",
+      partnerPhone: row.partner_phone || "",
       lang: row.lang || "en",
       advisorProfile
     });

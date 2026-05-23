@@ -2,6 +2,30 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.32.0 — 2026-05-23 — Invite prefill chain (couple support) + email cleanup
+
+Closes the two issues Mauricio filed against v0.31.0.
+
+**New Invite supports couples — partner data flows all the way through.**
+- `NewInviteModal` gains a Just-me / Partner-& -me toggle. Couple selected → partner full-name (required) + email + phone fields appear below the primary prospect block.
+- Validation: prospect **name now required** (was: only email). Partner name required when couple is selected.
+- `api/send-intake-invite.js` accepts and stores `householdType`, `partnerName`, `partnerEmail`, `partnerPhone` on the invite row.
+- `api/resolve-intake-invite.js` returns those fields back to PublicIntake.
+- `PublicIntake` resolve-effect now populates `draft.partnerFirst/Last/Email/Phone` and flips `householdType="couple"` when present. End-to-end: advisor types partner info in the modal → invite link → prospect lands on intake → Contact section shows both names pre-filled + couple toggle pre-selected → engagement letter greeting reads "Dear A & B" → both SignaturePads auto-commit each typed name (v0.31.0 effect re-runs when defaultName arrives async) → Tab 4 Section 1 partner-first/last/email/phone all already filled. Mauricio's exact ask.
+
+**Engagement-copy email cleanup.**
+- Removed the "(FL Lic. 0215)" parenthetical from the body line that mentions insurance.
+- Removed the bottom "Educational financial coaching — not investment, tax, or legal advice. Florida Lic. 0215." disclaimer block. The same content is already in the body so the footer duplication was redundant.
+
+**Build marker:** `2026-05-23-v0320-invite-partner-prefill`. App.jsx (NewInviteModal +~50 lines, resolve-effect +~15 lines), `api/send-intake-invite.js` (+5 fields), `api/resolve-intake-invite.js` (+4 fields), `api/send-engagement-copy.js` (cleanup), translations.js (+11 EN + 11 ES). New SQL migration: `supabase-migrations/2026-05-23-invite-partner.sql` adds 4 columns to `intake_invites` and rewrites the `resolve_invite_token` RPC to surface them.
+
+**⚠️ ACTION REQUIRED:** Run `supabase-migrations/2026-05-23-invite-partner.sql` in Supabase SQL Editor before this version's couple invites work end-to-end. Individual invites continue to work unchanged.
+
+**Smoke tests:**
+1. **Single invite, name + email + phone filled.** Open `/intake?invite=<token>` — Tab 4 Contact section shows First name, Last name, Email, Phone all pre-filled. Engagement letter signature pre-populated with prospect name in cursive.
+2. **Couple invite.** New Invite → Partner-& -me → fill both blocks → send. Prospect opens link: Contact section has both names + partner fields, couple toggle already set, engagement greeting says "Dear A & B", both signature pads pre-fill respectively.
+3. **Email body.** Open the engagement-copy email a prospect receives — no "(FL Lic. 0215)" inline, no bottom disclaimer footer.
+
 ## v0.31.0 — 2026-05-22 — Public intake hardening pass
 
 Ten bugs filed against v0.30.0. All addressed.

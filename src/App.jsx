@@ -3139,7 +3139,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0310-intake-fixes";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0320-invite-partner-prefill";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3462,7 +3462,35 @@ function PublicIntake(){
     }
     setStep(newStep);
   };
-  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.advisorProfile)setResolvedSettings(r.advisorProfile);else if(r.advisorSettings)setResolvedSettings(r.advisorSettings);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
+  useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{
+    const r=await gaResolveIntakeInvite(inviteToken);
+    if(cancelled)return;
+    if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}
+    setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);
+    if(r.advisorProfile)setResolvedSettings(r.advisorProfile);
+    else if(r.advisorSettings)setResolvedSettings(r.advisorSettings);
+    if(r.lang==="es"||r.lang==="en")setLang(r.lang);
+    // v0.32.0 — prefill prospect + partner from the invite row. Both members
+    // of a couple invite land in the engagement letter greeting, both signatures
+    // (defaultName auto-commits), and the Contact section on Tab 4.
+    const pFirst=(r.prospectName||"").trim().split(" ")[0]||"";
+    const pLast=((r.prospectName||"").trim().split(" ").slice(1).join(" "))||"";
+    const partnerFirst=(r.partnerName||"").trim().split(" ")[0]||"";
+    const partnerLast=((r.partnerName||"").trim().split(" ").slice(1).join(" "))||"";
+    setDraft(d=>({
+      ...d,
+      firstName:d.firstName||pFirst,
+      lastName:d.lastName||pLast,
+      email:d.email||r.prospectEmail||"",
+      phone:d.phone||r.prospectPhone||"",
+      householdType:d.householdType==="couple"||r.householdType==="couple"?"couple":(d.householdType||"single"),
+      partnerFirst:d.partnerFirst||partnerFirst,
+      partnerLast:d.partnerLast||partnerLast,
+      partnerEmail:d.partnerEmail||r.partnerEmail||"",
+      partnerPhone:d.partnerPhone||r.partnerPhone||""
+    }));
+    setInviteResolved(true);
+  })();return()=>{cancelled=true;};},[inviteToken]);
   const[mode,setMode]=useState(()=>{if(typeof window==="undefined")return "dark";try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}});
   const isDark=mode==="dark";
   const TH=isDark?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}:{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
@@ -3670,17 +3698,39 @@ function NewInviteModal({open,onClose,onSent,settings,t}){
   const[email,setEmail]=useState("");
   const[phone,setPhone]=useState("");
   const[note,setNote]=useState("");
+  // v0.32.0 — second-person fields. Toggled via the couple option below.
+  const[householdType,setHouseholdType]=useState("single");
+  const[partnerName,setPartnerName]=useState("");
+  const[partnerEmail,setPartnerEmail]=useState("");
+  const[partnerPhone,setPartnerPhone]=useState("");
   const[busy,setBusy]=useState(false);
   const[sent,setSent]=useState(false);
   const[err,setErr]=useState("");
-  useEffect(()=>{if(!open){setLang("en");setName("");setEmail("");setPhone("");setNote("");setBusy(false);setSent(false);setErr("");}},[open]);
+  useEffect(()=>{if(!open){setLang("en");setName("");setEmail("");setPhone("");setNote("");setHouseholdType("single");setPartnerName("");setPartnerEmail("");setPartnerPhone("");setBusy(false);setSent(false);setErr("");}},[open]);
   useEffect(()=>{if(!open)return;const h=e=>{if(e.key==="Escape")onClose();};document.addEventListener("keydown",h);return()=>document.removeEventListener("keydown",h);},[open,onClose]);
   if(!open)return null;
   const submit=async()=>{
     setErr("");
+    // v0.32.0 — name required (was: only email). Email still required since
+    // it's the channel for delivery.
+    if(!name.trim()){setErr(t?.intakeSendNameReq||"Prospect name is required.");return;}
     if(!email){setErr(t?.intakeSendEmailReq||"Enter prospect email first.");return;}
+    if(householdType==="couple"&&!partnerName.trim()){setErr(t?.intakeSendPartnerNameReq||"Partner name is required for couple invites.");return;}
     setBusy(true);
-    const r=await gaSendIntakeInvite({prospectName:name,prospectEmail:email,prospectPhone:phone,lang,channelEmail:true,channelSms:false,smsConsent:false,advisorName:settings?.advisorName||"",advisorEmail:settings?.advisorEmail||"",personalNote:note});
+    const r=await gaSendIntakeInvite({
+      prospectName:name,
+      prospectEmail:email,
+      prospectPhone:phone,
+      lang,
+      channelEmail:true,channelSms:false,smsConsent:false,
+      advisorName:settings?.advisorName||"",
+      advisorEmail:settings?.advisorEmail||"",
+      personalNote:note,
+      householdType,
+      partnerName:householdType==="couple"?partnerName:"",
+      partnerEmail:householdType==="couple"?partnerEmail:"",
+      partnerPhone:householdType==="couple"?partnerPhone:""
+    });
     setBusy(false);
     if(r.ok){setSent(true);if(onSent)onSent();setTimeout(()=>{setSent(false);onClose();},1400);}
     else setErr(r.error||(t?.intakeSendFailed||"Send failed"));
@@ -3691,7 +3741,7 @@ function NewInviteModal({open,onClose,onSent,settings,t}){
   const segBtn=(active)=>({padding:"6px 14px",fontSize:11,borderRadius:999,background:active?GOLD:"transparent",color:active?"#0D1B2A":th.muted,border:"none",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"});
   const notePh=lang==="es"?"Hola, te comparto el link para tu chequeo inicial…":"Hi, here's the intake link for your initial checkup…";
   return<div role="dialog" aria-modal="true" onClick={e=>{if(e.target===e.currentTarget)onClose();}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.67)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?12:24}}>
-    <div style={{background:th.modal,border:"1px solid "+th.cardBorder,borderRadius:16,padding:24,maxWidth:560,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.55)"}}>
+    <div style={{background:th.modal,border:"1px solid "+th.cardBorder,borderRadius:16,padding:24,maxWidth:600,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.55)"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:14}}>
         <div>
@@ -3709,22 +3759,48 @@ function NewInviteModal({open,onClose,onSent,settings,t}){
           <button onClick={()=>setLang("es")} style={segBtn(lang==="es")}>ES — Español</button>
         </div>
       </div>
-      {/* Name + Email */}
+      {/* Individual vs Couple toggle */}
+      <div style={{marginBottom:14}}>
+        <label style={lbl()}>{t?.intakeHouseholdLbl||"Are you applying as an individual or a couple?"}</label>
+        <div style={{display:"flex",gap:8}}>
+          {[{id:"single",lbl:t?.householdSingle||"Just me",emoji:"👤"},{id:"couple",lbl:t?.householdCouple||"Partner & me",emoji:"💑"}].map(opt=><button key={opt.id} type="button" onClick={()=>setHouseholdType(opt.id)} style={{flex:1,padding:"10px 14px",borderRadius:8,border:`2px solid ${householdType===opt.id?GOLD:th.cardBorder}`,background:householdType===opt.id?GOLD+"22":"transparent",color:th.text,cursor:"pointer",fontSize:12,fontWeight:600,textAlign:"left",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>{opt.emoji}</span>{opt.lbl}</button>)}
+        </div>
+      </div>
+      {/* Prospect Name + Email */}
+      <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:".06em",textTransform:"uppercase",marginBottom:8,marginTop:4}}>{householdType==="couple"?(t?.intakePrimaryProspect||"Primary prospect"):(t?.intakeProspect||"Prospect")}</div>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:12}}>
         <div>
-          <label style={lbl()}>{t?.intakeProspectName||"Prospect name"}</label>
+          <label style={lbl()}>{(t?.intakeProspectName||"Full name")+" *"}</label>
           <input value={name} onChange={e=>setName(e.target.value)} placeholder={t?.intakeProspectNamePh||"Jane Doe"} style={inp}/>
         </div>
         <div>
-          <label style={lbl()}>{t?.email||"Email"}</label>
+          <label style={lbl()}>{(t?.email||"Email")+" *"}</label>
           <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="jane@email.com" style={inp}/>
         </div>
       </div>
-      {/* Phone */}
-      <div style={{marginBottom:12}}>
+      <div style={{marginBottom:14}}>
         <label style={lbl()}>{(t?.phone||"Phone")+" ("+(t?.optional||"optional")+")"}</label>
         <input type="tel" value={phone} onChange={e=>setPhone(fmtPh?fmtPh(e.target.value):e.target.value)} placeholder="(305) 555-0000" style={inp} inputMode="tel" autoComplete="tel"/>
       </div>
+      {/* Partner block — only when couple */}
+      {householdType==="couple"&&<>
+        <div style={{height:1,background:th.cardBorder,margin:"4px 0 14px"}}/>
+        <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:".06em",textTransform:"uppercase",marginBottom:8}}>{t?.intakePartner||"Partner"}</div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:12}}>
+          <div>
+            <label style={lbl()}>{(t?.partnerFullNameLbl||"Partner full name")+" *"}</label>
+            <input value={partnerName} onChange={e=>setPartnerName(e.target.value)} placeholder={t?.partnerNamePh||"John Doe"} style={inp}/>
+          </div>
+          <div>
+            <label style={lbl()}>{(t?.partnerEmailLbl||"Partner email")+" ("+(t?.optional||"optional")+")"}</label>
+            <input type="email" value={partnerEmail} onChange={e=>setPartnerEmail(e.target.value)} placeholder="john@email.com" style={inp}/>
+          </div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={lbl()}>{(t?.partnerPhoneLbl||"Partner phone")+" ("+(t?.optional||"optional")+")"}</label>
+          <input type="tel" value={partnerPhone} onChange={e=>setPartnerPhone(fmtPh?fmtPh(e.target.value):e.target.value)} placeholder="(305) 555-0000" style={inp} inputMode="tel" autoComplete="tel"/>
+        </div>
+      </>}
       {/* Note */}
       <div style={{marginBottom:18}}>
         <label style={lbl()}>{(t?.intakeNewInviteNoteLbl||"Personal note")+" ("+(t?.optional||"optional")+")"}</label>
