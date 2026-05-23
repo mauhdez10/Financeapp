@@ -94,8 +94,8 @@ GitHub repo: **https://github.com/mauhdez10/Financeapp** (`main` branch only).
 | `src/engagementLetterTemplate.js` | Engagement letter body + token substitutions | Only when the engagement letter itself changes |
 | `api/*.js` | 5 Vercel serverless functions (intake invites, support email, PDF render, etc.) | When server-side work is needed |
 | `AGENT.md` | **Project architectural truth** — locked decisions (D-1 through D-36), pitfalls (#1 through #17), current version, smoke tests | Read §1 + §3 + §4 + §7 on first session; otherwise grep for specific D-NN or pitfall numbers |
-| `SKILL.md` | The editing-procedure for App.jsx | Read once if doing structural edits; otherwise skip |
-| `WORKPLAN.md` | Active work queue + completed log (§5) | Read §3 to see what's in-flight; §5 for recent history |
+| `SKILL.md` | **Design-system skill** (`golden-anchor-design`) — brand colors, type, asset paths, UI-kit references. Used by Claude.ai/design when generating brand-correct mocks. Not an editing procedure. | Only when working on brand/visual design artifacts — not for code edits |
+| `WORKPLAN-archive-2026-05.md` | **Archived.** Old chat-upload workflow notes from the claude.ai-with-uploads era. No longer current — superseded by this `CLAUDE.md`. | Don't read for procedure — kept for history only |
 | `CHANGELOG.md` | Per-version release notes — newest on top | Skim the top 1-2 entries to know what just shipped |
 | `package.json` | Deps + scripts | Rarely |
 | `vercel.json` | SPA rewrite + per-function memory/timeout config | When touching `api/` or routing |

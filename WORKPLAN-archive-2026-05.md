@@ -1,6 +1,10 @@
-# WORKPLAN.md — Golden Anchor Finance
+# WORKPLAN — Golden Anchor Finance (ARCHIVED 2026-05-22)
 
-**Operational source of truth for working with Claude on this project.**
+> **ARCHIVED.** This file describes the original chat-upload workflow used when Mauricio worked through claude.ai with file uploads and parallel chat coordination via §3 slot claims. As of 2026-05-22, the project moved to Claude Code (direct terminal access, no upload), and the current workflow lives in `CLAUDE.md`. This file is preserved for historical context only — none of its conventions (Codespace-only edits, PROMPT A/B two-prompt delivery, chat-slot claims, "project knowledge" uploads) are in use. **Do not read this for current procedure — read `CLAUDE.md`.**
+
+---
+
+**Operational source of truth for working with Claude on this project. (Historical.)**
 
 Every Claude chat that touches this project MUST:
 1. Read this file as step 0, before anything else.

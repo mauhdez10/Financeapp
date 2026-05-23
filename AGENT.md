@@ -9,8 +9,8 @@
 - **Name:** Golden Anchor Financial Advisory app
 - **Owner:** Mauricio Hernandez (MBA, FPWMP), Miami, FL — bilingual EN/ES financial coach
 - **Domain:** [goldenanchor.life](https://goldenanchor.life) (deployed on Vercel)
-- **Repository:** GitHub — single private repo, `finance-app`
-- **Stack:** React 18 + Vite + Recharts + xlsx (SheetJS)
+- **Repository:** GitHub — `mauhdez10/Financeapp` (private), `main` branch only.
+- **Stack:** React 19.2 + Vite 8 + Recharts 3 + xlsx (SheetJS) + Supabase + Resend (transactional email) + puppeteer-core + @sparticuz/chromium-min (server-side PDF).
 - **Hosting:** Vercel (free tier) → custom domain `finance.goldenanchor.life`
 - **Database:** Supabase Postgres — schema built (tables `clients`, `settings`) with RLS enabled, `updated_at` triggers, soft-delete column, partial index for active clients. **App.jsx is now wired** as of v0.5.0, with critical UUID-cast bug fix in v0.5.1. Login goes through Supabase Auth, clients + settings read/write through `auth.uid()`-gated queries. `clients` table now has a `local_id text` column + partial unique index `clients_user_local_id_idx on (user_id, local_id) where deleted_at is null` to map the app's numeric `gid()` IDs to Supabase-generated UUIDs without breaking idempotency. localStorage acts as write-through cache only. Migration from existing localStorage is automatic, idempotent, and now correctly retries on the next login if any client save fails.
 - **Auth:** Supabase Auth (email/password) — single advisor user. Wired into App.jsx as of v0.5.0. Vercel Deployment Protection can be turned off once Mauricio confirms his single user can log in to the live deploy.
@@ -25,19 +25,41 @@
 
 ## 2. Source of truth
 
-The actual app is a **single React file**: `src/App.jsx` (~2,562 lines, ~627 KB as of v0.6.0 / 2026-05-15). PWA static assets (`public/manifest.json`, `public/sw.js`, `public/icon-*.png`, `public/apple-touch-icon.png`, `public/favicon-32.png`) sit alongside in the repo root + `public/`. The reference `index.html` was updated to register the service worker and link the manifest.
+The actual app is a **single React file**: `src/App.jsx` (~4,500 lines as of v0.28.0 / 2026-05-22) plus three pure-data carve-outs allowed by D-1: `src/translations.js` (EN+ES dictionary), `src/engagementLetterTemplate.js` (engagement-letter body + tokens), and the `api/*.js` serverless functions (per D-30). PWA static assets (`public/manifest.json`, `public/sw.js`, `public/icon-*.png`, `public/apple-touch-icon.png`, `public/favicon-32.png`) sit in `public/`. `index.html` registers the service worker and links the manifest.
 
-Everything else is supporting infrastructure (build config, deploy config, this doc, the changelog). When the user asks "update the app," they mean App.jsx.
+Everything else is supporting infrastructure (build config, deploy config, this doc, the changelog). When the user asks "update the app," they mean App.jsx (and occasionally translations.js).
 
-When the user uploads App.jsx in a new chat, **read it before proposing changes**. Do not guess at its current state from memory.
+When working in a fresh session, **read App.jsx before proposing changes**. Don't guess from memory — grep first to find the right line range, then read a focused slice.
 
 ---
 
 ## 3. Current version
 
-**v0.16.0** — established 2026-05-21 (Minor — Phase 8: dashboard restructure to match Claude design + 7 bugfixes from Mauricio's smoke test).
+**v0.28.0** — established 2026-05-22 (Minor — Alert dismiss/mute with month-keyed auto-recycle).
 
-**What shipped:**
+**Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` should return `2026-05-22-v0280-dismiss-alerts`. If it doesn't, refresh before working.
+
+For the per-version log (v0.17.0 → v0.28.0 and everything before), read `CHANGELOG.md` — newest entry on top. This section preserves only the v0.16.0 deep-dive below as a historical reference; for current-state work, trust the CHANGELOG and the build marker.
+
+**Highlights since v0.16.0** (full detail in CHANGELOG.md):
+
+| Version | What shipped |
+|---|---|
+| v0.28.0 | Per-row ✕ dismiss on advisor + client-due alerts. Month-keyed dismissals so "paid the credit card" auto-recycles next billing cycle. `▾ (N muted)` expander per panel with one-click restore. Toast feedback via new global `ga-toast` event. |
+| v0.27.0 | Bootstrap shimmer skeleton (replaces ⚓ loading text). Count-up tween on KPI tiles via `useAnimatedDisplay` hook. Pulse animation on high-priority "No Contact" + "Promo Expiring" pills. `aria-label` on 8 placeholder-only search inputs. |
+| v0.26.0 | UI/UX Pro Max audit batch (10 items): ARIA labels on TopBar icon-buttons, dark-mode contrast bump to WCAG AA, z-index CSS-var scale, ✓ Saved toast on client save/add/archive/restore/delete, `th{font-size:12px}`, `prefers-reduced-motion` guard, 150ms hover baseline, focus-visible gold ring. |
+| v0.25.x | Clients-page polish — single horizontal header row, per-row kebab → removed (visual noise), sort dropdown shrunk to 190px with `⇅`-prefix labels. |
+| v0.24.0 | Audit pass — removed duplicate page titles from 11 pages (TopBar already shows them), disambiguated X-axis duplicate "Jan", emoji-stripped alert pill titles, Settings phone formats via fmtPh, EmailSupport "Recipient" → "Reply-to". |
+| v0.23.0 | Header dedup, Client Due search, T&C gate ordering, public-intake Welcome screen, Calculators 3-col compact grid, Promotions countdown pill. (Shipped from a parallel chat; CHANGELOG backfilled 2026-05-22.) |
+| v0.22.0 | _Skipped_ — never on `main`. |
+| v0.21.0 | PDF / print rebuild — Source Serif 4 body, Newsreader italic titles, JetBrains Mono currency cells, branded `.ga-print-header` + `.ga-print-footer`, intake-form PDF template rebuilt. |
+| v0.17.0–v0.20.0 | TopBar with avatar dropdown, 6 new dropdown pages (Settings/Security/Billing/Backup/Archived/WhatsNew/Help), 12-preset avatar picker, in-app Email Support modal via Resend (`api/send-support-email.js`), Dashboard Net Worth Distribution donut, side-by-side Advisor Alerts + Client Due cards. |
+
+---
+
+### Historical reference: v0.16.0 — Phase 8 dashboard restructure (2026-05-21)
+
+Retained verbatim for context on the v0.16.0 architecture decisions; current behavior may differ slightly per the per-version entries above.
 
 **Phase 8 — Dashboard restructure (visual match to `ui_kits/advisor_app/index.html`).**
 - **6 narrow KPIs → 4 wide KPIs.** Replaced `Total / Net Income / Total Debt / Improving / Stable / Underperforming` with `Clients (X active · Y archived) / Combined Net / mo / Combined Debt / Liquid Assets (checking + savings)`. Liquid Assets value computed via existing `liquidA(client)` summed across active clients. Grid switches `repeat(auto-fit,minmax(140px,1fr))` → `repeat(4,1fr)` desktop, `repeat(2,1fr)` mobile. Tagged `data-ga-grid="kpi-4"` so the existing v0.9.3 mobile-collapse rule applies.

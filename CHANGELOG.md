@@ -218,6 +218,38 @@ Follow-up to v0.24.0 — the medium-polish list from the audit.
 
 ---
 
+## v0.23.0 — 2026-05-22 — Header dedup, Client Due search, T&C gate, public-intake Welcome (parallel chat — backfilled 2026-05-22)
+
+> **Backfill note (2026-05-22):** This entry was reconstructed from git commit `c205f42` and the working notes in CLAUDE.md's session-handoff table. It was shipped from a parallel chat and the original CHANGELOG entry was never written. v0.22.0 was skipped entirely (no commit on `main` ever bore that version).
+
+A focused UI polish + correctness pass from a parallel session.
+
+**Dedupe headers.** Removed the inline `<h2>👥 Clients</h2>` from `ClientList`'s header row — the TopBar already shows the page name. (Same pattern was applied across 11 more pages in v0.24.0.) Justify-content flipped to `flex-end` since the title was the only left-aligned item.
+
+**Client Due search input.** `RemindersPanel` had a single shared `filtClient` state that only worked on the Advisor list. Added a separate `filtDue` state + dedicated search input above the Client Due list. Searches across `clientName + name + task` so users can find a specific bill, card, or person.
+
+**T&C gate ordering.** The Terms of Service modal was rendering on the same render cycle as the login-success flash, briefly showing the dashboard chrome before snapping into the modal. Moved the `tosAcceptedAt` check to fire **after** bootstrap completes so the gate flows seamlessly from login → modal → dashboard, no flash.
+
+**Public-intake Welcome screen.** Added an introductory Welcome step before the existing intake steps so prospects see a branded "what is this, who is Golden Anchor, what comes next" screen instead of being dropped straight into the form.
+
+**Calculators page — 3-col compact grid.** Restructured from `repeat(auto-fit, minmax(540px, 1fr))` (2-col on most screens) to `repeat(auto-fill, minmax(180px, 1fr))` (3-4 col tiles). Each tile is now a square 136px-min card with the emoji centered above the calculator name and a one-line description below.
+
+**Resources page — tighter grid.** Same treatment: from `minmax(540px, 1fr)` to `minmax(240px, 1fr)`. More guides visible above the fold without scrolling.
+
+**Promotions — countdown pill.** Each promo row now shows a small colored pill with the days remaining (red if <30d, amber if 30-60d, dim if expired or far out). Reads e.g. "12 days left" / "Expired".
+
+**About page polish.** Monogram SVG + Newsreader italic styling to match the engagement-letter branding (per CLAUDE.md session-handoff notes — exact code may live in a separate commit, retained here for completeness).
+
+**Build marker:** `2026-05-22-v0230-header-dedup-clientdue-search-tos-gate-portal-welcome`. Single commit `c205f42` on `main`. App.jsx +18 / -15 lines per the squashed diff. No new files, no translations changes (the parallel chat did not add new translation keys — sigh — so any new visible strings rely on `||"fallback"` defaults). D-1, D-7 preserved.
+
+**Smoke tests (retroactive):**
+1. **Header dedup.** Clients page top bar — search/sort/kebab/＋ on one row, no `<h2>👥 Clients</h2>` below TopBar.
+2. **Client Due search.** Dashboard alerts panel — type "Capital" in the Client Due search; only Capital One rows remain.
+3. **T&C gate.** Sign out → sign back in on a fresh test user without `tosAcceptedAt` → gate appears immediately, no dashboard flash behind it.
+4. **Welcome screen.** Open `/intake?invite=<token>` in incognito → Welcome step is the first thing shown.
+5. **Calculators grid.** /calculators on desktop — 3 or 4 tiles per row, each ~180px, with description below the name.
+6. **Promo countdown.** Open Promotions, pick a promo with an end date 0-60 days out — colored "X days left" pill renders.
+
 ## v0.21.0 — 2026-05-21 — PDF / print rebuild (Prompt 10)
 
 Final outstanding item from the Claude Design handoff. Brings the in-browser "Save as PDF" flow (the `window.print()` path) and the static intake-form PDF up to the same visual spec as the server-side email PDF (which got the same treatment in v0.15.0).

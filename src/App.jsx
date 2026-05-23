@@ -3756,6 +3756,60 @@ function ArchivedClientsPage({clients,onRestore,onDelete,t}){
 
 /* ── WhatsNewPage — release notes. v0.18.0 — hardcoded, edit this array. ─ */
 const WHATS_NEW_ENTRIES=[
+  {v:"v0.28.0",date:"2026-05-22",title:"Dismiss or mute alerts",bullets:[
+    "Each advisor alert + client-due row now has a small ✕ — click to snooze.",
+    "Credit-card / bill alerts dismiss until next billing cycle and re-appear automatically next month — perfect for the 'I paid it' case.",
+    "Each card has a '(N muted) ▾' expander to see what you snoozed and restore it with one click.",
+    "Toast confirms every dismiss + restore, in English or Spanish."
+  ]},
+  {v:"v0.27.0",date:"2026-05-22",title:"Smoother dashboard — skeleton, count-ups, pulse",bullets:[
+    "Dashboard now loads with a soft shimmer skeleton instead of a plain ⚓ Loading… text.",
+    "KPI tile numbers smoothly count up when they change (filter clients, archive someone, etc.) instead of snapping.",
+    "Critical alert pills ('No Contact >60d', 'Promo Expiring <14d') gently pulse so they don't get lost in the list.",
+    "Every search input now has a proper screen-reader label.",
+    "All animations respect your OS 'Reduce motion' setting."
+  ]},
+  {v:"v0.26.0",date:"2026-05-22",title:"Accessibility + polish pass",bullets:[
+    "Dark-mode greys bumped to pass WCAG AA contrast — small labels are noticeably more readable.",
+    "Every Save / Archive / Restore / Delete now triggers a green ✓ confirmation toast.",
+    "TopBar icon buttons (theme, hide-numbers, EN/ES, avatar) all carry accessible labels and 'pressed' state.",
+    "Tables, hover states, focus rings, and motion-reduction all standardized.",
+    "Z-index scale defined as CSS variables — fewer modal-stacking surprises going forward."
+  ]},
+  {v:"v0.25.x",date:"2026-05-22",title:"Clients page tidied",bullets:[
+    "Search + Sort + actions all sit on one row on desktop again (no more vertical stacking).",
+    "Per-row kebab was added then removed — felt noisy. Bulk actions remain in the section kebab; per-client actions live inside the client detail header.",
+    "Sort dropdown shrunk to a compact 190px with cleaner ⇅-prefixed labels."
+  ]},
+  {v:"v0.24.0",date:"2026-05-22",title:"Audit-driven bug pass",bullets:[
+    "Duplicate page titles removed from 11 pages — the TopBar already shows them.",
+    "Dashboard chart now disambiguates 'Jan' vs 'Jan' across years (Jan '25 / Jan '26).",
+    "Settings phone fields auto-format. EmailSupport modal clarifies that 'recipient' is the reply-to address.",
+    "Alert pill titles no longer have leading emojis hard-coded — cleaner labels."
+  ]},
+  {v:"v0.23.0",date:"2026-05-22",title:"Client Due search + T&C gate + intake Welcome",bullets:[
+    "Client Due card has its own search bar (was sharing the advisor-alerts one).",
+    "Terms of Service modal now waits for full bootstrap before showing — no more dashboard 'flash' behind it.",
+    "Public intake `/intake?invite=...` opens with a branded Welcome step before the form.",
+    "Calculators page goes from 2-col to 3-4 col tiles with descriptions. Resources page tightens to match.",
+    "Promotions get a colored 'X days left' / 'Expired' badge."
+  ]},
+  {v:"v0.21.0",date:"2026-05-21",title:"PDF / print rebuild",bullets:[
+    "Saving any report as PDF now uses Source Serif 4 for body text, Newsreader italic for titles, JetBrains Mono with tabular numerals for currency.",
+    "Branded print header + footer on every page (gold hairline, monogram + wordmark).",
+    "Intake-form PDF template rebuilt to match the same spec."
+  ]},
+  {v:"v0.20.0",date:"2026-05-21",title:"Net Worth donut + Email Support + sort + alert parity",bullets:[
+    "Dashboard now shows a Net Worth Distribution donut (Negative / $0–50K / $50K–250K / $250K+).",
+    "In-app Email Support modal — send a question to mauricio@goldenanchor.life right from the avatar menu.",
+    "Client sort moved out of the dashboard onto the Clients page where it belongs.",
+    "Advisor Alerts + Client Due cards rendered side-by-side."
+  ]},
+  {v:"v0.19.0",date:"2026-05-21",title:"Sidebar polish + Client Detail nav + ES translations",bullets:[
+    "Sidebar items got proper spacing, dividers, and active-state highlighting.",
+    "Client Detail tabs gain ◀ / ▶ arrows so you can step through tabs on narrow screens.",
+    "Spanish translations filled in across many newer labels."
+  ]},
   {v:"v0.18.0",date:"2026-05-21",title:"Avatar picker + Security/Billing/Backup/Help pages",bullets:[
     "Profile in the top-right menu now opens an Avatar Picker (12 SVG presets — Brand, Finance, Animal).",
     "Security page lets you change your password in-app.",
@@ -4002,7 +4056,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     {divider:true},
     {icon:"💾",label:t?.menuBackup||"Backup data",sub:t?.menuBackupSub||"Download / restore JSON",onClick:()=>onNav("backup")},
     {icon:"🗂",label:t?.menuArchived||"Archived clients"+(archivedCount?` (${archivedCount})`:""),onClick:()=>onNav("archived")},
-    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version||"v0.18.0",onClick:()=>onNav("whats-new")},
+    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version||"v0.28.0",onClick:()=>onNav("whats-new")},
     {icon:"❓",label:t?.menuHelp||"Help & support",onClick:()=>onNav("help")},
     {divider:true},
     {icon:"🚪",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
@@ -4044,7 +4098,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
             </button>
           )}
           <div style={{padding:"10px 10px 6px",borderTop:`1px solid ${th.cardBorder}`,marginTop:4,fontSize:9,color:th.dim,display:"flex",justifyContent:"space-between",letterSpacing:"0.04em"}}>
-            <span>Golden Anchor · {version||"v0.17.0"}</span>
+            <span>Golden Anchor · {version||"v0.28.0"}</span>
             <span>⚓ {t?.educationalCoaching||"Educational coaching"}</span>
           </div>
         </div>}
@@ -4318,11 +4372,10 @@ export default function App(){
            Brand-font'd, emoji-free, page-broken, branded-header print output. */
         #ga-sidebar,#ga-sidebar-mobile,#ga-appbar,.ga-top-bar{display:none!important}
         .ga-np{display:none!important}
-        html,body{background:#FFFFFF!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#0F172A!important;font-size:10.5pt!important;line-height:1.55!important}
+        html,body{background:#FFFFFF!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#0F172A!important;font-size:10.5pt!important;line-height:1.55!important;scrollbar-width:none!important}
         *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
         #root,div{overflow:visible!important;max-height:none!important}
         ::-webkit-scrollbar{display:none!important}
-        scrollbar-width:none!important;
         .recharts-wrapper,.recharts-responsive-container{width:100%!important;overflow:visible!important}
         .recharts-surface{overflow:visible!important}
         /* Report titles render in Newsreader italic — apply via a .ga-report-title class on the JSX */
@@ -4479,7 +4532,7 @@ export default function App(){
           isMobile={vp.isMobile} onOpenDrawer={()=>setDrawerOpen(true)}
           t={t}
           archivedCount={clients.filter(c=>c.archived).length}
-          version={(()=>{const b=typeof window!=="undefined"?(window.__GA_BUILD__||""):"";const m=b.match(/v(\d)(\d)(\d+)-/);return m?`v${m[1]}.${m[2]}.${parseInt(m[3],10)}`:"v0.24.0";})()}
+          version={(()=>{const b=typeof window!=="undefined"?(window.__GA_BUILD__||""):"";/* v0.28.0 — regex bumped to \d{2} for minor so v0280 → v0.28.0 (was buggy: parsed as v0.2.80). */const m=b.match(/v(\d)(\d{2})(\d+)-/);return m?`v${m[1]}.${parseInt(m[2],10)}.${parseInt(m[3],10)}`:"v0.28.0";})()}
         />
         <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:
