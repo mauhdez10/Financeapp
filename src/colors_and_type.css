@@ -1,0 +1,73 @@
+/* ── Golden Anchor brand tokens — v0.29.0 ─────────────────────────────────
+   Single source of truth for colors, type, radii, shadows, easing.
+   Loaded once via main.jsx so every component (and the print stylesheet)
+   can reference var(--ga-*) instead of hard-coding hex values.
+   IMPORTANT: App.jsx still injects its own dynamic theme + print rules
+   through the ga-styles <style id="ga-styles"> block. These tokens are
+   the canonical brand values that block should reference. ────────────── */
+
+:root {
+  /* Brand core */
+  --ga-navy:        #0D1B2A;
+  --ga-gold:        #C9A84C;
+  --ga-gold-light:  #EDD594;
+  --ga-gold-deep:   #755023;
+
+  /* Dark theme surfaces */
+  --ga-navy-700:    #111827;  /* dark bg */
+  --ga-navy-600:    #1F2937;  /* dark card */
+  --ga-navy-500:    #1E293B;  /* modal */
+
+  /* Semantic */
+  --ga-success:     #10B981;
+  --ga-danger:      #EF4444;
+  --ga-warn:        #F59E0B;
+  --ga-info:        #3B82F6;
+
+  /* Person palette (P1 + P2 in 2-person households) */
+  --ga-p1:          #4472C4;
+  --ga-p2:          #ED7D31;
+
+  /* Card borders by mode */
+  --ga-card-border-light: #E2E8F0;
+  --ga-card-border-dark:  #374151;
+
+  /* Type stacks */
+  --ga-font-body:   'Plus Jakarta Sans', system-ui, sans-serif;
+  --ga-font-serif:  'Source Serif 4', Georgia, serif;
+  --ga-font-display:'Newsreader', Georgia, serif;
+  --ga-font-mono:   'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Radii */
+  --ga-radius-mini:    6px;
+  --ga-radius-default: 8px;
+  --ga-radius-card:    12px;
+  --ga-radius-modal:   16px;
+  --ga-radius-pill:    999px;
+
+  /* Shadows (pure black, never colored except marketing CTA) */
+  --ga-shadow-sm:  0 1px 3px rgba(0,0,0,0.24);
+  --ga-shadow-md:  0 8px 24px rgba(0,0,0,0.25);
+  --ga-shadow-lg:  0 12px 40px rgba(0,0,0,0.60);
+  --ga-shadow-xl:  0 32px 80px rgba(0,0,0,0.55);
+  --ga-shadow-marketing: 0 4px 12px rgba(201,168,76,0.28);
+
+  /* Motion */
+  --ga-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ga-dur-fast:   120ms;
+  --ga-dur-base:   200ms;
+  --ga-dur-slow:   320ms;
+
+  /* Tabular numerals — apply via class .ga-num */
+}
+
+/* Tabular numerals utility — wrap any $ amount in this class so columns align */
+.ga-num,
+.ga-money,
+[data-tabular-nums="true"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Brand font-face declarations are loaded via Google Fonts <link> in index.html.
+   This file only declares the tokens — fonts must be available globally. */

@@ -2,6 +2,50 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.29.0 — 2026-05-22 — Intake admin rebuild + New Invite modal + brand tokens
+
+First commit of the Claude Design 7-phase workplan. Covers Phases 1-3 + a foundational brand-tokens file. Phases 4-6 (public intake redesign / charts library / PDF rebuild) shipped in follow-up commits.
+
+> **⚠️ DB migration required before this build runs in production.** Paste `supabase-migrations/2026-05-22-intake-status.sql` into Supabase → SQL Editor → Run. It adds `reviewed_at`, `approved_at`, `archived_at` columns to `intake_submissions`, backfills any legacy `'converted'` rows to `'approved'` and `'rejected'` rows to `'archived'`, then locks the status column to `('pending', 'reviewed', 'approved', 'archived')`. Idempotent — safe to re-run.
+
+**Foundation: brand tokens (`src/colors_and_type.css`).**
+- New global CSS variable file imported once from `main.jsx`. Single source of truth for: navy / gold / gold-light / gold-deep / semantic semantic (success/danger/warn/info), person palette (P1 blue / P2 orange), light + dark card borders, the 4 type stacks (Plus Jakarta Sans / Source Serif 4 / Newsreader / JetBrains Mono), radii (6/8/12/16/999), four black-shadow tiers (sm/md/lg/xl) + one marketing gold shadow, easing cubic-bezier(0.2, 0.8, 0.2, 1), motion durations 120/200/320ms.
+- Adds a small `.ga-num / .ga-money / [data-tabular-nums="true"]` utility that applies `font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1` so currency columns align across the app.
+
+**Phase 1: Intake Forms admin page (full rebuild).**
+- Header collapses cleanly: gold "X pending / N total" counter on the left; a `▶ 📋 Public intake URL` pill toggle + solid gold `📨 New invite` button on the right. No more dangling icons.
+- Public URL card is **collapsed by default** (was always-visible). Expanded view shows just two inline EN/ES URL rows with monospace inputs + Ghost-style Copy buttons. The old send-invite disclosure + sent-invites list are GONE — both responsibilities moved into the New Invite modal + the row-level kebab actions.
+- Filter pills row: All / Pending / Reviewed / Approved / Archived, gold-tinted when active, with a tabular-nums count chip per pill.
+- Submissions table replaces the card-list. Columns: Submitted · Prospect · Service · Lang · Status · (actions). Service column reads `data.preferredService` and labels via the `SVCS` catalog. Lang pill = gold for ES, info-blue for EN. Status pill carries the proper warn/info/pos/dim colors.
+- Each row has an **Open** button + a **⋯ kebab** with 10 items (per the design spec): Open submission · Resend invite (EN or ES, language pulled from the row) · Copy intake link · Message prospect (mailto) · — · Mark as reviewed · Mark as approved · Convert to client · — · Archive (soft delete). Kebab closes on Escape or outside-click.
+- The status taxonomy changed: legacy `converted`/`rejected` were renormalized to `approved`/`archived` to match the new design vocabulary. The migration backfills.
+- The selected-row panel gains a `⭐ Mark Approved` button + an `🗑 Archive` button to mirror the kebab. The previous `Reject` button is gone (archive supersedes).
+- New helpers wired: `resendInvite(sub, lang)` reuses the prospect data on the row to fire a fresh `gaSendIntakeInvite` call; `copySubmissionLink(sub)` writes the public URL (in the row's language) to clipboard; `messageProspect(sub)` opens a mailto.
+
+**Phase 2: New Invite modal.**
+- Triggered by the gold `📨 New invite` button. Backdrop = `rgba(0,0,0,0.67)`, no blur. Esc + click-outside close.
+- Header is a Newsreader italic title (`New invite`) + a short sub-line in muted 12px.
+- Form: segmented EN/ES lang picker (gold-when-active) → two-column Name + Email → full-width Phone (optional) → full-width Personal note textarea (optional) with localized placeholder.
+- Submits via the same `gaSendIntakeInvite` server endpoint the old inline disclosure used (so the existing email infrastructure still works). On success: flips to `✓ Invite sent` for 1.4s, refreshes the parent table via a passed `onSent` callback, then auto-closes.
+
+**Phase 3: SERVICES catalog `payUrl` field.**
+- Every entry in the SVCS array gains a `payUrl: ""` placeholder. The existing advisor-configured links in `settings.stripeLinks[svc.id]` still win — new helper `svcPayUrl(svc, settings)` reads through both.
+- Free services (`price === "Free"`) — `svcPayUrl()` always returns empty so the eventual Pay-Now button in the public intake can disable itself.
+
+**Translations.** ~35 new keys EN+ES covering the new admin page, the kebab menu items, the New Invite modal, the status taxonomy, and a handful of smaller labels (`totalLbl`, `allLbl`, `optional`, `openMenu`, `close`).
+
+**Build marker:** `2026-05-22-v0290-intake-admin-rebuild`. App.jsx +~250 lines / −~180 lines (full IntakeSubmissionsPage rewrite + new NewInviteModal component). `translations.js` +35 EN + 35 ES keys. `colors_and_type.css` new (~70 lines). `main.jsx` +1 import line. `supabase-migrations/2026-05-22-intake-status.sql` new (migration runner). No new npm dependencies. D-1, D-3, D-7, D-17, D-29 (translations.js carve-out) preserved.
+
+**Smoke tests:**
+1. **Run the migration first.** Paste `supabase-migrations/2026-05-22-intake-status.sql` into Supabase → SQL Editor → Run. Confirms `select column_name from information_schema.columns where table_name = 'intake_submissions' and column_name in ('reviewed_at','approved_at','archived_at')` returns 3 rows.
+2. **Admin page header.** Navigate to 📥 Intake Forms. Header reads `0 pending / N total` (gold + dim), `▶ 📋 Public intake URL` pill + gold `📨 New invite` button. No "Send invite" disclosure or "Sent invites" list visible anywhere on the page.
+3. **URL toggle.** Click `📋 Public intake URL` — card expands with 2 monospace URL rows + Copy buttons. Click again — collapses. Copy button flashes `✓ Copied` for ~1.2s.
+4. **New Invite modal.** Click `📨 New invite` — modal opens. EN/ES segmented control flips placeholder text. Submit with no email → red error "Enter prospect email first." Submit with email → flips to `✓ Invite sent` then auto-closes. Table refreshes (if invite created a submission row, it appears).
+5. **Filter pills.** Click each pill — table filters to the matching status. Counts in parentheses match the row totals.
+6. **Row kebab.** Click `⋯` on any row — menu opens. Verify all 10 items render. Click `🔗 Copy intake link` — clipboard contains the public URL (toast confirms). Click `📨 Resend invite (EN)` — toast "Invite resent" (or "Send failed" if no email on row). Click `⭐ Mark as approved` — row's status pill flips to "Approved" + pill color goes green. Click `🗑 Archive` — row moves to the Archived filter pill.
+7. **Convert to client.** Click `➕ Convert to client` on a pending row → confirm modal → confirms → new client appears in Clients list with the prospect's data, original submission flips to "Approved" status with `client_local_id` populated.
+8. **EN/ES.** Switch to ES in TopBar. All admin labels translate: "Nueva invitación", "Idioma", "Aprobado", "Reenviar invitación", etc.
+
 ## v0.28.0 — 2026-05-22 — Dismiss / mute alerts
 
 Adds a per-row dismiss button on every advisor alert and client-due row, plus a small expander to restore muted alerts. Driven by the "paid the credit card so the alert goes away" UX request.

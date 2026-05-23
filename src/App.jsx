@@ -64,7 +64,15 @@ const ACCA=Object.keys(ACCT_META);
 const LOKA=Object.keys(LOAN_META);
 const CP=["#4472C4","#ED7D31","#FFC000","#70AD47","#FF0000","#5B9BD5","#C00000","#9DC3E6","#F4B942","#A9D18E","#8E44AD","#2ECC71","#E74C3C","#3498DB","#1ABC9C","#E91E63","#00BCD4","#FF5722","#C9A84C","#607D8B"];
 const PC=["#3B82F6","#10B981","#F59E0B","#8B5CF6","#06B6D4","#F97316","#84CC16","#E11D48"];
-const SVCS=[{id:"initial-checkup",icon:"🩺",en:"Initial Financial Checkup",es:"Chequeo Financiero Inicial",price:"$149",desc:"Full snapshot review of your income, debts, savings, and financial goals.",descEs:"Revisión completa de ingresos, deudas, ahorros y metas financieras."},{id:"client-checkup",icon:"🔁",en:"Financial Checkup — Golden Anchor Client",es:"Chequeo Financiero — Cliente Golden Anchor",price:"$99",desc:"Returning-client snapshot review. Tracks progress against previous plan.",descEs:"Revisión para clientes existentes. Compara contra el plan anterior."},{id:"quarterly-review",icon:"📊",en:"Quarterly Financial Review",es:"Revisión Financiera Trimestral",price:"$199",desc:"Deeper quarterly review of cash flow, debt strategy, and goal progress.",descEs:"Revisión trimestral de flujo de caja, deudas y progreso de metas."},{id:"strategy-session",icon:"🎯",en:"Strategy Session: Home / Job / Budget",es:"Sesión Estratégica: Hogar / Trabajo / Presupuesto",price:"$129",desc:"Targeted session for one major decision: a home purchase, a job change, or a budget reset.",descEs:"Sesión enfocada en una decisión clave: compra de casa, cambio de trabajo, o reinicio de presupuesto."},{id:"monthly-lite",icon:"💎",en:"Monthly Lite Financial Support",es:"Soporte Financiero Mensual Lite",price:"$49/mo",desc:"Ongoing monthly support: brief check-ins, message-based Q&A, and accountability.",descEs:"Soporte mensual continuo: chequeos breves, preguntas por mensaje, y acompañamiento."},{id:"monthly-lite-plus",icon:"💎",en:"Monthly Lite Financial Support and 1 more",es:"Soporte Financiero Mensual Lite y 1 más",price:"$79/mo",desc:"Lite support plus one Strategy Session add-on per month.",descEs:"Soporte Lite más una Sesión Estratégica adicional al mes."},{id:"annual-bundle",icon:"🏆",en:"Annual Financial Bundle",es:"Paquete Financiero Anual",price:"$499/yr",desc:"Annual package: 4 quarterly reviews plus priority strategy sessions and a year-end report.",descEs:"Paquete anual: 4 revisiones trimestrales, sesiones estratégicas prioritarias, e informe de fin de año."},{id:"insurance-consult",icon:"🛡️",en:"Insurance Advisory (Free Consult)",es:"Asesoría de Seguros (Consulta Gratis)",price:"Free",desc:"Life, health, and supplemental insurance review. Free first consult — commission-paid by carrier if you bind.",descEs:"Revisión de seguros de vida, salud, y suplementarios. Primera consulta gratis — comisión pagada por la aseguradora si contrata."},{id:"donation",icon:"💚",en:"Donation",es:"Donación",price:"Any amount",desc:"Support Golden Anchor — donations are not financial services and do not establish an advisory relationship.",descEs:"Apoya Golden Anchor — las donaciones no son servicios financieros y no establecen una relación de asesoría."}];
+// v0.29.0 — `payUrl` is the new canonical field for service checkout links.
+// Defaults are empty per service; advisor configures via Settings → Services & Stripe Links.
+// Existing data: settings.stripeLinks[id] still works via the svcPayUrl() helper.
+// Free services (insurance-consult) keep payUrl empty by design — "Pay now" disables.
+const SVCS=[{id:"initial-checkup",icon:"🩺",en:"Initial Financial Checkup",es:"Chequeo Financiero Inicial",price:"$149",payUrl:"",desc:"Full snapshot review of your income, debts, savings, and financial goals.",descEs:"Revisión completa de ingresos, deudas, ahorros y metas financieras."},{id:"client-checkup",icon:"🔁",en:"Financial Checkup — Golden Anchor Client",es:"Chequeo Financiero — Cliente Golden Anchor",price:"$99",payUrl:"",desc:"Returning-client snapshot review. Tracks progress against previous plan.",descEs:"Revisión para clientes existentes. Compara contra el plan anterior."},{id:"quarterly-review",icon:"📊",en:"Quarterly Financial Review",es:"Revisión Financiera Trimestral",price:"$199",payUrl:"",desc:"Deeper quarterly review of cash flow, debt strategy, and goal progress.",descEs:"Revisión trimestral de flujo de caja, deudas y progreso de metas."},{id:"strategy-session",icon:"🎯",en:"Strategy Session: Home / Job / Budget",es:"Sesión Estratégica: Hogar / Trabajo / Presupuesto",price:"$129",payUrl:"",desc:"Targeted session for one major decision: a home purchase, a job change, or a budget reset.",descEs:"Sesión enfocada en una decisión clave: compra de casa, cambio de trabajo, o reinicio de presupuesto."},{id:"monthly-lite",icon:"💎",en:"Monthly Lite Financial Support",es:"Soporte Financiero Mensual Lite",price:"$49/mo",payUrl:"",desc:"Ongoing monthly support: brief check-ins, message-based Q&A, and accountability.",descEs:"Soporte mensual continuo: chequeos breves, preguntas por mensaje, y acompañamiento."},{id:"monthly-lite-plus",icon:"💎",en:"Monthly Lite Financial Support and 1 more",es:"Soporte Financiero Mensual Lite y 1 más",price:"$79/mo",payUrl:"",desc:"Lite support plus one Strategy Session add-on per month.",descEs:"Soporte Lite más una Sesión Estratégica adicional al mes."},{id:"annual-bundle",icon:"🏆",en:"Annual Financial Bundle",es:"Paquete Financiero Anual",price:"$499/yr",payUrl:"",desc:"Annual package: 4 quarterly reviews plus priority strategy sessions and a year-end report.",descEs:"Paquete anual: 4 revisiones trimestrales, sesiones estratégicas prioritarias, e informe de fin de año."},{id:"insurance-consult",icon:"🛡️",en:"Insurance Advisory (Free Consult)",es:"Asesoría de Seguros (Consulta Gratis)",price:"Free",payUrl:"",desc:"Life, health, and supplemental insurance review. Free first consult — commission-paid by carrier if you bind.",descEs:"Revisión de seguros de vida, salud, y suplementarios. Primera consulta gratis — comisión pagada por la aseguradora si contrata."},{id:"donation",icon:"💚",en:"Donation",es:"Donación",price:"Any amount",payUrl:"",desc:"Support Golden Anchor — donations are not financial services and do not establish an advisory relationship.",descEs:"Apoya Golden Anchor — las donaciones no son servicios financieros y no establecen una relación de asesoría."}];
+// v0.29.0 — Read payUrl with fallback chain. Stored-in-settings (stripeLinks[id])
+// wins over catalog defaults so the advisor can configure links without code changes.
+// Free services (price === "Free") never return a payUrl — "Pay now" should disable.
+const svcPayUrl=(svc,settings)=>{if(!svc||svc.price==="Free")return "";return settings?.stripeLinks?.[svc.id]||svc.payUrl||svc.stripeUrl||"";};
 const RATIOS_META={currentRatio:{en:"Liquid Assets ÷ Current Liabilities. Target > 1.0x",es:"Activos Líquidos ÷ Pasivos. Meta > 1.0x",threshold:1.0,better:"higher",fmt:v=>ratFmt("currentRatio",v),key:"currentRatio"},dta:{en:"Total Liabilities ÷ Total Assets. Below 40%.",es:"Pasivos ÷ Activos. Menos del 40%.",threshold:0.40,better:"lower",fmt:v=>ratFmt("dta",v),key:"dta"},dsr:{en:"Debt Payments ÷ Net Income. Below 36%.",es:"Pagos Deuda ÷ Ingreso. Menos del 36%.",threshold:0.36,better:"lower",fmt:v=>ratFmt("dsr",v),key:"dsr"},rsr:{en:"Retirement Contributions ÷ Gross Income. Target 12-15%.",es:"Contribuciones Retiro ÷ Ingreso. Meta 12-15%.",threshold:0.12,better:"higher",fmt:v=>ratFmt("rsr",v),key:"rsr"},efr:{en:"Liquid Assets ÷ Monthly Bills. Target 3-6 months.",es:"Activos Líquidos ÷ Gastos. Meta 3-6 meses.",threshold:3,better:"higher",fmt:v=>ratFmt("efr",v),key:"efr"}};
 const DEF_PORT_RATES={conservative:5.5,growth:8.5,aggressive:11.0};
 const TICKER_META={
@@ -3069,7 +3077,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0280-dismiss-alerts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0290-intake-admin-rebuild";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3308,7 +3316,97 @@ function PublicIntake(){
 
 
 
-/* ── INTAKE SUBMISSIONS (advisor view) — v0.6.0 ────────────────────────── */
+/* ── NewInviteModal — v0.29.0 ────────────────────────────────────────────
+   Replaces the old "Send invite to a prospect" inline disclosure. Single
+   compact modal: language picker + name + email + phone + personal note.
+   Calls existing gaSendIntakeInvite server endpoint. On success: flips to
+   "✓ Invite sent" briefly, fires onSent so the parent table can refresh,
+   then auto-closes. */
+function NewInviteModal({open,onClose,onSent,settings,t}){
+  const th=useTh();
+  const{isMobile}=useViewport();
+  const[lang,setLang]=useState("en");
+  const[name,setName]=useState("");
+  const[email,setEmail]=useState("");
+  const[phone,setPhone]=useState("");
+  const[note,setNote]=useState("");
+  const[busy,setBusy]=useState(false);
+  const[sent,setSent]=useState(false);
+  const[err,setErr]=useState("");
+  useEffect(()=>{if(!open){setLang("en");setName("");setEmail("");setPhone("");setNote("");setBusy(false);setSent(false);setErr("");}},[open]);
+  useEffect(()=>{if(!open)return;const h=e=>{if(e.key==="Escape")onClose();};document.addEventListener("keydown",h);return()=>document.removeEventListener("keydown",h);},[open,onClose]);
+  if(!open)return null;
+  const submit=async()=>{
+    setErr("");
+    if(!email){setErr(t?.intakeSendEmailReq||"Enter prospect email first.");return;}
+    setBusy(true);
+    const r=await gaSendIntakeInvite({prospectName:name,prospectEmail:email,prospectPhone:phone,lang,channelEmail:true,channelSms:false,smsConsent:false,advisorName:settings?.advisorName||"",advisorEmail:settings?.advisorEmail||"",personalNote:note});
+    setBusy(false);
+    if(r.ok){setSent(true);if(onSent)onSent();setTimeout(()=>{setSent(false);onClose();},1400);}
+    else setErr(r.error||(t?.intakeSendFailed||"Send failed"));
+  };
+  const lbl=(s)=>({fontSize:10,fontWeight:700,color:th.muted,letterSpacing:".06em",textTransform:"uppercase",marginBottom:4,display:"block"});
+  const inp={padding:"10px 12px",fontSize:13,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:8,outline:"none",width:"100%",boxSizing:"border-box"};
+  const segWrap={display:"inline-flex",gap:3,padding:3,borderRadius:999,background:th.inp,border:"1px solid "+th.inpBorder};
+  const segBtn=(active)=>({padding:"6px 14px",fontSize:11,borderRadius:999,background:active?GOLD:"transparent",color:active?"#0D1B2A":th.muted,border:"none",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"});
+  const notePh=lang==="es"?"Hola, te comparto el link para tu chequeo inicial…":"Hi, here's the intake link for your initial checkup…";
+  return<div role="dialog" aria-modal="true" onClick={e=>{if(e.target===e.currentTarget)onClose();}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.67)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?12:24}}>
+    <div style={{background:th.modal,border:"1px solid "+th.cardBorder,borderRadius:16,padding:24,maxWidth:560,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.55)"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:14}}>
+        <div>
+          <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontSize:22,fontWeight:500,color:GOLD,lineHeight:1.1}}>{t?.intakeNewInviteTitle||"New invite"}</div>
+          <div style={{fontSize:12,color:th.muted,marginTop:6,maxWidth:380,lineHeight:1.5}}>{t?.intakeNewInviteSubtitle||"Send a prospect a private intake link. Pick the language they'll fill the form in."}</div>
+        </div>
+        <button onClick={onClose} aria-label={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>✕</button>
+      </div>
+      <div style={{height:1,background:th.cardBorder,margin:"14px 0 18px"}}/>
+      {/* Lang segmented */}
+      <div style={{marginBottom:14}}>
+        <label style={lbl()}>{t?.intakeNewInviteLangLbl||"Send invite in"}</label>
+        <div style={segWrap}>
+          <button onClick={()=>setLang("en")} style={segBtn(lang==="en")}>EN — English</button>
+          <button onClick={()=>setLang("es")} style={segBtn(lang==="es")}>ES — Español</button>
+        </div>
+      </div>
+      {/* Name + Email */}
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:12}}>
+        <div>
+          <label style={lbl()}>{t?.intakeProspectName||"Prospect name"}</label>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder={t?.intakeProspectNamePh||"Jane Doe"} style={inp}/>
+        </div>
+        <div>
+          <label style={lbl()}>{t?.email||"Email"}</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="jane@email.com" style={inp}/>
+        </div>
+      </div>
+      {/* Phone */}
+      <div style={{marginBottom:12}}>
+        <label style={lbl()}>{(t?.phone||"Phone")+" ("+(t?.optional||"optional")+")"}</label>
+        <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="(305) 555-0000" style={inp}/>
+      </div>
+      {/* Note */}
+      <div style={{marginBottom:18}}>
+        <label style={lbl()}>{(t?.intakeNewInviteNoteLbl||"Personal note")+" ("+(t?.optional||"optional")+")"}</label>
+        <textarea rows={2} value={note} onChange={e=>setNote(e.target.value)} placeholder={notePh} style={{...inp,resize:"vertical",lineHeight:1.5,fontFamily:"inherit"}}/>
+      </div>
+      {/* Error / Submit */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+        <div style={{fontSize:11,color:th.neg,fontWeight:600,flex:"1 1 200px"}}>{err}</div>
+        <button onClick={submit} disabled={busy||sent} style={{padding:"10px 22px",fontSize:12,borderRadius:8,background:sent?th.pos:GOLD,color:sent?"#fff":"#0D1B2A",border:"none",cursor:busy?"default":"pointer",fontWeight:700,whiteSpace:"nowrap",opacity:busy&&!sent?0.6:1}}>
+          {sent?("✓ "+(t?.intakeInviteSent||"Invite sent")):busy?(t?.intakeSendBusy||"Sending…"):("📨 "+(lang==="es"?(t?.intakeSendInviteEs||"Enviar invitación"):(t?.intakeSendInviteEn||"Send invite")))}
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ── INTAKE SUBMISSIONS — v0.29.0 admin page rebuild ──────────────────────
+   Header with collapsible Public URL toggle + New Invite button.
+   Filter pills (All / Pending / Reviewed / Approved).
+   Submissions table with row kebab menu (10 items mirroring the modal).
+   Old "Send invite" + "Sent invites" disclosures are GONE — the new modal
+   covers send, and the kebab covers per-row resend / open / copy / etc. */
 function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
   const th=useTh();
   const{isMobile}=useViewport();
@@ -3320,25 +3418,16 @@ function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
   const[editing,setEditing]=useState(null);
   const[deleteConfirm,setDeleteConfirm]=useState(null);
   const[clearConfirm,setClearConfirm]=useState(null);
-  // v0.10.0 — server-side send-intake-invite state (replaces v0.7.3 mailto MVP)
-  const[sendOpen,setSendOpen]=useState(false);
-  const[sendName,setSendName]=useState("");
-  const[sendEmail,setSendEmail]=useState("");
-  const[sendPhone,setSendPhone]=useState("");
-  const[sendLang,setSendLang]=useState("en");
-  const[sendChEmail,setSendChEmail]=useState(true);
-  const[sendChSms,setSendChSms]=useState(false);
-  const[sendSmsConsent,setSendSmsConsent]=useState(false);
-  const[sendBusy,setSendBusy]=useState(false);
-  const[sendStatus,setSendStatus]=useState(null);// {ok,error,emailOk,smsOk}
-  const[invites,setInvites]=useState([]);
-  const[invitesLoading,setInvitesLoading]=useState(true);
-  const[invitesOpen,setInvitesOpen]=useState(false);
+  // v0.29.0 — new UI state
+  const[urlOpen,setUrlOpen]=useState(false);              // Public URL toggle (collapsed by default)
+  const[inviteOpen,setInviteOpen]=useState(false);        // New Invite modal
+  const[filter,setFilter]=useState("all");                // all|pending|reviewed|approved|archived
+  const[menuOpenId,setMenuOpenId]=useState(null);         // which row's kebab is open
+  // Close kebab on Esc or outside-click
+  useEffect(()=>{if(!menuOpenId)return;const h=e=>{if(e.key==="Escape")setMenuOpenId(null);};const c=e=>{if(!e.target.closest||!e.target.closest("[data-row-kebab]"))setMenuOpenId(null);};document.addEventListener("keydown",h);document.addEventListener("mousedown",c);return()=>{document.removeEventListener("keydown",h);document.removeEventListener("mousedown",c);};},[menuOpenId]);
   const publicBase=(typeof window!=="undefined"?window.location.origin:"")+"/intake?advisor="+(authUser?.id||"");
   const publicUrlEs=publicBase+"&lang=es";
   useEffect(()=>{let cancelled=false;(async()=>{const list=await gaLoadIntakeSubmissions(authUser?.id);if(!cancelled){setSubs(list);setLoading(false);}})();return()=>{cancelled=true;};},[authUser?.id]);
-  // v0.10.0 — load sent invites alongside submissions
-  useEffect(()=>{let cancelled=false;(async()=>{const list=await gaLoadIntakeInvites(authUser?.id);if(!cancelled){setInvites(list);setInvitesLoading(false);}})();return()=>{cancelled=true;};},[authUser?.id]);
   // v0.6.1 — Robust copy: try Clipboard API first, fall back to execCommand on a
   // hidden textarea. If both fail, prompt() so the user can copy manually.
   const copyUrl=async(url,which)=>{
@@ -3363,131 +3452,111 @@ function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
       baseClient.incomeStreams=[{id:gid(),person:"p1",label:"Main Job",gross:Math.round(+d.monthlyNetIncome*1.3),net:+d.monthlyNetIncome,freq:"monthly2"}];
     }
     const newClient=mig(baseClient);
-    await setStatus(sub.id,"converted",{converted_at:new Date().toISOString(),client_local_id:String(newClient.id)});
+    // v0.29.0 — Convert sets status='approved' (the 'converted' value is gone post-migration).
+    // We still track converted_at + client_local_id for the audit trail.
+    await setStatus(sub.id,"approved",{approved_at:new Date().toISOString(),converted_at:new Date().toISOString(),client_local_id:String(newClient.id)});
     onConvert(newClient);
   };
-  return<div style={{padding:isMobile?"16px 14px":"22px 20px",maxWidth:1100,margin:"0 auto"}}>
-    {/* v0.24.0 — page title removed (TopBar shows it). */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,flexWrap:"wrap",gap:8}}>
-      <div style={{fontSize:11,color:th.muted}}>{subs.filter(s=>s.status==="pending").length} {(t.intakeStatusPending||"Pending").toLowerCase()} / {subs.length} total</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-        {subs.some(s=>s.status==="converted")&&<Btn small onClick={()=>setClearConfirm({status:"converted",count:subs.filter(s=>s.status==="converted").length})} color={th.muted}>🧹 {t.intakeClearConverted||"Clear converted"} ({subs.filter(s=>s.status==="converted").length})</Btn>}
-        {subs.some(s=>s.status==="rejected")&&<Btn small onClick={()=>setClearConfirm({status:"rejected",count:subs.filter(s=>s.status==="rejected").length})} color={th.muted}>🧹 {t.intakeClearRejected||"Clear rejected"} ({subs.filter(s=>s.status==="rejected").length})</Btn>}
+  // v0.29.0 — derived state
+  const pendingCount=subs.filter(s=>s.status==="pending").length;
+  const visibleSubs=subs.filter(s=>{if(filter==="all")return s.status!=="archived";return s.status===filter;}).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const statusColor=st=>st==="pending"?th.warn:st==="reviewed"?th.blue:st==="approved"?th.pos:st==="archived"?th.dim:th.muted;
+  const statusLabelFor=st=>st==="pending"?(t.intakeStatusPending||"Pending"):st==="reviewed"?(t.intakeStatusReviewed||"Reviewed"):st==="approved"?(t.intakeStatusApproved||"Approved"):st==="archived"?(t.intakeStatusArchived||"Archived"):st;
+  const svcName=id=>{const s=SVCS.find(x=>x.id===id);return s?(s[_gaLang()]||s.en):(id||"—");};
+  // Per-row resend invite — reuses prospect info from the submission's data
+  const resendInvite=async(sub,lng)=>{const d=sub.data||{};const r=await gaSendIntakeInvite({prospectName:((d.firstName||"")+" "+(d.lastName||"")).trim(),prospectEmail:d.email||"",prospectPhone:d.phone||"",lang:lng||sub.lang||"en",channelEmail:true,channelSms:false,smsConsent:false,advisorName:settings?.advisorName||"",advisorEmail:settings?.advisorEmail||""});if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("ga-toast",{detail:{kind:r.ok?"success":"error",msg:r.ok?(t.intakeResentToast||"Invite resent"):(t.intakeSendFailed||"Send failed")}}));setMenuOpenId(null);};
+  // Returns the public intake URL for a submission's language
+  const copySubmissionLink=async(sub)=>{const url=publicBase+(sub.lang==="es"||sub.data?.lang==="es"?"&lang=es":"");try{await navigator.clipboard.writeText(url);}catch{try{window.prompt("Copy",url);}catch{}}if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("ga-toast",{detail:{kind:"success",msg:t.intakeLinkCopiedToast||"Intake link copied"}}));setMenuOpenId(null);};
+  const messageProspect=(sub)=>{const e=sub.data?.email;if(!e){setMenuOpenId(null);return;}window.location.href="mailto:"+e+"?subject="+encodeURIComponent("Golden Anchor — follow-up");setMenuOpenId(null);};
+  return<>
+    <NewInviteModal open={inviteOpen} onClose={()=>setInviteOpen(false)} settings={settings} t={t} onSent={async()=>{const fresh=await gaLoadIntakeSubmissions(authUser?.id);setSubs(fresh);}}/>
+    <div style={{padding:isMobile?"16px 14px":"22px 20px",maxWidth:1280,margin:"0 auto"}}>
+    {/* v0.29.0 — Header row: counter + Public-URL toggle pill + New Invite button */}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
+      <div style={{fontSize:12,fontWeight:600,letterSpacing:"0.04em"}}>
+        <span style={{color:GOLD,fontWeight:700}}>{pendingCount} {(t.intakeStatusPending||"pending").toLowerCase()}</span>
+        <span style={{color:th.dim,margin:"0 8px"}}>/</span>
+        <span style={{color:th.dim}}>{subs.length} {t.totalLbl||"total"}</span>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <button onClick={()=>setUrlOpen(o=>!o)} aria-expanded={urlOpen} style={{padding:"7px 14px",borderRadius:999,background:urlOpen?GOLD+"1A":"transparent",border:"1px solid "+GOLD+"55",color:GOLD,cursor:"pointer",fontSize:12,fontWeight:700,whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",gap:6,transition:"background-color 150ms ease"}}>
+          <span style={{display:"inline-block",transition:"transform 200ms ease",transform:urlOpen?"rotate(90deg)":"rotate(0)"}}>▶</span>
+          📋 {t.publicIntakeUrl||"Public intake URL"}
+        </button>
+        <BSolid onClick={()=>setInviteOpen(true)}>📨 {t.intakeNewInviteBtn||"New invite"}</BSolid>
       </div>
     </div>
-    <div style={{...mCARD(th),padding:16,marginBottom:18,background:GOLD+"08",border:"1px solid "+GOLD+"33"}}>
-      <div style={{fontSize:12,fontWeight:700,color:GOLD,marginBottom:8}}>📋 {t.publicIntakeUrl||"Public Intake URL"}</div>
-      <div style={{fontSize:11,color:th.muted,marginBottom:12,lineHeight:1.6}}>{t.intakeShareUrlHelp||"Prospects who fill the form via this URL will appear in your Intake Submissions queue. Use the ES Copy button to send the Spanish version."}</div>
-      <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:10,fontWeight:800,color:GOLD,minWidth:28,letterSpacing:"0.06em"}}>EN</span>
-        <input value={publicBase} readOnly onClick={e=>e.target.select()} style={{flex:1,minWidth:200,padding:"8px 10px",fontSize:11,fontFamily:"monospace",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,cursor:"text"}} onFocus={e=>e.target.select()}/>
-        <button onClick={()=>copyUrl(publicBase,"en")} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:urlCopied==="en"?th.pos+"33":GOLD+"22",color:urlCopied==="en"?th.pos:GOLD,border:"1px solid "+(urlCopied==="en"?th.pos+"66":GOLD+"44"),cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",minHeight:36}}>{urlCopied==="en"?"✓ "+(t.intakeCopiedToast||"URL copied"):(t.intakeCopyUrl||"Copy")}</button>
-      </div>
-      <div style={{display:"flex",gap:6,marginBottom:0,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:10,fontWeight:800,color:GOLD,minWidth:28,letterSpacing:"0.06em"}}>ES</span>
-        <input value={publicUrlEs} readOnly onClick={e=>e.target.select()} style={{flex:1,minWidth:200,padding:"8px 10px",fontSize:11,fontFamily:"monospace",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,cursor:"text"}} onFocus={e=>e.target.select()}/>
-        <button onClick={()=>copyUrl(publicUrlEs,"es")} style={{padding:"8px 14px",fontSize:11,borderRadius:6,background:urlCopied==="es"?th.pos+"33":GOLD+"22",color:urlCopied==="es"?th.pos:GOLD,border:"1px solid "+(urlCopied==="es"?th.pos+"66":GOLD+"44"),cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",minHeight:36}}>{urlCopied==="es"?"✓ "+(t.intakeCopiedToast||"URL copied"):(t.intakeCopyUrl||"Copy")}</button>
-      </div>
-      {/* v0.10.0 — Server-side send-intake-invite panel (replaces v0.7.3 mailto MVP) */}
-      <div style={{marginTop:14,paddingTop:14,borderTop:"1px dashed "+GOLD+"44"}}>
-        <button onClick={()=>setSendOpen(o=>!o)} style={{background:"transparent",border:"none",color:GOLD,fontSize:12,fontWeight:700,cursor:"pointer",padding:0,marginBottom:sendOpen?10:0}}>{sendOpen?"▼":"▶"} {t.intakeSendTitle||"Send invite to a prospect"}</button>
-        {sendOpen&&<div>
-          <div style={{fontSize:11,color:th.muted,marginBottom:10,lineHeight:1.6}}>{t.intakeSendHelpV2||"We'll send a personalized invite from mauricio@finance.goldenanchor.life with a unique tracked link. The form auto-fills the prospect's name and contact info. SMS is disabled until Twilio business verification completes."}</div>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:8}}>
-            <input placeholder={t.intakeSendName||"Prospect name (optional)"} value={sendName} onChange={e=>setSendName(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
-            <input type="email" placeholder={t.intakeSendEmail||"prospect@example.com"} value={sendEmail} onChange={e=>setSendEmail(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
-            <input type="tel" placeholder={t.intakeSendPhone||"+1 305 555 0000 (for SMS)"} value={sendPhone} onChange={e=>setSendPhone(e.target.value)} style={{padding:"8px 10px",fontSize:11,background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,outline:"none"}}/>
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              <span style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.intakeSendLang||"Language:"}</span>
-              {["en","es"].map(L=><button key={L} onClick={()=>setSendLang(L)} style={{padding:"6px 12px",fontSize:11,borderRadius:6,background:sendLang===L?GOLD+"33":"transparent",color:sendLang===L?GOLD:th.muted,border:"1px solid "+(sendLang===L?GOLD:th.cardBorder),cursor:"pointer",fontWeight:700,textTransform:"uppercase"}}>{L}</button>)}
-            </div>
-          </div>
-          {/* Channel toggles */}
-          <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:8,fontSize:11,color:th.muted}}>
-            <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={sendChEmail} onChange={e=>setSendChEmail(e.target.checked)}/> ✉️ {t.intakeSendChEmail||"Email"}</label>
-            <label style={{display:"flex",alignItems:"center",gap:6,cursor:"not-allowed",opacity:0.5}} title={t.intakeSendSmsDisabled||"SMS disabled until Twilio business verification completes."}><input type="checkbox" checked={sendChSms} onChange={e=>setSendChSms(e.target.checked)} disabled/> 💬 {t.intakeSendChSms||"SMS"} <span style={{fontSize:10,color:th.dim}}>({t.intakeSendSmsSoon||"coming soon"})</span></label>
-          </div>
-          {/* TCPA consent — hidden until SMS is enabled, but rendered so the state stays consistent */}
-          {sendChSms&&<div style={{fontSize:11,color:th.muted,padding:"8px 10px",background:th.warn+"11",border:"1px solid "+th.warn+"44",borderRadius:6,marginBottom:8,lineHeight:1.5}}>
-            <label style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
-              <input type="checkbox" checked={sendSmsConsent} onChange={e=>setSendSmsConsent(e.target.checked)} style={{marginTop:2}}/>
-              <span>{t.intakeSendTcpa||"I confirm this prospect has given me prior express consent (verbal or written) to receive SMS messages from Golden Anchor. I understand this attestation will be logged with timestamp."}</span>
-            </label>
-          </div>}
-          {/* Send button */}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-            <button disabled={sendBusy||(!sendChEmail&&!sendChSms)} onClick={async()=>{
-              setSendStatus(null);
-              if(sendChEmail&&!sendEmail){setSendStatus({ok:false,error:t.intakeSendEmailReq||"Enter prospect email first."});return;}
-              if(sendChSms&&!sendPhone){setSendStatus({ok:false,error:t.intakeSendPhoneReq||"Enter prospect phone first."});return;}
-              if(sendChSms&&!sendSmsConsent){setSendStatus({ok:false,error:t.intakeSendTcpaReq||"You must attest to prior express consent before sending SMS."});return;}
-              setSendBusy(true);
-              const r=await gaSendIntakeInvite({prospectName:sendName,prospectEmail:sendEmail,prospectPhone:sendPhone,lang:sendLang,channelEmail:sendChEmail,channelSms:sendChSms,smsConsent:sendSmsConsent,advisorName:settings?.advisorName||"",advisorEmail:settings?.advisorEmail||""});
-              setSendBusy(false);
-              if(r.ok){setSendStatus({ok:true,emailOk:r.email?.ok,smsOk:r.sms?.ok,inviteUrl:r.inviteUrl});setSendName("");setSendEmail("");setSendPhone("");setSendSmsConsent(false);const fresh=await gaLoadIntakeInvites(authUser?.id);setInvites(fresh);}
-              else{setSendStatus({ok:false,error:r.error||"Send failed"});}
-            }} style={{padding:"10px 16px",fontSize:12,borderRadius:6,background:sendBusy?th.cardBorder:GOLD,color:sendBusy?th.muted:"#0D1B2A",border:"1px solid "+GOLD,cursor:sendBusy?"default":"pointer",fontWeight:800,minHeight:36}}>
-              {sendBusy?(t.intakeSendBusy||"Sending…"):"⚓ "+(t.intakeSendBtn||"Send Invite")}
-            </button>
-            {sendStatus&&sendStatus.ok&&<span style={{fontSize:11,color:th.pos,fontWeight:600}}>{t.intakeSendOk||"Invite sent."} {sendStatus.emailOk===false&&<span style={{color:th.neg}}>({t.intakeSendEmailFailed||"email failed"})</span>}{sendStatus.smsOk===false&&<span style={{color:th.neg}}> ({t.intakeSendSmsFailed||"SMS failed"})</span>}</span>}
-            {sendStatus&&!sendStatus.ok&&<span style={{fontSize:11,color:th.neg,fontWeight:600}}>⚠️ {sendStatus.error}</span>}
-          </div>
-        </div>}
-      </div>
-      {/* v0.10.0 — Sent Invites list (collapsed by default) */}
-      <div style={{marginTop:14,paddingTop:14,borderTop:"1px dashed "+GOLD+"44"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-          <button onClick={()=>setInvitesOpen(o=>!o)} style={{background:"transparent",border:"none",color:GOLD,fontSize:12,fontWeight:700,cursor:"pointer",padding:0}}>{invitesOpen?"▼":"▶"} {t.intakeSentInvitesTitle||"Sent invites"} ({invites.length})</button>
-          {invites.length>0&&<button onClick={async()=>{if(!window.confirm((t.intakeConfirmClearInvites||"Delete all {n} sent-invite records? The links will no longer work. This cannot be undone.").replace("{n}",invites.length)))return;const ok=await gaDeleteAllIntakeInvites(authUser?.id);if(ok)setInvites([]);}} style={{background:"transparent",border:"none",color:th.dim,fontSize:11,fontWeight:600,cursor:"pointer",padding:"2px 4px"}}>🧹 {t.intakeClearInvites||"Clear all"}</button>}
-        </div>
-        {invitesOpen&&<div style={{marginTop:10}}>
-          {invitesLoading?<div style={{fontSize:11,color:th.muted}}>{t.loadingClients||"Loading…"}</div>
-          :invites.length===0?<div style={{fontSize:11,color:th.muted,fontStyle:"italic"}}>{t.intakeNoSentInvites||"No invites sent yet."}</div>
-          :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {invites.slice(0,50).map(inv=>{
-              const statusColor=inv.status==="submitted"?th.pos:inv.status==="opened"?th.blue:inv.status==="failed"?th.neg:inv.status==="expired"?th.dim:th.warn;
-              const statusLabel=inv.status==="submitted"?(t.intakeInviteStatusSubmitted||"Submitted"):inv.status==="opened"?(t.intakeInviteStatusOpened||"Opened"):inv.status==="failed"?(t.intakeInviteStatusFailed||"Failed"):inv.status==="expired"?(t.intakeInviteStatusExpired||"Expired"):(t.intakeInviteStatusSent||"Sent");
-              const channels=[inv.channel_email?"✉️":null,inv.channel_sms?"💬":null].filter(Boolean).join(" ");
-              return<div key={inv.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"8px 10px",background:th.inp,border:"1px solid "+th.cardBorder,borderRadius:6,fontSize:11,flexWrap:"wrap"}}>
-                <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:0,flex:1}}>
-                  <div style={{color:th.text,fontWeight:600}}>{inv.prospect_name||inv.prospect_email||inv.prospect_phone||"(no contact)"} <span style={{color:th.dim,fontWeight:400}}>· {channels} · {inv.lang.toUpperCase()}</span></div>
-                  <div style={{color:th.muted,fontSize:10}}>{inv.prospect_email||""}{inv.prospect_phone?" · "+inv.prospect_phone:""}</div>
-                  {inv.send_error&&<div style={{color:th.neg,fontSize:10}}>⚠️ {inv.send_error}</div>}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:700,background:statusColor+"22",color:statusColor,border:"1px solid "+statusColor+"44"}}>{statusLabel}</span>
-                  <span style={{color:th.dim,fontSize:10}}>{fmtDate(new Date(inv.created_at),_gaLang())}</span>
-                  <button onClick={async()=>{if(!window.confirm(t.intakeInviteDeleteConfirm||"Delete this invite record? The link will no longer work."))return;const ok=await gaDeleteIntakeInvite(inv.id);if(ok)setInvites(s=>s.filter(x=>x.id!==inv.id));}} title={t.intakeInviteDelete||"Delete"} style={{background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:13,padding:"2px 4px"}}>🗑️</button>
-                </div>
-              </div>;
-            })}
-            {invites.length>50&&<div style={{fontSize:10,color:th.dim,textAlign:"center",padding:6}}>{t.intakeInvitesTruncated||"Showing 50 most recent."}</div>}
-          </div>}
-        </div>}
-      </div>
+    {/* v0.29.0 — Collapsible URL card (was always-open + had send-invite/sent-invites
+        disclosures inline; both removed in favor of NewInviteModal + row kebab) */}
+    {urlOpen&&<div style={{...mCARD(th),padding:18,marginBottom:14}}>
+      <div style={{fontSize:11,color:th.muted,marginBottom:14,lineHeight:1.6}}>{t.intakeShareUrlHelp||"Anyone with this URL can submit an intake. Submissions land in the table below. Use the ES link for Spanish-speaking prospects."}</div>
+      {[{lang:"EN",url:publicBase,k:"en"},{lang:"ES",url:publicUrlEs,k:"es"}].map(row=><div key={row.k} style={{display:"flex",gap:8,marginBottom:row.k==="en"?8:0,alignItems:"center"}}>
+        <div style={{width:32,height:26,display:"flex",alignItems:"center",justifyContent:"center",background:GOLD+"1A",border:"1px solid "+GOLD+"44",borderRadius:6,color:GOLD,fontWeight:800,fontSize:10,letterSpacing:"0.06em",flexShrink:0}}>{row.lang}</div>
+        <input value={row.url} readOnly onClick={e=>e.target.select()} title={row.url} style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:11,fontFamily:"'JetBrains Mono',monospace",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,cursor:"text",textOverflow:"ellipsis"}}/>
+        <button onClick={()=>copyUrl(row.url,row.k)} style={{padding:"8px 16px",fontSize:11,borderRadius:8,background:urlCopied===row.k?th.pos+"1A":"transparent",color:urlCopied===row.k?th.pos:GOLD,border:"1px solid "+(urlCopied===row.k?th.pos+"66":GOLD+"55"),cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0,transition:"all 150ms ease"}}>{urlCopied===row.k?"✓ "+(t.intakeCopiedShort||"Copied"):(t.intakeCopyUrl||"Copy")}</button>
+      </div>)}
+    </div>}
+    {/* v0.29.0 — Filter pills */}
+    <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+      {[["all",t.allLbl||"All",subs.filter(x=>x.status!=="archived").length],["pending",t.intakeStatusPending||"Pending",subs.filter(x=>x.status==="pending").length],["reviewed",t.intakeStatusReviewed||"Reviewed",subs.filter(x=>x.status==="reviewed").length],["approved",t.intakeStatusApproved||"Approved",subs.filter(x=>x.status==="approved").length],["archived",t.intakeStatusArchived||"Archived",subs.filter(x=>x.status==="archived").length]].map(([k,l,n])=>{const active=filter===k;return<button key={k} onClick={()=>setFilter(k)} style={{padding:"6px 14px",borderRadius:999,background:active?GOLD+"1A":"transparent",color:active?GOLD:th.muted,border:"1px solid "+(active?GOLD+"44":th.cardBorder),cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>{l} <span style={{opacity:0.7,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>({n})</span></button>;})}
     </div>
+    {/* v0.29.0 — Submissions table */}
     {loading?<div style={{textAlign:"center",color:th.muted,padding:40,fontSize:13}}>{t.loadingClients||"Loading…"}</div>:
-     subs.length===0?<div style={{...mCARD(th),padding:32,textAlign:"center"}}>
+     visibleSubs.length===0?<div style={{...mCARD(th),padding:32,textAlign:"center"}}>
        <div style={{fontSize:36,marginBottom:10}}>📭</div>
        <div style={{fontSize:14,color:th.text,marginBottom:6,fontWeight:600}}>{t.intakeNoSubmissions||"No intake submissions yet."}</div>
-       <div style={{fontSize:11,color:th.muted,lineHeight:1.6,maxWidth:380,margin:"0 auto"}}>{t.intakeNoSubmissionsHelp||"Share your public intake URL with prospects to receive submissions here."}</div>
+       <div style={{fontSize:11,color:th.muted,lineHeight:1.6,maxWidth:380,margin:"0 auto"}}>{filter==="all"?(t.intakeNoSubmissionsHelp||"Share your public intake URL with prospects to receive submissions here."):(t.intakeNoMatching||"No submissions match this filter.")}</div>
      </div>:
-     <div style={{...mCARD(th),padding:0,overflow:"hidden"}}>
-       {subs.map(s=>{
-         const d=s.data||{};
-         const fullName=((d.firstName||"")+" "+(d.lastName||"")).trim()||"(no name)";
-         const statusColor=s.status==="pending"?th.warn:s.status==="converted"?th.pos:s.status==="rejected"?th.neg:th.muted;
-         const statusLabel=s.status==="pending"?(t.intakeStatusPending||"Pending"):s.status==="reviewed"?(t.intakeStatusReviewed||"Reviewed"):s.status==="converted"?(t.intakeStatusConverted||"Converted"):(t.intakeStatusRejected||"Rejected");
-         return<div key={s.id} style={{padding:"14px 16px",borderBottom:"1px solid "+th.cardBorder,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,cursor:"pointer",background:sel&&sel.id===s.id?th.bg:"transparent",flexWrap:"wrap"}} onClick={()=>setSel(sel&&sel.id===s.id?null:s)}>
-           <div style={{flex:1,minWidth:180}}>
-             <div style={{fontSize:13,fontWeight:700,color:th.text}}>{fullName}</div>
-             <div style={{fontSize:10,color:th.muted,marginTop:2,wordBreak:"break-word"}}>{d.email||""} · {new Date(s.created_at).toLocaleString()}</div>
-           </div>
-           <Pill color={statusColor}>{statusLabel}</Pill>
-         </div>;
-       })}
+     <div style={{...mCARD(th),padding:0,overflow:"visible"}}>
+       <div style={{overflowX:"auto"}}>
+       <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,tableLayout:"auto"}}>
+         <thead><tr style={{borderBottom:"1px solid "+th.cardBorder}}>
+           <th style={{padding:"12px 16px",textAlign:"left",fontSize:10,fontWeight:700,color:th.muted,letterSpacing:"0.05em",textTransform:"uppercase",whiteSpace:"nowrap"}}>{t.intakeColSubmitted||"Submitted"}</th>
+           <th style={{padding:"12px 16px",textAlign:"left",fontSize:10,fontWeight:700,color:th.muted,letterSpacing:"0.05em",textTransform:"uppercase"}}>{t.intakeColProspect||"Prospect"}</th>
+           <th style={{padding:"12px 16px",textAlign:"left",fontSize:10,fontWeight:700,color:th.muted,letterSpacing:"0.05em",textTransform:"uppercase",whiteSpace:"nowrap"}}>{t.intakeColService||"Service"}</th>
+           <th style={{padding:"12px 16px",textAlign:"left",fontSize:10,fontWeight:700,color:th.muted,letterSpacing:"0.05em",textTransform:"uppercase"}}>{t.intakeColLang||"Lang"}</th>
+           <th style={{padding:"12px 16px",textAlign:"left",fontSize:10,fontWeight:700,color:th.muted,letterSpacing:"0.05em",textTransform:"uppercase"}}>{t.intakeColStatus||"Status"}</th>
+           <th style={{padding:"12px 16px"}}/>
+         </tr></thead>
+         <tbody>
+         {visibleSubs.map((s,idx)=>{
+           const d=s.data||{};
+           const fullName=((d.firstName||"")+" "+(d.lastName||"")).trim()||"(no name)";
+           const rowLang=(s.lang||d.lang||"en").toLowerCase();
+           const isMenu=menuOpenId===s.id;
+           const cellSt={padding:"14px 16px",borderTop:idx===0?"none":"1px solid "+th.cardBorder,verticalAlign:"middle"};
+           return<tr key={s.id}>
+             <td style={{...cellSt,whiteSpace:"nowrap",color:th.muted,fontSize:11}}>{new Date(s.created_at).toLocaleDateString()}</td>
+             <td style={cellSt}>
+               <div style={{fontSize:13,fontWeight:700,color:th.text}}>{fullName}</div>
+               <div style={{fontSize:11,color:th.muted,marginTop:2}}>{d.email||""}</div>
+             </td>
+             <td style={{...cellSt,color:th.muted,fontSize:12}}>{svcName(d.preferredService)}</td>
+             <td style={cellSt}><Pill color={rowLang==="es"?GOLD:th.blue}>{rowLang.toUpperCase()}</Pill></td>
+             <td style={cellSt}><Pill color={statusColor(s.status)}>{statusLabelFor(s.status)}</Pill></td>
+             <td style={{...cellSt,textAlign:"right",whiteSpace:"nowrap",position:"relative"}} data-row-kebab>
+               <Btn small onClick={()=>setSel(sel?.id===s.id?null:s)}>{t.intakeOpenBtn||"Open"}</Btn>
+               <button onClick={e=>{e.stopPropagation();setMenuOpenId(isMenu?null:s.id);}} aria-label={t.openMenu||"Open menu"} aria-haspopup="menu" aria-expanded={isMenu} style={{width:28,height:28,padding:0,marginLeft:6,borderRadius:8,background:"transparent",border:"1px solid "+th.cardBorder,color:th.muted,cursor:"pointer",fontSize:14,verticalAlign:"middle"}}>⋯</button>
+               {isMenu&&<div role="menu" style={{position:"absolute",top:42,right:14,minWidth:240,background:th.modal,border:"1px solid "+th.cardBorder,borderRadius:12,padding:6,boxShadow:"0 8px 24px rgba(0,0,0,0.25)",zIndex:"var(--ga-z-dropdown, 70)",textAlign:"left"}}>
+                 {[
+                   {key:"open",l:"👁️ "+(t.intakeMenuOpen||"Open submission"),fn:()=>{setSel(s);setMenuOpenId(null);}},
+                   {key:"resend",l:"📨 "+(rowLang==="es"?(t.intakeMenuResendEs||"Resend invite (ES)"):(t.intakeMenuResendEn||"Resend invite (EN)")),fn:()=>resendInvite(s,rowLang)},
+                   {key:"copylink",l:"🔗 "+(t.intakeMenuCopyLink||"Copy intake link"),fn:()=>copySubmissionLink(s)},
+                   {key:"message",l:"💬 "+(t.intakeMenuMessage||"Message prospect"),fn:()=>messageProspect(s),disabled:!d.email},
+                   {divider:true,key:"d1"},
+                   ...(s.status!=="reviewed"&&s.status!=="approved"?[{key:"review",l:"✓ "+(t.intakeMarkReviewed||"Mark as reviewed"),fn:async()=>{await setStatus(s.id,"reviewed");setMenuOpenId(null);}}]:[]),
+                   ...(s.status!=="approved"?[{key:"approve",l:"⭐ "+(t.intakeMarkApproved||"Mark as approved"),fn:async()=>{await setStatus(s.id,"approved",{approved_at:new Date().toISOString()});setMenuOpenId(null);}}]:[]),
+                   {key:"convert",l:"➕ "+(t.intakeConvertBtn||"Convert to client"),fn:()=>{setConvertConfirm(s);setMenuOpenId(null);}},
+                   {divider:true,key:"d2"},
+                   {key:"archive",l:"🗑 "+(t.intakeMenuArchive||"Archive"),fn:async()=>{await setStatus(s.id,"archived",{archived_at:new Date().toISOString()});setMenuOpenId(null);},danger:true},
+                 ].map(it=>it.divider?<div key={it.key} style={{height:1,background:th.cardBorder,margin:"4px 4px"}}/>:<button key={it.key} onClick={it.fn} disabled={it.disabled} style={{display:"block",width:"100%",padding:"8px 10px",borderRadius:8,fontSize:12,fontWeight:600,background:"transparent",color:it.disabled?th.dim:(it.danger?th.neg:th.text),border:"none",cursor:it.disabled?"not-allowed":"pointer",textAlign:"left",whiteSpace:"nowrap"}} onMouseEnter={e=>{if(!it.disabled)e.currentTarget.style.background=th.accent+"14";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>{it.l}</button>)}
+               </div>}
+             </td>
+           </tr>;
+         })}
+         </tbody>
+       </table>
+       </div>
      </div>
     }
     {sel&&<div style={{...mCARD(th),padding:isMobile?16:20,marginTop:18}}>
@@ -3503,10 +3572,11 @@ function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
         })}
       </div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        {sel.status!=="converted"&&<BSolid onClick={()=>setConvertConfirm(sel)}>↪ {t.intakeConvertBtn||"Convert to Client"}</BSolid>}
-        {sel.status!=="converted"&&<Btn onClick={()=>setEditing(sel)} color={th.blue}>✏️ {t.intakeEditBtn||"Edit Intake"}</Btn>}
+        <BSolid onClick={()=>setConvertConfirm(sel)}>↪ {t.intakeConvertBtn||"Convert to Client"}</BSolid>
+        <Btn onClick={()=>setEditing(sel)} color={th.blue}>✏️ {t.intakeEditBtn||"Edit Intake"}</Btn>
         {sel.status==="pending"&&<Btn onClick={async()=>{await setStatus(sel.id,"reviewed");}}>{t.intakeMarkReviewed||"Mark Reviewed"}</Btn>}
-        {sel.status!=="rejected"&&sel.status!=="converted"&&<Btn color={th.warn} onClick={async()=>{if(window.confirm(t.intakeConfirmReject||"Reject this submission?")){await setStatus(sel.id,"rejected");}}}>{t.intakeRejectBtn||"Reject"}</Btn>}
+        {sel.status!=="approved"&&<Btn onClick={async()=>{await setStatus(sel.id,"approved",{approved_at:new Date().toISOString()});}}>⭐ {t.intakeMarkApproved||"Mark Approved"}</Btn>}
+        {sel.status!=="archived"&&<Btn color={th.dim} onClick={async()=>{await setStatus(sel.id,"archived",{archived_at:new Date().toISOString()});setSel(null);}}>🗑 {t.intakeMenuArchive||"Archive"}</Btn>}
         <Btn onClick={()=>setDeleteConfirm(sel)} color={th.neg}>🗑️ {t.intakeDeleteBtn||"Delete"}</Btn>
       </div>
     </div>}
@@ -3520,12 +3590,9 @@ function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
       <div style={{fontSize:11,color:th.muted,marginBottom:18}}>{t.firstName}: <b style={{color:th.text}}>{((deleteConfirm.data?.firstName||"")+" "+(deleteConfirm.data?.lastName||"")).trim()}</b></div>
       <SaveBar onSave={async()=>{await doDelete(deleteConfirm.id);setDeleteConfirm(null);}} onCancel={()=>setDeleteConfirm(null)} t={t} saveLabel={t.intakeDeleteBtn||"Delete"}/>
     </Modal>}
-    {clearConfirm&&<Modal title={clearConfirm.status==="converted"?(t.intakeClearConverted||"Clear converted"):(t.intakeClearRejected||"Clear rejected")} onClose={()=>setClearConfirm(null)} width={420}>
-      <div style={{fontSize:13,color:th.text,marginBottom:8}}>{(t.intakeConfirmClear||"Delete all {n} {status} submissions? This cannot be undone.").replace("{n}",String(clearConfirm.count)).replace("{status}",clearConfirm.status==="converted"?(t.intakeStatusConverted||"converted").toLowerCase():(t.intakeStatusRejected||"rejected").toLowerCase())}</div>
-      <SaveBar onSave={async()=>{await doClearByStatus(clearConfirm.status);setClearConfirm(null);}} onCancel={()=>setClearConfirm(null)} t={t} saveLabel={t.intakeDeleteBtn||"Delete"}/>
-    </Modal>}
     {editing&&<IntakeSubmissionEditor submission={editing} onSave={saveEdit} onCancel={()=>setEditing(null)} t={t}/>}
-  </div>;
+    </div>
+  </>;
 }
 
 /* ── IntakeSubmissionEditor (v0.7.1) ─────────────────────────────────────── */
