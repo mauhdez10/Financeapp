@@ -137,6 +137,10 @@ const fmtS=n=>{if(n>=1000000)return"$"+(n/1000000).toFixed(1)+"M";if(n>=1000)ret
 const bE=e=>['e','E','+','-'].includes(e.key)&&e.preventDefault();
 const vEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const fmtPh=r=>{const d=r.replace(/\D/g,"").slice(0,10);if(d.length<=3)return d;if(d.length<=6)return`(${d.slice(0,3)}) ${d.slice(3)}`;return`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;};
+/* v0.35.1 — Hoisted from inside SSNInput so IntakeFormBody (App.jsx ~3379, 3385)
+   can safely use it. Previously caused a ReferenceError on every keystroke into
+   the prospect's SSN field on the public intake step 4. */
+const fmtSSN=v=>{const d=String(v||"").replace(/\D/g,"").slice(0,9);if(d.length<=3)return d;if(d.length<=5)return`${d.slice(0,3)}-${d.slice(3)}`;return`${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`;};
 const actB=bills=>{const t=new Date();return(bills||[]).filter(b=>{if(b.type==="temporary")return!b.maturity||new Date(b.maturity)>t;if(b.type==="annual")return b.dueMonth===t.getMonth()+1;return true;});};
 const sumB=bills=>actB(bills).reduce((s,b)=>s+toM(b.cost,b.freq),0);
 const sumN=s=>(s||[]).reduce((a,i)=>a+toM(i.net,i.freq),0);
@@ -319,7 +323,7 @@ const ratStatus=(key,v,t)=>{if(v===null||v===undefined||isNaN(v))return"N/A";con
 function NumInp({value,onChange,style={},min=0,...rest}){return<input type="number" value={value} onChange={onChange} onFocus={e=>e.target.select()} min={min} style={{...style,MozAppearance:"textfield",appearance:"textfield"}} {...rest}/>;}
 function CalcRow({label,value,color,big}){const th=useTh();return<div data-cr-label={typeof label==="string"?label:""} data-cr-value={typeof value==="string"?value:""} data-cr-big={big?"1":""} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${th.cardBorder}`}}><span style={{fontSize:big?14:12,color:th.muted}}>{label}</span><span style={{fontSize:big?16:13,fontWeight:big?800:600,color:color||th.accent}}>{value}</span></div>;}
 function CCircle({value,onChange}){const[open,setOpen]=useState(false);const th=useTh();return<div style={{position:"relative"}}><div onClick={()=>setOpen(o=>!o)} style={{width:34,height:34,borderRadius:"50%",background:value,border:"3px solid white",boxShadow:"0 0 0 1px #0004",cursor:"pointer",flexShrink:0}}/>{open&&<><div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:299}}/><div style={{position:"absolute",top:40,left:0,background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:12,padding:10,zIndex:300,boxShadow:"0 16px 40px #000a",width:194}}><div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5,marginBottom:10}}>{CP.map(c=><div key={c} onClick={()=>{onChange({target:{value:c}});setOpen(false);}} style={{width:28,height:28,borderRadius:"50%",background:c,border:value===c?"3px solid white":"2px solid transparent",cursor:"pointer",boxShadow:"0 0 0 1px #0003"}}/>)}</div><input type="color" value={value} onChange={onChange} style={{width:"100%",height:26,cursor:"pointer",borderRadius:6,border:"none"}}/></div></> }</div>;}
-function SSNInput({value,onChange,t}){const[show,setShow]=useState(false);const th=useTh();const fmtSSN=v=>{const d=v.replace(/\D/g,"").slice(0,9);if(d.length<=3)return d;if(d.length<=5)return`${d.slice(0,3)}-${d.slice(3)}`;return`${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`;};return<div style={{display:"flex",gap:8,alignItems:"center"}}><input type={show?"text":"password"} value={value} onChange={e=>onChange({target:{value:fmtSSN(e.target.value)}})} style={{...mINP(th),flex:1}} placeholder="###-##-####" maxLength={11}/><button onClick={()=>setShow(s=>!s)} style={{fontSize:11,padding:"6px 10px",borderRadius:7,background:th.inp,color:th.muted,border:`1px solid ${th.inpBorder}`,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{show?t.hideSSN:t.showSSN}</button></div>;}
+function SSNInput({value,onChange,t}){const[show,setShow]=useState(false);const th=useTh();return<div style={{display:"flex",gap:8,alignItems:"center"}}><input type={show?"text":"password"} value={value} onChange={e=>onChange({target:{value:fmtSSN(e.target.value)}})} style={{...mINP(th),flex:1}} placeholder="###-##-####" maxLength={11}/><button onClick={()=>setShow(s=>!s)} style={{fontSize:11,padding:"6px 10px",borderRadius:7,background:th.inp,color:th.muted,border:`1px solid ${th.inpBorder}`,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{show?t.hideSSN:t.showSSN}</button></div>;}
 
 /* ── MODAL / SAVEBAR / IADD ──────────────────────────────────────────────── */
 function Modal({title,onClose,children,width=480,disableBackdropClose=false}){const th=useTh();const{isMobile}=useViewport();
@@ -3358,7 +3362,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0350-donut-waterfall-print-breaks";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0351-fmtssn-hotfix";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/

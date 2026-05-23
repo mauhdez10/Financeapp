@@ -2,6 +2,14 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.35.1 — 2026-05-23 — Hotfix: fmtSSN ReferenceError on public intake
+
+Audit-discovered bug. `fmtSSN` was defined as a local `const` inside the `SSNInput` component body, but the structured intake form (`IntakeFormBody` at App.jsx:3379 and :3385) referenced it from the outer scope via a defensive `fmtSSN?fmtSSN(e.target.value):e.target.value` pattern. JavaScript treats `fmtSSN` as a bare identifier read — so the *check* itself threw `ReferenceError: fmtSSN is not defined` on every keystroke into the prospect's SSN field on public intake step 4.
+
+**Fix:** hoisted `fmtSSN` to module scope alongside `fmtPh` (App.jsx:140). `SSNInput` now picks up the hoisted version automatically. Two-line change.
+
+**Build marker:** `2026-05-23-v0351-fmtssn-hotfix`. No new components, no API/DB changes.
+
 ## v0.35.0 — 2026-05-23 — Phase 5 (Donut + Waterfall) + Phase 6 (per-topic page breaks)
 
 Two charts from the Phase 5 library plus the first Phase 6 print-output upgrade beyond what v0.21.0 already did.
