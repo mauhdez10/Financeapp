@@ -2,6 +2,36 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.34.0 — 2026-05-23 — Phase 5 charts: SmoothAreaLine (replaces 3 Recharts AreaCharts)
+
+First chart from Claude Design's Phase 5 charts library. The two-curve area chart that's been the canonical pattern in the design spec ("savings gold, debt orange, soft gold gradient under savings, crossover dot marker") now ships as a pure-SVG component and replaces the existing Recharts AreaChart in three locations.
+
+**Component.** New top-level `SmoothAreaLine` in App.jsx — pure SVG, no third-party chart lib for this surface. ~80 lines. Catmull-Rom-to-cubic-Bezier conversion produces smooth curves through the data points. Features:
+- 4 horizontal gridlines with JetBrains Mono Y-axis tick labels (e.g. `0`, `17K`, `33K`, `50K`) — nice-rounded max via 1/2/2.5/5/10 step ladder.
+- Soft vertical gold gradient (32% → 2% opacity) under the savings/primary curve only.
+- Two stroke curves on top of the fill — gold for primary (savings/cash flow), orange (`#ED7D31`) for the comparison series.
+- X-axis labels stripped of year suffix (e.g. `Mar '26` → `Mar`).
+- Crossover marker — gold dot with navy 1.5px ring placed at the first place the curves cross.
+- Responsive via SVG `viewBox`; no `ResponsiveContainer` wrapper needed.
+- Configurable `debtKey`/`savingsKey`/`debtColor`/`savingsColor` props for reuse on the Cash Flow Trend chart.
+- Empty/single-point fallback renders "Need at least 2 months of data" placeholder.
+
+**Replacements wired in this commit.**
+- `SummarySection` (App.jsx:794) — Monthly tab's small Debt vs Savings trend.
+- `ClientDetail` main view (App.jsx:2954) — the prominent "● live · 3m 6m 12m" Debt vs Savings AND Cash Flow trend pair on every client's overview page. Range/mode pills tinted gold to match.
+
+**What stays on Recharts.** All other charts in the app (Dashboard composed Income vs Spending bar+line, Net Worth Distribution donut, Year Comparison sparklines, Portfolio Projection area, etc.) still render with Recharts. Only the canonical SmoothAreaLine pattern was swapped out — per the Phase 5 plan that explicitly carves out Recharts for the larger composed surfaces.
+
+**Coverage on each render:** dim-22% gridlines, JetBrains Mono labels, gold-gradient fill, gold crossover dots. The Phase 5 spec rule "no value labels on bars or data points; totals live in tooltip or summary table" is honored — totals moved to small legend pills next to the section title where the chart used to show on-bar values.
+
+**Build marker:** `2026-05-23-v0340-smooth-area-line`. App.jsx +~80 lines (new component) / -10 lines (Recharts replacements). No new deps, no API changes, no DB migration. D-1, D-8 (Recharts allowed for the surfaces that still use it) preserved.
+
+**Smoke tests:**
+1. Open any client → main view shows two side-by-side gold-and-orange SVG curve charts (Debt vs Savings + Cash Flow Trend) with `0 / 17K / 33K / 50K` style Y-ticks on the left and month abbreviations on the X-axis.
+2. Range pills "3m / 6m / 12m / All" + filter pills "All / Rev / Cur" both tint gold when active.
+3. If a client has only one snapshot, the chart shows the "Need at least 2 months of data" placeholder instead of an empty axis frame.
+4. Where the two curves cross, a gold dot with a thin navy ring appears at the intersection.
+
 ## v0.33.0 — 2026-05-23 — Public intake gold-palette override
 
 Tiny but visible fix. The restored advisor-style intake form (IntakeFormBody, brought back in v0.31.0) used `th.accent` and `th.blue` from the public intake's `synthTheme`. In light mode those resolved to `#B8860B` (dark goldenrod) and `#2563EB` (blue) — reading on screen as a brown/blue mix that clashed with the gold-and-cream design Mauricio wants on the prospect-facing pages.
