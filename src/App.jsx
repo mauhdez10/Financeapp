@@ -399,7 +399,27 @@ return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBack
       </div>
     </Row2>
     <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,marginTop:14,letterSpacing:"0.07em"}}>{t.advisorSigHdr||"YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)"}</div>
-    <SignaturePad value={typeof s.advisorSignature==="string"?(s.advisorSignature?{kind:"drawn",dataUrl:s.advisorSignature}:null):(s.advisorSignature||null)} onChange={v=>setS(p=>({...p,advisorSignature:v||""}))} t={t} theme={th} defaultName={s.advisorName}/>
+    {/* v0.31.0 — Force typed-only on the advisor signature too, AND robustly coerce legacy formats.
+       Legacy string values were being mistaken for image dataUrls. Now: if string is a dataUrl
+       (starts with "data:"), treat as drawn; if string contains text, treat as typed; if null/empty,
+       fall back to auto-commit from defaultName. The typed text gets auto-committed on mount so the
+       advisor's signature reliably persists. */}
+    <SignaturePad
+      value={(()=>{
+        const v=s.advisorSignature;
+        if(!v)return null;
+        if(typeof v==="string"){
+          if(v.startsWith("data:")||v.startsWith("http"))return{kind:"drawn",dataUrl:v};
+          return{kind:"typed",text:v,signedAt:null};
+        }
+        return v;
+      })()}
+      onChange={v=>setS(p=>({...p,advisorSignature:v||""}))}
+      t={t}
+      theme={th}
+      defaultName={s.advisorName}
+      typedOnly={true}
+    />
   </div>}
 </div>
 
@@ -2893,29 +2913,28 @@ function LogoImg({settings,mode,size,fallbackColor}){
 }
 
 /* ── SignaturePad — Canvas draw OR typed name+date toggle ── */
-function SignaturePad({value,onChange,t,theme,label,defaultName}){
-  // v0.16.1: default mode is "typed" (was "draw"). Most users prefer typing
-  // their name; drawing is opt-in. Mode flips to "draw" only if there's
-  // already a drawn-shape value persisted.
-  const [mode,setMode]=useState((value&&value.kind==="drawn")?"draw":"typed");
-  const [typed,setTyped]=useState(value?.kind==="typed"?(value.text||""):(defaultName||""));
+function SignaturePad({value,onChange,t,theme,label,defaultName,typedOnly=false}){
+  // v0.16.1: default mode is "typed" (was "draw").
+  // v0.31.0: `typedOnly` collapses the component to a single typed input — no
+  // mode toggle, no canvas. Used on the public intake engagement letter where
+  // a typed signature is the only legally-defensible flow.
+  const [mode,setMode]=useState((value&&value.kind==="drawn"&&!typedOnly)?"draw":"typed");
+  const [typed,setTyped]=useState(value?.kind==="typed"?(value.text||""):(value&&typeof value==="string"?value:(defaultName||"")));
   const canvasRef=useRef(null);
   const isDrawingRef=useRef(false);
   const lastRef=useRef(null);
   const TH=theme||{};
   // v0.29.1 — Auto-commit the prefilled `defaultName` to parent state on mount.
-  // Without this, the prospect sees their name in the input (from `defaultName`)
-  // but the parent's signature state stays null because no onChange has fired.
-  // Clicking Continue then errors "Your signature is required" even though the
-  // input is visibly filled. This effect closes that gap by treating a prefilled
-  // typed input as an implicit signature on mount.
+  // v0.31.0 — Also re-commit when defaultName changes (e.g. invite-token resolve
+  // updates the prospect's name AFTER SignaturePad first mounted). Without this,
+  // typed stays empty if defaultName arrived async.
   useEffect(()=>{
-    if(mode==="typed"&&!value&&defaultName&&typed&&typed.trim()){
-      onChange&&onChange({kind:"typed",text:typed,signedAt:new Date().toISOString()});
+    if(mode==="typed"&&!value&&defaultName&&defaultName.trim()){
+      if(!typed||!typed.trim())setTyped(defaultName);
+      onChange&&onChange({kind:"typed",text:defaultName,signedAt:new Date().toISOString()});
     }
-    // mount-only — intentionally not depending on value/typed/onChange
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+  },[defaultName]);
   useEffect(()=>{
     const c=canvasRef.current; if(!c) return;
     const ctx=c.getContext("2d");
@@ -2935,11 +2954,11 @@ function SignaturePad({value,onChange,t,theme,label,defaultName}){
   const onTyped=(v)=>{ setTyped(v); onChange&&onChange({kind:"typed",text:v,signedAt:new Date().toISOString()}); };
   return <div style={{border:`1px solid ${TH.cardBorder||"#E2E8F0"}`,borderRadius:10,padding:12,background:TH.card||"#fff"}}>
     {label&&<div style={{fontSize:11,fontWeight:700,color:TH.muted||"#475569",marginBottom:8}}>{label}</div>}
-    <div style={{display:"flex",gap:4,marginBottom:8}}>
+    {!typedOnly&&<div style={{display:"flex",gap:4,marginBottom:8}}>
       <button type="button" onClick={()=>setMode("draw")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="draw"?(TH.accent||GOLD):"transparent",color:mode==="draw"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="draw"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>✍️ {t.sigDrawTab||"Draw signature"}</button>
       <button type="button" onClick={()=>setMode("typed")} style={{flex:1,padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:6,cursor:"pointer",background:mode==="typed"?(TH.accent||GOLD):"transparent",color:mode==="typed"?"#fff":(TH.muted||"#475569"),border:`1px solid ${mode==="typed"?(TH.accent||GOLD):(TH.cardBorder||"#E2E8F0")}`}}>⌨️ {t.sigTypedTab||"Type name"}</button>
-    </div>
-    {mode==="draw"?<div>
+    </div>}
+    {mode==="draw"&&!typedOnly?<div>
       <canvas ref={canvasRef} width={500} height={140} style={{width:"100%",height:140,background:"#FFFFFF",border:`1px dashed ${TH.cardBorder||"#CBD5E1"}`,borderRadius:8,touchAction:"none",cursor:"crosshair",display:"block"}} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
         <span style={{fontSize:10,color:TH.dim||"#94A3B8",fontStyle:"italic"}}>{t.sigDrawHint||"Sign with mouse or finger"}</span>
@@ -3024,15 +3043,33 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
     <div style={{marginBottom:12,textAlign:"justify"}}>{L.intro}</div>
     <div style={{marginBottom:14,textAlign:"justify"}}>{L.introCarefully}</div>
     <div style={{marginBottom:6}}>{L.sincerely}</div>
-    {/* Advisor signature */}
-    <div style={{marginBottom:24,paddingBottom:6,borderBottom:`1px solid ${settings.advisorSignature?"transparent":"#94A3B8"}`,minHeight:60}}>
+    {/* Advisor signature — v0.31.0 hardened against legacy formats:
+       - Legacy strings starting with "data:" or "http" → drawn image
+       - Other strings → treated as typed text (was breaking on "Mauricio Hernandez")
+       - Empty/null → fall back to advisor name as a typed cursive render so the letter
+         always shows SOMETHING (better than placeholder when the advisor's saved sig is mid-migration) */}
+    <div style={{marginBottom:24,paddingBottom:6,borderBottom:`1px solid #94A3B855`,minHeight:60}}>
       {(() => {
         const sig = settings.advisorSignature;
-        if (!sig) return <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>;
-        if (typeof sig === "string") return <img src={sig} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/>;
+        const advisorName = settings.advisorName || ctx.advisorName || "";
+        // Empty signature — render advisor name in cursive as a defensible fallback
+        if (!sig) {
+          return advisorName
+            ? <span style={{fontSize:26,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A"}}>{advisorName}</span>
+            : <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>;
+        }
+        if (typeof sig === "string") {
+          if (sig.startsWith("data:") || sig.startsWith("http")) {
+            return <img src={sig} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/>;
+          }
+          // Legacy: plain string was the typed name. Render in cursive.
+          return <span style={{fontSize:26,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A"}}>{sig}</span>;
+        }
         if (sig.kind === "drawn" && sig.dataUrl) return <img src={sig.dataUrl} alt="advisor signature" style={{height:50,maxWidth:240,objectFit:"contain"}}/>;
         if (sig.kind === "typed" && sig.text) return <span style={{fontSize:26,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A"}}>{sig.text}</span>;
-        return <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>;
+        return advisorName
+          ? <span style={{fontSize:26,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A"}}>{advisorName}</span>
+          : <span style={{color:"#94A3B8",fontStyle:"italic"}}>{t.advisorSigPending||"(advisor signature)"}</span>;
       })()}
     </div>
     <div style={{fontSize:13,fontWeight:700,marginBottom:24,paddingTop:0}}>{fill(L.signatureLine)}</div>
@@ -3063,12 +3100,24 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
       <div style={{fontSize:14,fontWeight:800,marginBottom:14,color:"#1F2937"}}>{t.clientSignaturesHdr||"Client Signature(s)"}</div>
       {!readOnly && <>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>{t.clientSig1Label||"Client signature"}: {clientName1||"___________"}</div>
-          <SignaturePad value={signatureClient1} onChange={onSig1} t={t} theme={TH} defaultName={clientName1}/>
+          {/* v0.31.0 — Inline the typed signature in the "Client signature: <name>" label.
+             When the prospect types their name, it shows in cursive on the bar above the SignaturePad. */}
+          <div style={{fontSize:12,fontWeight:700,marginBottom:6,display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+            <span>{t.clientSig1Label||"Client signature"}:</span>
+            {signatureClient1?.kind==="typed"&&signatureClient1.text
+              ? <span style={{fontSize:22,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A",fontWeight:400,lineHeight:1.1}}>{signatureClient1.text}</span>
+              : <span style={{color:"#94A3B8",fontStyle:"italic"}}>{clientName1||"___________"}</span>}
+          </div>
+          <SignaturePad value={signatureClient1} onChange={onSig1} t={t} theme={TH} defaultName={clientName1} typedOnly={true}/>
         </div>
         {isCouple && <div style={{marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>{t.clientSig2Label||"Co-client signature"}: {clientName2}</div>
-          <SignaturePad value={signatureClient2} onChange={onSig2} t={t} theme={TH} defaultName={clientName2}/>
+          <div style={{fontSize:12,fontWeight:700,marginBottom:6,display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+            <span>{t.clientSig2Label||"Co-client signature"}:</span>
+            {signatureClient2?.kind==="typed"&&signatureClient2.text
+              ? <span style={{fontSize:22,fontStyle:"italic",fontFamily:"'Brush Script MT',cursive,serif",color:"#0F172A",fontWeight:400,lineHeight:1.1}}>{signatureClient2.text}</span>
+              : <span style={{color:"#94A3B8",fontStyle:"italic"}}>{clientName2||"___________"}</span>}
+          </div>
+          <SignaturePad value={signatureClient2} onChange={onSig2} t={t} theme={TH} defaultName={clientName2} typedOnly={true}/>
         </div>}
       </>}
       {readOnly && <>
@@ -3090,7 +3139,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0300-public-intake-redesign";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0310-intake-fixes";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3199,39 +3248,41 @@ function IntakeSelectedServiceCard({service,lang,t,TH,showChange,onChange}){
   </div>;
 }
 
-// Welcome stage. Web = 2-col with hero panel on the right; mobile = centered phone-frame card.
+// Welcome stage. v0.31.0 — tighter padding, larger hero on web (anchor logo + headline
+// share a single full-width band), less empty white. Web: 2-col stays but headline sits
+// higher and CTA more prominent. Mobile: same compact phone-frame.
 function IntakeWelcomeStage({onStart,advisorSettings,lang,t,TH,isMobile}){
   const tagline=t.taglineSecuring||"Securing Your Health, Anchoring Your Future.";
   const wordmark=(advisorSettings.companyName||"Golden Anchor").toUpperCase();
   if(isMobile){
     return<div style={{maxWidth:520,margin:"0 auto",padding:"0 4px"}}>
-      <div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"32px 22px",textAlign:"center"}}>
-        <div style={{marginBottom:14}}><img src="/logo-anchor.png" alt="Golden Anchor" style={{width:130,height:130,objectFit:"contain"}}/></div>
-        <div style={{fontSize:18,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em"}}>{wordmark}</div>
-        <div style={{fontSize:11,fontStyle:"italic",color:GOLD+"BB",fontFamily:"'Newsreader',Georgia,serif",marginTop:6,letterSpacing:"0.02em"}}>{tagline}</div>
-        <div style={{height:1,width:60,background:GOLD,margin:"22px auto"}}/>
-        <div style={{fontSize:22,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.2,marginBottom:8}}>{t.intakeWelcomeHeadline||(lang==="es"?"Bienvenido a Golden Anchor":"Welcome to Golden Anchor")}</div>
-        <div style={{fontSize:13,color:TH.muted,lineHeight:1.6,marginBottom:20,maxWidth:380,margin:"0 auto 20px"}}>{t.intakeWelcomeSub||"Let's start with a few questions so your advisor knows how to help. It takes about 5 minutes."}</div>
+      <div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"22px 20px 24px",textAlign:"center"}}>
+        <div style={{marginBottom:10}}><img src="/logo-anchor.png" alt="Golden Anchor" style={{width:120,height:120,objectFit:"contain"}}/></div>
+        <div style={{fontSize:17,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em"}}>{wordmark}</div>
+        <div style={{fontSize:11,fontStyle:"italic",color:GOLD+"BB",fontFamily:"'Newsreader',Georgia,serif",marginTop:4,letterSpacing:"0.02em"}}>{tagline}</div>
+        <div style={{height:1,width:48,background:GOLD,margin:"14px auto"}}/>
+        <div style={{fontSize:22,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.2,marginBottom:6}}>{t.intakeWelcomeHeadline||(lang==="es"?"Bienvenido a Golden Anchor":"Welcome to Golden Anchor")}</div>
+        <div style={{fontSize:13,color:TH.muted,lineHeight:1.6,marginBottom:16,maxWidth:380,margin:"0 auto 16px"}}>{t.intakeWelcomeSub||"Let's start with a few questions so your advisor knows how to help. It takes about 5 minutes."}</div>
         <button onClick={onStart} style={{width:"100%",padding:"14px 24px",borderRadius:8,background:GOLD,color:"#0D1B2A",border:"none",fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",minHeight:48,touchAction:"manipulation",boxShadow:"0 4px 12px rgba(201,168,76,0.28)"}}>{t.intakeWelcomeStartBtn||(lang==="es"?"Comenzar →":"Start intake →")}</button>
-        <div style={{fontSize:11,color:TH.dim,marginTop:14,display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontStyle:"italic"}}>🔒 {t.intakePrivacyLine||(lang==="es"?"Encriptado y privado. Solo lo ve tu asesor.":"Encrypted and private. Only your advisor sees this.")}</div>
+        <div style={{fontSize:11,color:TH.dim,marginTop:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontStyle:"italic"}}>🔒 {t.intakePrivacyLine||(lang==="es"?"Encriptado y privado. Solo lo ve tu asesor.":"Encrypted and private. Only your advisor sees this.")}</div>
       </div>
     </div>;
   }
-  // Web: 2-col, hero on right
-  return<div style={{maxWidth:1080,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 380px",gap:24,alignItems:"stretch"}}>
-    <div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"40px 36px"}}>
-      <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.10em",textTransform:"uppercase",marginBottom:10}}>{t.intakeWelcomeTag||(lang==="es"?"Admisión pública":"Public intake")}</div>
-      <div style={{fontSize:36,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.1,marginBottom:14,letterSpacing:"-0.005em"}}>{t.intakeWelcomeHeadline||(lang==="es"?"Bienvenido a Golden Anchor":"Welcome to Golden Anchor")}</div>
-      <div style={{height:1,width:60,background:GOLD,margin:"4px 0 18px"}}/>
-      <div style={{fontSize:14,color:TH.muted,lineHeight:1.7,marginBottom:24,maxWidth:480}}>{t.intakeWelcomeSubWeb||(lang==="es"?"Cuéntanos un poco sobre tu situación para que tu asesor llegue preparado a tu primera cita. Toma alrededor de 5 minutos y puedes guardar y volver más tarde.":"Tell us a bit about your situation so your advisor arrives prepared to your first meeting. It takes about 5 minutes; you can save and come back later.")}</div>
+  // Web: 2-col, hero on right. Tightened padding throughout; larger anchor image.
+  return<div style={{maxWidth:1040,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 360px",gap:20,alignItems:"stretch"}}>
+    <div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"30px 32px"}}>
+      <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.10em",textTransform:"uppercase",marginBottom:8}}>{t.intakeWelcomeTag||(lang==="es"?"Admisión pública":"Public intake")}</div>
+      <div style={{fontSize:34,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.1,marginBottom:10,letterSpacing:"-0.005em"}}>{t.intakeWelcomeHeadline||(lang==="es"?"Bienvenido a Golden Anchor":"Welcome to Golden Anchor")}</div>
+      <div style={{height:1,width:60,background:GOLD,margin:"2px 0 14px"}}/>
+      <div style={{fontSize:14,color:TH.muted,lineHeight:1.65,marginBottom:18,maxWidth:480}}>{t.intakeWelcomeSubWeb||(lang==="es"?"Cuéntanos un poco sobre tu situación para que tu asesor llegue preparado a tu primera cita. Toma alrededor de 5 minutos y puedes guardar y volver más tarde.":"Tell us a bit about your situation so your advisor arrives prepared to your first meeting. It takes about 5 minutes; you can save and come back later.")}</div>
       <button onClick={onStart} style={{padding:"14px 28px",borderRadius:8,background:GOLD,color:"#0D1B2A",border:"none",fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 4px 12px rgba(201,168,76,0.28)"}}>{t.intakeWelcomeStartBtn||(lang==="es"?"Comenzar →":"Start intake →")}</button>
-      <div style={{fontSize:12,color:TH.dim,marginTop:18,display:"flex",alignItems:"center",gap:6,fontStyle:"italic"}}>🔒 {t.intakePrivacyLine||(lang==="es"?"Encriptado y privado. Solo lo ve tu asesor.":"Encrypted and private. Only your advisor sees this.")}</div>
+      <div style={{fontSize:12,color:TH.dim,marginTop:14,display:"flex",alignItems:"center",gap:6,fontStyle:"italic"}}>🔒 {t.intakePrivacyLine||(lang==="es"?"Encriptado y privado. Solo lo ve tu asesor.":"Encrypted and private. Only your advisor sees this.")}</div>
     </div>
-    <div style={{background:"radial-gradient(at 60% 30%, "+GOLD+"22, transparent 60%), linear-gradient(135deg, #0D1B2A 0%, #1F2937 100%)",border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"36px 22px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",minHeight:340}}>
-      <img src="/logo-anchor.png" alt="Golden Anchor" style={{width:96,height:96,objectFit:"contain",marginBottom:18}}/>
+    <div style={{background:"radial-gradient(at 60% 30%, "+GOLD+"33, transparent 60%), linear-gradient(135deg, #0D1B2A 0%, #1F2937 100%)",border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"24px 18px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",minHeight:280}}>
+      <img src="/logo-anchor.png" alt="Golden Anchor" style={{width:140,height:140,objectFit:"contain",marginBottom:12}}/>
       <div style={{fontSize:14,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em"}}>{wordmark}</div>
-      <div style={{height:1,width:48,background:GOLD,margin:"14px auto"}}/>
-      <div style={{fontSize:14,fontStyle:"italic",color:"#EDD594",fontFamily:"'Newsreader',Georgia,serif",lineHeight:1.5,maxWidth:280}}>{tagline}</div>
+      <div style={{height:1,width:48,background:GOLD,margin:"10px auto"}}/>
+      <div style={{fontSize:13,fontStyle:"italic",color:"#EDD594",fontFamily:"'Newsreader',Georgia,serif",lineHeight:1.5,maxWidth:260}}>{tagline}</div>
     </div>
   </div>;
 }
@@ -3332,21 +3383,24 @@ function IntakeFormV2({draft,setDraft,t,TH,lang,prefilledNotice=true}){
 }
 
 // Done modal — overlay confirmation that keeps the underlying form mounted.
-// Triggered when Submit or Pay Now lands. Esc closes and resets to welcome.
-function IntakeDoneModal({open,onClose,onSubmitAnother,refToken,lang,t,TH,payingNow}){
+// Triggered when Submit or Pay Now lands. v0.31.0: dropped reference token +
+// "Submit another" — added "You can safely close this tab" line.
+function IntakeDoneModal({open,onClose,lang,t,TH,payingNow,noPaymentLink}){
   useEffect(()=>{if(!open)return;const h=e=>{if(e.key==="Escape")onClose();};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);},[open,onClose]);
   if(!open)return null;
+  const mainCopy=payingNow?
+    (noPaymentLink
+      ? (t.intakeDonePayMissing||(lang==="es"?"Tu intake llegó. Tu asesor te enviará el enlace de pago directamente.":"Your intake is in. Your advisor will send you the payment link directly."))
+      : (t.intakeDoneSubPay||(lang==="es"?"Te estamos redirigiendo al pago seguro en una nueva pestaña. También te enviamos una copia de la carta de compromiso a tu correo.":"Redirecting you to secure checkout in a new tab. We've also emailed you a copy of the engagement letter."))
+    )
+    : (t.intakeDoneSub||(lang==="es"?"Tu asesor revisará tu información y te contactará en un día hábil. Te enviamos una copia de la carta de compromiso firmada a tu correo.":"Your advisor will review and reach out within one business day. We've emailed you a copy of the signed engagement letter."));
   return<div role="dialog" aria-modal="true" style={{position:"fixed",inset:0,background:"rgba(13,27,42,0.72)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:18,animation:"ga-fade 200ms ease"}}>
     <div style={{background:"#fff",border:`1px solid ${TH.cardBorder}`,borderRadius:20,padding:isMobileViewport()?"32px 22px":"40px 36px",maxWidth:480,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,0.45)",animation:"ga-modal-pop 250ms cubic-bezier(0.2, 0.8, 0.2, 1)",textAlign:"center",color:"#0F172A"}}>
       <div style={{width:76,height:76,borderRadius:38,background:"#10B98122",border:"1px solid #10B98155",color:"#10B981",fontSize:36,display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:800,marginBottom:18}}>✓</div>
       <div style={{fontSize:28,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",lineHeight:1.1,marginBottom:8,color:"#0F172A"}}>{t.intakeDoneTitle||(lang==="es"?"¡Recibimos tu información!":"Submission received")}</div>
       <div style={{height:1,width:60,background:GOLD,margin:"14px auto 18px"}}/>
-      <div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:22,maxWidth:380,margin:"0 auto 22px"}}>{payingNow?(t.intakeDoneSubPay||(lang==="es"?"Te estamos redirigiendo al pago seguro. Te enviamos una copia a tu correo.":"Redirecting you to secure checkout. We've sent a copy of your responses to your email.")):(t.intakeDoneSub||(lang==="es"?"Tu asesor revisará tu información y te contactará en un día hábil. Te enviamos una copia a tu correo.":"Your advisor will review and reach out within one business day. We've sent a copy of your responses to the email above."))}</div>
-      {refToken&&<div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",padding:"10px 16px",background:GOLD+"11",border:`1px solid ${GOLD}44`,borderRadius:10,marginBottom:22}}>
-        <span style={{fontSize:9,fontWeight:700,color:"#64748B",letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.intakeDoneRefLbl||(lang==="es"?"Token de referencia":"Reference token")}</span>
-        <span style={{fontSize:15,fontWeight:700,color:GOLD,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",letterSpacing:"0.04em",marginTop:2}}>{refToken}</span>
-      </div>}
-      {!payingNow&&<button onClick={onSubmitAnother} style={{padding:"12px 24px",borderRadius:8,background:GOLD,color:"#0D1B2A",border:"none",fontSize:13,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em"}}>{t.intakeDoneSubmitAnother||(lang==="es"?"Enviar otra":"Submit another")}</button>}
+      <div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:14,maxWidth:400,margin:"0 auto 14px"}}>{mainCopy}</div>
+      <div style={{fontSize:12,color:"#64748B",fontStyle:"italic",marginTop:6}}>{t.intakeDoneCloseTab||(lang==="es"?"Ya puedes cerrar esta pestaña.":"You can safely close this tab.")}</div>
     </div>
   </div>;
 }
@@ -3377,12 +3431,37 @@ function PublicIntake(){
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
   const[payingNow,setPayingNow]=useState(false);
-  const[refToken,setRefToken]=useState("");
+  const[noPaymentLink,setNoPaymentLink]=useState(false);
   const[err,setErr]=useState("");
   const[inviteResolved,setInviteResolved]=useState(!inviteToken);
   const[inviteError,setInviteError]=useState("");
   const vp=useViewport();
   const isMobile=vp.isMobile;
+  // v0.31.0 — Browser back navigation. Pushes a history entry on each step
+  // transition and listens for popstate so the back button walks through the
+  // flow naturally. Initial mount uses replaceState so back from welcome
+  // exits the intake (returns to the previous page).
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    if(!window.history.state||!window.history.state.gaIntakeStep){
+      window.history.replaceState({gaIntakeStep:"welcome"},"",window.location.href);
+    }
+    const onPop=(e)=>{
+      const target=e?.state?.gaIntakeStep;
+      if(target==="welcome"||target==="service"||target==="engagement"||target==="intake"){
+        setStep(target);
+        setErr("");
+      }
+    };
+    window.addEventListener("popstate",onPop);
+    return()=>window.removeEventListener("popstate",onPop);
+  },[]);
+  const goToStep=(newStep)=>{
+    if(typeof window!=="undefined"){
+      try{window.history.pushState({gaIntakeStep:newStep},"",window.location.href);}catch{}
+    }
+    setStep(newStep);
+  };
   useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.advisorProfile)setResolvedSettings(r.advisorProfile);else if(r.advisorSettings)setResolvedSettings(r.advisorSettings);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
   const[mode,setMode]=useState(()=>{if(typeof window==="undefined")return "dark";try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}});
   const isDark=mode==="dark";
@@ -3409,8 +3488,15 @@ function PublicIntake(){
     const res=await gaSubmitIntake(advisorId,lang,payload);
     if(res.ok){
       if(inviteToken&&res.submissionId){gaMarkIntakeInviteSubmitted(inviteToken,res.submissionId);}
-      setRefToken((res.submissionId||inviteToken||"").toString().slice(0,8).toUpperCase());
       setSubmitted(true);
+      // v0.31.0 — Fire engagement-copy email in the background. Server picks
+      // up advisor settings + this submission and emails the prospect + advisor
+      // a copy of the filled letter. Non-blocking — UX continues even if email fails.
+      try{
+        if(typeof window!=="undefined"&&typeof fetch==="function"){
+          fetch("/api/send-engagement-copy",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({advisorId,submissionId:res.submissionId||null,inviteToken:inviteToken||null,lang})}).catch(()=>{});
+        }
+      }catch{}
       if(payNow){
         const stripeUrl=(selectedService&&(selectedService.payUrl||selectedService.stripeUrl))||"";
         if(stripeUrl){
@@ -3419,35 +3505,39 @@ function PublicIntake(){
             if(promoCode)url.searchParams.set("prefilled_promo_code",promoCode);
             if(draft.email)url.searchParams.set("prefilled_email",draft.email);
             setTimeout(()=>{window.open(url.toString(),"_blank","noopener,noreferrer");},600);
+            setNoPaymentLink(false);
           }catch(e){
-            setErr(t.intakeStripeUrlBad||"Payment link is invalid. Your intake was submitted — your advisor will follow up.");
+            setNoPaymentLink(true);
           }
+        }else{
+          setNoPaymentLink(true);
         }
       }
     }else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
   };
-  // Step navigation. No "household" — that step's content is now Section 1 of the intake form.
+  // Step navigation. v0.31.0 — uses goToStep so each transition pushes a history entry.
   const next=()=>{
     setErr("");
-    if(step==="welcome"){setStep("service");return;}
+    if(step==="welcome"){goToStep("service");return;}
     if(step==="service"){
       if(!selectedServiceId){setErr(t.intakePickService||"Please pick a service.");return;}
-      setStep("engagement");return;
+      goToStep("engagement");return;
     }
     if(step==="engagement"){
       const sigEmpty=s=>!s||(s.kind==="typed"&&!s.text?.trim())||(s.kind==="drawn"&&!s.dataUrl);
       if(sigEmpty(sig1)){setErr(t.intakeSigRequired||"Your signature is required.");return;}
       if(householdType==="couple"&&sigEmpty(sig2)){setErr(t.intakeSig2Required||"Both signatures are required for a couple.");return;}
-      setStep("intake");return;
+      goToStep("intake");return;
     }
   };
   const back=()=>{
     setErr("");
-    if(step==="service")setStep("welcome");
-    else if(step==="engagement")setStep("service");
-    else if(step==="intake")setStep("engagement");
+    if(typeof window!=="undefined"&&window.history.length>1){window.history.back();return;}
+    if(step==="service")goToStep("welcome");
+    else if(step==="engagement")goToStep("service");
+    else if(step==="intake")goToStep("engagement");
   };
-  const resetFlow=()=>{setSubmitted(false);setSubmitting(false);setPayingNow(false);setRefToken("");setStep("welcome");setSelectedServiceId("");setSig1(null);setSig2(null);setErr("");setDraft(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email",householdType:"single",intakeSnapshot:{}}));};
+  const resetFlow=()=>{setSubmitted(false);setSubmitting(false);setPayingNow(false);setNoPaymentLink(false);goToStep("welcome");setSelectedServiceId("");setSig1(null);setSig2(null);setErr("");setDraft(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email",householdType:"single",intakeSnapshot:{}}));};
   // Inputs reused across stages
   const showSidebar=!isMobile&&(step==="engagement"||step==="intake")&&!!selectedService;
   return<ThemeCtx.Provider value={synthTheme}>
@@ -3466,7 +3556,7 @@ function PublicIntake(){
         {/* Step rail */}
         <IntakeStepRail stage={step} doneActive={submitted} t={t} TH={TH} isMobile={isMobile}/>
         {/* Stage 0 — Welcome (full-bleed; no surrounding card) */}
-        {step==="welcome"&&<IntakeWelcomeStage onStart={()=>setStep("service")} advisorSettings={advisorSettings} lang={lang} t={t} TH={TH} isMobile={isMobile}/>}
+        {step==="welcome"&&<IntakeWelcomeStage onStart={()=>goToStep("service")} advisorSettings={advisorSettings} lang={lang} t={t} TH={TH} isMobile={isMobile}/>}
         {/* Stage 1+ container — main card + optional sticky sidebar */}
         {step!=="welcome"&&<div style={{display:"grid",gridTemplateColumns:showSidebar?"1fr 340px":"1fr",gap:24,alignItems:"flex-start"}}>
           <div>
@@ -3500,19 +3590,46 @@ function PublicIntake(){
                 <EngagementLetter settings={advisorSettings} clientName1={[draft.firstName,draft.lastName].filter(Boolean).join(" ")} clientName2={householdType==="couple"?[draft.partnerFirst,draft.partnerLast].filter(Boolean).join(" "):""} selectedService={selectedService} lang={lang} t={t} theme={{...synthTheme,card:"#FBF8F0",cardBorder:TH.cardBorder}} signatureClient1={sig1} signatureClient2={sig2} onSig1={setSig1} onSig2={setSig2} readOnly={false}/>
               </div>
             </div>}
-            {/* Stage 3 — Intake form (5 numbered sections) */}
+            {/* Stage 3 — Intake form. v0.31.0 restores the full structured advisor-style
+               form (IntakeFormBody) so prospects can add line-item credit cards, income
+               streams, debts, accounts, loans, etc. — the same shape the advisor edits
+               post-conversion. Contact block is rendered inline above so name/email/phone
+               + couple toggle are captured here too (no separate "household" step). */}
             {step==="intake"&&<div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:isMobile?"22px 18px":"32px 28px"}}>
               <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>{t.intakeStepNofN?t.intakeStepNofN.replace("{n}","4").replace("{total}","4"):(lang==="es"?"Paso 4 de 4":"Step 4 of 4")}</div>
               <div style={{fontSize:isMobile?22:26,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.15,marginBottom:6}}>{t.stepIntakeTitle||(lang==="es"?"Tu información":"Your information")}</div>
               <div style={{height:1,width:60,background:GOLD,margin:"4px 0 14px"}}/>
-              <div style={{fontSize:13,color:TH.muted,marginBottom:24,lineHeight:1.6,maxWidth:560}}>{t.stepIntakeHelp||(lang==="es"?"Cuéntanos un poco sobre tu situación financiera. Solo tu asesor lo ve.":"Tell us a bit about your financial situation. Only your advisor sees this.")}</div>
-              <IntakeFormV2 draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang} prefilledNotice={!!inviteToken}/>
-              {/* Sticky footer with Submit + Pay Now */}
+              <div style={{fontSize:13,color:TH.muted,marginBottom:18,lineHeight:1.6,maxWidth:560}}>{t.stepIntakeHelpV2||(lang==="es"?"Captura tu información completa — agrega tus tarjetas, ingresos, deudas, cuentas y metas igual que en el reporte mensual. Solo tu asesor lo ve.":"Capture your full picture — add credit cards, income, debts, accounts, and goals just like in a monthly snapshot. Only your advisor sees this.")}</div>
+              {/* Contact block (Section 1) — name/email/phone + couple toggle, prefilled from invite */}
+              <IntakeFormSection n={1} title={t.intakeSection1Title||(lang==="es"?"Contacto":"Contact")}>
+                {!!inviteToken&&<div style={{padding:"10px 14px",background:GOLD+"11",border:`1px solid ${GOLD}33`,borderRadius:10,fontSize:12,color:TH.text,marginBottom:14,lineHeight:1.5}}>✨ {t.intakePrefilledNote||(lang==="es"?"Tu asesor pre-llenó tu nombre, correo y teléfono desde la invitación. Revísalos y ajústalos si hace falta.":"Your advisor pre-filled your name, email, and phone from the invitation. Review them and tweak if needed.")}</div>}
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+                  <div><IntakeFieldLabel>{t.firstNameLbl||"First name"} *</IntakeFieldLabel><input style={{width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}} value={draft.firstName||""} onChange={e=>setDraft(d=>({...d,firstName:e.target.value}))}/></div>
+                  <div><IntakeFieldLabel>{t.lastNameLbl||"Last name"} *</IntakeFieldLabel><input style={{width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}} value={draft.lastName||""} onChange={e=>setDraft(d=>({...d,lastName:e.target.value}))}/></div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+                  <div><IntakeFieldLabel>{t.emailLbl||"Email"} *</IntakeFieldLabel><input type="email" style={{width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}} value={draft.email||""} onChange={e=>setDraft(d=>({...d,email:e.target.value}))}/></div>
+                  <div><IntakeFieldLabel>{t.phoneLbl||"Phone"}</IntakeFieldLabel><input type="tel" inputMode="tel" style={{width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}} value={draft.phone||""} onChange={e=>setDraft(d=>({...d,phone:fmtPh?fmtPh(e.target.value):e.target.value}))}/></div>
+                </div>
+                <div style={{marginBottom:12}}><IntakeFieldLabel>{t.intakeHouseholdLbl||(lang==="es"?"¿Aplicas como individuo o pareja?":"Are you applying as an individual or a couple?")}</IntakeFieldLabel>
+                  <div style={{display:"flex",gap:8}}>
+                    {[{id:"single",lbl:t.householdSingle||(lang==="es"?"Solo yo":"Just me"),emoji:"👤"},{id:"couple",lbl:t.householdCouple||(lang==="es"?"Mi pareja y yo":"My partner & me"),emoji:"💑"}].map(opt=><button key={opt.id} type="button" onClick={()=>setDraft(d=>({...d,householdType:opt.id}))} style={{flex:1,padding:"12px 16px",borderRadius:8,border:`2px solid ${(draft.householdType||"single")===opt.id?GOLD:TH.cardBorder}`,background:(draft.householdType||"single")===opt.id?GOLD+"22":"transparent",color:TH.text,cursor:"pointer",fontSize:13,fontWeight:600,textAlign:"left",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>{opt.emoji}</span>{opt.lbl}</button>)}
+                  </div>
+                </div>
+                {(draft.householdType==="couple")&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+                  <div><IntakeFieldLabel>{t.partnerFirstNameLbl||(lang==="es"?"Nombre de tu pareja":"Partner first name")} *</IntakeFieldLabel><input style={{width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}} value={draft.partnerFirst||""} onChange={e=>setDraft(d=>({...d,partnerFirst:e.target.value}))}/></div>
+                  <div><IntakeFieldLabel>{t.partnerLastNameLbl||(lang==="es"?"Apellido":"Partner last name")}</IntakeFieldLabel><input style={{width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}} value={draft.partnerLast||""} onChange={e=>setDraft(d=>({...d,partnerLast:e.target.value}))}/></div>
+                </div>}
+              </IntakeFormSection>
+              {/* Full structured intake form (line-item rich data — restored from pre-v0.30 behavior) */}
+              <IntakeFormBody draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang}/>
+              {/* Sticky footer with Back / Submit / Pay Now */}
               <div style={{marginTop:24,paddingTop:20,borderTop:`1px solid ${TH.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,flexWrap:"wrap"}}>
-                <div style={{fontSize:11,color:TH.dim,fontStyle:"italic",lineHeight:1.5,flex:"1 1 220px",maxWidth:380}}>{t.intakeFooterPrivacy||(lang==="es"?"El pago abre en una pestaña nueva. También puedes pagar después de la llamada de descubrimiento.":"Opens secure checkout in a new tab. You can also pay after the discovery call.")}</div>
+                <div style={{fontSize:11,color:TH.dim,fontStyle:"italic",lineHeight:1.5,flex:"1 1 200px",maxWidth:360}}>{t.intakeFooterPrivacy||(lang==="es"?"El pago abre en una pestaña nueva. También puedes pagar después de la llamada de descubrimiento.":"Opens secure checkout in a new tab. You can also pay after the discovery call.")}</div>
                 <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <button onClick={back} disabled={submitting} style={{padding:"12px 18px",borderRadius:8,background:"transparent",color:TH.muted,fontWeight:700,fontSize:13,border:`1px solid ${TH.cardBorder}`,cursor:"pointer",whiteSpace:"nowrap"}}>← {t.backBtn||"Back"}</button>
                   <button onClick={()=>goSubmit(false)} disabled={submitting} style={{padding:"12px 22px",borderRadius:8,background:"transparent",color:submitting?TH.muted:TH.text,fontWeight:700,fontSize:13,border:`1px solid ${TH.cardBorder}`,cursor:submitting?"default":"pointer",whiteSpace:"nowrap"}}>{submitting&&!payingNow?(t.intakeSubmitting||"Submitting…"):"✓ "+(t.intakeSubmit||"Submit intake")}</button>
-                  <button onClick={()=>goSubmit(true)} disabled={submitting||!selectedService||!(selectedService.payUrl||selectedService.stripeUrl)} style={{padding:"12px 22px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:(submitting||!(selectedService&&(selectedService.payUrl||selectedService.stripeUrl)))?"default":"pointer",whiteSpace:"nowrap",opacity:(selectedService&&(selectedService.payUrl||selectedService.stripeUrl))?1:0.4,boxShadow:(selectedService&&(selectedService.payUrl||selectedService.stripeUrl))?"0 4px 12px rgba(201,168,76,0.28)":"none"}}>💳 {(t.intakePayNow2||(lang==="es"?"Pagar ahora":"Pay now"))} · {selectedService?.price||"$"} →</button>
+                  <button onClick={()=>goSubmit(true)} disabled={submitting||!selectedService} style={{padding:"12px 22px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:(submitting||!selectedService)?"default":"pointer",whiteSpace:"nowrap",opacity:selectedService?1:0.4,boxShadow:selectedService?"0 4px 12px rgba(201,168,76,0.28)":"none"}}>💳 {(t.intakePayNow2||(lang==="es"?"Pagar ahora":"Pay now"))} · {selectedService?.price||"$"} →</button>
                 </div>
               </div>
               {/* Promo code field — only render when set */}
@@ -3528,11 +3645,11 @@ function PublicIntake(){
             <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
           </div>
           {/* Sticky service sidebar (web only, engagement + intake) */}
-          {showSidebar&&<IntakeSelectedServiceCard service={selectedService} lang={lang} t={t} TH={TH} showChange={step!=="engagement"} onChange={()=>setStep("service")}/>}
+          {showSidebar&&<IntakeSelectedServiceCard service={selectedService} lang={lang} t={t} TH={TH} showChange={step!=="engagement"} onChange={()=>goToStep("service")}/>}
         </div>}
       </div>
       {/* Done modal — overlays the form, doesn't replace it */}
-      <IntakeDoneModal open={submitted} onClose={resetFlow} onSubmitAnother={resetFlow} refToken={refToken} lang={lang} t={t} TH={TH} payingNow={payingNow}/>
+      <IntakeDoneModal open={submitted} onClose={resetFlow} lang={lang} t={t} TH={TH} payingNow={payingNow} noPaymentLink={noPaymentLink}/>
     </div>
   </ThemeCtx.Provider>;
 }
@@ -3606,7 +3723,7 @@ function NewInviteModal({open,onClose,onSent,settings,t}){
       {/* Phone */}
       <div style={{marginBottom:12}}>
         <label style={lbl()}>{(t?.phone||"Phone")+" ("+(t?.optional||"optional")+")"}</label>
-        <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="(305) 555-0000" style={inp}/>
+        <input type="tel" value={phone} onChange={e=>setPhone(fmtPh?fmtPh(e.target.value):e.target.value)} placeholder="(305) 555-0000" style={inp} inputMode="tel" autoComplete="tel"/>
       </div>
       {/* Note */}
       <div style={{marginBottom:18}}>

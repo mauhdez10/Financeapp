@@ -2,6 +2,51 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.31.0 — 2026-05-22 — Public intake hardening pass
+
+Ten bugs filed against v0.30.0. All addressed.
+
+**Signature handling — fixed multiple long-standing issues.**
+- `SignaturePad` gains a `typedOnly` prop. When set, hides the Draw tab entirely — only the typed-name input shows. Applied on (a) the public intake engagement letter and (b) the advisor's settings signature. Stops the "I clicked Type but it still wants drawing" confusion.
+- The auto-commit effect (v0.29.1) now also fires when `defaultName` *changes* mid-mount, not only on first mount. Closes the race where the invite-token resolve completed AFTER SignaturePad mounted → `defaultName` arrived async but signature stayed empty.
+- Advisor signature display in the engagement letter (`EngagementLetter` body) hardened against legacy formats: strings starting with `data:` or `http` render as images; other strings now render as cursive typed text (was breaking on `"Mauricio Hernandez"` saved-as-plain-string from older builds). Empty advisor signature falls back to rendering the advisor's name in cursive instead of the placeholder. Closes Mauricio's "advisor signature still doesn't populate — we have tried several times" report.
+- Advisor-settings SignaturePad value coercion mirrors the same logic: legacy string → typed text (not faux dataUrl).
+
+**Client signature shows inline at the "Client signature: <name>" bar.**
+Right above the SignaturePad, the prospect's typed signature renders in cursive next to the label — matches Mauricio's screenshot annotation. Replaces the old `___________` placeholder once they type.
+
+**Browser back navigates the intake stages.**
+PublicIntake now `pushState`s on every step transition (welcome → service → engagement → intake) and listens for `popstate`. Clicking the browser's Back button walks back through stages naturally. Back from Welcome exits to whatever page they came from.
+
+**Tab 4 — restored advisor-style intake form.**
+The simplified `IntakeFormV2` (12 totals + 2 textareas) is gone for the public flow. Tab 4 now renders an inline Contact section (name/email/phone + couple toggle, prefilled from invite token + gold notice) followed by the full structured `IntakeFormBody` — same line-item rich data the advisor sees post-conversion: Add Income source, Add Bill, Add Debt/Card, Add Asset, Avalanche/Snowball strategy. Adds a Back button to the sticky footer. Same card chrome + gold palette as the other tabs (no more visual inconsistency).
+
+**Pay Now button always clickable.**
+Was disabled when `selectedService.payUrl` was empty (cf. Annual Bundle had no Stripe link). Now clickable — submits the intake regardless; if no payment link is configured, the Done modal shows "Your intake is in. Your advisor will send you the payment link directly." instead of opening Stripe.
+
+**Done modal cleanup.**
+Dropped the reference token display. Dropped the "Submit another" button. Added "You can safely close this tab now." line. Copy now mentions the engagement-letter email that was sent.
+
+**Welcome page tightened.**
+Reduced padding on both web columns. Anchor logo bumped 96→140px on web (was too small in the hero panel). Headline pulled higher; CTA more prominent. Mobile card padding 32→22px top, 20→16px bottom margin between blocks. Less empty space.
+
+**New Invite phone format.**
+The "(305) 555-0000" placeholder now actually formats as the advisor types. `onChange` runs `fmtPh(e.target.value)` before setting state.
+
+**Engagement letter emailed after submission.**
+New `api/send-engagement-copy.js` endpoint. Fires non-blocking from the public intake right after a successful submit. Builds a self-contained HTML email (Newsreader italic title, gold hairline, both signatures rendered as cursive or drawn-image, regulatory footer, English + Spanish). Sent to the prospect, advisor CC'd as reply-to. Idempotent — uses a new `engagement_emailed_at` column on `intake_submissions` so a re-submit doesn't double-email. **Requires SQL migration:** `supabase-migrations/2026-05-22-engagement-emailed.sql` — paste into Supabase SQL Editor before this works in production.
+
+**Build marker:** `2026-05-22-v0310-intake-fixes`. App.jsx +~140 lines (typedOnly + auto-commit + inline sig + hardened display + back-nav + tab 4 restore + Pay Now logic + Done modal). New `api/send-engagement-copy.js` (~170 lines). New `supabase-migrations/2026-05-22-engagement-emailed.sql`. No new deps. D-1, D-3, D-7, D-17, D-27-amended, D-30, D-36 preserved.
+
+**Smoke tests:**
+1. **Typed signature.** Open `/intake?advisor=<id>` → walk to step 3. SignaturePad shows ONLY the typed input (no Draw tab). Type a name → it appears in cursive next to "Client signature:" label above. Continue advances.
+2. **Advisor signature.** Engagement letter body now shows the advisor's name in cursive even if `advisorSignature` is empty in settings (graceful fallback).
+3. **Browser back.** From any step, click browser Back → walks back one stage. Back from Welcome exits the intake.
+4. **Tab 4 has structured form.** Add Income, Add Bill, Add Debt/Card buttons present. + Back button in footer.
+5. **Pay Now always clickable.** Even with no Stripe link configured → click submits + opens Done modal with "advisor will send payment link" message.
+6. **Done modal.** No ref token. No Submit another. "You can safely close this tab now." line.
+7. **Engagement copy email.** After Submit, prospect receives an email with the signed letter (advisor CC'd). Subject "Your engagement letter — Golden Anchor" (or ES equivalent).
+
 ## v0.30.0 — 2026-05-22 — Public intake redesign (Phase 4 of Claude Design workplan)
 
 Big UX rewrite of the public intake flow. Five stages instead of four. New welcome screen, simplified intake form, Done modal overlay, sticky service sidebar on web.
