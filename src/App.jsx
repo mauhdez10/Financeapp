@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, createContext, useContext, Fragment } from "react";
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
@@ -3090,7 +3090,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0291-sig-autocommit";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-22-v0300-public-intake-redesign";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -3140,9 +3140,223 @@ function IntakeFormBody({draft,setDraft,t,TH,lang}){
 }
 
 /* ── PUBLIC INTAKE (Tier-3, v0.7.1 — full parity with old IntakeSection) ── */
+/* ── v0.30.0 — Phase 4 public intake redesign — helper components ──────────
+   New 5-stage flow: Welcome → Service → Engagement Letter → Your Information → Done modal.
+   All helpers defined at top-level per pitfall #17 (no nested-component focus loss).
+   Layout split: web (>720px) vs mobile (<=720px) — driven by `isMobile` viewport flag.
+   Brand tokens (#C9A84C, JetBrains Mono, Newsreader italic) come from colors_and_type.css. */
+
+// 5-step rail rendered at the top of every intake stage. Numbered circles +
+// "›" separators on web; wrapping chips on mobile. The "done" step has no
+// number; shows a ✓ glyph when the user lands on it (during the Done modal).
+function IntakeStepRail({stage,doneActive,t,TH,isMobile}){
+  const STEPS=[
+    {k:"welcome",lbl:t.intakeStepWelcome||"Welcome"},
+    {k:"service",lbl:t.intakeStepService||"Service"},
+    {k:"engagement",lbl:t.intakeStepEngagement||"Engagement"},
+    {k:"intake",lbl:t.intakeStepInfo||"Your information"},
+    {k:"done",lbl:t.intakeStepDone||"Done"}
+  ];
+  const order=["welcome","service","engagement","intake","done"];
+  const curIdx=order.indexOf(stage);
+  if(isMobile){
+    return<div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center",marginBottom:14}}>
+      {STEPS.map((s,i)=>{const here=i===curIdx||(s.k==="done"&&doneActive),done=i<curIdx;return<div key={s.k} style={{padding:"5px 12px",borderRadius:99,fontSize:10,fontWeight:700,border:`1px solid ${here?GOLD:TH.cardBorder}`,background:here?GOLD+"22":"transparent",color:here?GOLD:(done?TH.muted:TH.dim),letterSpacing:"0.02em"}}>{s.k==="done"&&(here||doneActive)?"✓ ":(done?"✓ ":(i+1)+" ")}{s.lbl}</div>;})}
+    </div>;
+  }
+  return<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:24,flexWrap:"wrap"}}>
+    {STEPS.map((s,i)=>{
+      const here=i===curIdx||(s.k==="done"&&doneActive);
+      const done=i<curIdx;
+      const isDoneStep=s.k==="done";
+      return<Fragment key={s.k}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 14px",borderRadius:999,border:`1px solid ${here?GOLD:"transparent"}`,background:here?GOLD+"22":"transparent",color:here?"#0D1B2A":(done?"#755023":TH.dim),fontSize:12,fontWeight:600}}>
+          <span style={{width:22,height:22,borderRadius:11,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,background:here?"#0D1B2A":(done?"#755023":TH.cardBorder),color:here?GOLD:"#fff"}}>{isDoneStep?(here||doneActive?"✓":""):(done?"✓":(i+1))}</span>
+          <span style={{color:here?GOLD:(done?"#755023":TH.dim)}}>{s.lbl}</span>
+        </div>
+        {i<STEPS.length-1&&<span style={{width:22,height:1,background:TH.cardBorder,margin:"0 4px"}}/>}
+      </Fragment>;
+    })}
+  </div>;
+}
+
+// Selected-service mini card. Used as the right-hand sticky sidebar on web during
+// Engagement and Intake stages. Mauricio's "you can change later" affordance.
+function IntakeSelectedServiceCard({service,lang,t,TH,showChange,onChange}){
+  if(!service)return null;
+  return<div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:12,padding:16,position:"sticky",top:24}}>
+    <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}}>{t.intakeSelectedServiceHdr||"Selected service"}</div>
+    <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
+      <div style={{width:46,height:46,borderRadius:8,background:GOLD+"22",border:`1px solid ${GOLD}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{service.icon}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:14,fontWeight:700,color:TH.text,lineHeight:1.3}}>{service.name}</div>
+        <div style={{fontSize:13,fontWeight:800,color:GOLD,marginTop:2,fontVariantNumeric:"tabular-nums"}}>{service.price}</div>
+      </div>
+    </div>
+    {service.desc&&<div style={{fontSize:11,color:TH.muted,lineHeight:1.6,marginBottom:12}}>{service.desc}</div>}
+    {showChange&&<button onClick={onChange} style={{fontSize:11,padding:"5px 12px",borderRadius:99,background:"transparent",color:TH.muted,border:`1px solid ${TH.cardBorder}`,cursor:"pointer",fontWeight:600,marginBottom:12}}>← {t.intakeChangeService||"Change"}</button>}
+    <div style={{padding:"10px 12px",background:TH.bg,borderRadius:8,border:`1px dashed ${TH.cardBorder}`,fontSize:11,color:TH.dim,lineHeight:1.5,fontStyle:"italic"}}>{t.intakePrivacyHint||"Your information stays encrypted and only your advisor sees it."}</div>
+  </div>;
+}
+
+// Welcome stage. Web = 2-col with hero panel on the right; mobile = centered phone-frame card.
+function IntakeWelcomeStage({onStart,advisorSettings,lang,t,TH,isMobile}){
+  const tagline=t.taglineSecuring||"Securing Your Health, Anchoring Your Future.";
+  const wordmark=(advisorSettings.companyName||"Golden Anchor").toUpperCase();
+  if(isMobile){
+    return<div style={{maxWidth:520,margin:"0 auto",padding:"0 4px"}}>
+      <div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"32px 22px",textAlign:"center"}}>
+        <div style={{marginBottom:14}}><img src="/logo-anchor.png" alt="Golden Anchor" style={{width:130,height:130,objectFit:"contain"}}/></div>
+        <div style={{fontSize:18,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em"}}>{wordmark}</div>
+        <div style={{fontSize:11,fontStyle:"italic",color:GOLD+"BB",fontFamily:"'Newsreader',Georgia,serif",marginTop:6,letterSpacing:"0.02em"}}>{tagline}</div>
+        <div style={{height:1,width:60,background:GOLD,margin:"22px auto"}}/>
+        <div style={{fontSize:22,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.2,marginBottom:8}}>{t.intakeWelcomeHeadline||(lang==="es"?"Bienvenido a Golden Anchor":"Welcome to Golden Anchor")}</div>
+        <div style={{fontSize:13,color:TH.muted,lineHeight:1.6,marginBottom:20,maxWidth:380,margin:"0 auto 20px"}}>{t.intakeWelcomeSub||"Let's start with a few questions so your advisor knows how to help. It takes about 5 minutes."}</div>
+        <button onClick={onStart} style={{width:"100%",padding:"14px 24px",borderRadius:8,background:GOLD,color:"#0D1B2A",border:"none",fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",minHeight:48,touchAction:"manipulation",boxShadow:"0 4px 12px rgba(201,168,76,0.28)"}}>{t.intakeWelcomeStartBtn||(lang==="es"?"Comenzar →":"Start intake →")}</button>
+        <div style={{fontSize:11,color:TH.dim,marginTop:14,display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontStyle:"italic"}}>🔒 {t.intakePrivacyLine||(lang==="es"?"Encriptado y privado. Solo lo ve tu asesor.":"Encrypted and private. Only your advisor sees this.")}</div>
+      </div>
+    </div>;
+  }
+  // Web: 2-col, hero on right
+  return<div style={{maxWidth:1080,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 380px",gap:24,alignItems:"stretch"}}>
+    <div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"40px 36px"}}>
+      <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.10em",textTransform:"uppercase",marginBottom:10}}>{t.intakeWelcomeTag||(lang==="es"?"Admisión pública":"Public intake")}</div>
+      <div style={{fontSize:36,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.1,marginBottom:14,letterSpacing:"-0.005em"}}>{t.intakeWelcomeHeadline||(lang==="es"?"Bienvenido a Golden Anchor":"Welcome to Golden Anchor")}</div>
+      <div style={{height:1,width:60,background:GOLD,margin:"4px 0 18px"}}/>
+      <div style={{fontSize:14,color:TH.muted,lineHeight:1.7,marginBottom:24,maxWidth:480}}>{t.intakeWelcomeSubWeb||(lang==="es"?"Cuéntanos un poco sobre tu situación para que tu asesor llegue preparado a tu primera cita. Toma alrededor de 5 minutos y puedes guardar y volver más tarde.":"Tell us a bit about your situation so your advisor arrives prepared to your first meeting. It takes about 5 minutes; you can save and come back later.")}</div>
+      <button onClick={onStart} style={{padding:"14px 28px",borderRadius:8,background:GOLD,color:"#0D1B2A",border:"none",fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 4px 12px rgba(201,168,76,0.28)"}}>{t.intakeWelcomeStartBtn||(lang==="es"?"Comenzar →":"Start intake →")}</button>
+      <div style={{fontSize:12,color:TH.dim,marginTop:18,display:"flex",alignItems:"center",gap:6,fontStyle:"italic"}}>🔒 {t.intakePrivacyLine||(lang==="es"?"Encriptado y privado. Solo lo ve tu asesor.":"Encrypted and private. Only your advisor sees this.")}</div>
+    </div>
+    <div style={{background:"radial-gradient(at 60% 30%, "+GOLD+"22, transparent 60%), linear-gradient(135deg, #0D1B2A 0%, #1F2937 100%)",border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:"36px 22px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",minHeight:340}}>
+      <img src="/logo-anchor.png" alt="Golden Anchor" style={{width:96,height:96,objectFit:"contain",marginBottom:18}}/>
+      <div style={{fontSize:14,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em"}}>{wordmark}</div>
+      <div style={{height:1,width:48,background:GOLD,margin:"14px auto"}}/>
+      <div style={{fontSize:14,fontStyle:"italic",color:"#EDD594",fontFamily:"'Newsreader',Georgia,serif",lineHeight:1.5,maxWidth:280}}>{tagline}</div>
+    </div>
+  </div>;
+}
+
+// Section wrapper used by the new intake form. Numbered gold circle + italic
+// Newsreader title + gold-to-transparent hairline.
+function IntakeFormSection({n,title,children}){
+  const TH=useTh();
+  return<div style={{marginBottom:32}}>
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+      <span style={{width:26,height:26,borderRadius:13,background:GOLD+"22",border:`1px solid ${GOLD}55`,color:GOLD,fontSize:11,fontWeight:800,display:"inline-flex",alignItems:"center",justifyContent:"center",fontVariantNumeric:"tabular-nums",flexShrink:0}}>{n}</span>
+      <span style={{fontSize:18,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,whiteSpace:"nowrap"}}>{title}</span>
+      <span style={{flex:1,height:1,background:`linear-gradient(to right, ${GOLD}55, transparent)`}}/>
+    </div>
+    {children}
+  </div>;
+}
+
+// Currency input with $ glyph and gold focus ring. Returns a controlled number.
+function IntakeCurrencyInput({value,onChange,placeholder,TH}){
+  const[focused,setFocused]=useState(false);
+  return<div style={{position:"relative"}}>
+    <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:TH.dim,fontSize:13,fontWeight:600,pointerEvents:"none"}}>$</span>
+    <input inputMode="decimal" value={value||""} onChange={e=>{const v=e.target.value.replace(/[^0-9.]/g,"");onChange(v);}} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} placeholder={placeholder||"0"} style={{width:"100%",padding:"12px 14px 12px 28px",background:TH.inp,border:`1px solid ${focused?GOLD:TH.inpBorder}`,outline:focused?`2px solid ${GOLD}33`:"none",color:TH.text,borderRadius:8,fontSize:13,boxSizing:"border-box",fontVariantNumeric:"tabular-nums",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}/>
+  </div>;
+}
+
+// Field label primitive — caps + tracking matches Claude Design.
+function IntakeFieldLabel({children}){const TH=useTh();return<div style={{fontSize:10,fontWeight:700,color:TH.muted,marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase"}}>{children}</div>;}
+
+// New simplified 5-section intake form. Replaces the heavy IntakeFormBody for the
+// public intake. Captures 12 currency totals + 2 textareas → stored on
+// draft.intakeSnapshot. The advisor still gets full edit capability via the
+// existing IntakeFormBody when reviewing a submission.
+function IntakeFormV2({draft,setDraft,t,TH,lang,prefilledNotice=true}){
+  const snap=draft.intakeSnapshot||{};
+  const setSnap=(k,v)=>setDraft(d=>({...d,intakeSnapshot:{...(d.intakeSnapshot||{}),[k]:v}}));
+  const setField=k=>e=>setDraft(d=>({...d,[k]:e.target.value}));
+  const INP={width:"100%",padding:"12px 14px",background:TH.inp,border:`1px solid ${TH.inpBorder}`,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"};
+  const TXT={...INP,minHeight:96,fontFamily:"inherit",resize:"vertical",lineHeight:1.5};
+  const isCouple=draft.householdType==="couple";
+  return<ThemeCtx.Provider value={TH}>
+    {/* 1 — Contact */}
+    <IntakeFormSection n={1} title={t.intakeSection1Title||(lang==="es"?"Contacto":"Contact")}>
+      {prefilledNotice&&<div style={{padding:"10px 14px",background:GOLD+"11",border:`1px solid ${GOLD}33`,borderRadius:10,fontSize:12,color:TH.text,marginBottom:14,lineHeight:1.5}}>✨ {t.intakePrefilledNote||(lang==="es"?"Tu asesor pre-llenó tu nombre, correo y teléfono desde la invitación. Revísalos y ajústalos si hace falta.":"Your advisor pre-filled your name, email, and phone from the invitation. Review them and tweak if needed.")}</div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.firstNameLbl||"First name"} *</IntakeFieldLabel><input style={INP} value={draft.firstName||""} onChange={setField("firstName")}/></div>
+        <div><IntakeFieldLabel>{t.lastNameLbl||"Last name"} *</IntakeFieldLabel><input style={INP} value={draft.lastName||""} onChange={setField("lastName")}/></div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.emailLbl||"Email"} *</IntakeFieldLabel><input type="email" style={INP} value={draft.email||""} onChange={setField("email")}/></div>
+        <div><IntakeFieldLabel>{t.phoneLbl||"Phone"}</IntakeFieldLabel><input style={INP} value={draft.phone||""} onChange={setField("phone")}/></div>
+      </div>
+      <div style={{marginBottom:12}}><IntakeFieldLabel>{t.intakeHouseholdLbl||(lang==="es"?"¿Aplicas como individuo o pareja?":"Are you applying as an individual or a couple?")}</IntakeFieldLabel>
+        <div style={{display:"flex",gap:8}}>
+          {[{id:"single",lbl:t.householdSingle||(lang==="es"?"Solo yo":"Just me"),emoji:"👤"},{id:"couple",lbl:t.householdCouple||(lang==="es"?"Mi pareja y yo":"My partner & me"),emoji:"💑"}].map(opt=><button key={opt.id} type="button" onClick={()=>setDraft(d=>({...d,householdType:opt.id}))} style={{flex:1,padding:"12px 16px",borderRadius:8,border:`2px solid ${draft.householdType===opt.id?GOLD:TH.cardBorder}`,background:draft.householdType===opt.id?GOLD+"22":"transparent",color:TH.text,cursor:"pointer",fontSize:13,fontWeight:600,textAlign:"left",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>{opt.emoji}</span>{opt.lbl}</button>)}
+        </div>
+      </div>
+      {isCouple&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.partnerFirstNameLbl||(lang==="es"?"Nombre de tu pareja":"Partner first name")} *</IntakeFieldLabel><input style={INP} value={draft.partnerFirst||""} onChange={setField("partnerFirst")}/></div>
+        <div><IntakeFieldLabel>{t.partnerLastNameLbl||(lang==="es"?"Apellido":"Partner last name")}</IntakeFieldLabel><input style={INP} value={draft.partnerLast||""} onChange={setField("partnerLast")}/></div>
+      </div>}
+    </IntakeFormSection>
+    {/* 2 — Income */}
+    <IntakeFormSection n={2} title={t.intakeSection2Title||(lang==="es"?"Ingresos":"Income")}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.intakeMonthlyNetLbl||(lang==="es"?"Ingreso neto mensual":"Monthly net income")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.monthlyNet} onChange={v=>setSnap("monthlyNet",v)} TH={TH}/><div style={{fontSize:10,color:TH.dim,marginTop:4,fontStyle:"italic"}}>{t.intakeMonthlyNetHint||(lang==="es"?"Después de impuestos — lo que llega a tu cuenta.":"After taxes — what hits your bank account.")}</div></div>
+        {isCouple&&<div><IntakeFieldLabel>{t.intakePartnerNetLbl||(lang==="es"?"Neto mensual de tu pareja":"Partner monthly net")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.partnerMonthlyNet} onChange={v=>setSnap("partnerMonthlyNet",v)} TH={TH}/></div>}
+      </div>
+      <div><IntakeFieldLabel>{t.intakeOtherIncomeLbl||(lang==="es"?"Otros ingresos (renta, extras, etc.)":"Other income (rental, side, etc.)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.otherIncome} onChange={v=>setSnap("otherIncome",v)} TH={TH}/></div>
+    </IntakeFormSection>
+    {/* 3 — Debts */}
+    <IntakeFormSection n={3} title={t.intakeSection3Title||(lang==="es"?"Deudas y obligaciones":"Debts & liabilities")}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.intakeTotalCardsLbl||(lang==="es"?"Balance total de tarjetas de crédito":"Total credit-card balances")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.totalCards} onChange={v=>setSnap("totalCards",v)} TH={TH}/></div>
+        <div><IntakeFieldLabel>{t.intakeTotalLoansLbl||(lang==="es"?"Préstamos (auto, estudios, personales)":"Total loans (car, student, personal)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.totalLoans} onChange={v=>setSnap("totalLoans",v)} TH={TH}/></div>
+      </div>
+      <div><IntakeFieldLabel>{t.intakeMortgageLbl||(lang==="es"?"Saldo de hipoteca":"Mortgage balance")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.mortgage} onChange={v=>setSnap("mortgage",v)} TH={TH}/></div>
+    </IntakeFormSection>
+    {/* 4 — Assets */}
+    <IntakeFormSection n={4} title={t.intakeSection4Title||(lang==="es"?"Activos e inversiones":"Assets & investments")}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.intakeCheckingLbl||(lang==="es"?"Cuenta corriente y ahorros":"Checking & savings")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.checking} onChange={v=>setSnap("checking",v)} TH={TH}/></div>
+        <div><IntakeFieldLabel>{t.intakeRetirementLbl||(lang==="es"?"Cuentas de retiro (401k / IRA)":"Retirement accounts (401k / IRA)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.retirement} onChange={v=>setSnap("retirement",v)} TH={TH}/></div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div><IntakeFieldLabel>{t.intakeBrokerageLbl||(lang==="es"?"Inversiones de corretaje / brokerage":"Brokerage / taxable investments")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.brokerage} onChange={v=>setSnap("brokerage",v)} TH={TH}/></div>
+        <div><IntakeFieldLabel>{t.intakeHomeEquityLbl||(lang==="es"?"Equity de la casa (valor − hipoteca)":"Real-estate equity (home value − mortgage)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.homeEquity} onChange={v=>setSnap("homeEquity",v)} TH={TH}/></div>
+      </div>
+      <div><IntakeFieldLabel>{t.intakeOtherAssetsLbl||(lang==="es"?"Otros activos (carros, joyas, valiosos)":"Other assets (vehicles, valuables)")}</IntakeFieldLabel><IntakeCurrencyInput value={snap.otherAssets} onChange={v=>setSnap("otherAssets",v)} TH={TH}/></div>
+    </IntakeFormSection>
+    {/* 5 — Goals */}
+    <IntakeFormSection n={5} title={t.intakeSection5Title||(lang==="es"?"Metas y notas":"Goals & notes")}>
+      <div style={{marginBottom:14}}><IntakeFieldLabel>{t.intakeGoalsHelpLbl||(lang==="es"?"¿Con qué quieres que tu asesor te ayude?":"What do you want help with?")}</IntakeFieldLabel><textarea style={TXT} rows={4} value={snap.goalsHelp||""} onChange={e=>setSnap("goalsHelp",e.target.value)} placeholder={t.intakeGoalsHelpPh||(lang==="es"?"p. ej. bajar deudas de tarjeta, comprar casa en 18 meses…":"e.g. pay down credit cards, buy a home in 18 months…")}/></div>
+      <div><IntakeFieldLabel>{t.intakeOtherInfoLbl||(lang==="es"?"¿Algo más que tu asesor deba saber?":"Anything else your advisor should know?")}</IntakeFieldLabel><textarea style={TXT} rows={4} value={snap.otherInfo||""} onChange={e=>setSnap("otherInfo",e.target.value)} placeholder={t.intakeOtherInfoPh||(lang==="es"?"Cambios de trabajo, eventos próximos, dependientes, salud…":"Upcoming life events, job changes, dependents, health considerations…")}/></div>
+    </IntakeFormSection>
+  </ThemeCtx.Provider>;
+}
+
+// Done modal — overlay confirmation that keeps the underlying form mounted.
+// Triggered when Submit or Pay Now lands. Esc closes and resets to welcome.
+function IntakeDoneModal({open,onClose,onSubmitAnother,refToken,lang,t,TH,payingNow}){
+  useEffect(()=>{if(!open)return;const h=e=>{if(e.key==="Escape")onClose();};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);},[open,onClose]);
+  if(!open)return null;
+  return<div role="dialog" aria-modal="true" style={{position:"fixed",inset:0,background:"rgba(13,27,42,0.72)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:18,animation:"ga-fade 200ms ease"}}>
+    <div style={{background:"#fff",border:`1px solid ${TH.cardBorder}`,borderRadius:20,padding:isMobileViewport()?"32px 22px":"40px 36px",maxWidth:480,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,0.45)",animation:"ga-modal-pop 250ms cubic-bezier(0.2, 0.8, 0.2, 1)",textAlign:"center",color:"#0F172A"}}>
+      <div style={{width:76,height:76,borderRadius:38,background:"#10B98122",border:"1px solid #10B98155",color:"#10B981",fontSize:36,display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:800,marginBottom:18}}>✓</div>
+      <div style={{fontSize:28,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",lineHeight:1.1,marginBottom:8,color:"#0F172A"}}>{t.intakeDoneTitle||(lang==="es"?"¡Recibimos tu información!":"Submission received")}</div>
+      <div style={{height:1,width:60,background:GOLD,margin:"14px auto 18px"}}/>
+      <div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:22,maxWidth:380,margin:"0 auto 22px"}}>{payingNow?(t.intakeDoneSubPay||(lang==="es"?"Te estamos redirigiendo al pago seguro. Te enviamos una copia a tu correo.":"Redirecting you to secure checkout. We've sent a copy of your responses to your email.")):(t.intakeDoneSub||(lang==="es"?"Tu asesor revisará tu información y te contactará en un día hábil. Te enviamos una copia a tu correo.":"Your advisor will review and reach out within one business day. We've sent a copy of your responses to the email above."))}</div>
+      {refToken&&<div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",padding:"10px 16px",background:GOLD+"11",border:`1px solid ${GOLD}44`,borderRadius:10,marginBottom:22}}>
+        <span style={{fontSize:9,fontWeight:700,color:"#64748B",letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.intakeDoneRefLbl||(lang==="es"?"Token de referencia":"Reference token")}</span>
+        <span style={{fontSize:15,fontWeight:700,color:GOLD,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",letterSpacing:"0.04em",marginTop:2}}>{refToken}</span>
+      </div>}
+      {!payingNow&&<button onClick={onSubmitAnother} style={{padding:"12px 24px",borderRadius:8,background:GOLD,color:"#0D1B2A",border:"none",fontSize:13,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em"}}>{t.intakeDoneSubmitAnother||(lang==="es"?"Enviar otra":"Submit another")}</button>}
+    </div>
+  </div>;
+}
+
+// Helper for the modal to detect mobile viewport (avoids prop-drilling).
+function isMobileViewport(){return typeof window!=="undefined"&&window.innerWidth<720;}
+
 function PublicIntake(){
   const urlParams=typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams("");
-  const inviteToken=urlParams.get("invite")||"";
+  const inviteToken=urlParams.get("invite")||urlParams.get("token")||"";
   const promoFromUrl=urlParams.get("promo")||"";
   const[resolvedAdvisorId,setResolvedAdvisorId]=useState(urlParams.get("advisor")||"");
   const[resolvedSettings,setResolvedSettings]=useState(null);
@@ -3150,183 +3364,175 @@ function PublicIntake(){
   const initialLang=(urlParams.get("lang")||"en").toLowerCase()==="es"?"es":"en";
   const[lang,setLang]=useState(initialLang);
   const t=T[lang]||T.en;
-  const[step,setStep]=useState("household");
-  const[householdType,setHouseholdType]=useState("single");
-  const[draft,setDraft]=useState(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email"}));
+  // v0.30.0 — 5-stage flow: welcome → service → engagement → intake → done modal.
+  // Old "household" step is gone; its content (name/email/phone + couple toggle)
+  // is now Section 1 of the IntakeFormV2.
+  const[step,setStep]=useState("welcome");
+  const[draft,setDraft]=useState(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email",householdType:"single",intakeSnapshot:{}}));
+  const householdType=draft.householdType||"single";
   const[selectedServiceId,setSelectedServiceId]=useState("");
   const[promoCode,setPromoCode]=useState(promoFromUrl);
   const[sig1,setSig1]=useState(null);
   const[sig2,setSig2]=useState(null);
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
+  const[payingNow,setPayingNow]=useState(false);
+  const[refToken,setRefToken]=useState("");
   const[err,setErr]=useState("");
   const[inviteResolved,setInviteResolved]=useState(!inviteToken);
   const[inviteError,setInviteError]=useState("");
+  const vp=useViewport();
+  const isMobile=vp.isMobile;
   useEffect(()=>{if(!inviteToken)return;let cancelled=false;(async()=>{const r=await gaResolveIntakeInvite(inviteToken);if(cancelled)return;if(!r.ok){setInviteError(r.error||"invite-resolve-failed");setInviteResolved(true);return;}setResolvedAdvisorId(r.advisorId||resolvedAdvisorId);if(r.advisorProfile)setResolvedSettings(r.advisorProfile);else if(r.advisorSettings)setResolvedSettings(r.advisorSettings);if(r.lang==="es"||r.lang==="en")setLang(r.lang);setDraft(d=>({...d,firstName:d.firstName||(r.prospectName||"").split(" ")[0]||"",lastName:d.lastName||((r.prospectName||"").split(" ").slice(1).join(" "))||"",email:d.email||r.prospectEmail||"",phone:d.phone||r.prospectPhone||""}));setInviteResolved(true);})();return()=>{cancelled=true;};},[inviteToken]);
   const[mode,setMode]=useState(()=>{if(typeof window==="undefined")return "dark";try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}});
   const isDark=mode==="dark";
   const TH=isDark?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}:{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
   useEffect(()=>{if(typeof document!=="undefined"){document.documentElement.style.background=TH.bg;document.body.style.background=TH.bg;document.body.style.margin="0";}try{window.localStorage.setItem("ga_intake_mode",mode);}catch(e){}},[mode,TH.bg]);
-  // Resolve services from advisor settings (fallback to default SVCS)
   const advisorSettings = resolvedSettings || {};
-  const services = (advisorSettings.services && advisorSettings.services.length) ? advisorSettings.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:lang==="es"?v.es:v.en,price:v.price,stripeUrl:(advisorSettings.stripeLinks||{})[v.id]||"",desc:lang==="es"?v.descEs:v.desc}));
+  const services = (advisorSettings.services && advisorSettings.services.length) ? advisorSettings.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:lang==="es"?v.es:v.en,price:v.price,stripeUrl:(advisorSettings.stripeLinks||{})[v.id]||v.payUrl||"",payUrl:(advisorSettings.stripeLinks||{})[v.id]||v.payUrl||"",desc:lang==="es"?v.descEs:v.desc}));
   const selectedService = services.find(sv=>sv.id===selectedServiceId);
   if(!advisorId){return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"system-ui,sans-serif"}}><div style={{fontSize:48,color:GOLD}}>⚓</div><div style={{fontSize:16,fontWeight:700,maxWidth:480}}>{t.intakeInvalidLink||"This intake link is invalid or expired."}</div><div style={{fontSize:12,color:TH.muted,maxWidth:480}}>{t.intakeContactAdvisor||"Please contact your advisor directly."}</div></div>;}
   const synthTheme={bg:TH.bg,nav:TH.card,navBorder:TH.cardBorder,card:TH.card,cardBorder:TH.cardBorder,modal:TH.modal,inp:TH.inp,inpBorder:TH.inpBorder,text:TH.text,muted:TH.muted,dim:TH.dim,sideText:TH.text,sideMuted:TH.muted,accent:TH.accent,pos:TH.pos,neg:TH.neg,warn:TH.warn,blue:TH.blue};
-  // v0.16.0: split submit/pay flow. `goSubmit(payNow)` submits the intake and
-  // ONLY redirects to Stripe when the client explicitly hits "Submit & pay
-  // now". Default submit just records the intake — advisor follows up with a
-  // payment link (Pay Later / cash). Stripe URL validation is non-blocking.
+  // Submit fires from the Intake stage's Submit or Pay Now buttons. Done modal
+  // (overlay) renders on success — form stays mounted underneath so Esc/back
+  // resets cleanly.
   const goSubmit=async(payNow)=>{
     setErr("");
+    if(!draft.firstName?.trim()){setErr(t.intakeFirstReq||"First name required.");return;}
+    if(!draft.lastName?.trim()){setErr(t.intakeLastReq||"Last name required.");return;}
+    if(!draft.email?.trim()||!vEmail(draft.email)){setErr(t.intakeEmailReq||"Valid email required.");return;}
+    if(householdType==="couple"&&!String(draft.partnerFirst||"").trim()){setErr(t.intakePartnerFirstReq||"Partner first name required.");return;}
     setSubmitting(true);
+    setPayingNow(!!payNow);
     const payload={...draft,monthSnapshots:[],savedCalcs:[],savedCompare:null,savedPortfolio:null,householdType,selectedServiceId,promoCode,engagementLetter:{signedAt:new Date().toISOString(),signature1:sig1,signature2:householdType==="couple"?sig2:null,version:"v1"}};
     delete payload.id;delete payload.archived;delete payload.hideNumbers;delete payload.currentMonthLabel;
     const res=await gaSubmitIntake(advisorId,lang,payload);
     if(res.ok){
       if(inviteToken&&res.submissionId){gaMarkIntakeInviteSubmitted(inviteToken,res.submissionId);}
+      setRefToken((res.submissionId||inviteToken||"").toString().slice(0,8).toUpperCase());
+      setSubmitted(true);
       if(payNow){
-        const stripeUrl = selectedService && selectedService.stripeUrl;
+        const stripeUrl=(selectedService&&(selectedService.payUrl||selectedService.stripeUrl))||"";
         if(stripeUrl){
           try{
-            const url = new URL(stripeUrl);
-            if(promoCode) url.searchParams.set("prefilled_promo_code", promoCode);
-            if(draft.email) url.searchParams.set("prefilled_email", draft.email);
-            setTimeout(()=>{window.location.href=url.toString();},800);
+            const url=new URL(stripeUrl);
+            if(promoCode)url.searchParams.set("prefilled_promo_code",promoCode);
+            if(draft.email)url.searchParams.set("prefilled_email",draft.email);
+            setTimeout(()=>{window.open(url.toString(),"_blank","noopener,noreferrer");},600);
           }catch(e){
             setErr(t.intakeStripeUrlBad||"Payment link is invalid. Your intake was submitted — your advisor will follow up.");
           }
-        } else {
-          setErr(t.intakeNoStripeLink||"No payment link configured for this service. Your intake was submitted — your advisor will follow up.");
         }
       }
-      setSubmitted(true);
     }else{setErr(t.intakeError||"Submission failed. Please try again.");setSubmitting(false);}
   };
-  // Step navigation
+  // Step navigation. No "household" — that step's content is now Section 1 of the intake form.
   const next=()=>{
     setErr("");
-    if(step==="household"){
-      if(!draft.firstName.trim()){setErr(t.intakeFirstReq||"First name required.");return;}
-      if(!draft.lastName.trim()){setErr(t.intakeLastReq||"Last name required.");return;}
-      if(!draft.email.trim()||!vEmail(draft.email)){setErr(t.intakeEmailReq||"Valid email required.");return;}
-      if(householdType==="couple"){
-        if(!String(draft.partnerFirst||"").trim()){setErr(t.intakeFirstReq||"Partner first name required.");return;}
-      }else{
-        // clear partner fields if single
-        setDraft(d=>({...d,partnerFirst:"",partnerLast:"",partnerEmail:"",partnerPhone:""}));
-        setSig2(null);
-      }
-      setStep("service");return;
-    }
+    if(step==="welcome"){setStep("service");return;}
     if(step==="service"){
       if(!selectedServiceId){setErr(t.intakePickService||"Please pick a service.");return;}
       setStep("engagement");return;
     }
     if(step==="engagement"){
-      // v0.29.1 — Stronger signature check. Was just `if(!sig1)` which let
-      // empty typed sigs (kind:"typed", text:"") slip through because the
-      // wrapper object was truthy. Now also rejects empty text + empty dataUrl.
       const sigEmpty=s=>!s||(s.kind==="typed"&&!s.text?.trim())||(s.kind==="drawn"&&!s.dataUrl);
       if(sigEmpty(sig1)){setErr(t.intakeSigRequired||"Your signature is required.");return;}
       if(householdType==="couple"&&sigEmpty(sig2)){setErr(t.intakeSig2Required||"Both signatures are required for a couple.");return;}
       setStep("intake");return;
     }
-    if(step==="intake"){goSubmit(false);return;}
   };
   const back=()=>{
     setErr("");
-    if(step==="service")setStep("household");
+    if(step==="service")setStep("welcome");
     else if(step==="engagement")setStep("service");
     else if(step==="intake")setStep("engagement");
   };
-  if(submitted){
-    const payUrl = selectedService && selectedService.stripeUrl;
-    return<div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,display:"flex",alignItems:"center",justifyContent:"center",padding:24,flexDirection:"column",gap:14,textAlign:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
-      <div style={{fontSize:64,color:GOLD}}>✓</div>
-      <div style={{fontSize:22,fontWeight:800,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.10em",textTransform:"uppercase"}}>{advisorSettings.companyName||"Golden Anchor"}</div>
-      <div style={{fontSize:14,fontWeight:600,maxWidth:480,lineHeight:1.6}}>{t.intakeFormThanks||"Thank you! Your advisor will reach out shortly."}</div>
-      {payUrl && <div style={{fontSize:12,color:TH.muted,marginTop:12}}>{t.intakeRedirecting||"Redirecting to payment…"}</div>}
-      {!payUrl && <div style={{fontSize:11,color:TH.dim,marginTop:8}}>{t.intakeNoPaymentLink||"No payment is required at this time. Your advisor will follow up."}</div>}
-    </div>;
-  }
-  // Step indicator
-  const STEPS=[{id:"household",label:t.stepHousehold||"You"},{id:"service",label:t.stepService||"Service"},{id:"engagement",label:t.stepEngagement||"Agreement"},{id:"intake",label:t.stepDetails||"Details"}];
-  const curIdx=STEPS.findIndex(s=>s.id===step);
+  const resetFlow=()=>{setSubmitted(false);setSubmitting(false);setPayingNow(false);setRefToken("");setStep("welcome");setSelectedServiceId("");setSig1(null);setSig2(null);setErr("");setDraft(()=>mk({recommendedBy:"",howHeard:"",preferredService:"",contactMethod:"email",householdType:"single",intakeSnapshot:{}}));};
+  // Inputs reused across stages
+  const showSidebar=!isMobile&&(step==="engagement"||step==="intake")&&!!selectedService;
   return<ThemeCtx.Provider value={synthTheme}>
-    <div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",padding:"20px 14px",lineHeight:1.45,WebkitTextSizeAdjust:"100%"}}>
-      <div style={{maxWidth:760,margin:"0 auto"}}>
+    <div style={{minHeight:"100dvh",background:TH.bg,color:TH.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",padding:isMobile?"20px 14px":"24px 24px",lineHeight:1.5,WebkitTextSizeAdjust:"100%"}}>
+      <div style={{maxWidth:1080,margin:"0 auto"}}>
+        {/* Top toolbar — theme + lang toggle */}
         <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6,gap:6}}>
           <button onClick={()=>setMode(m=>m==="dark"?"light":"dark")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>{isDark?"☀️ "+(t.lightMode||"Light"):"🌙 "+(t.darkMode||"Dark")}</button>
           <button onClick={()=>setLang(l=>l==="en"?"es":"en")} style={{background:"transparent",border:"1px solid "+TH.cardBorder,color:TH.muted,padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 EN | ES</button>
         </div>
-        <div style={{textAlign:"center",marginBottom:24,paddingTop:8}}>
-          <div style={{marginBottom:14}}><img src="/logo-anchor.png" alt="Golden Anchor" style={{width:120,height:120,objectFit:"contain"}}/></div>
-          <div style={{fontSize:24,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em",textTransform:"uppercase",marginTop:4}}>{advisorSettings.companyName||"Golden Anchor"}</div>
-          <div style={{fontSize:11,fontStyle:"italic",color:GOLD+"BB",fontFamily:"'Newsreader',Georgia,serif",marginTop:8,letterSpacing:"0.02em"}}>{t.taglineSecuring||"Securing Your Health, Anchoring Your Future."}</div>
-        </div>
-        {/* Step indicator */}
-        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:18,flexWrap:"wrap"}}>{STEPS.map((sp,i)=>{const done=i<curIdx,here=i===curIdx;return<div key={sp.id} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:600,color:here?GOLD:(done?TH.pos:TH.dim)}}><div style={{width:22,height:22,borderRadius:11,background:here?GOLD:(done?TH.pos:TH.cardBorder),color:here||done?"#0D1B2A":TH.dim,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11}}>{done?"✓":i+1}</div><span>{sp.label}</span>{i<STEPS.length-1&&<span style={{color:TH.dim}}>›</span>}</div>;})}</div>
-        <div style={{background:TH.card,border:"1px solid "+TH.cardBorder,borderRadius:12,padding:"20px 18px",marginBottom:16}}>
-          {step==="household" && <div>
-            <div style={{fontSize:18,fontWeight:700,marginBottom:10,color:TH.text}}>{t.stepHouseholdQ||"Are you applying as an individual or a couple?"}</div>
-            <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
-              {[{id:"single",lbl:t.householdSingle||"Just me",emoji:"👤"},{id:"couple",lbl:t.householdCouple||"My partner & me",emoji:"💑"}].map(opt=><button key={opt.id} onClick={()=>setHouseholdType(opt.id)} style={{flex:"1 1 200px",padding:"14px 18px",borderRadius:12,border:`2px solid ${householdType===opt.id?GOLD:TH.cardBorder}`,background:householdType===opt.id?GOLD+"22":"transparent",color:TH.text,cursor:"pointer",fontSize:14,fontWeight:600,textAlign:"left",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:24}}>{opt.emoji}</span>{opt.lbl}</button>)}
-            </div>
-            <div style={{fontSize:13,fontWeight:700,color:TH.muted,marginTop:14,marginBottom:8}}>{t.yourInfoHdr||"Your information"}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.firstNameLbl||"First name"} *</div><input value={draft.firstName||""} onChange={e=>setDraft(d=>({...d,firstName:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-              <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.lastNameLbl||"Last name"} *</div><input value={draft.lastName||""} onChange={e=>setDraft(d=>({...d,lastName:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-            </div>
-            <div style={{marginBottom:10}}><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.emailLbl||"Email"} *</div><input type="email" value={draft.email||""} onChange={e=>setDraft(d=>({...d,email:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-            <div style={{marginBottom:10}}><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.phoneLbl||"Phone"}</div><input value={draft.phone||""} onChange={e=>setDraft(d=>({...d,phone:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-            {householdType==="couple" && <>
-              <div style={{fontSize:13,fontWeight:700,color:TH.muted,marginTop:14,marginBottom:8}}>{t.partnerInfoHdr||"Partner information"}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-                <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.firstNameLbl||"First name"} *</div><input value={draft.partnerFirst||""} onChange={e=>setDraft(d=>({...d,partnerFirst:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-                <div><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.lastNameLbl||"Last name"}</div><input value={draft.partnerLast||""} onChange={e=>setDraft(d=>({...d,partnerLast:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+        {/* Brand strip (compact on stages after welcome) */}
+        {step!=="welcome"&&<div style={{textAlign:"center",marginBottom:14,paddingTop:4}}>
+          <div style={{fontSize:18,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.14em",textTransform:"uppercase"}}>{advisorSettings.companyName||"Golden Anchor"}</div>
+          <div style={{fontSize:10,fontStyle:"italic",color:GOLD+"BB",fontFamily:"'Newsreader',Georgia,serif",marginTop:4,letterSpacing:"0.02em"}}>{t.taglineSecuring||"Securing Your Health, Anchoring Your Future."}</div>
+        </div>}
+        {/* Step rail */}
+        <IntakeStepRail stage={step} doneActive={submitted} t={t} TH={TH} isMobile={isMobile}/>
+        {/* Stage 0 — Welcome (full-bleed; no surrounding card) */}
+        {step==="welcome"&&<IntakeWelcomeStage onStart={()=>setStep("service")} advisorSettings={advisorSettings} lang={lang} t={t} TH={TH} isMobile={isMobile}/>}
+        {/* Stage 1+ container — main card + optional sticky sidebar */}
+        {step!=="welcome"&&<div style={{display:"grid",gridTemplateColumns:showSidebar?"1fr 340px":"1fr",gap:24,alignItems:"flex-start"}}>
+          <div>
+            {/* Stage 1 — Service */}
+            {step==="service"&&<div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:isMobile?"22px 18px":"32px 28px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>{t.intakeStepNofN?t.intakeStepNofN.replace("{n}","2").replace("{total}","4"):(lang==="es"?"Paso 2 de 4":"Step 2 of 4")}</div>
+              <div style={{fontSize:isMobile?22:26,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.15,marginBottom:6}}>{t.stepServiceQTitle||(lang==="es"?"Elige un servicio":"Pick a service")}</div>
+              <div style={{height:1,width:60,background:GOLD,margin:"4px 0 14px"}}/>
+              <div style={{fontSize:13,color:TH.muted,marginBottom:18,lineHeight:1.6,maxWidth:520}}>{t.stepServiceHelp2||(lang==="es"?"Escoge lo que necesitas hoy. El precio es transparente — solo se cobra después de una llamada de descubrimiento.":"Choose what you need today. Pricing is transparent — you'll only be charged after a discovery call.")}</div>
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+                {services.map(svc=>{const sel=selectedServiceId===svc.id;return<button key={svc.id} onClick={()=>setSelectedServiceId(svc.id)} style={{textAlign:"left",padding:"16px 18px",borderRadius:12,border:`1px solid ${sel?GOLD:TH.cardBorder}`,background:sel?GOLD+"11":TH.card,color:TH.text,cursor:"pointer",transition:"border-color 200ms cubic-bezier(0.2,0.8,0.2,1), background 200ms",display:"flex",alignItems:"flex-start",gap:14}}>
+                  <div style={{width:46,height:46,borderRadius:8,background:GOLD+"22",border:`1px solid ${GOLD}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{svc.icon}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8,marginBottom:4}}>
+                      <span style={{fontSize:14,fontWeight:700,lineHeight:1.3}}>{svc.name}</span>
+                      <span style={{fontSize:13,fontWeight:800,color:GOLD,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{svc.price}</span>
+                    </div>
+                    {svc.desc&&<div style={{fontSize:12,color:TH.muted,lineHeight:1.5}}>{svc.desc}</div>}
+                  </div>
+                </button>;})}
               </div>
-              <div style={{marginBottom:10}}><div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.partnerEmailLbl||"Partner email"}</div><input type="email" value={draft.partnerEmail||""} onChange={e=>setDraft(d=>({...d,partnerEmail:e.target.value}))} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-            </>}
-          </div>}
-          {step==="service" && <div>
-            <div style={{fontSize:18,fontWeight:700,marginBottom:10,color:TH.text}}>{t.stepServiceQ||"Which service interests you most?"}</div>
-            <div style={{fontSize:12,color:TH.muted,marginBottom:14}}>{t.stepServiceHelp||"You can change this later — this just helps us prepare for the call."}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {services.map(svc=><button key={svc.id} onClick={()=>setSelectedServiceId(svc.id)} style={{textAlign:"left",padding:"12px 14px",borderRadius:10,border:`2px solid ${selectedServiceId===svc.id?GOLD:TH.cardBorder}`,background:selectedServiceId===svc.id?GOLD+"15":TH.inp,color:TH.text,cursor:"pointer"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}><span style={{fontSize:14,fontWeight:700}}>{svc.icon} {svc.name}</span><span style={{fontSize:14,fontWeight:800,color:GOLD}}>{svc.price}</span></div>
-                {svc.desc && <div style={{fontSize:11,color:TH.muted,lineHeight:1.5}}>{svc.desc}</div>}
-              </button>)}
-            </div>
-          </div>}
-          {step==="engagement" && <div>
-            <div style={{fontSize:18,fontWeight:700,marginBottom:6,color:TH.text}}>{t.stepEngagementTitle||"Review & sign the engagement letter"}</div>
-            <div style={{fontSize:12,color:TH.muted,marginBottom:14,lineHeight:1.5}}>{t.stepEngagementHelp||"Please read carefully. Sign at the bottom to continue to the intake form."}</div>
-            <EngagementLetter settings={advisorSettings} clientName1={[draft.firstName,draft.lastName].filter(Boolean).join(" ")} clientName2={householdType==="couple"?[draft.partnerFirst,draft.partnerLast].filter(Boolean).join(" "):""} selectedService={selectedService} lang={lang} t={t} theme={synthTheme} signatureClient1={sig1} signatureClient2={sig2} onSig1={setSig1} onSig2={setSig2} readOnly={false}/>
-          </div>}
-          {step==="intake" && <div>
-            <div style={{fontSize:18,fontWeight:700,marginBottom:6,color:TH.text}}>{t.intakeFormTitle||"New Client Intake"}</div>
-            <div style={{fontSize:12,color:TH.muted,marginBottom:14}}>{t.intakeFormSub||"Help us understand your financial picture before your first call."}</div>
-            <IntakeFormBody draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang}/>
-            {promoFromUrl && <div style={{marginTop:14,padding:"10px 12px",background:GOLD+"15",border:`1px solid ${GOLD}44`,borderRadius:8,fontSize:12,color:TH.text}}>🎟️ {t.promoApplied||"Promo code applied:"} <b style={{color:GOLD,fontFamily:"monospace"}}>{promoCode}</b></div>}
-            {!promoFromUrl && <div style={{marginTop:14}}>
-              <div style={{fontSize:11,color:TH.muted,marginBottom:4,fontWeight:600}}>{t.promoCodeLbl||"Promo code (optional)"}</div>
-              <input value={promoCode} onChange={e=>setPromoCode(e.target.value)} style={{width:"100%",padding:"10px 12px",background:TH.inp,border:"1px solid "+TH.inpBorder,color:TH.text,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"monospace",textTransform:"uppercase"}}/>
             </div>}
-          </div>}
-        </div>
-        {err && <div style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:12,marginBottom:12}}>⚠️ {err}</div>}
-        <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
-          {step!=="household" && <button onClick={back} disabled={submitting} style={{flex:"0 0 100px",padding:"14px",borderRadius:10,background:"transparent",color:TH.text,fontWeight:700,fontSize:13,border:"1px solid "+TH.cardBorder,cursor:"pointer"}}>← {t.backBtn||"Back"}</button>}
-          {step!=="intake" && <button onClick={next} disabled={submitting} style={{flex:1,padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.continueBtn||"Continue")} →</button>}
-          {step==="intake" && <>
-            <button onClick={()=>goSubmit(false)} disabled={submitting} style={{flex:"1 1 220px",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:GOLD,color:submitting?TH.muted:"#0D1B2A",fontWeight:800,fontSize:14,border:"none",cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>{submitting?(t.intakeSubmitting||"Submitting…"):(t.intakeSubmit||"Submit intake")}</button>
-            {selectedService && selectedService.stripeUrl && <button onClick={()=>goSubmit(true)} disabled={submitting} style={{flex:"1 1 220px",padding:"14px",borderRadius:10,background:submitting?TH.cardBorder:"transparent",color:submitting?TH.muted:GOLD,fontWeight:800,fontSize:14,border:`2px solid ${GOLD}`,cursor:submitting?"default":"pointer",minHeight:48,touchAction:"manipulation"}}>💳 {t.intakePayNow||"Submit & pay now"}</button>}
-          </>}
-        </div>
-        {step==="intake" && <div style={{fontSize:11,color:TH.dim,marginTop:8,textAlign:"center",lineHeight:1.5}}>{t.intakePayLaterHint||"You can pay later, by check, or in cash — your advisor will follow up."}</div>}
-        <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
+            {/* Stage 2 — Engagement */}
+            {step==="engagement"&&<div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:isMobile?"22px 18px":"32px 28px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>{t.intakeStepNofN?t.intakeStepNofN.replace("{n}","3").replace("{total}","4"):(lang==="es"?"Paso 3 de 4":"Step 3 of 4")}</div>
+              <div style={{fontSize:isMobile?22:26,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.15,marginBottom:6}}>{t.stepEngagementTitle2||(lang==="es"?"Carta de compromiso":"Engagement Letter")}</div>
+              <div style={{height:1,width:60,background:GOLD,margin:"4px 0 14px"}}/>
+              <div style={{fontSize:13,color:TH.muted,marginBottom:18,lineHeight:1.6,maxWidth:560}}>{t.stepEngagementHelp2||(lang==="es"?"Léela y firma antes de continuar. Te enviaremos una copia por correo después de enviar tu intake.":"Please read and acknowledge before continuing. A signed copy will be emailed to you after submission.")}</div>
+              {/* Cream-paper letter panel */}
+              <div style={{background:"#FBF8F0",border:`1px solid ${TH.cardBorder}`,borderRadius:12,padding:isMobile?"22px 18px":"28px 32px",marginBottom:18}}>
+                <EngagementLetter settings={advisorSettings} clientName1={[draft.firstName,draft.lastName].filter(Boolean).join(" ")} clientName2={householdType==="couple"?[draft.partnerFirst,draft.partnerLast].filter(Boolean).join(" "):""} selectedService={selectedService} lang={lang} t={t} theme={{...synthTheme,card:"#FBF8F0",cardBorder:TH.cardBorder}} signatureClient1={sig1} signatureClient2={sig2} onSig1={setSig1} onSig2={setSig2} readOnly={false}/>
+              </div>
+            </div>}
+            {/* Stage 3 — Intake form (5 numbered sections) */}
+            {step==="intake"&&<div style={{background:TH.card,border:`1px solid ${TH.cardBorder}`,borderRadius:16,padding:isMobile?"22px 18px":"32px 28px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>{t.intakeStepNofN?t.intakeStepNofN.replace("{n}","4").replace("{total}","4"):(lang==="es"?"Paso 4 de 4":"Step 4 of 4")}</div>
+              <div style={{fontSize:isMobile?22:26,fontWeight:500,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:TH.text,lineHeight:1.15,marginBottom:6}}>{t.stepIntakeTitle||(lang==="es"?"Tu información":"Your information")}</div>
+              <div style={{height:1,width:60,background:GOLD,margin:"4px 0 14px"}}/>
+              <div style={{fontSize:13,color:TH.muted,marginBottom:24,lineHeight:1.6,maxWidth:560}}>{t.stepIntakeHelp||(lang==="es"?"Cuéntanos un poco sobre tu situación financiera. Solo tu asesor lo ve.":"Tell us a bit about your financial situation. Only your advisor sees this.")}</div>
+              <IntakeFormV2 draft={draft} setDraft={setDraft} t={t} TH={TH} lang={lang} prefilledNotice={!!inviteToken}/>
+              {/* Sticky footer with Submit + Pay Now */}
+              <div style={{marginTop:24,paddingTop:20,borderTop:`1px solid ${TH.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,flexWrap:"wrap"}}>
+                <div style={{fontSize:11,color:TH.dim,fontStyle:"italic",lineHeight:1.5,flex:"1 1 220px",maxWidth:380}}>{t.intakeFooterPrivacy||(lang==="es"?"El pago abre en una pestaña nueva. También puedes pagar después de la llamada de descubrimiento.":"Opens secure checkout in a new tab. You can also pay after the discovery call.")}</div>
+                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <button onClick={()=>goSubmit(false)} disabled={submitting} style={{padding:"12px 22px",borderRadius:8,background:"transparent",color:submitting?TH.muted:TH.text,fontWeight:700,fontSize:13,border:`1px solid ${TH.cardBorder}`,cursor:submitting?"default":"pointer",whiteSpace:"nowrap"}}>{submitting&&!payingNow?(t.intakeSubmitting||"Submitting…"):"✓ "+(t.intakeSubmit||"Submit intake")}</button>
+                  <button onClick={()=>goSubmit(true)} disabled={submitting||!selectedService||!(selectedService.payUrl||selectedService.stripeUrl)} style={{padding:"12px 22px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:(submitting||!(selectedService&&(selectedService.payUrl||selectedService.stripeUrl)))?"default":"pointer",whiteSpace:"nowrap",opacity:(selectedService&&(selectedService.payUrl||selectedService.stripeUrl))?1:0.4,boxShadow:(selectedService&&(selectedService.payUrl||selectedService.stripeUrl))?"0 4px 12px rgba(201,168,76,0.28)":"none"}}>💳 {(t.intakePayNow2||(lang==="es"?"Pagar ahora":"Pay now"))} · {selectedService?.price||"$"} →</button>
+                </div>
+              </div>
+              {/* Promo code field — only render when set */}
+              {promoFromUrl&&<div style={{marginTop:14,padding:"10px 12px",background:GOLD+"15",border:`1px solid ${GOLD}44`,borderRadius:8,fontSize:12,color:TH.text}}>🎟️ {t.promoApplied||"Promo code applied:"} <b style={{color:GOLD,fontFamily:"'JetBrains Mono',monospace"}}>{promoCode}</b></div>}
+            </div>}
+            {/* Error band */}
+            {err&&<div role="alert" style={{fontSize:12,color:"#FCA5A5",background:"#EF444422",border:"1px solid #EF444466",borderRadius:8,padding:"10px 14px",marginTop:14}}>⚠️ {err}</div>}
+            {/* Back/Continue row — Welcome+Intake hide their own; Service+Engagement use this */}
+            {(step==="service"||step==="engagement")&&<div style={{display:"flex",gap:10,marginTop:18,flexWrap:"wrap"}}>
+              <button onClick={back} style={{padding:"12px 22px",borderRadius:8,background:"transparent",color:TH.text,fontWeight:700,fontSize:13,border:`1px solid ${TH.cardBorder}`,cursor:"pointer"}}>← {t.backBtn||"Back"}</button>
+              <button onClick={next} style={{flex:1,padding:"12px 22px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 4px 12px rgba(201,168,76,0.28)"}}>{t.continueBtn||"Continue"} →</button>
+            </div>}
+            <div style={{textAlign:"center",fontSize:10,color:TH.dim,marginTop:24,lineHeight:1.6,padding:"0 8px"}}>{t.disclaimer||""}</div>
+          </div>
+          {/* Sticky service sidebar (web only, engagement + intake) */}
+          {showSidebar&&<IntakeSelectedServiceCard service={selectedService} lang={lang} t={t} TH={TH} showChange={step!=="engagement"} onChange={()=>setStep("service")}/>}
+        </div>}
       </div>
+      {/* Done modal — overlays the form, doesn't replace it */}
+      <IntakeDoneModal open={submitted} onClose={resetFlow} onSubmitAnother={resetFlow} refToken={refToken} lang={lang} t={t} TH={TH} payingNow={payingNow}/>
     </div>
   </ThemeCtx.Provider>;
 }
@@ -4424,6 +4630,9 @@ export default function App(){
       /* v0.27.0 — Critical alert pill pulse (No Contact / Promo Expiring) */
       @keyframes ga-pill-pulse{0%,100%{opacity:1}50%{opacity:0.55}}
       .ga-pill-pulse{animation:ga-pill-pulse 1.5s ease-in-out infinite}
+      /* v0.30.0 — Public intake Done modal animations */
+      @keyframes ga-fade{from{opacity:0}to{opacity:1}}
+      @keyframes ga-modal-pop{from{opacity:0;transform:translateY(8px) scale(0.96)}to{opacity:1;transform:none}}
       @supports(padding:env(safe-area-inset-top)){
         body{padding-top:env(safe-area-inset-top,0);padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0)}
       }

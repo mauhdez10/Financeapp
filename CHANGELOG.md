@@ -2,6 +2,49 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.30.0 — 2026-05-22 — Public intake redesign (Phase 4 of Claude Design workplan)
+
+Big UX rewrite of the public intake flow. Five stages instead of four. New welcome screen, simplified intake form, Done modal overlay, sticky service sidebar on web.
+
+**5-stage flow.** `welcome → service → engagement → intake → done modal`. The old `household` step is gone — its name/email/phone/couple-toggle content moved to Section 1 of the new intake form. Initial step on landing is now `welcome` (was `household` going straight to a form).
+
+**Welcome stage.** New top-level component `IntakeWelcomeStage`. Web variant: 2-column layout with main card (gold tag, Newsreader italic headline, 60px gold hairline, sub-paragraph, primary CTA, privacy line) on the left and a dark navy gradient hero panel (radial-gradient at 60% 30% + linear 135deg) on the right with the anchor logo + wordmark + tagline. Mobile variant: centered card with anchor logo, wordmark, italic tagline, full-width Start intake button. **No "I have an invite token" button** — invites arrive via tokenized URL (`?invite=<token>` or `?token=<token>`); the token is read on mount and used to pre-fill name/email/phone.
+
+**Step rail.** New `IntakeStepRail` component renders at the top of every stage. Web: 5 entries with gold-tinted pills (active = navy circle with number, gold text; past = ✓ + gold-deep text; future = dim text) connected by hairline separators. The Done step has no number — shows ✓ when active (during the Done modal). Mobile: same 5 entries as wrapping chips.
+
+**Sticky service sidebar.** On web, the Engagement and Intake stages render a 340px sticky `IntakeSelectedServiceCard` sidebar to the right of the main card. Shows the gold-tinted icon tile + service name + price + description + privacy callout. Engagement stage hides the "← Change" pill (user just picked it); Intake stage shows it (returns to Service stage on click).
+
+**Engagement letter cream panel.** Existing `EngagementLetter` component (canonical letter body + token substitution + SignaturePad) now renders inside a cream `#FBF8F0` panel with 12-radius and 28×32 padding to match Claude Design's spec. The letter text itself is unchanged — preserves the legal-record version that's saved with each submission.
+
+**New intake form (5 sections).** `IntakeFormV2` replaces the heavy `IntakeFormBody` on the public intake step. Each section is wrapped by `IntakeFormSection` — numbered gold circle + italic Newsreader title + gold-to-transparent hairline. Sections:
+1. **Contact** — first/last name, email, phone, individual/couple toggle (+ partner names if couple). Gold-tinted prefilled notice when an invite token is present.
+2. **Income** — monthly net, partner monthly net (if couple), other income.
+3. **Debts & liabilities** — total credit cards, total loans, mortgage balance.
+4. **Assets & investments** — checking & savings, retirement, brokerage, real-estate equity, other assets.
+5. **Goals & notes** — two textareas (what to help with, anything else).
+
+Currency inputs (`IntakeCurrencyInput`) get a $ glyph at left, gold focus ring, JetBrains Mono tabular-nums. Values land on `draft.intakeSnapshot` as 12 totals + 2 strings. The heavier `IntakeFormBody` stays in the codebase for the advisor-side `IntakeSubmissionsPage` (which still shows the full structured fields).
+
+**Done modal.** `IntakeDoneModal` overlays the form instead of replacing the route — Esc resets the flow back to Welcome. 76×76 success-tinted ✓, italic Newsreader "Submission received" headline, gold hairline, sub-paragraph (different copy for Submit vs Pay Now), reference token display in JetBrains Mono, and a "Submit another" button. Fades in (`@keyframes ga-fade`); card pops in (`@keyframes ga-modal-pop`) with the standard cubic-bezier ease.
+
+**Pay Now → new tab.** Was: `window.location.href = stripeUrl` (full-page redirect). Now: `window.open(stripeUrl, '_blank', 'noopener,noreferrer')` so the user lands on the Done modal AND opens checkout in a new tab. Matches Phase 4 spec.
+
+**Token alias.** URL param `?token=<...>` now also resolves (was: `?invite=<...>` only). Keeps the Phase 1 New Invite modal's link format working.
+
+**Translations.** ~50 new EN+ES keys covering step rail labels, welcome copy, service/engagement/intake headers, all 5 section titles + ~12 field labels + 2 textarea placeholders, footer hints, Done modal copy. Spanish stays colloquial Miami Spanish per the design brief.
+
+**What did NOT change.** The submitted payload shape (advisor-side data structure), the existing `EngagementLetter` letter body + token substitution, the SignaturePad component itself (still gated by v0.29.1 auto-commit + sigEmpty check), the IntakeSubmissionsPage admin view, and the gaSubmitIntake / gaResolveIntakeInvite server endpoints. The simpler `intakeSnapshot` data lives alongside the existing structure — advisor still gets everything via the existing edit path.
+
+**Build marker:** `2026-05-22-v0300-public-intake-redesign`. App.jsx +~280 lines (7 new helper components + rewritten PublicIntake body + new keyframes). translations.js +50 keys × 2 langs. No new deps, no new files. D-1, D-3, D-7, D-17, D-27-amended, D-36 preserved.
+
+**Smoke tests:**
+1. **Welcome flows.** Open `/intake?advisor=<id>` — web shows 2-col welcome; mobile shows centered card. No "invite token" button. Click Start intake → advances to Service stage with step rail showing ✓ on Welcome.
+2. **Token prefill.** Open `/intake?token=<valid-invite-token>` — Welcome shows, prospect proceeds. On Intake stage, Section 1 shows the prefilled gold note + name/email/phone filled.
+3. **Engagement.** Cream-panel letter renders; SignaturePad at the bottom; typed-mode default; v0.29.1 auto-commit still works for prefilled names.
+4. **Intake form.** 5 numbered sections; couple toggle in Section 1 adds partner fields; currency inputs reject non-numeric. Sticky service sidebar visible on web.
+5. **Submit.** Required: firstName, lastName, valid email. Click ✓ Submit Intake → Done modal overlays with success copy + reference token + Submit another button. Esc closes and resets to Welcome.
+6. **Pay Now.** Click 💳 Pay now · $price → → Done modal shows + checkout opens in a new tab.
+
 ## v0.29.1 — 2026-05-22 — Hotfix: typed signature auto-commit
 
 Two coupled fixes for the engagement-letter signature flow that prospects were running into immediately after v0.29.0.
