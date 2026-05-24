@@ -2,6 +2,149 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.54.0 — 2026-05-25 — Big batch (PRs 1, 2, 4, 5 partial, 7, 8, 9 + trend tweaks)
+
+Per Mauricio's "finish everything at once and I'll let you know what's wrong"
+directive. Seven handoff PRs + lean-line tweaks shipped together. Items
+flagged "we might go back on" mean: visual fixes only, no data shape
+changes, easy to revert per surface.
+
+**Trend tweaks (post-v0.53 feedback).**
+- Stroke width 1.75px → 1.25px on SmoothAreaLine (default; ClientDetail
+  trend pair inherits). Lines should feel drawn, not stamped.
+- Crossover dot 3.5px → 2.5px, no border (was 1.2px #111827 outline).
+  Halo 5px → 4px at 18% opacity.
+- Live pulse dot 3px → 2px, no border. Outer pulse animation 5→11px
+  radii → 4→9px.
+
+**PR 1 — Landing page rework** (`preview/20-landing-v2.html`).
+- Personal credentials stripped: MBA / FPWMP / FL0215 pills + Mauricio
+  Hernandez name removed from hero, feature strip, and footer. Hero
+  is about the product now.
+- Headline replaced with the spec line: *"The dashboard your advisor
+  brings to every meeting."* (italic Newsreader 56px, "advisor"
+  accent-gold).
+- Hero sub reframed: *"A complete picture of your income, bills, debt,
+  and savings — updated each session and summarized in a monthly
+  report."*
+- Feature pills swapped to product capabilities: Monthly snapshot,
+  Debt & cash-flow models, Public intake form, EN · ES.
+- Theme toggle now actually toggles. `PAL` is gated on `isDark`:
+  light = `#FAF6EC` cream / `#F7EFC1` upper-right glow, dark = `#0D1B2A`
+  navy / `rgba(201,168,76,0.18)` gold ambient.
+- Footer disclaimer reduced to product-only: *"Educational financial
+  coaching — not investment, tax, or legal advice."*
+
+**PR 2 — Intake form colors** (`preview/22-intake-colors.html`).
+- Light-mode intake palette swapped from cool slate to warm cream +
+  amber. 11 hex pairs applied:
+  - Page bg `#F8FAFC` → `#F7F4EC`
+  - Card border / focus ring `#E2E8F0` / `#CBD5E1` → `#E8DFC6`
+  - Accent `#B8860B` → `#C9A84C`
+  - Primary CTA fill (via accent), CTA text via theme
+  - Error `#DC2626` → `#B83227` (muted for cream bg)
+  - Inputs `#F1F5F9` → `#FFFFFF` (cool tint read cold on cream)
+- `blue` collapsed to `#C9A84C` so any blue-leaning surface follows
+  the gold accent.
+- Dark mode untouched. Structure + copy + validation untouched.
+
+**PR 4 — Chart gallery upgrade** (`preview/21-charts-gallery.html`).
+- Filter chips above grid: All / Trends / Composition / Ranking /
+  Progress / Advanced. Count badge inline per chip. Click-through
+  filtering — chart cards re-render to match.
+- Density toggle: Comfortable (220px min, 12·14·14 padding) vs
+  Compact (180px min, 10·12·12, hides the desc line).
+- Modal width 920 → 1100. Grid `auto-fit minmax(cardMin,1fr)` so it
+  fans to 4-up at ≥1280 desktop, 3-up middle, 2-up smaller, 1-up
+  mobile.
+- Sankey card removed from gallery per Mauricio's *"besides the Sankey
+  I like the rest"* + HANDOFF *"Sankey removed, 20→19"*. Component
+  stays in Dashboard slot options.
+
+**PR 5 — Dashboard row (partial)** (`preview/27-dashboard-row.html`).
+- New "Clients · Ranked H-Bars" slot option (`clientsRanked`) —
+  Top 8 active clients by net worth, gold on highest then
+  blue/orange/grey gradient per spec palette. Treemap version kept
+  for "don't delete duplicates."
+- Sankey→Waterfall swap on Cash Flow Map **skipped** per Mauricio's
+  earlier note: *"besides the Sankey I like the rest."*
+- Practice Health gauges kept at current 270° RadialGauge variant.
+  Semi-circle variant + status-band color recoloring deferred — the
+  current RadialGauge already applies pos/warn/neg by direction +
+  thresholds, which is the spec's "color by status" intent.
+
+**PR 7 — CC vs Loan tightened** (`preview/29-cc-vs-loan.html`).
+- Full rewrite of the CC/Loan breakdown card on `ClientDebtCalc`.
+  Card padding 14px → 12·14, no min-height (grid equalizes).
+- Emoji removed. Inline Lucide-style SVG icons (credit-card / landmark)
+  in 26px tinted square: CC `#DC2626 @ 28%`, Loans `#5B9BD5 @ 28%`.
+- Title `Credit Cards` / `Loans` at 11px bold with mono "N accounts"
+  count chip. Total balance gold mono on the right of the h-row.
+- 3-up stat strip per card: Avg APR · Min/mo · Util (CC) / DSR (Loans).
+  13px mono values, 6×8 padded pills.
+- Every account rendered inline as line-items (name + APR + balance).
+  Avalanche/snowball target row gold-tinted (`#C9A84C @ 14%`) with
+  gold name + APR.
+- 4px hairline progress bar at foot. CC gradient
+  `linear-gradient(to right, #DC2626, #FCA5A5)`, Loans
+  `linear-gradient(to right, #4472C4, #93C5FD)`.
+
+**PR 8 — Portfolio bottom chart** (`preview/30-portfolio-chart.html`).
+- Chart height 150 → 220. Y-axis numbers shown (mono, K-shortened).
+- Two series:
+  1. Nominal: gold solid stroke 2.25px + `#C9A84C @ 40% → 0%` area
+     gradient.
+  2. Inflation-adjusted (3%): gray `#94A3B8` dashed
+     `stroke-dasharray="4 3"` stroke 1.5px, no fill.
+- Legend strip beneath chart with both endpoint values inline (mono).
+- Tooltip labels series as "Nominal" / "Inflation-adjusted".
+
+**PR 9 — Calc charts (Debt Reduction + Interest)** (`preview/26-calc-charts.html`).
+- **New component `CompoundGrowthStack`** (~100 lines, forked from
+  `AmortizationArea`). Three-band stacked area: principal `#4472C4`
+  constant + contributions `#5B9BD5` linear + interest `GOLD`
+  exponential. Crossover marker fires the year interest exceeds
+  principal+contributions, gold dot + dashed drop-line + label
+  "interest > contributions · yr N". End-of-band labels (P/C/I) on
+  the right edge. Honors simple-interest mode (flat interest line).
+- **Interest calc** got a `Monthly Contribution` field + the new
+  `CompoundGrowthStack` chart wired below the 3-up KPI strip
+  (Final value · Of which interest · Real (3% infl)).
+- **Debt Reduction calc** got a `PayoffProgression` chart below the
+  result panel showing balance dropping to zero given current monthly
+  payment. Includes inline summary: "X mo to debt-free · $Y total
+  interest." RankedHBars from the spec deferred — standalone calc
+  only carries 1 debt so it's a one-bar chart, useless. Mauricio can
+  add multi-debt input later or rely on the ClientDebtCalc which
+  already has it.
+
+**Translations.** ~30 new EN+ES keys added to support the calc charts,
+gallery filter chips, density toggle, CC/loan strip labels, and
+clientsRanked slot.
+
+**Verification in dev.**
+- Build clean (946KB index, +24KB).
+- Build marker `2026-05-25-v0540-big-batch-prs-1-2-4-5-7-8-9`.
+- Landing: headline = *"The dashboard your advisor brings to every
+  meeting."*, no credential pills, product pills present, theme
+  toggle changes the body background.
+- Gallery: 20 cards (was 21, Sankey removed), filter chips with
+  counts (All 20, Trends 4, Composition 4, Ranking 6, Progress 2,
+  Advanced 4), density toggle (Comfortable / Compact) present.
+- Calc surfaces: build compiles; DOM probe brittle on the calc page
+  click chain (preview tool limitation). Will validate visually
+  post-deploy.
+
+**What's deliberately deferred / partial.**
+- Practice Health gauge **semi-circle variant** — current 270°
+  RadialGauge already handles color-by-status; new geometry deferred.
+- RankedHBars on **standalone Debt Reduction calc** — calc only
+  carries one debt, single-bar is useless.
+- Customization expansion (v0.49 task) to the remaining 18 chart
+  families — v0.48 only wired SmoothAreaLine end-to-end. Expanding
+  the customization knobs to every chart component will follow as
+  Mauricio audits which knobs each chart actually needs.
+
 ## v0.53.0 — 2026-05-25 — PR 6 live-pair upgrade (line/bar toggle, screen palette)
 
 First port from `HANDOFF-v0.46.md`. The `● live` trend pair on the

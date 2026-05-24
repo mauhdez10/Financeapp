@@ -1178,7 +1178,7 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
   // override per-template without code edits at the call site.
   const cfg=useChartConfig(templateId,{
     colors:{primary:debtColor||"#ED7D31",secondary:savingsColor||GOLD},
-    strokeWidth:strokeWidth??1.75,
+    strokeWidth:strokeWidth??1.25,/* v0.54 — leaner stroke per Mauricio's feedback (was 1.75). */
     legendLabels:{primary:legendDebt||"Debt",secondary:legendSav||"Savings"},
   });
   debtColor=cfg.colors.primary;
@@ -1272,16 +1272,17 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
          and live dots use #111827 stroke per handoff spec instead of #fff. */}
       <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/>
       <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
+      {/* v0.54 — smaller dots, no stroke, per Mauricio's feedback. */}
       {crossovers.map((c,i)=><g key={i}>
-        <circle cx={c.x} cy={c.y} r="5" fill={GOLD} opacity="0.22"/>
-        <circle cx={c.x} cy={c.y} r="3.5" fill={GOLD} stroke="#111827" strokeWidth="1.2"/>
+        <circle cx={c.x} cy={c.y} r="4" fill={GOLD} opacity="0.18"/>
+        <circle cx={c.x} cy={c.y} r="2.5" fill={GOLD}/>
       </g>)}
       {livePt&&<g>
-        {!reducedMotion&&<circle cx={livePt.x} cy={livePt.y} r="5" fill={savingsColor} opacity="0.45">
-          <animate attributeName="r" values="5;11;5" dur="2.2s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.45;0;0.45" dur="2.2s" repeatCount="indefinite"/>
+        {!reducedMotion&&<circle cx={livePt.x} cy={livePt.y} r="4" fill={savingsColor} opacity="0.4">
+          <animate attributeName="r" values="4;9;4" dur="2.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.4;0;0.4" dur="2.2s" repeatCount="indefinite"/>
         </circle>}
-        <circle cx={livePt.x} cy={livePt.y} r="3" fill={savingsColor} stroke="#111827" strokeWidth="1.2"/>
+        <circle cx={livePt.x} cy={livePt.y} r="2" fill={savingsColor}/>
       </g>}
       {apts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{xLabel(p[labelKey])}</text>)}
     </svg>
@@ -1858,6 +1859,96 @@ function AmortizationArea({principal,apr,termMonths,extraPay=0,height=140,width=
       <text x={padL-6} y={padT+innerH+3} textAnchor="end" fontSize="9" fill={th.dim}>0</text>
       <text x={xAt(0)} y={height-6} textAnchor="start" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Mo 0</text>
       <text x={xAt(tw.length-1)} y={height-6} textAnchor="end" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Mo {tw.length}</text>
+    </svg>
+  </div>;
+}
+
+/* ── v0.54.0 (PR 9 from HANDOFF-v0.46) — CompoundGrowthStack ───────────────
+   Three-band stacked area: principal (deep blue constant), contributions
+   (mid-blue linear growth), interest (gold exponential). Inverse of
+   AmortizationArea — instead of debt paying down, money grows. Gold band
+   is what the chart is selling; the rest is the floor it sits on.
+   Crossover marker fires the year interest exceeds principal+contributions.
+   Spec: preview/26-calc-charts.html line 263+. */
+function CompoundGrowthStack({principal=0,monthly=0,rate=0,years=25,height=220,width=920,simple=false}){
+  const th=useTh();
+  const series=useMemo(()=>{
+    const out=[];
+    const r=Math.max(0,+rate)/100;
+    const yrs=Math.max(1,+years);
+    const p=Math.max(0,+principal);
+    const m=Math.max(0,+monthly);
+    for(let y=0;y<=yrs;y++){
+      const contribTotal=m*12*y;
+      let total;
+      if(simple){
+        total=p*(1+r*y)+contribTotal;
+      }else{
+        const mr=r/12;
+        const n=y*12;
+        total=p*Math.pow(1+mr,n)+(mr>0?m*((Math.pow(1+mr,n)-1)/mr):m*n);
+      }
+      const interest=Math.max(0,total-p-contribTotal);
+      out.push({y,principal:p,contrib:contribTotal,interest,total});
+    }
+    return out;
+  },[principal,monthly,rate,years,simple]);
+  const gid=useSvgId("cgs");
+  if(series.length<2)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>Adjust inputs to see growth</div>;
+  const mx=Math.max(1,...series.map(s=>s.total));
+  const padT=14,padB=32,padL=56,padR=18;
+  const innerW=width-padL-padR,innerH=height-padT-padB;
+  const xAt=i=>padL+innerW*i/(series.length-1);
+  const yAt=v=>padT+innerH*(1-v/mx);
+  // Crossover: first year where interest > principal + contrib
+  let crossoverYr=null;
+  for(const s of series){if(s.interest>s.principal+s.contrib){crossoverYr=s.y;break;}}
+  // Build stacked band paths bottom-up: principal, contrib (on top of principal), interest (on top of both)
+  const bandPath=keyTop=>{
+    const top=series.map((s,i)=>{
+      let cum=s.principal;
+      if(keyTop==="contrib")cum=s.principal+s.contrib;
+      else if(keyTop==="interest")cum=s.principal+s.contrib+s.interest;
+      return`${xAt(i)} ${yAt(cum)}`;
+    }).join(" L");
+    const bot=series.slice().reverse().map((s,i)=>{
+      const idx=series.length-1-i;
+      let cum=0;
+      if(keyTop==="contrib")cum=series[idx].principal;
+      else if(keyTop==="interest")cum=series[idx].principal+series[idx].contrib;
+      return`${xAt(idx)} ${yAt(cum)}`;
+    }).join(" L");
+    return`M${top} L${bot} Z`;
+  };
+  const fmtT=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/1000)+"K":Math.round(v);
+  const ticks=[0,mx*0.25,mx*0.5,mx*0.75,mx];
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        <linearGradient id={`${gid}-prin`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4472C4" stopOpacity="0.85"/><stop offset="100%" stopColor="#4472C4" stopOpacity="0.55"/></linearGradient>
+        <linearGradient id={`${gid}-contrib`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#5B9BD5" stopOpacity="0.7"/><stop offset="100%" stopColor="#5B9BD5" stopOpacity="0.4"/></linearGradient>
+        <linearGradient id={`${gid}-int`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={GOLD} stopOpacity="0.85"/><stop offset="100%" stopColor={GOLD} stopOpacity="0.2"/></linearGradient>
+      </defs>
+      {ticks.map((t,i)=>{const y=yAt(t);return<g key={i}>
+        <line x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.16" strokeDasharray="1.5 4"/>
+        <text x={padL-8} y={y+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtT(t)}</text>
+      </g>;})}
+      <path d={bandPath("principal")} fill={`url(#${gid}-prin)`} stroke="#4472C4" strokeWidth="0.75" strokeOpacity="0.5"/>
+      <path d={bandPath("contrib")} fill={`url(#${gid}-contrib)`} stroke="#5B9BD5" strokeWidth="0.75" strokeOpacity="0.5"/>
+      <path d={bandPath("interest")} fill={`url(#${gid}-int)`} stroke={GOLD} strokeWidth="1.25"/>
+      {crossoverYr!=null&&(()=>{const i=crossoverYr;const sx=xAt(i);const sy=yAt(series[i].principal+series[i].contrib+series[i].interest);return<g>
+        <line x1={sx} y1={sy} x2={sx} y2={padT+innerH} stroke="#EDD594" strokeWidth="1" strokeDasharray="2 2"/>
+        <circle cx={sx} cy={sy} r="4.5" fill="#EDD594" stroke="#0D1B2A" strokeWidth="1.25"/>
+        <text x={sx} y={padT+innerH+18} textAnchor="middle" fontSize="10" fontWeight="700" fill={GOLD} style={{fontFamily:"'Plus Jakarta Sans',sans-serif"}}>interest &gt; contributions · yr {crossoverYr}</text>
+      </g>;})()}
+      {/* End labels */}
+      {(()=>{const last=series[series.length-1];const lx=width-padR-6;return<g fontSize="9" fontVariantNumeric="tabular-nums">
+        {last.principal>0&&<text x={lx} y={yAt(last.principal/2)} textAnchor="end" fill="#94CDE3">P ${fmtT(last.principal)}</text>}
+        {last.contrib>0&&<text x={lx} y={yAt(last.principal+last.contrib/2)} textAnchor="end" fill="#A8C5E8">C ${fmtT(last.contrib)}</text>}
+        {last.interest>0&&<text x={lx} y={yAt(last.principal+last.contrib+last.interest/2)} textAnchor="end" fill={GOLD} fontWeight="700">I ${fmtT(last.interest)}</text>}
+      </g>;})()}
+      {/* X-axis year ticks */}
+      {(()=>{const step=Math.max(1,Math.floor(series.length/6));const labels=[];for(let i=0;i<series.length;i+=step)labels.push(i);if(labels[labels.length-1]!==series.length-1)labels.push(series.length-1);return labels.map(i=><text key={i} x={xAt(i)} y={height-10} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Yr {series[i].y}</text>);})()}
     </svg>
   </div>;
 }
@@ -2697,8 +2788,77 @@ function ClientDebtCalc({client,scope,t}){
 
   {allCombined.length===0?<div style={{fontSize:12,color:th.dim,fontStyle:"italic",padding:10}}>{t.noScopeDebts||"No debts for this scope. Add a scenario above to test."}</div>:<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:14,maxHeight:220,overflowY:"auto"}}>{allCombined.map(d=>{const s=selIds.has(d.id);return<div key={d.id} onClick={()=>toggle(d.id)} style={{...mCARD(th),padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,border:`1px solid ${s?th.accent:th.cardBorder}`,background:d.isScenario?th.accent+"08":th.card}}><div style={{width:16,height:16,borderRadius:3,background:s?th.accent:th.cardBorder,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",flexShrink:0}}>{s&&"✓"}</div><div style={{flex:1,fontSize:12,color:th.text}}><b>{d.name}</b> <span style={{color:th.dim,fontSize:10}}>({d.debtType}{d.isScenario?" · scenario":""})</span></div><span style={{fontSize:11,color:th.neg,fontWeight:700}}>{fmt(d.balance)}</span><span style={{fontSize:11,color:th.warn}}>{(+d.apr||0).toFixed(1)}%</span>{d.isScenario&&<button onClick={e=>{e.stopPropagation();delScen(d.id);}} style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:"#EF444422",color:"#EF4444",border:"none",cursor:"pointer"}}>×</button>}</div>;})}</div>}
 
-  {/* CC vs Loan breakdown */}
-  {(ccSel.length>0||loanSel.length>0)&&<div style={{...mCARD(th),padding:14,marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:10}}>💳 CC vs 🏦 LOAN BREAKDOWN</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><div style={{padding:10,background:th.neg+"08",borderRadius:8,border:`1px solid ${th.neg}33`}}><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6}}>💳 Credit Cards ({ccSel.length})</div><div style={{fontSize:10,color:th.dim}}>{t.balanceColon||"Balance:"} <b style={{color:th.neg}}>{fmt(ccBal)}</b></div><div style={{fontSize:10,color:th.dim}}>{t.avgAprColon||"Avg APR:"} <b style={{color:th.warn}}>{ccApr.toFixed(2)}%</b></div><div style={{fontSize:10,color:th.dim}}>{t.minMoColon||"Min/mo:"} <b style={{color:GOLD}}>{fmt(ccMin)}</b></div></div><div style={{padding:10,background:th.blue+"08",borderRadius:8,border:`1px solid ${th.blue}33`}}><div style={{fontSize:11,fontWeight:700,color:th.blue,marginBottom:6}}>🏦 Loans ({loanSel.length})</div><div style={{fontSize:10,color:th.dim}}>{t.balanceColon||"Balance:"} <b style={{color:th.neg}}>{fmt(loanBal)}</b></div><div style={{fontSize:10,color:th.dim}}>{t.avgAprColon||"Avg APR:"} <b style={{color:th.warn}}>{loanApr.toFixed(2)}%</b></div><div style={{fontSize:10,color:th.dim}}>{t.minMoColon||"Min/mo:"} <b style={{color:GOLD}}>{fmt(loanMin)}</b></div></div></div></div>}
+  {/* v0.54 (PR 7) — CC vs Loan breakdown tightened per preview/29-cc-vs-loan.html.
+     Compact 12/14px padding, 3-up stat strip per card (Avg APR · Min/mo · Util/DSR),
+     all accounts inline with target row gold-tinted, hairline 4px progress bar. */}
+  {(()=>{
+    if(ccSel.length===0&&loanSel.length===0)return null;
+    const ccLimit=ccSel.reduce((s,d)=>s+(+d.creditLimit||0),0);
+    const ccUtil=ccLimit>0?Math.min(100,Math.round(ccBal/ccLimit*100)):null;
+    const income=sumN(client.incomeStreams||[]);
+    const loanDsr=income>0?(loanMin/income*100):null;
+    // Avalanche target = highest APR (snowball = smallest balance)
+    let target=null;
+    if(sel.length){const sorted=sel.slice().sort((a,b)=>strat==="snowball"?(+a.balance-+b.balance):((+b.apr||0)-(+a.apr||0)));target=sorted[0]?.id;}
+    const renderCard=(kind,list,bal,apr,minPay,statThird,statThirdGood)=>{
+      const accentBg=kind==="cc"?"#DC2626":"#5B9BD5";
+      const iconSvg=kind==="cc"
+        ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+        : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M3 8 L12 3 L21 8"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="13"/><line x1="18" y1="20" x2="18" y2="13"/></svg>;
+      const fillGradient=kind==="cc"?"linear-gradient(to right,#DC2626,#FCA5A5)":"linear-gradient(to right,#4472C4,#93C5FD)";
+      const sorted=list.slice().sort((a,b)=>(+b.balance||0)-(+a.balance||0));
+      return<div style={{...mCARD(th),padding:"12px 14px",display:"flex",flexDirection:"column",minHeight:0}}>
+        {/* h-row: icon + title + count + total */}
+        <div style={{display:"flex",alignItems:"center",gap:8,paddingBottom:8,marginBottom:8,borderBottom:`1px solid ${th.cardBorder}`}}>
+          <div style={{width:26,height:26,borderRadius:8,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:accentBg+"28",color:accentBg}}>{iconSvg}</div>
+          <div style={{fontSize:11,color:th.text,fontWeight:700}}>{kind==="cc"?(t.creditCards||"Credit Cards"):(t.loans||"Loans")}<span style={{color:th.dim,fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:400,marginLeft:4}}>{list.length} {t.accountsLbl||"accounts"}</span></div>
+          <div style={{marginLeft:"auto",fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:13,color:GOLD,fontWeight:700}}>{fmt(bal)}</div>
+        </div>
+        {/* 3-up stat strip */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+          <div style={{padding:"6px 8px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+            <div style={{fontSize:8.5,color:th.dim,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>{t.avgAprLbl||"Avg APR"}</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:13,fontWeight:700,marginTop:1,color:kind==="cc"?"#DC2626":th.text}}>{apr.toFixed(2)}%</div>
+          </div>
+          <div style={{padding:"6px 8px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+            <div style={{fontSize:8.5,color:th.dim,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>{t.minPerMoLbl||"Min / mo"}</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:13,fontWeight:700,marginTop:1,color:th.text}}>{fmt(minPay)}</div>
+          </div>
+          <div style={{padding:"6px 8px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+            <div style={{fontSize:8.5,color:th.dim,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>{statThird.label}</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:13,fontWeight:700,marginTop:1,color:statThird.value==null?th.dim:(statThirdGood?th.pos:"#DC2626")}}>{statThird.value==null?"—":statThird.value}</div>
+          </div>
+        </div>
+        {/* line items */}
+        <div>
+          {sorted.map((d,i)=>{
+            const isTarget=d.id===target;
+            return<div key={d.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"5px 8px",borderRadius:5,fontSize:11,background:isTarget?GOLD+"14":"transparent",borderTop:i>0?`1px dashed ${th.cardBorder}`:"none"}}>
+              <span style={{color:isTarget?GOLD:th.text,fontWeight:isTarget?700:400,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.name||(kind==="cc"?"Card":"Loan")}</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:isTarget?GOLD:th.dim}}>{(+d.apr||0).toFixed(2)}%</span>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:GOLD,fontWeight:600,minWidth:56,textAlign:"right"}}>{fmt(+d.balance||0)}</span>
+            </div>;
+          })}
+        </div>
+        {/* hairline progress bar — placeholder uses balance/limit for CC, payoff fraction for loans */}
+        {(()=>{
+          let pct=0;
+          if(kind==="cc"&&ccLimit>0){pct=Math.max(0,Math.min(100,Math.round((1-ccBal/Math.max(1,ccLimit))*100)));}
+          else if(kind==="loan"){const totalOrig=list.reduce((s,d)=>s+Math.max(+d.balance||0,+d.originalBalance||+d.balance||0),0);if(totalOrig>0)pct=Math.max(0,Math.min(100,Math.round((1-bal/totalOrig)*100)));}
+          return<>
+            <div style={{height:4,background:th.cardBorder,borderRadius:99,overflow:"hidden",marginTop:8}}><div style={{height:"100%",width:`${pct}%`,borderRadius:99,background:fillGradient}}/></div>
+            <div style={{fontSize:9.5,color:th.muted,marginTop:4,display:"flex",justifyContent:"space-between"}}>
+              <span>{t.paydownProgress||"Paydown progress"} · <span style={{color:GOLD,fontFamily:"'JetBrains Mono',monospace"}}>{pct}%</span></span>
+            </div>
+          </>;
+        })()}
+      </div>;
+    };
+    return<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+      {ccSel.length>0&&renderCard("cc",ccSel,ccBal,ccApr,ccMin,{label:t.utilLbl||"Util",value:ccUtil!=null?ccUtil+"%":null},(ccUtil??50)<=30)}
+      {loanSel.length>0&&renderCard("loan",loanSel,loanBal,loanApr,loanMin,{label:"DSR",value:loanDsr!=null?loanDsr.toFixed(1)+"%":null},(loanDsr??50)<=36)}
+    </div>;
+  })()}
 
   <div style={{...mCARD(th),padding:14,marginBottom:12}}><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}><div><div style={{fontSize:10,color:th.dim}}>{t.totalBalance||"Total Balance"}</div><div style={{fontSize:15,fontWeight:800,color:th.neg}}>{fmt(sumBal)}</div></div><div><div style={{fontSize:10,color:th.dim}}>{t.weightedApr||"Weighted APR"}</div><div style={{fontSize:15,fontWeight:800,color:th.warn}}>{weightedApr.toFixed(2)}%</div></div><div><div style={{fontSize:10,color:th.dim}}>{t.minPayMo||"Min Pay/mo"}</div><div style={{fontSize:15,fontWeight:800,color:GOLD}}>{fmt(sumMinPay)}</div></div></div></div>
   <Row2><Field label={t?.extraMonthly||"Extra Monthly Payment ($)"}><MaskedNumInp style={INP} value={extraPay} onChange={e=>setExtraPay(+e.target.value||0)}/></Field><Field label={t?.strategyLbl||"Strategy"}><select style={INP} value={strat} onChange={e=>setStrat(e.target.value)}><option value="avalanche">{t?.avalancheOpt||"Avalanche (highest APR first)"}</option><option value="snowball">{t?.snowballOpt||"Snowball (smallest balance first)"}</option></select></Field></Row2>
@@ -3550,7 +3710,15 @@ function IncomeCalc({t}){const th=useTh();
     </div>
   </div>}
   </div>;}
-function DebtReductionCalc({t}){const th=useTh();const[mode,setMode]=useState("payoff");const[feeMode,setFeeMode]=useState("pct");const[f,setF]=useState({balance:5000,apr:28,payment:200,loanApr:12,loanTerm:36,origFee:2,origFlat:100});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const ccMonths=payM(f.balance,f.apr,f.payment);const ccTotal=ccMonths?(f.payment*ccMonths):null;const origCost=feeMode==="pct"?f.balance*(f.origFee/100):f.origFlat;const loanAmt=f.balance+origCost;const loanPayment=mthPmt(loanAmt,f.loanApr/100,f.loanTerm);const loanTotal=loanPayment*f.loanTerm;const savings=ccTotal?ccTotal-loanTotal:null;const INP=mINP(th);return<div><div style={{display:"flex",gap:8,marginBottom:16}}>{[["payoff","📉 "+(t.payoff||"Payoff")],["compare","⚖️ "+(t.ccVsLoan||"CC vs Loan")]].map(([v,l])=><button key={v} onClick={()=>setMode(v)} style={{fontSize:12,padding:"6px 14px",borderRadius:8,cursor:"pointer",background:mode===v?th.accent+"22":"transparent",color:mode===v?th.accent:th.muted,border:`1px solid ${mode===v?th.accent:th.cardBorder}`}}>{l}</button>)}</div><Row2><Field label={(t.cardBalance||"Card Balance")+" ($)"}><MaskedNumInp style={INP} value={f.balance} onChange={u("balance")} onKeyDown={bE}/></Field><Field label={(t.cardAPR||"Card APR")+" (%)"}><MaskedNumInp style={INP} value={f.apr} onChange={u("apr")} onKeyDown={bE} step="0.1"/></Field></Row2><Field label={(t.monthlyPaymentLbl||"Monthly Payment")+" ($)"}><MaskedNumInp style={INP} value={f.payment} onChange={u("payment")} onKeyDown={bE}/></Field>{mode==="compare"&&<><div style={{height:1,background:th.cardBorder,margin:"12px 0"}}/><Row2><Field label={(t.loanAPRLbl||"Loan APR")+" (%)"}><MaskedNumInp style={INP} value={f.loanApr} onChange={u("loanApr")} onKeyDown={bE} step="0.1"/></Field><Field label={t.loanTermMo||"Loan Term (months)"}><MaskedNumInp style={INP} value={f.loanTerm} onChange={u("loanTerm")} onKeyDown={bE}/></Field></Row2><div style={{...mCARD(th),padding:12,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontSize:12,color:th.muted}}>{t.origFeeLbl||"Origination Fee"}</span><div style={{display:"flex",gap:6}}>{[["pct","% of Balance"],["flat","Flat ($)"]].map(([v,l])=><button key={v} onClick={()=>setFeeMode(v)} style={{fontSize:11,padding:"3px 10px",borderRadius:6,cursor:"pointer",background:feeMode===v?th.accent+"22":"transparent",color:feeMode===v?th.accent:th.muted,border:`1px solid ${feeMode===v?th.accent:th.cardBorder}`}}>{l}</button>)}</div></div>{feeMode==="pct"?<Row2><Field label={t.feePct||"Fee %"}><MaskedNumInp style={INP} value={f.origFee} onChange={u("origFee")} onKeyDown={bE} step="0.1"/></Field><Field label={t.feeAmt||"Fee Amount"}><div style={{...mINP(th),opacity:0.6}}>{fmt(origCost)}</div></Field></Row2>:<Row2><Field label={t.flatFee||"Flat Fee ($)"}><MaskedNumInp style={INP} value={f.origFlat} onChange={u("origFlat")} onKeyDown={bE}/></Field><Field label={t.pctOfBalance||"% of Balance"}><div style={{...mINP(th),opacity:0.6}}>{((origCost/Math.max(1,f.balance))*100).toFixed(2)}%</div></Field></Row2>}</div></>}<div style={{...mCARD(th),padding:16,marginTop:8}}>{mode==="payoff"?<><CalcRow label={t.payoffTimeLbl||"Payoff Time"} value={payL(ccMonths)} color={th.accent} big/><CalcRow label={t.totalPaidLbl||"Total Paid"} value={ccTotal?fmt(ccTotal):"—"} color={th.muted}/><CalcRow label={t.totalInterest||"Total Interest"} value={ccTotal?fmt(ccTotal-f.balance):"—"} color={th.neg}/></>:<><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}><div style={{...mCARD(th),padding:12,background:th.neg+"11"}}><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6}}>💳 {t.creditCard||"Credit Card"}</div><CalcRow label={t.payoff||"Payoff"} value={payL(ccMonths)}/><CalcRow label={t.totalLbl||"Total"} value={ccTotal?fmt(ccTotal):"—"} color={th.neg}/></div><div style={{...mCARD(th),padding:12,background:th.pos+"11"}}><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>🏦 {t.personalLoan||"Personal Loan"}</div><CalcRow label={t.monthly2||"Monthly"} value={fmtD(loanPayment)}/><CalcRow label={t.totalLbl||"Total"} value={fmt(loanTotal)} color={th.pos}/></div></div>{savings!==null&&<CalcRow label={"💰 "+t.savings3} value={fmt(Math.abs(savings))+" "+(savings>0?"saved with loan":"saved with CC")} color={savings>0?th.pos:th.neg} big/>}</>}</div></div>;}
+function DebtReductionCalc({t}){const th=useTh();const[mode,setMode]=useState("payoff");const[feeMode,setFeeMode]=useState("pct");const[f,setF]=useState({balance:5000,apr:28,payment:200,loanApr:12,loanTerm:36,origFee:2,origFlat:100});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const ccMonths=payM(f.balance,f.apr,f.payment);const ccTotal=ccMonths?(f.payment*ccMonths):null;const origCost=feeMode==="pct"?f.balance*(f.origFee/100):f.origFlat;const loanAmt=f.balance+origCost;const loanPayment=mthPmt(loanAmt,f.loanApr/100,f.loanTerm);const loanTotal=loanPayment*f.loanTerm;const savings=ccTotal?ccTotal-loanTotal:null;const INP=mINP(th);return<div><div style={{display:"flex",gap:8,marginBottom:16}}>{[["payoff","📉 "+(t.payoff||"Payoff")],["compare","⚖️ "+(t.ccVsLoan||"CC vs Loan")]].map(([v,l])=><button key={v} onClick={()=>setMode(v)} style={{fontSize:12,padding:"6px 14px",borderRadius:8,cursor:"pointer",background:mode===v?th.accent+"22":"transparent",color:mode===v?th.accent:th.muted,border:`1px solid ${mode===v?th.accent:th.cardBorder}`}}>{l}</button>)}</div><Row2><Field label={(t.cardBalance||"Card Balance")+" ($)"}><MaskedNumInp style={INP} value={f.balance} onChange={u("balance")} onKeyDown={bE}/></Field><Field label={(t.cardAPR||"Card APR")+" (%)"}><MaskedNumInp style={INP} value={f.apr} onChange={u("apr")} onKeyDown={bE} step="0.1"/></Field></Row2><Field label={(t.monthlyPaymentLbl||"Monthly Payment")+" ($)"}><MaskedNumInp style={INP} value={f.payment} onChange={u("payment")} onKeyDown={bE}/></Field>{mode==="compare"&&<><div style={{height:1,background:th.cardBorder,margin:"12px 0"}}/><Row2><Field label={(t.loanAPRLbl||"Loan APR")+" (%)"}><MaskedNumInp style={INP} value={f.loanApr} onChange={u("loanApr")} onKeyDown={bE} step="0.1"/></Field><Field label={t.loanTermMo||"Loan Term (months)"}><MaskedNumInp style={INP} value={f.loanTerm} onChange={u("loanTerm")} onKeyDown={bE}/></Field></Row2><div style={{...mCARD(th),padding:12,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontSize:12,color:th.muted}}>{t.origFeeLbl||"Origination Fee"}</span><div style={{display:"flex",gap:6}}>{[["pct","% of Balance"],["flat","Flat ($)"]].map(([v,l])=><button key={v} onClick={()=>setFeeMode(v)} style={{fontSize:11,padding:"3px 10px",borderRadius:6,cursor:"pointer",background:feeMode===v?th.accent+"22":"transparent",color:feeMode===v?th.accent:th.muted,border:`1px solid ${feeMode===v?th.accent:th.cardBorder}`}}>{l}</button>)}</div></div>{feeMode==="pct"?<Row2><Field label={t.feePct||"Fee %"}><MaskedNumInp style={INP} value={f.origFee} onChange={u("origFee")} onKeyDown={bE} step="0.1"/></Field><Field label={t.feeAmt||"Fee Amount"}><div style={{...mINP(th),opacity:0.6}}>{fmt(origCost)}</div></Field></Row2>:<Row2><Field label={t.flatFee||"Flat Fee ($)"}><MaskedNumInp style={INP} value={f.origFlat} onChange={u("origFlat")} onKeyDown={bE}/></Field><Field label={t.pctOfBalance||"% of Balance"}><div style={{...mINP(th),opacity:0.6}}>{((origCost/Math.max(1,f.balance))*100).toFixed(2)}%</div></Field></Row2>}</div></>}<div style={{...mCARD(th),padding:16,marginTop:8}}>{mode==="payoff"?<><CalcRow label={t.payoffTimeLbl||"Payoff Time"} value={payL(ccMonths)} color={th.accent} big/><CalcRow label={t.totalPaidLbl||"Total Paid"} value={ccTotal?fmt(ccTotal):"—"} color={th.muted}/><CalcRow label={t.totalInterest||"Total Interest"} value={ccTotal?fmt(ccTotal-f.balance):"—"} color={th.neg}/></>:<><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}><div style={{...mCARD(th),padding:12,background:th.neg+"11"}}><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6}}>💳 {t.creditCard||"Credit Card"}</div><CalcRow label={t.payoff||"Payoff"} value={payL(ccMonths)}/><CalcRow label={t.totalLbl||"Total"} value={ccTotal?fmt(ccTotal):"—"} color={th.neg}/></div><div style={{...mCARD(th),padding:12,background:th.pos+"11"}}><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>🏦 {t.personalLoan||"Personal Loan"}</div><CalcRow label={t.monthly2||"Monthly"} value={fmtD(loanPayment)}/><CalcRow label={t.totalLbl||"Total"} value={fmt(loanTotal)} color={th.pos}/></div></div>{savings!==null&&<CalcRow label={"💰 "+t.savings3} value={fmt(Math.abs(savings))+" "+(savings>0?"saved with loan":"saved with CC")} color={savings>0?th.pos:th.neg} big/>}</>}</div>
+{/* v0.54 (PR 9) — PayoffProgression chart on standalone Debt Reduction. */}
+{f.balance>0&&f.payment>0&&<div style={{...mCARD(th),padding:14,marginTop:12}}>
+  <div style={{fontSize:11,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>{t.payoffProgressionHdr||"Payoff progression"}</div>
+  <div style={{fontSize:10,color:th.muted,marginBottom:8}}>{t.payoffProgressionSub||"Balance dropping to zero given current monthly payment."}</div>
+  <PayoffProgression debts={[{name:t.creditCard||"Card",balance:+f.balance||0,apr:+f.apr||0,min:+f.payment||0,color:GOLD}]} width={460} height={180} maxMonths={120}/>
+  {ccMonths&&<div style={{display:"flex",gap:14,fontSize:10,color:th.muted,marginTop:6}}><span><b style={{color:GOLD,fontFamily:"'JetBrains Mono',monospace"}}>{payL(ccMonths)}</b> {t.toDebtFree||"to debt-free"}</span><span style={{color:th.pos,fontFamily:"'JetBrains Mono',monospace",marginLeft:"auto"}}>{fmt(ccTotal-f.balance)} {t.totalInterestLbl||"total interest"}</span></div>}
+</div>}
+</div>;}
 function CarLoanCalc({t}){const th=useTh();
   const[f,setF]=useState({price:30000,down:5000,tradeIn:0,tradeInPayoff:0,salesTaxPct:7,dealerFee:899,docFee:299,titleTag:450,gapIns:600,extWarranty:0,apr:6.9,term:60,rebate:0});
   const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));
@@ -3671,7 +3839,44 @@ function AffordabilityCalc({t}){const th=useTh();
     </div>
   </div>}
   </div>;}
-function InterestCalc({t}){const th=useTh();const[f,setF]=useState({principal:10000,rate:5,years:5,type:"compound",freq:12});const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));const r=f.rate/100;const interest=f.type==="simple"?f.principal*r*f.years:f.principal*(Math.pow(1+r/f.freq,f.freq*f.years)-1);const total=f.principal+interest;const INP=mINP(th);return<div><Row2><Field label={t.principalLbl||"Principal ($)"}><MaskedNumInp style={INP} value={f.principal} onChange={u("principal")} onKeyDown={bE}/></Field><Field label={t.interestRateLbl||"Interest Rate (%)"}><MaskedNumInp style={INP} value={f.rate} onChange={u("rate")} onKeyDown={bE} step="0.1"/></Field></Row2><Row2><Field label={t.termYearsLbl||"Term (years)"}><MaskedNumInp style={INP} value={f.years} onChange={u("years")} onKeyDown={bE} min={1}/></Field><Field label={t.type||"Type"}><select style={INP} value={f.type} onChange={u("type")}><option value="compound">{t.compoundLbl||"Compound"}</option><option value="simple">{t.simpleLbl||"Simple"}</option></select></Field></Row2>{f.type==="compound"&&<Field label={t.compoundFreq||"Compound Frequency"}><select style={INP} value={f.freq} onChange={u("freq")}><option value={12}>{t.monthly2||"Monthly"}</option><option value={4}>{t.quarterly||"Quarterly"}</option><option value={1}>{t.annual||"Annual"}</option></select></Field>}<div style={{...mCARD(th),padding:16,marginTop:8}}><CalcRow label={t.interestEarned||"Interest Earned"} value={fmt(interest)} color={th.pos} big/><CalcRow label={t.totalAmount||"Total Amount"} value={fmt(total)} color={th.accent}/></div></div>;}
+function InterestCalc({t}){
+  const th=useTh();
+  // v0.54 (PR 9) — added monthly contribution + CompoundGrowthStack chart.
+  const[f,setF]=useState({principal:10000,monthly:0,rate:5,years:5,type:"compound",freq:12});
+  const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  const r=f.rate/100;
+  const monthly=Math.max(0,+f.monthly||0);
+  const interest=(()=>{
+    if(f.type==="simple")return (+f.principal||0)*r*(+f.years||0)+monthly*0; // simple ignores monthly drip
+    const mr=r/12,n=(+f.years||0)*12;
+    const total=(+f.principal||0)*Math.pow(1+mr,n)+(mr>0?monthly*((Math.pow(1+mr,n)-1)/mr):monthly*n);
+    return total-(+f.principal||0)-monthly*n;
+  })();
+  const totalContrib=monthly*(+f.years||0)*12;
+  const total=(+f.principal||0)+totalContrib+interest;
+  const INP=mINP(th);
+  return<div>
+    <Row2><Field label={t.principalLbl||"Principal ($)"}><MaskedNumInp style={INP} value={f.principal} onChange={u("principal")} onKeyDown={bE}/></Field><Field label={t.interestRateLbl||"Interest Rate (%)"}><MaskedNumInp style={INP} value={f.rate} onChange={u("rate")} onKeyDown={bE} step="0.1"/></Field></Row2>
+    <Row2><Field label={t.termYearsLbl||"Term (years)"}><MaskedNumInp style={INP} value={f.years} onChange={u("years")} onKeyDown={bE} min={1}/></Field><Field label={t.type||"Type"}><select style={INP} value={f.type} onChange={u("type")}><option value="compound">{t.compoundLbl||"Compound"}</option><option value="simple">{t.simpleLbl||"Simple"}</option></select></Field></Row2>
+    <Row2><Field label={t.monthlyContribLbl||"Monthly Contribution ($)"}><MaskedNumInp style={INP} value={f.monthly} onChange={u("monthly")} onKeyDown={bE}/></Field>{f.type==="compound"?<Field label={t.compoundFreq||"Compound Frequency"}><select style={INP} value={f.freq} onChange={u("freq")}><option value={12}>{t.monthly2||"Monthly"}</option><option value={4}>{t.quarterly||"Quarterly"}</option><option value={1}>{t.annual||"Annual"}</option></select></Field>:<div/>}</Row2>
+    <div style={{...mCARD(th),padding:16,marginTop:8,marginBottom:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:4}}>
+        <div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:700}}>{t.finalValueLbl||"Final value"}</div><div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:GOLD,marginTop:2}}>{fmt(total)}</div></div>
+        <div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:700}}>{t.interestEarnedLbl||"Of which interest"}</div><div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:16,fontWeight:700,color:th.pos,marginTop:2}}>{fmt(interest)}</div></div>
+        <div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:700}}>{t.realValueLbl||"Real (3% infl)"}</div><div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:16,fontWeight:700,color:th.muted,marginTop:2}}>{fmt(total/Math.pow(1.03,Math.max(1,+f.years||1)))}</div></div>
+      </div>
+    </div>
+    <div style={{...mCARD(th),padding:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>{t.compoundGrowthHdr||"Compound growth"}</div>
+      <CompoundGrowthStack principal={+f.principal||0} monthly={monthly} rate={+f.rate||0} years={+f.years||0} simple={f.type==="simple"} height={240}/>
+      <div style={{display:"flex",gap:14,fontSize:10,color:th.muted,marginTop:8,flexWrap:"wrap"}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:"#4472C4"}}/>{t.principalLbl||"Principal"}</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:"#5B9BD5"}}/>{t.contributionsLbl||"Contributions"}</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:GOLD}}/>{t.interestLbl||"Interest"}</span>
+      </div>
+    </div>
+  </div>;
+}
 function SavingsCalc({t}){const th=useTh();const[f,setF]=useState({initial:1000,monthly:200,apy:4.5,years:10});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const r=f.apy/100/12;const n3=f.years*12;const fv=f.initial*Math.pow(1+r,n3)+(f.monthly>0?f.monthly*((Math.pow(1+r,n3)-1)/r):0);const contrib=f.initial+f.monthly*n3;const data3=[1,2,3,4,5,6,7,8,9,10].filter(y=>y<=f.years).map(y=>{const n2=y*12;const v=f.initial*Math.pow(1+r,n2)+(f.monthly>0?f.monthly*((Math.pow(1+r,n2)-1)/r):0);return{year:"Yr "+y,value:Math.round(v),contrib:Math.round(f.initial+f.monthly*n2)};});const INP=mINP(th);return<div><Row2><Field label={t.initialDeposit||"Initial Deposit ($)"}><MaskedNumInp style={INP} value={f.initial} onChange={u("initial")} onKeyDown={bE}/></Field><Field label={t.monthlyDeposit||"Monthly Deposit ($)"}><MaskedNumInp style={INP} value={f.monthly} onChange={u("monthly")} onKeyDown={bE}/></Field></Row2><Row2><Field label={t.apyLbl||"APY (%)"}><MaskedNumInp style={INP} value={f.apy} onChange={u("apy")} onKeyDown={bE} step="0.1"/></Field><Field label={t.years||"Years"}><MaskedNumInp style={INP} value={f.years} onChange={u("years")} onKeyDown={bE} min={1} max={50}/></Field></Row2><div style={{...mCARD(th),padding:16,marginBottom:10}}><CalcRow label={t.futureValue||"Future Value"} value={fmt(fv)} color={th.accent} big/><CalcRow label={t.totalContrib||"Total Contributed"} value={fmt(contrib)} color={th.muted}/><CalcRow label={t.interestEarned||"Interest Earned"} value={fmt(fv-contrib)} color={th.pos}/></div><ResponsiveContainer width="100%" height={140} style={{outline:"none"}}><AreaChart data={data3} margin={{top:10,right:0,left:0,bottom:0}}><CartesianGrid strokeDasharray="3 3" stroke={th.cardBorder}/><XAxis dataKey="year" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/><Area type="monotone" dataKey="value" name="Value" stroke={th.accent} fill={th.accent+"33"} strokeWidth={2}/><Area type="monotone" dataKey="contrib" name="Contributed" stroke={th.muted} fill={th.muted+"22"} strokeWidth={1}/></AreaChart></ResponsiveContainer></div>;}
 function RetirementCalc({t}){const th=useTh();const[f,setF]=useState({currentAge:30,retireAge:65,balance:25000,monthly:500,matchPct:50,matchLimit:6,salary:5000,worst:5,base:8,best:11});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const INP=mINP(th);const years=Math.max(0,f.retireAge-f.currentAge);const totalMonths=years*12;const employerMatch=Math.min(f.monthly,f.salary*(f.matchLimit/100))*(f.matchPct/100);const totalMonthly=f.monthly+employerMatch;const proj=rate=>{const r=rate/100/12;return r>0?f.balance*Math.pow(1+r,totalMonths)+totalMonthly*((Math.pow(1+r,totalMonths)-1)/r):f.balance+totalMonthly*totalMonths;};const scenarios=[{l:t.worst||"Worst",rate:f.worst,c:th.warn},{l:t.base||"Base",rate:f.base,c:th.accent},{l:t.best||"Best",rate:f.best,c:th.pos}];const totalContrib=f.balance+totalMonthly*totalMonths;const chartData=[];const step=Math.max(1,Math.round(years/10));for(let y=0;y<=years;y+=step){const m=y*12;const r_w=f.worst/100/12;const r_b=f.base/100/12;const r_g=f.best/100/12;const calc=(r,bal,mo)=>r>0?bal*Math.pow(1+r,m)+mo*((Math.pow(1+r,m)-1)/r):bal+mo*m;chartData.push({yr:"Yr "+y,worst:Math.round(calc(r_w,f.balance,totalMonthly)),base:Math.round(calc(r_b,f.balance,totalMonthly)),best:Math.round(calc(r_g,f.balance,totalMonthly))});}
   // v0.38.0 — ForecastCone build: history is the starting balance, projection is base-case
@@ -3686,7 +3891,27 @@ function RetirementCalc({t}){const th=useTh();const[f,setF]=useState({currentAge
 </div>}
 </div>;}
 
-function PortfolioStandaloneCalc({t}){const th=useTh();const[sel,setSel]=useState("growth");const[rates,setRates]=useState({conservative:5.5,growth:8.5,aggressive:11.0});const[monthly,setMonthly]=useState(500);const[initial,setInitial]=useState(0);const[years,setYears]=useState(10);const[showH,setShowH]=useState({});const INP=mINP(th);const port=PORTFOLIOS[sel];const ret=rates[sel]||8.5;const r=ret/100/12;const nY=years*12;const baseH=port.holdings.map(h=>({...h}));const fv=(initial>0?initial*Math.pow(1+r,nY):0)+(monthly>0?monthly*((Math.pow(1+r,nY)-1)/r):0);const contrib=initial+monthly*nY;const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?initial*Math.pow(1+r,n2):0)+(monthly>0?monthly*((Math.pow(1+r,n2)-1)/r):0);chartData.push({year:"Yr "+y,value:Math.round(v),contrib:Math.round(initial+monthly*n2)});}const saveRates=()=>{};return<div><div data-ga-grid="portfolios" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>{Object.entries(PORTFOLIOS).map(([k,p])=><div key={k} onClick={()=>setSel(k)} style={{...mCARD(th),padding:14,cursor:"pointer",background:sel===k?p.color+"22":th.card,border:`1px solid ${sel===k?p.color:th.cardBorder}`}}><div style={{fontSize:11,fontWeight:700,color:sel===k?p.color:th.muted,marginBottom:4}}>{t["capitalLabel"+p.nameKey.charAt(0).toUpperCase()+p.nameKey.slice(1)]||p.nameKey.toUpperCase()}</div><div style={{display:"flex",alignItems:"center",gap:4}}><MaskedNumInp value={rates[k]} min={0} max={30} step="0.5" onChange={e=>{e.stopPropagation();setRates(r=>({...r,[k]:+e.target.value||0}));}} onClick={e=>e.stopPropagation()} style={{...mIIN(th),width:44,textAlign:"center",fontWeight:800,fontSize:16,color:sel===k?p.color:th.dim}}/><span style={{fontSize:13,color:sel===k?p.color:th.dim}}>%</span></div><Pill color={p.color}>{p.risk} {t.riskSuffix||"Risk"}</Pill></div>)}</div><div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>📋 {(t.holdingsHdr||"Holdings").toUpperCase()} — {t[port.nameKey]||port.nameKey}</div>{baseH.map((h,i)=>{const tm=TICKER_META[h.ticker];const dollarAmt=Math.max(0,monthly)*(h.pct/100);return<div key={h.ticker} style={{...mCARD(th),padding:"7px 12px",marginBottom:5}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:12,fontWeight:700,color:PC[i%PC.length]}}>{h.ticker}</span><span style={{fontSize:11,color:th.muted,marginLeft:6}}>{tm?.name||h.name}</span></div><div style={{textAlign:"right"}}><div style={{fontSize:12,fontWeight:700,color:PC[i%PC.length]}}>{h.pct}%</div>{dollarAmt>0&&<div style={{fontSize:10,color:th.dim,fontWeight:600}}>{fmtD(dollarAmt)}/mo</div>}</div></div>{tm?.desc&&<div style={{fontSize:10,color:th.dim,marginTop:3,fontStyle:"italic"}}>{tm.desc}</div>}</div>;})}</div><div><div style={{...mCARD(th),padding:14,marginBottom:10}}><Field label={t.initialInvestment||"Initial Investment ($)"}><MaskedNumInp style={INP} value={initial} onChange={e=>setInitial(+e.target.value||0)} onKeyDown={bE}/></Field><Field label={t.monthlyInvest+" ($)"}><MaskedNumInp style={INP} value={monthly} onChange={e=>setMonthly(+e.target.value||0)} onKeyDown={bE}/></Field><div style={{marginBottom:14}}><label style={{fontSize:11,color:th.muted,display:"block",marginBottom:5}}>{t.years||"Years"}: <b>{years}</b></label><input type="range" min={1} max={40} step={1} value={years} onChange={e=>setYears(+e.target.value)} style={{width:"100%",accentColor:th.accent,cursor:"pointer"}}/></div><div style={{...mCARD(th),padding:12}}><CalcRow label={`${t.futureValue||"Future Value"} (${years}${t.yearsAbbr||"yr"} @ ${ret}%)`} value={fmt(fv)} color={th.accent} big/><CalcRow label={t.totalContrib||"Total Contributed"} value={fmt(contrib)} color={th.muted}/><CalcRow label={t.investmentGrowth||"Investment Growth"} value={"+"+fmt(fv-contrib)} color={th.pos}/></div></div><ResponsiveContainer width="100%" height={150} style={{outline:"none"}}><AreaChart data={chartData} margin={{top:10,right:0,left:0,bottom:0}}><CartesianGrid strokeDasharray="3 3" stroke={th.cardBorder}/><XAxis dataKey="year" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/><Area type="monotone" dataKey="value" name="Value" stroke={th.accent} fill={th.accent+"33"} strokeWidth={2}/><Area type="monotone" dataKey="contrib" name="Contributed" stroke={th.muted} fill={th.muted+"22"} strokeWidth={1}/></AreaChart></ResponsiveContainer></div></div></div>;}
+function PortfolioStandaloneCalc({t}){const th=useTh();const[sel,setSel]=useState("growth");const[rates,setRates]=useState({conservative:5.5,growth:8.5,aggressive:11.0});const[monthly,setMonthly]=useState(500);const[initial,setInitial]=useState(0);const[years,setYears]=useState(10);const[showH,setShowH]=useState({});const INP=mINP(th);const port=PORTFOLIOS[sel];const ret=rates[sel]||8.5;const r=ret/100/12;const nY=years*12;const baseH=port.holdings.map(h=>({...h}));const fv=(initial>0?initial*Math.pow(1+r,nY):0)+(monthly>0?monthly*((Math.pow(1+r,nY)-1)/r):0);const contrib=initial+monthly*nY;// v0.54 (PR 8) — chartData now carries nominal + inflation-adjusted (3% real).
+// Nominal = gold area + solid stroke. Real = gray dashed, no fill.
+const INFL=0.03;
+const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?initial*Math.pow(1+r,n2):0)+(monthly>0?monthly*((Math.pow(1+r,n2)-1)/r):0);const real=v/Math.pow(1+INFL,y);chartData.push({year:"Yr "+y,value:Math.round(v),real:Math.round(real),contrib:Math.round(initial+monthly*n2)});}const saveRates=()=>{};return<div><div data-ga-grid="portfolios" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>{Object.entries(PORTFOLIOS).map(([k,p])=><div key={k} onClick={()=>setSel(k)} style={{...mCARD(th),padding:14,cursor:"pointer",background:sel===k?p.color+"22":th.card,border:`1px solid ${sel===k?p.color:th.cardBorder}`}}><div style={{fontSize:11,fontWeight:700,color:sel===k?p.color:th.muted,marginBottom:4}}>{t["capitalLabel"+p.nameKey.charAt(0).toUpperCase()+p.nameKey.slice(1)]||p.nameKey.toUpperCase()}</div><div style={{display:"flex",alignItems:"center",gap:4}}><MaskedNumInp value={rates[k]} min={0} max={30} step="0.5" onChange={e=>{e.stopPropagation();setRates(r=>({...r,[k]:+e.target.value||0}));}} onClick={e=>e.stopPropagation()} style={{...mIIN(th),width:44,textAlign:"center",fontWeight:800,fontSize:16,color:sel===k?p.color:th.dim}}/><span style={{fontSize:13,color:sel===k?p.color:th.dim}}>%</span></div><Pill color={p.color}>{p.risk} {t.riskSuffix||"Risk"}</Pill></div>)}</div><div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>📋 {(t.holdingsHdr||"Holdings").toUpperCase()} — {t[port.nameKey]||port.nameKey}</div>{baseH.map((h,i)=>{const tm=TICKER_META[h.ticker];const dollarAmt=Math.max(0,monthly)*(h.pct/100);return<div key={h.ticker} style={{...mCARD(th),padding:"7px 12px",marginBottom:5}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:12,fontWeight:700,color:PC[i%PC.length]}}>{h.ticker}</span><span style={{fontSize:11,color:th.muted,marginLeft:6}}>{tm?.name||h.name}</span></div><div style={{textAlign:"right"}}><div style={{fontSize:12,fontWeight:700,color:PC[i%PC.length]}}>{h.pct}%</div>{dollarAmt>0&&<div style={{fontSize:10,color:th.dim,fontWeight:600}}>{fmtD(dollarAmt)}/mo</div>}</div></div>{tm?.desc&&<div style={{fontSize:10,color:th.dim,marginTop:3,fontStyle:"italic"}}>{tm.desc}</div>}</div>;})}</div><div><div style={{...mCARD(th),padding:14,marginBottom:10}}><Field label={t.initialInvestment||"Initial Investment ($)"}><MaskedNumInp style={INP} value={initial} onChange={e=>setInitial(+e.target.value||0)} onKeyDown={bE}/></Field><Field label={t.monthlyInvest+" ($)"}><MaskedNumInp style={INP} value={monthly} onChange={e=>setMonthly(+e.target.value||0)} onKeyDown={bE}/></Field><div style={{marginBottom:14}}><label style={{fontSize:11,color:th.muted,display:"block",marginBottom:5}}>{t.years||"Years"}: <b>{years}</b></label><input type="range" min={1} max={40} step={1} value={years} onChange={e=>setYears(+e.target.value)} style={{width:"100%",accentColor:th.accent,cursor:"pointer"}}/></div><div style={{...mCARD(th),padding:12}}><CalcRow label={`${t.futureValue||"Future Value"} (${years}${t.yearsAbbr||"yr"} @ ${ret}%)`} value={fmt(fv)} color={th.accent} big/><CalcRow label={t.totalContrib||"Total Contributed"} value={fmt(contrib)} color={th.muted}/><CalcRow label={t.investmentGrowth||"Investment Growth"} value={"+"+fmt(fv-contrib)} color={th.pos}/></div></div><ResponsiveContainer width="100%" height={220} style={{outline:"none"}}><AreaChart data={chartData} margin={{top:14,right:28,left:0,bottom:0}}>
+  <defs>
+    <linearGradient id="pf-nominal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor={GOLD} stopOpacity="0.40"/>
+      <stop offset="100%" stopColor={GOLD} stopOpacity="0"/>
+    </linearGradient>
+  </defs>
+  <CartesianGrid strokeDasharray="2 4" stroke={th.cardBorder} vertical={false}/>
+  <XAxis dataKey="year" tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
+  <YAxis tick={{fontSize:9,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>v>=1000?Math.round(v/1000)+"K":v}/>
+  <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={(v,n)=>[fmt(v),n==="value"?(t.nominalLbl||"Nominal"):(t.realLbl||"Inflation-adjusted")]}/>
+  <Area type="monotone" dataKey="value" name="value" stroke={GOLD} fill="url(#pf-nominal)" strokeWidth={2.25} dot={false} activeDot={{r:3.5,fill:GOLD,stroke:"#111827",strokeWidth:0.8}}/>
+  <Area type="monotone" dataKey="real" name="real" stroke="#94A3B8" fill="none" strokeWidth={1.5} strokeDasharray="4 3" dot={false} activeDot={{r:2.5,fill:"#94A3B8",stroke:"none"}}/>
+</AreaChart></ResponsiveContainer>
+<div style={{display:"flex",gap:14,paddingTop:10,marginTop:10,borderTop:`1px solid ${th.cardBorder}`,fontSize:10,color:th.muted}}>
+  <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:99,background:GOLD}}/>{t.nominalLbl||"Nominal"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:GOLD,marginLeft:4,fontWeight:700}}>{fmt(fv)}</span></span>
+  <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,borderTop:"1.5px dashed #94A3B8"}}/>{t.realLbl||"Real (3% infl)"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:"#94A3B8",marginLeft:4,fontWeight:700}}>{fmt(fv/Math.pow(1+INFL,years))}</span></span>
+</div></div></div></div>;}
 
 function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
 if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}return<div style={{padding:"24px 14px"}}>{/* v0.24.0 — page title removed (TopBar shows it). */}<p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:12}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"16px 14px",cursor:"pointer",minHeight:136,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",gap:6}} onMouseEnter={e=>e.currentTarget.style.border=`1px solid ${th.accent}`} onMouseLeave={e=>e.currentTarget.style.border=`1px solid ${th.cardBorder}`}><div style={{fontSize:28,lineHeight:1}}>{c.label.split(" ")[0]}</div><div style={{fontSize:13,fontWeight:700,color:th.text,lineHeight:1.3,marginTop:4}}>{c.label.substring(c.label.indexOf(" ")+1)}</div><div style={{fontSize:10,color:th.muted,lineHeight:1.5,marginTop:4}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div></div>)}</div></div>;}
@@ -4124,6 +4349,9 @@ const dashChartOptions=t=>[
   {id:"sankey",label:"🌊 "+(t?.cashFlowMapHdr||"Cash Flow Map (Sankey)")},
   {id:"netWorthDonut",label:"💎 "+(t?.netWorthDistributionHdr||"Net Worth Distribution")},
   {id:"clientsTreemap",label:"🗺️ "+(t?.clientsByNetWorthHdr||"Clients by Net Worth")},
+  // v0.54 (PR 5) — RankedHBars alternative for "Clients by Net Worth" per
+  // preview/27-dashboard-row.html. Treemap kept above as a version choice.
+  {id:"clientsRanked",label:"🏆 "+(t?.clientsRankedSlot||"Clients · Ranked H-Bars")},
   {id:"practiceHealth",label:"🎯 "+(t?.practiceHealthHdr||"Practice Health")},
   {id:"netWorthBridge",label:"⚖️ "+(t?.netWorthBridgeHdr||"Net Worth Bridge")},
   // v0.47.0 — expanded slot options. Each renders practice-aggregated data.
@@ -4147,20 +4375,33 @@ const dashChartOptions=t=>[
    Renders every chart component the app supports with realistic sample data
    so we can audit which to keep / swap / retire. Dashboard slot picker
    preserved below the gallery for in-place swaps. */
-function ChartGalleryCard({name,status,desc,th,t,templateId,onEdit,isCustomized,children}){
+function ChartGalleryCard({name,status,desc,th,t,templateId,onEdit,isCustomized,density="comfortable",children}){
   const isNew=status==="new";
-  return<div style={{background:th.card,border:`1px solid ${isCustomized?GOLD+"66":th.cardBorder}`,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,minHeight:240,overflow:"hidden",position:"relative"}}>
+  const compact=density==="compact";
+  // v0.54 (PR 4) — card respects density toggle. Comfortable 220px min,
+  // compact 180px; padding tightens to 12 14 14 per spec.
+  return<div style={{background:th.card,border:`1px solid ${isCustomized?GOLD+"66":th.cardBorder}`,borderRadius:10,padding:compact?"10px 12px 12px":"12px 14px 14px",display:"flex",flexDirection:"column",gap:compact?6:8,minHeight:compact?180:220,overflow:"hidden",position:"relative"}}>
     <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
-      <div style={{fontSize:10,fontWeight:700,color:th.text,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{name}</div>
+      <div style={{fontSize:compact?9:10,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{name}</div>
       <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
         {templateId&&<button onClick={()=>onEdit?.(templateId)} title={t.chartEditTip||"Edit colors, stroke, labels"} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:99,letterSpacing:"0.06em",textTransform:"uppercase",background:isCustomized?GOLD+"33":"transparent",color:GOLD,border:`1px solid ${GOLD}66`,cursor:"pointer",whiteSpace:"nowrap",lineHeight:1}}>✏️ {isCustomized?(t.chartEdited||"Edited"):(t.chartEdit||"Edit")}</button>}
         <span style={{fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:99,letterSpacing:"0.08em",textTransform:"uppercase",background:isNew?"#F59E0B22":GOLD+"22",color:isNew?"#F59E0B":GOLD,border:`1px solid ${isNew?"#F59E0B66":GOLD+"66"}`,whiteSpace:"nowrap"}}>{isNew?(t.chartGalleryNew||"New"):(t.chartGalleryWired||"Wired")}</span>
       </div>
     </div>
-    <div style={{fontSize:10,color:th.muted,lineHeight:1.45,minHeight:28}}>{desc}</div>
-    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",minHeight:140,width:"100%"}}>{children}</div>
+    {!compact&&<div style={{fontSize:10,color:th.muted,lineHeight:1.45,minHeight:28}}>{desc}</div>}
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",minHeight:compact?100:130,width:"100%"}}>{children}</div>
   </div>;
 }
+
+// v0.54 (PR 4) — chart family categorization for the gallery filter chips.
+const _chartCategory=name=>{
+  const s=String(name||"").toLowerCase();
+  if(s.includes("smootharea")||s.includes("sparkline")||s.includes("amortization"))return"trends";
+  if(s.includes("donut")||s.includes("sunburst")||s.includes("treemap")||s.includes("sankey")||s.includes("heatmap"))return"composition";
+  if(s.includes("ranked")||s.includes("bullet")||s.includes("dumbbell")||s.includes("slope")||s.includes("yoy")||s.includes("stacked"))return"ranking";
+  if(s.includes("payoff")||s.includes("bridge"))return"progress";
+  return"advanced";
+};
 
 /* v0.48.0 — ChartEditModal: per-template editor. Reads & writes
    settings.chartCustomizations[templateId]. Color pickers, stroke slider,
@@ -4309,16 +4550,10 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
       {label:"Savings",value:-1500,color:"#F59E0B"},
       {label:"Free",value:5665,kind:"total"},
     ]}/>},
-    {name:"Sankey",status:"wired",desc:"Flow diagram. Proportional bands.",render:()=><Sankey width={420} height={200} nodes={[
-      {id:"inc",label:"Income",layer:0,color:"#10B981"},
-      {id:"bills",label:"Bills",layer:1,color:"#EF4444"},
-      {id:"min",label:"Debt Min",layer:1,color:"#F59E0B"},
-      {id:"cash",label:"Free Cash",layer:1,color:GOLD},
-    ]} links={[
-      {from:"inc",to:"bills",value:1985},
-      {from:"inc",to:"min",value:450},
-      {from:"inc",to:"cash",value:7165},
-    ]}/>},
+    // v0.54 (PR 4) — Sankey card removed from gallery per Mauricio's
+    // "besides the Sankey i like the rest" + HANDOFF-v0.46 "Sankey removed
+    // (20→19)". Component stays available as a Dashboard slot option, just
+    // not in the gallery audit grid.
     {name:"SmoothAreaLine — Debt vs Savings",status:"wired",templateId:"smoothAreaLine.debtVsSavings",desc:"Two-curve area trend. Red = debt, Green = savings. Used on every Client header.",render:()=><SmoothAreaLine height={160} debtColor="#EF4444" savingsColor="#10B981" templateId="smoothAreaLine.debtVsSavings" legendDebt="Debt" legendSav="Savings" data={[
       {label:"Dec",debt:38000,savings:9000},
       {label:"Jan",debt:35500,savings:11500},
@@ -4391,10 +4626,33 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
     ]}/>},
     {name:"HeatmapCalendar",status:"wired",desc:"Year × month intensity grid. Cream → amber.",render:()=><HeatmapCalendar width={400} height={130} data={heatmapData}/>},
   ];
-  return<Modal title={"📊 "+(t.chartSettingsHdr||"Chart Gallery")} onClose={onClose} width={920}>
-    <div style={{fontSize:11,color:th.muted,marginBottom:16,lineHeight:1.6}}>{t.chartSettingsBlurb||"Every chart available in the app, rendered with sample data. Temporary section — decide which to keep, swap, or retire."}</div>
-    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:20}}>
-      {gallery.map((c,i)=><ChartGalleryCard key={i} name={c.name} status={c.status} desc={c.desc} th={th} t={t} templateId={c.templateId} isCustomized={c.templateId&&!!cust[c.templateId]} onEdit={tid=>setEditingTid(tid)}>{c.render()}</ChartGalleryCard>)}
+  // v0.54 (PR 4) — gallery filter chips + density toggle per preview/21-charts-gallery.
+  const[galleryFilter,setGalleryFilter]=useState("all");
+  const[galleryDensity,setGalleryDensity]=useState("comfortable");
+  const filterChips=[
+    {id:"all",l:t.galFilterAll||"All"},
+    {id:"trends",l:t.galFilterTrends||"Trends"},
+    {id:"composition",l:t.galFilterComposition||"Composition"},
+    {id:"ranking",l:t.galFilterRanking||"Ranking"},
+    {id:"progress",l:t.galFilterProgress||"Progress"},
+    {id:"advanced",l:t.galFilterAdvanced||"Advanced"},
+  ];
+  const counts=gallery.reduce((acc,c)=>{const k=_chartCategory(c.name);acc[k]=(acc[k]||0)+1;acc.all++;return acc;},{all:0});
+  const visibleGallery=galleryFilter==="all"?gallery:gallery.filter(c=>_chartCategory(c.name)===galleryFilter);
+  // Grid columns: 4-up ≥1280px desktop, 3-up middle, 2-up smaller, 1-up mobile.
+  // Use auto-fit with minmax for responsive without media queries.
+  const cardMin=galleryDensity==="compact"?220:280;
+  return<Modal title={"📊 "+(t.chartSettingsHdr||"Chart Gallery")} onClose={onClose} width={1100}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:14,lineHeight:1.6}}>{t.chartSettingsBlurb||"Every chart available in the app, rendered with sample data. Temporary section — decide which to keep, swap, or retire."}</div>
+    {/* Filter chips + density toggle row */}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:14,paddingBottom:10,borderBottom:`1px solid ${th.cardBorder}`}}>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{filterChips.map(f=>{const active=galleryFilter===f.id;const ct=counts[f.id]||0;return<button key={f.id} onClick={()=>setGalleryFilter(f.id)} style={{fontSize:10,padding:"4px 10px",borderRadius:99,cursor:"pointer",background:active?GOLD+"22":"transparent",color:active?GOLD:th.muted,border:`1px solid ${active?GOLD:th.cardBorder}`,fontWeight:active?700:500,letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>{f.l}<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:active?GOLD:th.dim,opacity:0.8}}>{ct}</span></button>;})}</div>
+      <div role="tablist" aria-label={t.densityLbl||"Density"} style={{display:"flex",gap:0,background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6,overflow:"hidden",padding:2}}>
+        {[["comfortable",t.densityComfortable||"Comfortable"],["compact",t.densityCompact||"Compact"]].map(([m,l])=><button key={m} role="tab" aria-selected={galleryDensity===m} onClick={()=>setGalleryDensity(m)} style={{background:galleryDensity===m?GOLD+"22":"transparent",border:"none",color:galleryDensity===m?GOLD:th.dim,fontFamily:"inherit",fontSize:10,fontWeight:700,letterSpacing:"0.06em",padding:"4px 9px",borderRadius:4,cursor:"pointer",textTransform:"uppercase"}}>{l}</button>)}
+      </div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":`repeat(auto-fit, minmax(${cardMin}px, 1fr))`,gap:galleryDensity==="compact"?10:12,marginBottom:20}}>
+      {visibleGallery.map((c,i)=><ChartGalleryCard key={i} name={c.name} status={c.status} desc={c.desc} th={th} t={t} density={galleryDensity} templateId={c.templateId} isCustomized={c.templateId&&!!cust[c.templateId]} onEdit={tid=>setEditingTid(tid)}>{c.render()}</ChartGalleryCard>)}
     </div>
     <div style={{borderTop:`1px solid ${th.cardBorder}`,paddingTop:16,marginTop:4}}>
       <div style={{fontSize:11,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{t.chartGallerySlotsHdr||"Dashboard Slots"}</div>
@@ -4499,6 +4757,16 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🗺️ {t.clientsByNetWorthHdr||"Clients by Net Worth"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsByNetWorthSub||"Tile size = current net worth per client."}</div></div>
         <Treemap data={tmData} width={460} height={isMobile?220:240} placeholder={t.noClientsYet||"No clients yet."}/>
+      </>;
+    }},
+    // v0.54 (PR 5) — RankedHBars variant per preview/27-dashboard-row.html spec.
+    // Top 8 by net worth, gold on highest then blue/orange/grey shading.
+    clientsRanked:{id:"clientsRanked",label:"🏆 "+(t.clientsRankedSlot||"Clients · Ranked H-Bars"),render:()=>{
+      const palette=[GOLD,"#5B9BD5","#4472C4","#ED7D31","#EDD594","#755023","#374151","#475569"];
+      const rhData=active.map(c=>{const nw=totalA(c)-totalL(c);return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),value:Math.max(0,nw)};}).filter(d=>d.value>0).sort((a,b)=>b.value-a.value).slice(0,8).map((d,i)=>({...d,color:palette[i]}));
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🏆 {t.clientsRankedSlot||"Clients · Ranked H-Bars"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsRankedSub||"Top 8 active clients by net worth."}</div></div>
+        {rhData.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<RankedHBars data={rhData} maxBars={8} width={460} barH={18} gap={6}/>}
       </>;
     }},
     practiceHealth:{id:"practiceHealth",label:"🎯 "+(t.practiceHealthHdr||"Practice Health"),render:()=>{
@@ -5058,27 +5326,46 @@ function Login({onLogin,t,isDark,onToggle,lang}){
   const switchMode=(m)=>{setMode(m);setErr("");setInfo("");setPw("");};
   const title=mode==="forgot"?(t.resetPassword||"Reset Password"):mode==="setNew"?(t.setNewPassword||"Set New Password"):(t.signIn||"Sign In");
   const btnLabel=mode==="forgot"?(t.sendResetLink||"Send Reset Link"):mode==="setNew"?(t.updatePassword||"Update Password"):(t.signIn||"Sign In");
-  // v0.43.0 — Marketing landing page with corner sign-in. Warm cream + amber
-  // palette (matches v0.41 print + ui-ux-pro-max "SaaS Boutique" recommendation).
-  // Enterprise Gateway pattern: Hero → Features → Trust → Footer with Login as
-  // a corner CTA on the right side of the hero.
-  const PAL = {
-    bg: "#FFFBEB",          // warm cream
-    bgAccent: "#FEF3C7",    // soft yellow tint
-    text: "#1F2937",        // near-black with warmth
-    textHi: "#451A03",      // deep walnut (hero headline)
-    muted: "#78716C",       // warm grey
-    card: "#FFFFFF",
-    cardBorder: "#FDE68A",  // pale gold border
-    amber: "#D97706",       // primary accent / CTA
-    amberDeep: "#B45309",
+  // v0.54.0 (PR 1 from HANDOFF-v0.46) — landing page rework:
+  //   - Personal credentials stripped (no MBA/FPWMP/FL0215/Mauricio name).
+  //     The hero is about the product, not the advisor.
+  //   - Theme toggle actually toggles the landing now (PAL is theme-aware).
+  //   - Hero headline replaced with the spec line + amber "advisor" accent.
+  //   - Footer disclaimer reworded to product-only, no personal name.
+  const PAL = isDark ? {
+    bg: "#0D1B2A",
+    bgAccent: "#142235",
+    text: "#F1F5F9",
+    textHi: "#EDD594",          // gold-cream for hero
+    muted: "#94A3B8",
+    card: "#131F31",
+    cardBorder: "#1F2937",
+    amber: "#C9A84C",           // gold accent
+    amberDeep: "#EDD594",
     gold: GOLD,
+    inpBg: "#0D1B2A",
+    ambientA: "rgba(201,168,76,0.18)",
+    ambientB: "rgba(45,80,140,0.25)",
+  } : {
+    bg: "#FAF6EC",              // warm cream (spec value, was #FFFBEB)
+    bgAccent: "#F7EFC1",        // soft gold cream
+    text: "#0D1B2A",
+    textHi: "#0D1B2A",
+    muted: "#475569",
+    card: "#FFFFFF",
+    cardBorder: "#E8DFC6",      // cream rule (was pale gold)
+    amber: "#C9A84C",           // gold (was #D97706)
+    amberDeep: "#755023",       // deep walnut gold
+    gold: GOLD,
+    inpBg: "#FFFEFA",
+    ambientA: "#F7EFC1",        // upper-right glow
+    ambientB: "rgba(201,168,76,0.10)",
   };
-  const INP_L = {background:"#FFFEFA",border:`1px solid ${PAL.cardBorder}`,color:PAL.text,borderRadius:10,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
+  const INP_L = {background:PAL.inpBg,border:`1px solid ${PAL.cardBorder}`,color:PAL.text,borderRadius:10,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
   return<div style={{minHeight:"100vh",background:`linear-gradient(180deg,${PAL.bg} 0%,#FFFDF6 60%,${PAL.bg} 100%)`,color:PAL.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
-    {/* Decorative warm-gradient blobs */}
-    <div aria-hidden style={{position:"absolute",top:-200,right:-150,width:500,height:500,borderRadius:"50%",background:`radial-gradient(circle,${PAL.amber}22,transparent 70%)`,pointerEvents:"none",filter:"blur(40px)"}}/>
-    <div aria-hidden style={{position:"absolute",top:300,left:-200,width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${PAL.gold}1c,transparent 70%)`,pointerEvents:"none",filter:"blur(50px)"}}/>
+    {/* Decorative warm-gradient blobs — theme-aware per spec. */}
+    <div aria-hidden style={{position:"absolute",top:-200,right:-150,width:500,height:500,borderRadius:"50%",background:`radial-gradient(circle,${PAL.ambientA},transparent 70%)`,pointerEvents:"none",filter:"blur(40px)"}}/>
+    <div aria-hidden style={{position:"absolute",top:300,left:-200,width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${PAL.ambientB},transparent 70%)`,pointerEvents:"none",filter:"blur(50px)"}}/>
 
     {/* TOP BAR — brand left, theme toggle right */}
     <header style={{position:"relative",zIndex:2,padding:"22px 36px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -5086,7 +5373,7 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         <img src="/anchor-monogram.svg" alt="" style={{width:34,height:34}}/>
         <div>
           <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:PAL.amberDeep,letterSpacing:"0.12em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
-          <div style={{fontSize:9,color:PAL.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>Financial Advisory · Miami, FL</div>
+          <div style={{fontSize:9,color:PAL.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>{lang==="es"?"Asesoría Financiera":"Financial Advisory"}</div>
         </div>
       </div>
       <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:11,padding:"6px 14px",borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
@@ -5095,13 +5382,16 @@ function Login({onLogin,t,isDark,onToggle,lang}){
     {/* HERO — big italic tagline left, sign-in card top-right */}
     <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px 60px",display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr)",gap:48,alignItems:"start"}}>
       <div style={{paddingTop:36}}>
-        <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:PAL.amberDeep,letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:18,fontWeight:600}}>● {lang==="es"?"Asesoría Financiera Personal":"Personal Financial Advisory"}</div>
-        <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(2.4rem,5.5vw,4.2rem)",color:PAL.textHi,lineHeight:1.05,letterSpacing:"-0.01em",margin:"0 0 22px"}}>{lang==="es"?<>Tu retrato financiero, <span style={{color:PAL.amber}}>perfectamente claro.</span></>:<>Your financial picture, <span style={{color:PAL.amber}}>beautifully clear.</span></>}</h1>
-        <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Asesoría educativa de finanzas personales para parejas y familias. Una imagen completa de tus ingresos, gastos, deudas y ahorros — explicada con calma.":"Educational personal-finance coaching for individuals, couples, and families. A clear picture of your income, bills, debt, and savings — explained patiently, in plain English."}</p>
+        <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:PAL.amberDeep,letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:18,fontWeight:600}}>● {lang==="es"?"Plataforma de asesoría financiera":"Financial coaching platform"}</div>
+        {/* v0.54 — spec hero line: "The dashboard your advisor brings to every
+           meeting." with "advisor" in gold. Product-first, not advisor-bio. */}
+        <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(2.4rem,5.5vw,4.2rem)",color:PAL.textHi,lineHeight:1.05,letterSpacing:"-0.01em",margin:"0 0 22px"}}>{lang==="es"?<>El tablero que tu <span style={{color:PAL.amber}}>asesor</span> lleva a cada reunión.</>:<>The dashboard your <span style={{color:PAL.amber}}>advisor</span> brings to every meeting.</>}</h1>
+        <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
+        {/* Feature pill strip — product capabilities, not personal credentials. */}
         <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:PAL.muted,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>MBA</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>FPWMP</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>FL · 0215</span>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
           <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
         </div>
       </div>
@@ -5155,8 +5445,8 @@ function Login({onLogin,t,isDark,onToggle,lang}){
     <footer style={{position:"relative",zIndex:2,maxWidth:1200,margin:"40px auto 0",padding:"24px 36px 36px",borderTop:`1px solid ${PAL.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
       <div style={{fontSize:11,color:PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640}}>
         {lang==="es"?
-          "Este portal es solo educativo. No es asesoría de inversión, fiscal, o legal. Mauricio Hernandez, MBA, FPWMP, FL0215.":
-          "This portal is educational only. It does not constitute investment, tax, or legal advice. Mauricio Hernandez, MBA, FPWMP, FL0215."}
+          "Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":
+          "Educational financial coaching — not investment, tax, or legal advice."}
       </div>
       <div style={{display:"flex",gap:14,fontSize:11,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
         <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,textDecoration:"none"}}>Email</a>
@@ -5410,7 +5700,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0530-live-pair-upgrade-pr6";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0540-big-batch-prs-1-2-4-5-7-8-9";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -5702,7 +5992,12 @@ function PublicIntake(){
   })();return()=>{cancelled=true;};},[inviteToken]);
   const[mode,setMode]=useState(()=>{if(typeof window==="undefined")return "dark";try{return window.localStorage.getItem("ga_intake_mode")||"dark";}catch(e){return "dark";}});
   const isDark=mode==="dark";
-  const TH=isDark?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}:{bg:"#F8FAFC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#DC2626",accent:"#B8860B",card:"#FFFFFF",cardBorder:"#E2E8F0",inp:"#F1F5F9",inpBorder:"#CBD5E1",modal:"#FFFFFF",warn:"#D97706",blue:"#2563EB",nav:"#FFFFFF",navBorder:"#E2E8F0",sideText:"#0F172A",sideMuted:"#475569"};
+  // v0.54.0 (PR 2 from HANDOFF-v0.46) — Light-mode intake palette swapped from
+  // Tailwind cool slate to the warm cream + amber spec in preview/22-intake-colors.html.
+  // 11 hex pairs: page bg, card border, focus border + ring, primary CTA fill +
+  // text + hover, active step pill + text, error tone, body text. Section labels
+  // pick up the new accent via synthTheme below.
+  const TH=isDark?{bg:"#0D1B2A",text:"#fff",muted:"#94A3B8",dim:"#64748B",pos:"#10B981",neg:"#EF4444",accent:GOLD,card:"#1A2940",cardBorder:"#1F2C44",inp:"#0F1E33",inpBorder:"#1F2C44",modal:"#1A2940",warn:"#F59E0B",blue:"#3B82F6",nav:"#1A2940",navBorder:"#1F2C44",sideText:"#fff",sideMuted:"#94A3B8"}:{bg:"#F7F4EC",text:"#0F172A",muted:"#475569",dim:"#94A3B8",pos:"#059669",neg:"#B83227",accent:"#C9A84C",card:"#FFFFFF",cardBorder:"#E8DFC6",inp:"#FFFFFF",inpBorder:"#E8DFC6",modal:"#FFFFFF",warn:"#D97706",blue:"#C9A84C",nav:"#FFFFFF",navBorder:"#E8DFC6",sideText:"#0F172A",sideMuted:"#475569"};
   useEffect(()=>{if(typeof document!=="undefined"){document.documentElement.style.background=TH.bg;document.body.style.background=TH.bg;document.body.style.margin="0";}try{window.localStorage.setItem("ga_intake_mode",mode);}catch(e){}},[mode,TH.bg]);
   const advisorSettings = resolvedSettings || {};
   const services = (advisorSettings.services && advisorSettings.services.length) ? advisorSettings.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:lang==="es"?v.es:v.en,price:v.price,stripeUrl:(advisorSettings.stripeLinks||{})[v.id]||v.payUrl||"",payUrl:(advisorSettings.stripeLinks||{})[v.id]||v.payUrl||"",desc:lang==="es"?v.descEs:v.desc}));
