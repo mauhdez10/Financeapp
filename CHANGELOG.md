@@ -2,6 +2,54 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.50.0 — 2026-05-25 — Email PDF warm palette (port v0.45 in-app print)
+
+Ported the warm linen + amber + Newsreader story from `preview/18-pdf-reports.html`
+and the v0.45 in-app print stylesheet into `api/render-report-pdf.js`. The
+emailed Complete Report PDF now reads as a designer-grade document, not
+the previous cool slate.
+
+**Palette swap.**
+- Page bg `#F1F5F9` → `#FAFAF7` (warm linen)
+- Pos green `#10B981` → `#047857` (deeper warm green) for income / cash flow
+- Neg red `#EF4444` → `#B91C1C` (deeper warm red) for bills / debt
+- New `GOLD_DEEP` `#B8901E` for section headers, KPI gold values, warn
+- `MUTED` `#64748B` → `#475569` (slight warm-shift)
+- Removed the chunky `#F0FDF4` / `#FEF2F2` / `#EFF6FF` accent stripes on
+  summary rows — replaced with the universal `#F8F6EF` cream wash that
+  the in-app print uses. Inline `#F8FAFC` table header bands → transparent.
+
+**Layout — claude-design `sect-head` pattern.**
+- Section cards lost their `background:#fff` + heavy border + 14px padding.
+  Now `background: transparent`, no border, no rounding — content flows in
+  the page wash with hairline table rules separating sections.
+- Section headers swapped from "11px Plus Jakarta uppercase on gold
+  underline" to the claude pattern: 8pt amber `#B8901E`, 0.14em tracking,
+  with a hairline `#E2E8F0` rule extending right via `::after`.
+- Report title moved out of its white card → centered Newsreader italic
+  22px `#0D1B2A`, with small uppercase "snapshot" sub-label.
+- Disclaimer slimmed: was a white card with `BORDER` rule; now slim
+  italic text with a gold `#C9A84C` top rule, no card.
+- Tables get the universal style centrally (was inline per-table): th
+  in 7pt Plus Jakarta uppercase with `#CBD5E1` baseline, td body in 8.5pt
+  Source Serif with `#F1F5F9` hairlines, totals get a gold top rule.
+
+**KPI strip — compact.**
+- Card padding `8px 10px` → `7px 9px`. Radius 6px → 3px (claude design exact).
+- Value font now JetBrains Mono 13px tabular, was system 14px.
+- Label font now 6.5pt with 0.06em tracking + 700 weight.
+- Net Worth slot recolored from pos/neg green/red to amber `#B8901E` (matches
+  the in-app print "$28,100" treatment).
+
+**Body type.** 9.5pt Source Serif 4 with line-height 1.45 (was unset).
+Matches the in-app print rhythm exactly.
+
+**Verification artifact.** `preview/email-pdf-warm-preview.html` mocks the
+new template with stub Amanda-Chen data. Open it locally to audit the
+warm palette without triggering an email send. Computed-style probe
+confirmed `#FAFAF7` bg, `#C9A84C` brand rule, `#047857/#B91C1C/#B8901E`
+KPI value colors. Visual screenshot matches `preview/18-pdf-reports.html`.
+
 ## v0.48.0 — 2026-05-25 — Chart customization MVP (SmoothAreaLine slice)
 
 Foundation for self-service chart styling. The Chart Gallery becomes the

@@ -182,15 +182,23 @@ function computeAggregates(client) {
 }
 
 // ── inline SVG charts ──────────────────────────────────────────────────────
-const GOLD = "#C9A84C";
-const POS = "#10B981";
-const NEG = "#EF4444";
+// v0.50.0 — warm linen palette ported from preview/18-pdf-reports.html and
+// the v0.45 in-app print stylesheet. Section headers use the deep-amber
+// `#B8901E` instead of slate; page bg is warm linen `#FAFAF7`; pos/neg are
+// the warmer variants (`#047857` / `#B91C1C`) seen on the design template.
+const GOLD = "#C9A84C";       // brand gold — page rules, brand name underline
+const GOLD_DEEP = "#B8901E";  // warm amber — section headers + KPI gold values
+const POS = "#047857";        // deeper warm green (was #10B981)
+const NEG = "#B91C1C";        // deeper warm red (was #EF4444)
 const BLUE = "#3B82F6";
-const WARN = "#F59E0B";
+const WARN = "#B8901E";       // collapse warn into gold deep for warm palette
 const TEXT = "#0F172A";
-const MUTED = "#64748B";
+const MUTED = "#475569";      // slight warm-shift (was #64748B)
 const BORDER = "#E2E8F0";
-const PAGE_BG = "#F1F5F9"; // matches DEF_SETTINGS.lightBg in App.jsx
+const PAGE_BG = "#FAFAF7";    // warm linen (was #F1F5F9)
+const CARD_BG = "#FFFFFF";
+const CHART_BG = "#F8F6EF";   // mini-chart cream wash
+const CHART_BORDER = "#E8E2D0";
 
 function donutSVG(parts, title) {
   // parts: [{label, value, color}]
@@ -586,9 +594,9 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   ) : '';
   const incomeTable = inc.income && incomeRows.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
-      <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
+      <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
       <tbody>${incomeRows.map(s => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(s.label || s.source || s.name || L.none)}</td><td style="padding:5px 8px;text-align:right;color:${POS};font-weight:600">${fmtUSD(toM(s.net, s.freq))}</td></tr>`).join("")}
-      <tr style="background:#F0FDF4"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiIncome}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${POS}">${fmtUSD(agg.income)}</td></tr></tbody>
+      <tr style="background:#F8F6EF"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiIncome}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${POS}">${fmtUSD(agg.income)}</td></tr></tbody>
     </table>` : (inc.income ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
   // ── Bills table + donut
@@ -604,9 +612,9 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   ) : '';
   const billsTable = inc.bills && billRows.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
-      <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
+      <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
       <tbody>${billRows.map(b => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(b.name || b.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${b.dueDay ? ("Day " + b.dueDay) : htmlEscape(b.type || "")}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(toM(b.cost, b.freq))}</td></tr>`).join("")}
-      <tr style="background:#FEF2F2"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiBills}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.bills)}</td></tr></tbody>
+      <tr style="background:#F8F6EF"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiBills}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.bills)}</td></tr></tbody>
     </table>` : (inc.bills ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
   // ── Debts table + bar
@@ -619,9 +627,9 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   }))) : '';
   const debtsTable = inc.debt && debtRows.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
-      <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.balance}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.minPay}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.interest}</th></tr></thead>
+      <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.balance}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.minPay}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.interest}</th></tr></thead>
       <tbody>${debtRows.map(d => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(d.name || d.label || L.none)}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(d.balance)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${fmtUSD(d._isCard ? effectiveMin(d) : (Number(d.min) || 0))}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${d.apr != null ? fmtPct(d.apr) : L.none}</td></tr>`).join("")}
-      <tr style="background:#FEF2F2"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiDebt}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.debt)}</td><td style="padding:6px 8px;text-align:right;font-weight:600;color:${MUTED}">${fmtUSD(agg.debtMinPay)}</td><td></td></tr></tbody>
+      <tr style="background:#F8F6EF"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiDebt}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.debt)}</td><td style="padding:6px 8px;text-align:right;font-weight:600;color:${MUTED}">${fmtUSD(agg.debtMinPay)}</td><td></td></tr></tbody>
     </table>` : (inc.debt ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
   // ── Assets summary (v0.40.0 — paired Asset/Liability Treemap above the tables)
@@ -656,11 +664,11 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
     </div>` : '';
   const assetsTable = inc.assets && (accountsRows.length || customRows.length) ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
-      <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.value}</th></tr></thead>
+      <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.value}</th></tr></thead>
       <tbody>
       ${accountsRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${(ACCT_ICONS[a.type] || "💼") + " " + htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(ACCT_LABELS[a.type] || a.type || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
       ${customRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(a.type || a.kind || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
-      <tr style="background:#EFF6FF"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">Total</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD(agg.totalAssets)}</td></tr></tbody>
+      <tr style="background:#F8F6EF"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">Total</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD(agg.totalAssets)}</td></tr></tbody>
     </table>` : (inc.assets ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
   // ── Notes
@@ -686,13 +694,13 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   const investAllocHTML = inc.investAllocation && allocEntries.length ? `
     <div style="font-size:10px;color:${MUTED};margin-bottom:6px">${L.available}: ${fmtUSD(Math.max(0, agg.netMonthly))}/mo</div>
     <table style="width:100%;border-collapse:collapse;font-size:10px">
-      <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">%</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
+      <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">%</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.amount}</th></tr></thead>
       <tbody>
       ${allocEntries.map(([k, v]) => {
         const amt = (Number(v.pct) / 100) * Math.max(0, agg.netMonthly);
         return `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(v.label || k)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${fmtPct(v.pct)}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(amt)}</td></tr>`;
       }).join("")}
-      <tr style="background:#EFF6FF"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.allocated}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${allocTotal > 100 ? NEG : TEXT}">${fmtPct(allocTotal)}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD((allocTotal / 100) * Math.max(0, agg.netMonthly))}</td></tr>
+      <tr style="background:#F8F6EF"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.allocated}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${allocTotal > 100 ? NEG : TEXT}">${fmtPct(allocTotal)}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD((allocTotal / 100) * Math.max(0, agg.netMonthly))}</td></tr>
       </tbody>
     </table>` : '';
 
@@ -715,15 +723,15 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   const radarAxes = isEs ? ["DSR","Ahorro","EF","D/A","Flujo"] : ["DSR","Savings","EF","D/A","Cash"];
   const financialRatiosHTML = inc.financialRatios ? `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:10px 0">
-      <div style="background:#F8FAFC;border:1px solid ${BORDER};border-radius:6px;padding:10px">
+      <div style="background:transparent;border:1px solid ${BORDER};border-radius:6px;padding:10px">
         <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${L.totalAssets}</div>
         <div style="font-size:16px;color:${BLUE};font-weight:700">${fmtUSD(agg.totalAssets)}</div>
       </div>
-      <div style="background:#F8FAFC;border:1px solid ${BORDER};border-radius:6px;padding:10px">
+      <div style="background:transparent;border:1px solid ${BORDER};border-radius:6px;padding:10px">
         <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${L.totalLiab}</div>
         <div style="font-size:16px;color:${NEG};font-weight:700">${fmtUSD(agg.debt)}</div>
       </div>
-      <div style="background:#F8FAFC;border:1px solid ${BORDER};border-radius:6px;padding:10px">
+      <div style="background:transparent;border:1px solid ${BORDER};border-radius:6px;padding:10px">
         <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${L.netWorth}</div>
         <div style="font-size:16px;color:${agg.netWorth >= 0 ? POS : NEG};font-weight:700">${fmtUSD(agg.netWorth)}</div>
       </div>
@@ -775,7 +783,7 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
         <div style="font-size:12px;font-weight:700;color:${TEXT};margin-top:6px;padding-top:6px;border-top:1px solid ${BORDER}">Total ${L.outflows}: ${fmtUSD(agg.bills + agg.debtMinPay)}/mo</div>
       </div>
     </div>
-    <div style="background:#F0FDF4;border:1px solid ${POS}44;border-radius:6px;padding:12px;margin-top:10px">
+    <div style="background:#F8F6EF;border:1px solid ${POS}44;border-radius:6px;padding:12px;margin-top:10px">
       <div style="font-size:11px;font-weight:700;color:${POS};margin-bottom:4px">⚡ ${L.operatingCF}</div>
       <div style="font-size:16px;font-weight:700;color:${POS}">${fmtUSD(agg.netMonthly)}/mo</div>
     </div>` : '';
@@ -784,7 +792,7 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   const debtPayoffHTML = inc.strategyPlan && debtRows.length ? `
     <div style="font-size:11px;font-weight:700;color:${TEXT};margin-bottom:8px">💳 ${L.debtPayoffOrder}</div>
     <table style="width:100%;border-collapse:collapse;font-size:10px">
-      <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">#</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.balance}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">APR</th></tr></thead>
+      <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">#</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.balance}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">APR</th></tr></thead>
       <tbody>
       ${debtRows.slice(0, 5).map((d, i) => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${MUTED}">${i + 1}</td><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(d.name || d.label)}</td><td style="padding:5px 8px;text-align:right;color:${NEG};font-weight:600">${fmtUSD(d.balance)}</td><td style="padding:5px 8px;text-align:right;color:${MUTED}">${d.apr != null ? fmtPct(d.apr) : "0%"}</td></tr>`).join("")}
       </tbody>
@@ -792,11 +800,11 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   
   const roadmapHTML = inc.strategyPlan ? `
     <div style="font-size:11px;font-weight:700;color:${TEXT};margin:14px 0 8px">🗺 ${L.financialRoadmap}</div>
-    <div style="background:#FEF2F2;border:1px solid ${NEG}44;border-radius:6px;padding:12px;margin-bottom:10px">
+    <div style="background:#F8F6EF;border:1px solid ${NEG}44;border-radius:6px;padding:12px;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:${NEG};margin-bottom:4px">${L.phase1}</div>
       <div style="font-size:10px;color:${TEXT};line-height:1.5">Focus extra cash on debt. Projected payoff: ${(agg.debt / Math.max(1, agg.netMonthly)).toFixed(0)} months.</div>
     </div>
-    <div style="background:#F0FDF4;border:1px solid ${POS}44;border-radius:6px;padding:12px">
+    <div style="background:#F8F6EF;border:1px solid ${POS}44;border-radius:6px;padding:12px">
       <div style="font-size:11px;font-weight:700;color:${POS};margin-bottom:4px">${L.phase2}</div>
       <div style="font-size:10px;color:${TEXT};line-height:1.5">Allocate to investments. Dollar-cost average monthly. Max employer 401k match first.</div>
     </div>` : '';
@@ -809,7 +817,7 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
         const fv = monthlyInvest * (((Math.pow(1 + 0.085 / 12, y * 12) - 1) / (0.085 / 12)) * (1 + 0.085 / 12));
         const contrib = monthlyInvest * y * 12;
         const growth = fv - contrib;
-        return `<div style="background:#EFF6FF;border:1px solid ${BLUE}44;border-radius:6px;padding:10px">
+        return `<div style="background:#F8F6EF;border:1px solid ${BLUE}44;border-radius:6px;padding:10px">
           <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${y} ${L.years}</div>
           <div style="font-size:14px;color:${BLUE};font-weight:700">${fmtUSD(fv)}</div>
           <div style="font-size:9px;color:${POS};margin-top:2px">+${fmtUSD(growth)} ${L.growth}</div>
@@ -817,20 +825,20 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
       }).join("")}
     </div>` : '';
 
-  // ── KPI strip (Page 1 lead)
+  // ── KPI strip (Page 1 lead). v0.50 — compact claude-design cards.
   const kpis = [
     { label: L.kpiIncome, value: fmtUSD(agg.income), color: POS },
     { label: L.kpiBills, value: fmtUSD(agg.bills), color: NEG },
     { label: L.kpiDebt, value: fmtUSD(agg.debt), color: NEG },
-    { label: L.kpiNetWorth, value: fmtUSD(agg.netWorth), color: agg.netWorth >= 0 ? POS : NEG },
+    { label: L.kpiNetWorth, value: fmtUSD(agg.netWorth), color: agg.netWorth >= 0 ? GOLD_DEEP : NEG },
     { label: L.kpiNetMonthly, value: fmtUSD(agg.netMonthly), color: agg.netMonthly >= 0 ? POS : NEG }
   ];
   const kpiHTML = `
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0 6px">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0 6px">
       ${kpis.map(k => `
-        <div style="background:#fff;border:1px solid ${BORDER};border-radius:6px;padding:8px 10px;text-align:left">
-          <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${htmlEscape(k.label)}</div>
-          <div style="font-size:14px;color:${k.color};font-weight:700">${k.value}</div>
+        <div style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:3px;padding:7px 9px;text-align:left">
+          <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${htmlEscape(k.label)}</div>
+          <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:13px;color:${k.color};font-weight:700;margin-top:2px">${k.value}</div>
         </div>`).join("")}
     </div>`;
 
@@ -841,23 +849,31 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   @page { size: Letter; margin: 0.5in; background: ${PAGE_BG}; }
-  body { font-family: "Source Serif 4", Georgia, "Times New Roman", serif; color: ${TEXT}; margin: 0; padding: 0; background: ${PAGE_BG}; font-feature-settings: "tnum" 1; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Source Serif 4", Georgia, "Times New Roman", serif; color: ${TEXT}; margin: 0; padding: 0; background: ${PAGE_BG}; font-size: 9.5pt; line-height: 1.45; font-feature-settings: "tnum" 1; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   h1, h2, h3, h4 { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
-  .section { page-break-inside: avoid; margin-top: 18px; background: #fff; border: 1px solid ${BORDER}; border-radius: 8px; padding: 14px; }
-  .section-hdr { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 11px; font-weight: 800; color: ${TEXT}; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; border-bottom: 1px solid ${GOLD}; margin-bottom: 10px; }
-  .report-title { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 500; font-size: 26px; color: ${TEXT}; letter-spacing: -0.005em; }
-  .header-bar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid ${GOLD}; margin-bottom: 14px; }
-  .brand { display:flex; align-items:center; gap:10px; }
-  .brand-mark { width:32px; height:32px; }
+  /* v0.50 — claude-design "sect-head" pattern: section cards lose the heavy
+     amber top rule + chunky padding; section headers become small amber
+     uppercase with a hairline rule that extends right via ::after. */
+  .section { page-break-inside: avoid; margin-top: 14px; background: transparent; border: none; border-radius: 0; padding: 0; }
+  .section-hdr { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8pt; font-weight: 700; color: ${GOLD_DEEP}; text-transform: uppercase; letter-spacing: 0.14em; margin: 12px 0 6px; display: flex; align-items: center; gap: 6px; }
+  .section-hdr::after { content: ""; flex: 1; height: 1px; background: ${BORDER}; }
+  .report-title { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 500; font-size: 22px; color: #0D1B2A; line-height: 1.1; text-align: center; margin: 4px 0 2px; }
+  .header-bar { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid ${GOLD}; margin-bottom: 14px; }
+  .brand { display:flex; align-items:center; gap:8px; }
+  .brand-mark { width:28px; height:28px; }
   .brand-mark img { width:100%; height:100%; object-fit:contain; }
-  .brand-name { font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 20px; color: ${GOLD}; font-weight: 500; letter-spacing: 0.10em; text-transform: uppercase; }
-  .brand-sub { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8px; color: ${MUTED}; letter-spacing: 0.2em; text-transform: uppercase; }
-  .meta { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 10px; color: ${MUTED}; text-align: right; line-height: 1.5; }
-  .meta strong { font-weight: 600; }
+  .brand-name { font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 16px; color: ${GOLD}; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+  .brand-sub { font-family: "Source Serif 4", serif; font-style: italic; font-size: 8px; color: ${MUTED}; margin-top: 1px; }
+  .meta { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 9px; color: ${MUTED}; text-align: right; line-height: 1.5; }
+  .meta strong { font-weight: 600; color: ${TEXT}; }
   .mono, .money, td.num { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-  .disclaimer { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8px; color: ${MUTED}; line-height: 1.5; border-top: 1px solid ${BORDER}; padding-top: 8px; margin-top: 20px; font-style: italic; background: #fff; border-radius: 8px; padding: 12px; }
+  /* v0.50 — disclaimer slimmed to thin text with gold top rule, no card. */
+  .disclaimer { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 7.5pt; color: ${MUTED}; line-height: 1.5; border-top: 1px solid ${GOLD}; padding-top: 8px; margin-top: 22px; font-style: italic; background: transparent; padding-left: 0; padding-right: 0; padding-bottom: 0; }
   .page-footer { font-family: "Plus Jakarta Sans", system-ui, sans-serif; font-size: 8px; color: ${MUTED}; text-align: center; margin-top: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
-  table { border-collapse: collapse; }
+  table { border-collapse: collapse; width: 100%; font-family: "Source Serif 4", serif; font-size: 8.5pt; }
+  table th { text-align: left; font-family: "Plus Jakarta Sans", sans-serif; font-size: 7pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: ${MUTED}; padding: 4px 4px 6px; border-bottom: 1px solid #CBD5E1; }
+  table td { padding: 4px 4px; border-bottom: 1px solid #F1F5F9; color: ${TEXT}; }
+  table tr.total td, table tr:last-child td { border-top: 1px solid ${GOLD}; border-bottom: none; padding-top: 6px; }
 </style></head><body>
 
 <div class="header-bar">
@@ -875,9 +891,9 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   </div>
 </div>
 
-<div style="margin:14px 0 0;background:#fff;border:1px solid ${BORDER};border-radius:8px;padding:18px">
+<div style="margin:8px 0 14px">
   <div class="report-title">${htmlEscape(L.title)}</div>
-  <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:11px;color:${MUTED};margin-top:6px;letter-spacing:0.04em">${htmlEscape(L.snapshot)}</div>
+  <div style="text-align:center;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:8pt;color:${MUTED};letter-spacing:0.06em;text-transform:uppercase;font-weight:600;margin-bottom:8px">${htmlEscape(L.snapshot)}</div>
 </div>
 
 ${kpiHTML}
