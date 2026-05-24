@@ -2,6 +2,76 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.45.0 — 2026-05-24 — Compact print + new charts + standalone calc wires
+
+Three things in one ship: rewrite the print stylesheet to match the claude
+design template (compact, multi-section per page), build three new chart
+components, and wire charts into the standalone calculators that didn't have
+them yet.
+
+**(A) Compact print stylesheet — matches `preview/18-pdf-reports.html`.**
+- Removed the v0.41 per-section page-break-before rule. Sections now flow
+  naturally — Complete Report goes from ~14 pages to ~6-7.
+- Page bg `#FFFAF0` → `#FAFAF7` (warm linen, matches claude design).
+- Section headers switched from "amber on gold underline" to the claude
+  design `.sect-head` pattern: small uppercase brand-gold (`#B8901E`, 8pt,
+  0.14em tracking) with a hairline that extends right via `::after`.
+- Section cards lost their amber top rule + heavy border + 22px padding —
+  now transparent, no border, 10-12px padding. Much tighter rhythm.
+- Body font dropped from 10.5pt → 9.5pt, line-height 1.6 → 1.45.
+- Tables: hairline grey borders (was warm orange/yellow), `tr.total` gets
+  a thin gold top rule (was 2px amber footer).
+- KPI strip cards: white with 1px slate border, 6-8px padding (claude
+  design exact match).
+- Brand header underline: 2px amber → 1px gold (`#C9A84C`).
+- Disclaimer footer: warm card with border → slim text with gold top rule
+  + "Page X of Y" treatment.
+- Watermark removed — claude design doesn't have one.
+- @page margins: 16mm/14mm/18mm/14mm → 14mm all around.
+- New `.ga-print-page-force` escape hatch — keeps page-break-before
+  behavior for sections that DO want their own page (none use it yet, but
+  it's available for "Strategy Plan" or "Compare Report" if needed later).
+- Lucide nav SVGs hidden in print via `svg.lucide, [data-lucide]`
+  selector (don't render alongside the textual section headers).
+
+**(B) Three new chart components.**
+- **SlopeGraph** — Tufte-style two-period comparison. Each category becomes
+  one connecting line from "Prior" anchor (left) to "Current" anchor
+  (right). Labels + values + % change displayed on either side. Gradient
+  per category stroke (lighter left → vivid right). Sorted desc by current
+  value. Cleaner than grouped bars for period-over-period.
+- **Sunburst** — Nested radial chart. Inner ring = parent groups, outer
+  ring = children. Radial gradient per segment (denser at center). Perfect
+  for nested allocations: Cash → checking/savings/money-market, Investments
+  → 401k/IRA/Brokerage.
+- **Dumbbell** — Before/after comparison. Each category gets two dots
+  (smaller "was" + bigger "now") connected by a gradient bar. Auto-colors
+  green for decreasing (debt paydown!) and red for increasing. Used for
+  goal progress or debt-payoff visualization.
+
+**(C) Standalone calculator charts (calculators outside clients).**
+- **CarLoanCalc** (`/calculators` → Car Loan tab): new `AmortizationArea`
+  chart below the result table, showing the loan balance dropping to zero
+  over the selected term. Orange (`#F97316`) brand color.
+- **IncomeCalc** (`/calculators` → Income tab): paired card row below the
+  result table — left card is a `Donut` showing "Where Each Dollar Goes"
+  (Net + Federal + State + SS + Medicare + Pre-tax 401k/HSA), right card
+  is a `RadialGauge` for the effective tax rate with a 25% target.
+- **HomeEquityCalc** equity tab: `Donut` below the Current Equity result
+  showing the home value composition — Total Owed (red) + Borrowable Equity
+  (gold) + Locked Equity (green). Center label "Home Value $XXX".
+
+**Pending in v0.46+:** The new chart components (SlopeGraph, Sunburst,
+Dumbbell) are built but not yet wired into specific places. Good
+candidates: SlopeGraph in the ClientDetail Summary as a "Last Month vs
+This Month" comparison, Sunburst as an alternative for the Asset Map
+Treemap (toggle option), Dumbbell in the Debt Reduction calc to show
+"current balance → projected balance after extra payments."
+
+Plus the v0.44 pending — ~150 in-content emoji swaps (KPI tile labels,
+section header bars, modal titles) — still deferred for its own focused
+pass.
+
 ## v0.44.0 — 2026-05-24 — Remaining chart gradients + Lucide nav icons
 
 Closing the two open polish tracks from the ui-ux-pro-max audit.

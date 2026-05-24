@@ -1830,6 +1830,170 @@ function ForecastCone({history,projection,confidence=0.2,height=200,width=600,co
   </div>;
 }
 
+/* ── v0.45.0 — Phase 5 Charts: SlopeGraph ───────────────────────────────────
+   Tufte-style two-period comparison. Each line connects a category's value
+   from period A to period B. Categories sorted by current value descending.
+   Used for "this month vs last month" comparisons. */
+function SlopeGraph({data,leftLabel="Prior",rightLabel="Current",height=240,width=460,placeholder}){
+  const th=useTh();
+  const items=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.a!=null||+d.b!=null));
+  const tw=useTweenedData(items.map(d=>({a:+d.a||0,b:+d.b||0})),800);
+  const gid=useSvgId("slope");
+  if(items.length===0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No comparison data"}</div>;
+  const padT=24,padB=22,padL=120,padR=120;
+  const innerW=width-padL-padR,innerH=height-padT-padB;
+  const all=tw.flatMap(p=>[p.a,p.b]);
+  const mx=Math.max(1,...all);
+  const yAt=v=>padT+innerH*(1-v/mx);
+  const fmtV=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
+  // sort items by current value descending for label clarity
+  const order=items.map((d,i)=>({...d,_i:i})).sort((a,b)=>(tw[b._i]?.b||0)-(tw[a._i]?.b||0));
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        {order.map((d,i)=>{const c=d.color||GOLD;return<linearGradient key={i} id={`${gid}-${i}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={c} stopOpacity="0.5"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0.95"/>
+        </linearGradient>;})}
+      </defs>
+      {/* Axis labels at top */}
+      <text x={padL} y={padT-8} textAnchor="end" fontSize="9" fontWeight="700" fill={th.muted} style={{letterSpacing:"0.06em",textTransform:"uppercase"}}>{leftLabel}</text>
+      <text x={width-padR} y={padT-8} textAnchor="start" fontSize="9" fontWeight="700" fill={th.muted} style={{letterSpacing:"0.06em",textTransform:"uppercase"}}>{rightLabel}</text>
+      {/* Vertical anchor lines */}
+      <line x1={padL} y1={padT} x2={padL} y2={padT+innerH} stroke={th.dim} strokeOpacity="0.25" strokeWidth="0.75"/>
+      <line x1={width-padR} y1={padT} x2={width-padR} y2={padT+innerH} stroke={th.dim} strokeOpacity="0.25" strokeWidth="0.75"/>
+      {/* Lines + dots + labels */}
+      {order.map((d,i)=>{
+        const a=tw[d._i]?.a||0,b=tw[d._i]?.b||0;
+        const ya=yAt(a),yb=yAt(b);
+        const c=d.color||GOLD;
+        const change=b-a;
+        const pct=a>0?((change/a)*100).toFixed(0):0;
+        return<g key={i}>
+          <line x1={padL} y1={ya} x2={width-padR} y2={yb} stroke={`url(#${gid}-${i})`} strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx={padL} cy={ya} r="3.5" fill={c} stroke="#fff" strokeWidth="1.2"/>
+          <circle cx={width-padR} cy={yb} r="3.5" fill={c} stroke="#fff" strokeWidth="1.2"/>
+          <text x={padL-8} y={ya+3} textAnchor="end" fontSize="9" fontWeight="600" fill={th.text}>{(d.label||"").slice(0,14)}</text>
+          <text x={padL-8} y={ya+13} textAnchor="end" fontSize="8" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtV(a)}</text>
+          <text x={width-padR+8} y={yb+3} textAnchor="start" fontSize="9" fontWeight="600" fill={c} style={{fontVariantNumeric:"tabular-nums"}}>${fmtV(b)}</text>
+          <text x={width-padR+8} y={yb+13} textAnchor="start" fontSize="8" fill={change>=0?th.pos:th.neg} style={{fontVariantNumeric:"tabular-nums"}}>{change>=0?"+":""}{pct}%</text>
+        </g>;
+      })}
+    </svg>
+  </div>;
+}
+
+/* ── v0.45.0 — Phase 5 Charts: Sunburst ────────────────────────────────────
+   Nested radial chart — inner ring = parent categories, outer ring = children.
+   Used for nested allocations (cash → checking/savings/MM, investments →
+   401k/IRA/Brokerage, etc.). */
+function Sunburst({data,size=240,placeholder}){
+  const th=useTh();
+  const groups=(Array.isArray(data)?data:[]).filter(g=>g&&Array.isArray(g.children)&&g.children.length>0);
+  const allChildValues=groups.flatMap(g=>g.children.map(c=>+c.value||0));
+  const tw=useTweenedData(allChildValues,800);
+  const gid=useSvgId("sb");
+  if(groups.length===0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No nested data"}</div>;
+  // Re-distribute tweened values back into groups
+  let cursor=0;
+  const groupsT=groups.map(g=>{const children=g.children.map(c=>{const v=tw[cursor]||0;cursor++;return{...c,value:v};});const total=children.reduce((s,c)=>s+c.value,0);return{...g,children,total};});
+  const grand=groupsT.reduce((s,g)=>s+g.total,0)||1;
+  const r=size/2-4,rInner=r*0.35,rMid=r*0.62,cx=size/2,cy=size/2;
+  let angle=-Math.PI/2;
+  const segs=[];
+  groupsT.forEach((g,gi)=>{
+    const groupFrac=g.total/grand;
+    const groupStart=angle;
+    const groupEnd=angle+groupFrac*2*Math.PI;
+    angle=groupEnd;
+    const groupColor=g.color||GOLD;
+    // Parent ring (inner)
+    const large=groupEnd-groupStart>Math.PI?1:0;
+    const x1=cx+rMid*Math.cos(groupStart),y1=cy+rMid*Math.sin(groupStart);
+    const x2=cx+rMid*Math.cos(groupEnd),y2=cy+rMid*Math.sin(groupEnd);
+    const x3=cx+rInner*Math.cos(groupEnd),y3=cy+rInner*Math.sin(groupEnd);
+    const x4=cx+rInner*Math.cos(groupStart),y4=cy+rInner*Math.sin(groupStart);
+    segs.push({type:"parent",gi,path:`M${x1} ${y1} A${rMid} ${rMid} 0 ${large} 1 ${x2} ${y2} L${x3} ${y3} A${rInner} ${rInner} 0 ${large} 0 ${x4} ${y4} Z`,color:groupColor,label:g.label,value:g.total});
+    // Child segments (outer)
+    let childAngle=groupStart;
+    g.children.forEach((c,ci)=>{
+      const cFrac=g.total>0?c.value/g.total:0;
+      const cStart=childAngle+0.005;
+      const cEnd=childAngle+cFrac*(groupEnd-groupStart)-0.005;
+      childAngle+=cFrac*(groupEnd-groupStart);
+      if(cEnd<=cStart)return;
+      const cLarge=cEnd-cStart>Math.PI?1:0;
+      const cx1=cx+r*Math.cos(cStart),cy1=cy+r*Math.sin(cStart);
+      const cx2=cx+r*Math.cos(cEnd),cy2=cy+r*Math.sin(cEnd);
+      const cx3=cx+rMid*Math.cos(cEnd),cy3=cy+rMid*Math.sin(cEnd);
+      const cx4=cx+rMid*Math.cos(cStart),cy4=cy+rMid*Math.sin(cStart);
+      segs.push({type:"child",gi,ci,path:`M${cx1} ${cy1} A${r} ${r} 0 ${cLarge} 1 ${cx2} ${cy2} L${cx3} ${cy3} A${rMid} ${rMid} 0 ${cLarge} 0 ${cx4} ${cy4} Z`,color:c.color||groupColor,label:c.label,value:c.value});
+    });
+  });
+  return<div style={{width:size,height:size,display:"inline-block"}}>
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible"}}>
+      <defs>
+        {segs.map((s,i)=><radialGradient key={i} id={`${gid}-${i}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={s.color} stopOpacity={s.type==="parent"?0.95:0.55}/>
+          <stop offset="100%" stopColor={s.color} stopOpacity={s.type==="parent"?0.7:0.85}/>
+        </radialGradient>)}
+      </defs>
+      {segs.map((s,i)=><path key={i} d={s.path} fill={`url(#${gid}-${i})`} stroke="#fff" strokeOpacity="0.4" strokeWidth="0.5"/>)}
+    </svg>
+  </div>;
+}
+
+/* ── v0.45.0 — Phase 5 Charts: Dumbbell ─────────────────────────────────────
+   Before/after comparison — two dots per row connected by a colored line.
+   Used for debt-payoff progress (was $X, now $Y), savings goals, etc. */
+function Dumbbell({data,leftLabel="Was",rightLabel="Now",height,width=460,maxRows=8,rowH=28,placeholder}){
+  const th=useTh();
+  const items=(Array.isArray(data)?data:[]).filter(d=>d).slice(0,maxRows);
+  const tw=useTweenedData(items.map(d=>({a:+d.a||0,b:+d.b||0})),800);
+  const gid=useSvgId("dmb");
+  if(items.length===0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No comparison data"}</div>;
+  const padT=22,padL=120,padR=70;
+  const h=height||(padT+items.length*rowH+12);
+  const innerW=width-padL-padR;
+  const all=tw.flatMap(p=>[p.a,p.b]);
+  const mx=Math.max(1,...all);
+  const xAt=v=>padL+(v/mx)*innerW;
+  const fmtV=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${width} ${h}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        {items.map((d,i)=>{const a=tw[i]?.a||0,b=tw[i]?.b||0;const decreasing=b<a;const c=d.color||(decreasing?th.pos:th.neg);return<linearGradient key={i} id={`${gid}-${i}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={c} stopOpacity={decreasing?"0.95":"0.6"}/>
+          <stop offset="100%" stopColor={c} stopOpacity={decreasing?"0.5":"0.95"}/>
+        </linearGradient>;})}
+      </defs>
+      {/* Header labels */}
+      <text x={padL} y={padT-8} textAnchor="middle" fontSize="9" fontWeight="700" fill={th.muted} style={{letterSpacing:"0.06em",textTransform:"uppercase"}}>{leftLabel}</text>
+      <text x={padL+innerW} y={padT-8} textAnchor="middle" fontSize="9" fontWeight="700" fill={th.muted} style={{letterSpacing:"0.06em",textTransform:"uppercase"}}>{rightLabel}</text>
+      {items.map((d,i)=>{
+        const a=tw[i]?.a||0,b=tw[i]?.b||0;
+        const xa=xAt(a),xb=xAt(b);
+        const y=padT+i*rowH+rowH/2;
+        const decreasing=b<a;
+        const c=d.color||(decreasing?th.pos:th.neg);
+        return<g key={i}>
+          {/* Row label */}
+          <text x={padL-10} y={y+3} textAnchor="end" fontSize="10" fontWeight="600" fill={th.text}>{(d.label||"").slice(0,14)}</text>
+          {/* Connector */}
+          <line x1={Math.min(xa,xb)} y1={y} x2={Math.max(xa,xb)} y2={y} stroke={`url(#${gid}-${i})`} strokeWidth="3" strokeLinecap="round"/>
+          {/* "Was" dot (smaller, lighter) */}
+          <circle cx={xa} cy={y} r="4" fill={th.cardBorder} stroke={c} strokeWidth="1.5"/>
+          {/* "Now" dot (bigger, solid) */}
+          <circle cx={xb} cy={y} r="5.5" fill={c} stroke="#fff" strokeWidth="1.5"/>
+          {/* Value labels */}
+          <text x={Math.min(xa,xb)-6} y={y+3} textAnchor="end" fontSize="8" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtV(a)}</text>
+          <text x={Math.max(xa,xb)+8} y={y+3} textAnchor="start" fontSize="9" fontWeight="700" fill={c} style={{fontVariantNumeric:"tabular-nums"}}>${fmtV(b)}</text>
+        </g>;
+      })}
+    </svg>
+  </div>;
+}
+
 function SummarySection({client,lang,t}){const th=useTh();const[view,setView]=useState("both");const hasP2=!!client.partnerFirst;
 const scales=useMemo(()=>{if(!hasP2||view==="both")return{debt:1,savings:1};const td=client.cards.reduce((s,c)=>s+(+c.balance||0),0);const ts=liquidA(client);const p1d=client.cards.filter(c=>c.owedBy==="p1"||c.owedBy==="joint").reduce((s,c)=>s+(+c.balance||0)*(c.owedBy==="joint"?0.5:1),0);const p1s=(client.accounts||[]).filter(a=>(a.owner==="p1"||a.owner==="joint")&&ACCT_META[a.type]?.liquid).reduce((s,a)=>s+(+a.value||0)*(a.owner==="joint"?0.5:1),0);if(view==="p1")return{debt:td>0?p1d/td:0.5,savings:ts>0?p1s/ts:0.5};return{debt:td>0?(td-p1d)/td:0.5,savings:ts>0?(ts-p1s)/ts:0.5};},[client,view,hasP2]);
 const fI=s=>view==="both"?s:view==="p1"?s.filter(i=>i.person==="p1"||i.person==="joint"):s.filter(i=>i.person==="p2"||i.person==="joint");
@@ -3063,7 +3227,17 @@ const noExtraMonths=am.loanAmt>0&&am.apr>0?Math.ceil(Math.log(amMo/(amMo-am.loan
 const[ep,setEp]=useState({homeValue:400000,appRate:3.5,mortgageBal:300000,mortgageApr:6.5,monthlyPayment:2000,years:10});const uep=k=>e=>setEp(p=>({...p,[k]:+e.target.value||0}));const epData=useMemo(()=>{const rows=[];let bal=ep.mortgageBal,val=ep.homeValue;for(let y=1;y<=Math.min(ep.years,30);y++){val*=(1+ep.appRate/100);const r=ep.mortgageApr/100/12;for(let m=0;m<12;m++){const int=bal*r;const prin=Math.min(bal,ep.monthlyPayment-int);bal=Math.max(0,bal-prin);}rows.push({yr:y,val:Math.round(val),bal:Math.round(bal),eq:Math.round(val-bal)});}return rows;},[ep]);
 const tabs2=[["equity",(t.tabEquityHeloc||"🏦 Equity/HELOC")],["refinance",(t.tabRefinance||"🔄 Refinance")],["amort",(t.tabAmortization||"📊 Amortization")],["projection",(t.tabEquityProjection||"📈 Equity Projection")]];
 return<div><div style={{...mCARD(th),padding:"10px 14px",marginBottom:14,background:th.accent+"08",border:`1px solid ${th.accent}33`}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setShowHelp(s=>!s)}><span style={{fontSize:12,fontWeight:700,color:th.accent}}>{t.homeGlossaryTitle||"📖 Home Calculator Glossary"} {showHelp?"▲":"▼"}</span></div>{showHelp&&<div style={{fontSize:11,color:th.muted,marginTop:10,lineHeight:1.7}}><div><b style={{color:th.accent}}>{t.glossaryLTV||"LTV (Loan-to-Value):"}</b> {t.glossaryLTVDesc||"% of home value a lender will loan against. Typical max: 80-95% for HELOC/refi. 80% = no PMI."}</div><div><b style={{color:th.accent}}>{t.glossaryHELOC||"HELOC:"}</b> {t.glossaryHELOCDesc||"Home Equity Line of Credit — a revolving credit line secured by your home equity."}</div><div><b style={{color:th.accent}}>{t.glossaryPI||"P&I (Principal & Interest):"}</b> {t.glossaryPIDesc||"The core loan payment — does not include taxes/insurance/HOA."}</div><div><b style={{color:th.accent}}>{t.glossaryBreakEven||"Break-even (Refinance):"}</b> {t.glossaryBreakEvenDesc||"Months to recover closing costs through monthly payment savings. Under 24 months = usually worth refinancing."}</div><div><b style={{color:th.accent}}>{t.glossaryAmortization||"Amortization:"}</b> {t.glossaryAmortizationDesc||"Schedule showing how much of each payment goes to principal vs. interest. Early payments are mostly interest."}</div><div><b style={{color:th.accent}}>{t.glossaryEquity||"Equity:"}</b> {t.glossaryEquityDesc||"Home value minus all mortgages/liens. The portion you actually own."}</div></div>}</div><div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>{tabs2.map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{fontSize:11,padding:"5px 12px",borderRadius:8,cursor:"pointer",background:tab===v?th.accent+"22":"transparent",color:tab===v?th.accent:th.muted,border:`1px solid ${tab===v?th.accent:th.cardBorder}`,fontWeight:tab===v?700:400}}>{l}</button>)}</div>
-{tab==="equity"&&<div><Row2><Field label={t.homeValuePh||"Home Value ($)"}><MaskedNumInp style={INP} value={eq.homeValue} onChange={ue("homeValue")} onKeyDown={bE}/></Field><Field label={t.firstMortgage||"1st Mortgage ($)"}><MaskedNumInp style={INP} value={eq.mortgage1} onChange={ue("mortgage1")} onKeyDown={bE}/></Field></Row2><Row2><Field label={t.secondMortgage||"2nd Mortgage ($)"}><MaskedNumInp style={INP} value={eq.mortgage2} onChange={ue("mortgage2")} onKeyDown={bE}/></Field><Field label={t.otherLiens||"Other Liens ($)"}><MaskedNumInp style={INP} value={eq.liens} onChange={ue("liens")} onKeyDown={bE}/></Field></Row2><Row2><Field label={t.ltvLbl||"Max LTV (%)"}><MaskedNumInp style={INP} value={eq.loanPct} onChange={ue("loanPct")} onKeyDown={bE} min={50} max={95}/></Field><Field label={t.loanAprLbl||"Loan APR (%)"}><MaskedNumInp style={INP} value={eq.apr} onChange={ue("apr")} onKeyDown={bE} step="0.1"/></Field></Row2><Field label={t.termYearsLbl||"Term (years)"}><MaskedNumInp style={INP} value={eq.term} onChange={ue("term")} onKeyDown={bE} min={1} max={30}/></Field><div style={{...mCARD(th),padding:14,marginTop:8}}><CalcRow label={t.totalOwed||"Total Owed"} value={fmt(totalOwed)} color={th.neg}/><CalcRow label={t.maxBorrowable||"Max Borrowable"} value={fmt(maxLoan)} color={th.pos} big/><CalcRow label={t.monthlyPaymentLbl||"Monthly Payment"} value={fmtD(helocPay)} color={th.warn}/><CalcRow label={t.currentEquity||"Current Equity"} value={fmt(eq.homeValue-totalOwed)} color={GOLD}/></div></div>}
+{tab==="equity"&&<div><Row2><Field label={t.homeValuePh||"Home Value ($)"}><MaskedNumInp style={INP} value={eq.homeValue} onChange={ue("homeValue")} onKeyDown={bE}/></Field><Field label={t.firstMortgage||"1st Mortgage ($)"}><MaskedNumInp style={INP} value={eq.mortgage1} onChange={ue("mortgage1")} onKeyDown={bE}/></Field></Row2><Row2><Field label={t.secondMortgage||"2nd Mortgage ($)"}><MaskedNumInp style={INP} value={eq.mortgage2} onChange={ue("mortgage2")} onKeyDown={bE}/></Field><Field label={t.otherLiens||"Other Liens ($)"}><MaskedNumInp style={INP} value={eq.liens} onChange={ue("liens")} onKeyDown={bE}/></Field></Row2><Row2><Field label={t.ltvLbl||"Max LTV (%)"}><MaskedNumInp style={INP} value={eq.loanPct} onChange={ue("loanPct")} onKeyDown={bE} min={50} max={95}/></Field><Field label={t.loanAprLbl||"Loan APR (%)"}><MaskedNumInp style={INP} value={eq.apr} onChange={ue("apr")} onKeyDown={bE} step="0.1"/></Field></Row2><Field label={t.termYearsLbl||"Term (years)"}><MaskedNumInp style={INP} value={eq.term} onChange={ue("term")} onKeyDown={bE} min={1} max={30}/></Field><div style={{...mCARD(th),padding:14,marginTop:8}}><CalcRow label={t.totalOwed||"Total Owed"} value={fmt(totalOwed)} color={th.neg}/><CalcRow label={t.maxBorrowable||"Max Borrowable"} value={fmt(maxLoan)} color={th.pos} big/><CalcRow label={t.monthlyPaymentLbl||"Monthly Payment"} value={fmtD(helocPay)} color={th.warn}/><CalcRow label={t.currentEquity||"Current Equity"} value={fmt(eq.homeValue-totalOwed)} color={GOLD}/></div>
+{/* v0.45.0 — Home value composition donut */}
+{eq.homeValue>0&&<div style={{...mCARD(th),padding:14,marginTop:12,display:"flex",flexDirection:"column",alignItems:"center"}}>
+  <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:8}}>🥧 {t.homeValueSplitHdr||"Home Value Composition"}</div>
+  <Donut data={[
+    {name:t.totalOwed||"Total Owed",value:totalOwed,color:th.neg},
+    {name:t.maxBorrowable||"Borrowable Equity",value:maxLoan,color:GOLD},
+    {name:t.lockedEquity||"Locked Equity",value:Math.max(0,eq.homeValue-totalOwed-maxLoan),color:th.pos},
+  ].filter(d=>d.value>0)} size={180} centerLabel={t.homeValuePh||"Home Value"} centerValue={fmtS(eq.homeValue)} centerColor={GOLD}/>
+</div>}
+</div>}
 {tab==="refinance"&&<div><Row2><Field label={t.refiCurrentBalance||"Current Balance ($)"}><MaskedNumInp style={INP} value={rf.balance} onChange={ur("balance")} onKeyDown={bE}/></Field><Field label={t.refiYearsElapsed||"Years Elapsed"}><MaskedNumInp style={INP} value={rf.elapsed} onChange={ur("elapsed")} onKeyDown={bE} min={0} max={30}/></Field></Row2><Row2><Field label={t.refiCurrentRate||"Current Rate (%)"}><MaskedNumInp style={INP} value={rf.currentRate} onChange={ur("currentRate")} onKeyDown={bE} step="0.1"/></Field><Field label={t.refiNewRate||"New Rate (%)"}><MaskedNumInp style={INP} value={rf.newRate} onChange={ur("newRate")} onKeyDown={bE} step="0.1"/></Field></Row2><Row2><Field label={t.refiNewTerm||"New Term (years)"}><MaskedNumInp style={INP} value={rf.newTerm} onChange={ur("newTerm")} onKeyDown={bE} min={5} max={30}/></Field><Field label={t.refiClosingCosts||"Closing Costs ($)"}><MaskedNumInp style={INP} value={rf.closingCosts} onChange={ur("closingCosts")} onKeyDown={bE}/></Field></Row2><div style={{...mCARD(th),padding:14,marginTop:8}}><CalcRow label={t.refiOldMonthly||"Old Monthly"} value={fmtD(oldMo)} color={th.neg}/><CalcRow label={t.refiNewMonthly||"New Monthly"} value={fmtD(newMo)} color={th.pos}/><CalcRow label={t.refiMonthlySavings||"Monthly Savings"} value={fmtD(moSav)} color={moSav>0?GOLD:th.neg} big/><CalcRow label={t.refiBreakEven||"Break-even"} value={breakEven>0?`${breakEven} ${t.refiMonthsSuffix||"months"}`:"N/A"} color={th.muted}/><CalcRow label={t.refiLifetimeSavings||"Lifetime Savings"} value={fmt(Math.max(0,lifeSav))} color={lifeSav>0?th.pos:th.neg}/></div></div>}
 {tab==="amort"&&<div><Row2><Field label={t.amortLoanAmount||"Loan Amount ($)"}><MaskedNumInp style={INP} value={am.loanAmt} onChange={ua("loanAmt")} onKeyDown={bE}/></Field><Field label={t.amortAPR||"APR (%)"}><MaskedNumInp style={INP} value={am.apr} onChange={ua("apr")} onKeyDown={bE} step="0.1"/></Field></Row2><Row2><Field label={t.amortTerm||"Term (years)"}><MaskedNumInp style={INP} value={am.term} onChange={ua("term")} onKeyDown={bE} min={5} max={30}/></Field><Field label={t.amortExtraPayMo||"Extra Payment/mo ($)"}><MaskedNumInp style={INP} value={am.extra} onChange={ua("extra")} onKeyDown={bE}/></Field></Row2><div style={{...mCARD(th),padding:14,marginBottom:12}}><CalcRow label={t.amortBaseMonthly||"Base Monthly"} value={fmtD(amMo)} color={th.accent}/>{am.extra>0&&<><CalcRow label={t.amortTotalMonthly||"Total Monthly"} value={fmtD(amMo+am.extra)} color={th.warn}/><CalcRow label={t.amortMonthsSaved||"Months Saved"} value={`${moSaved} ${t.refiMonthsSuffix||"months"}`} color={th.pos}/><CalcRow label={t.amortInterestSaved||"Interest Saved"} value={fmt(intSaved)} color={th.pos} big/></>}</div><AmortTablePaginated data={amTable}/></div>}
 {tab==="projection"&&<div><Row2><Field label={t.epCurrentHomeValue||"Current Home Value ($)"}><MaskedNumInp style={INP} value={ep.homeValue} onChange={uep("homeValue")} onKeyDown={bE}/></Field><Field label={t.epAnnualApprec||"Annual Appreciation (%)"}><MaskedNumInp style={INP} value={ep.appRate} onChange={uep("appRate")} onKeyDown={bE} step="0.1"/></Field></Row2><Row2><Field label={t.epMortgageBalance||"Mortgage Balance ($)"}><MaskedNumInp style={INP} value={ep.mortgageBal} onChange={uep("mortgageBal")} onKeyDown={bE}/></Field><Field label={t.epMonthlyPI||"Monthly P&I ($)"}><MaskedNumInp style={INP} value={ep.monthlyPayment} onChange={uep("monthlyPayment")} onKeyDown={bE}/></Field></Row2><Row2><Field label={t.epMortgageAPR||"Mortgage APR (%)"}><MaskedNumInp style={INP} value={ep.mortgageApr} onChange={uep("mortgageApr")} onKeyDown={bE} step="0.1"/></Field><Field label={t.epYearsToProject||"Years to Project"}><MaskedNumInp style={INP} value={ep.years} onChange={uep("years")} onKeyDown={bE} min={1} max={30}/></Field></Row2><ResponsiveContainer width="100%" height={160} style={{outline:"none",marginBottom:12}}><AreaChart data={epData} margin={{top:10,right:0,left:0,bottom:0}}><CartesianGrid strokeDasharray="3 3" stroke={th.cardBorder}/><XAxis dataKey="yr" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false} label={{value:"Year",position:"insideBottom",offset:-2,fontSize:9,fill:th.dim}}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/><Area type="monotone" dataKey="val" name="Value" stroke={th.blue} fill={th.blue+"22"} strokeWidth={2}/><Area type="monotone" dataKey="eq" name="Equity" stroke={th.pos} fill={th.pos+"33"} strokeWidth={2}/><Area type="monotone" dataKey="bal" name="Balance" stroke={th.neg} fill={th.neg+"11"} strokeWidth={1}/></AreaChart></ResponsiveContainer><EquityTablePaginated data={epData}/></div>}
@@ -3155,6 +3329,24 @@ function IncomeCalc({t}){const th=useTh();
     <CalcRow label={t.incomeGrossPerCheck||"Gross/Paycheck"} value={fmt(grossPerCheck)} color={th.muted}/>
     <CalcRow label={t.incomeNetPerCheck||"Net/Paycheck"} value={fmt(netPerCheck)} color={th.pos}/>
   </div>
+  {/* v0.45.0 — Paycheck breakdown donut: net + taxes + pre-tax deductions */}
+  {gross>0&&<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:14,marginTop:14}}>
+    <div style={{...mCARD(th),padding:14,display:"flex",flexDirection:"column",alignItems:"center"}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:8}}>🥧 {t.paycheckBreakdownHdr||"Where Each Dollar Goes"}</div>
+      <Donut data={[
+        {name:t.netSlice||"Net (take-home)",value:netAnnual,color:th.pos},
+        {name:t.fedTaxSlice||"Federal",value:fedTax,color:"#DC2626"},
+        {name:t.stateTaxSlice||"State",value:stateTax,color:"#F59E0B"},
+        {name:t.ssTaxSlice||"Social Security",value:ssTax,color:"#8B5CF6"},
+        {name:t.medTaxSlice||"Medicare",value:medicareTax+(addMedTax||0),color:"#06B6D4"},
+        ...(preTax>0?[{name:t.preTaxSlice||"Pre-tax (401k/HSA)",value:preTax,color:"#3B82F6"}]:[]),
+      ].filter(d=>d.value>0)} size={170} centerLabel={t.grossLbl||"Gross"} centerValue={fmtS(gross)}/>
+    </div>
+    <div style={{...mCARD(th),padding:14,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+      <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:8}}>🎯 {t.effectiveTaxRateHdr||"Effective Tax Rate"}</div>
+      <RadialGauge value={gross>0?(totalTax/gross)*100:0} max={50} target={25} size={150} label={t.taxRateLbl||"Tax Rate"} subLabel={t.lowerIsBetter||"≤ 25% target"} direction="lower" thresholds={[0.5,0.7]} fmt={v=>v.toFixed(1)+"%"}/>
+    </div>
+  </div>}
   </div>;}
 function DebtReductionCalc({t}){const th=useTh();const[mode,setMode]=useState("payoff");const[feeMode,setFeeMode]=useState("pct");const[f,setF]=useState({balance:5000,apr:28,payment:200,loanApr:12,loanTerm:36,origFee:2,origFlat:100});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const ccMonths=payM(f.balance,f.apr,f.payment);const ccTotal=ccMonths?(f.payment*ccMonths):null;const origCost=feeMode==="pct"?f.balance*(f.origFee/100):f.origFlat;const loanAmt=f.balance+origCost;const loanPayment=mthPmt(loanAmt,f.loanApr/100,f.loanTerm);const loanTotal=loanPayment*f.loanTerm;const savings=ccTotal?ccTotal-loanTotal:null;const INP=mINP(th);return<div><div style={{display:"flex",gap:8,marginBottom:16}}>{[["payoff","📉 "+(t.payoff||"Payoff")],["compare","⚖️ "+(t.ccVsLoan||"CC vs Loan")]].map(([v,l])=><button key={v} onClick={()=>setMode(v)} style={{fontSize:12,padding:"6px 14px",borderRadius:8,cursor:"pointer",background:mode===v?th.accent+"22":"transparent",color:mode===v?th.accent:th.muted,border:`1px solid ${mode===v?th.accent:th.cardBorder}`}}>{l}</button>)}</div><Row2><Field label={(t.cardBalance||"Card Balance")+" ($)"}><MaskedNumInp style={INP} value={f.balance} onChange={u("balance")} onKeyDown={bE}/></Field><Field label={(t.cardAPR||"Card APR")+" (%)"}><MaskedNumInp style={INP} value={f.apr} onChange={u("apr")} onKeyDown={bE} step="0.1"/></Field></Row2><Field label={(t.monthlyPaymentLbl||"Monthly Payment")+" ($)"}><MaskedNumInp style={INP} value={f.payment} onChange={u("payment")} onKeyDown={bE}/></Field>{mode==="compare"&&<><div style={{height:1,background:th.cardBorder,margin:"12px 0"}}/><Row2><Field label={(t.loanAPRLbl||"Loan APR")+" (%)"}><MaskedNumInp style={INP} value={f.loanApr} onChange={u("loanApr")} onKeyDown={bE} step="0.1"/></Field><Field label={t.loanTermMo||"Loan Term (months)"}><MaskedNumInp style={INP} value={f.loanTerm} onChange={u("loanTerm")} onKeyDown={bE}/></Field></Row2><div style={{...mCARD(th),padding:12,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontSize:12,color:th.muted}}>{t.origFeeLbl||"Origination Fee"}</span><div style={{display:"flex",gap:6}}>{[["pct","% of Balance"],["flat","Flat ($)"]].map(([v,l])=><button key={v} onClick={()=>setFeeMode(v)} style={{fontSize:11,padding:"3px 10px",borderRadius:6,cursor:"pointer",background:feeMode===v?th.accent+"22":"transparent",color:feeMode===v?th.accent:th.muted,border:`1px solid ${feeMode===v?th.accent:th.cardBorder}`}}>{l}</button>)}</div></div>{feeMode==="pct"?<Row2><Field label={t.feePct||"Fee %"}><MaskedNumInp style={INP} value={f.origFee} onChange={u("origFee")} onKeyDown={bE} step="0.1"/></Field><Field label={t.feeAmt||"Fee Amount"}><div style={{...mINP(th),opacity:0.6}}>{fmt(origCost)}</div></Field></Row2>:<Row2><Field label={t.flatFee||"Flat Fee ($)"}><MaskedNumInp style={INP} value={f.origFlat} onChange={u("origFlat")} onKeyDown={bE}/></Field><Field label={t.pctOfBalance||"% of Balance"}><div style={{...mINP(th),opacity:0.6}}>{((origCost/Math.max(1,f.balance))*100).toFixed(2)}%</div></Field></Row2>}</div></>}<div style={{...mCARD(th),padding:16,marginTop:8}}>{mode==="payoff"?<><CalcRow label={t.payoffTimeLbl||"Payoff Time"} value={payL(ccMonths)} color={th.accent} big/><CalcRow label={t.totalPaidLbl||"Total Paid"} value={ccTotal?fmt(ccTotal):"—"} color={th.muted}/><CalcRow label={t.totalInterest||"Total Interest"} value={ccTotal?fmt(ccTotal-f.balance):"—"} color={th.neg}/></>:<><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}><div style={{...mCARD(th),padding:12,background:th.neg+"11"}}><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6}}>💳 {t.creditCard||"Credit Card"}</div><CalcRow label={t.payoff||"Payoff"} value={payL(ccMonths)}/><CalcRow label={t.totalLbl||"Total"} value={ccTotal?fmt(ccTotal):"—"} color={th.neg}/></div><div style={{...mCARD(th),padding:12,background:th.pos+"11"}}><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>🏦 {t.personalLoan||"Personal Loan"}</div><CalcRow label={t.monthly2||"Monthly"} value={fmtD(loanPayment)}/><CalcRow label={t.totalLbl||"Total"} value={fmt(loanTotal)} color={th.pos}/></div></div>{savings!==null&&<CalcRow label={"💰 "+t.savings3} value={fmt(Math.abs(savings))+" "+(savings>0?"saved with loan":"saved with CC")} color={savings>0?th.pos:th.neg} big/>}</>}</div></div>;}
 function CarLoanCalc({t}){const th=useTh();
@@ -3194,7 +3386,13 @@ function CarLoanCalc({t}){const th=useTh();
     <CalcRow label={t.carMonthlyPaymentRow||"Monthly Payment"} value={fmt(mp)} color={th.accent} big/>
     <CalcRow label={t.carTotalInterestRow||"Total Interest"} value={fmt(totalInt)} color={th.neg}/>
     <CalcRow label={t.carTotalCostLoanRow||"Total Cost of Loan"} value={fmt(total)} color={th.muted}/>
-  </div></div>;}
+  </div>
+  {/* v0.45.0 — Amortization chart for standalone Car Loan calc */}
+  {amountFinanced>0&&<div style={{...mCARD(th),padding:12,marginTop:12}}>
+    <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:10}}>📉 {t.amortizationHdr||"Loan Balance Over Time"}</div>
+    <AmortizationArea principal={amountFinanced} apr={f.apr} termMonths={f.term} color={"#F97316"} width={600} height={140}/>
+  </div>}
+  </div>;}
 function AffordabilityCalc({t}){const th=useTh();
   const[f,setF]=useState({grossIncome:6000,existingDebt:500,dti:43,apr:7.0,term:30,taxRate:1.2,insurance:150,hoa:0});
   const[downMode,setDownMode]=useState("pct");
@@ -4536,7 +4734,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0440-gradients-icons";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0450-compact-print-new-charts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -6241,60 +6439,64 @@ export default function App(){
         .ga-sc{overflow:hidden}
       }
       @media print{
-        /* v0.41.0 — Premium Print: warm cream palette + per-section pages.
-           Section cards become "pages" with a soft amber top-rule and an
-           inline gold underline beneath every section header. Drops the
-           cool slate vibe for a warmer financial-report aesthetic. */
+        /* v0.45.0 — Compact Print: matches preview/18-pdf-reports.html. Multi-section
+           per page, tight typography, hairline borders, brand-gold section-header
+           rule that extends right. Drops per-section page-break-before — content
+           flows naturally so a Complete Report is ~7 pages instead of ~14. */
         #ga-sidebar,#ga-sidebar-mobile,#ga-appbar,.ga-top-bar{display:none!important}
         .ga-np{display:none!important}
-        html,body{background:#FFFAF0!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#1F2937!important;font-size:10.5pt!important;line-height:1.6!important;scrollbar-width:none!important}
+        html,body{background:#FAFAF7!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#0F172A!important;font-size:9.5pt!important;line-height:1.45!important;scrollbar-width:none!important}
         *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
         #root,div{overflow:visible!important;max-height:none!important}
         ::-webkit-scrollbar{display:none!important}
         .recharts-wrapper,.recharts-responsive-container{width:100%!important;overflow:visible!important}
         .recharts-surface{overflow:visible!important}
-        /* Big italic report title (cover page) */
-        .ga-report-title,h1.ga-report-title{font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-weight:500!important;font-size:24pt!important;color:#451A03!important;text-align:center!important;line-height:1.1!important;margin:4px 0 6px!important;letter-spacing:-0.005em!important}
-        /* Section headers — warm amber on a light gold underline */
-        h2,h3,.section-hdr{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#B45309!important;font-size:10pt!important;border-bottom:1.5px solid #F59E0B!important;padding-bottom:4px!important;margin:0 0 12px!important}
-        h1{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;color:#451A03!important}
+        /* Italic report title (cover page) — smaller, centered, walnut */
+        .ga-report-title,h1.ga-report-title{font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-weight:500!important;font-size:20pt!important;color:#0D1B2A!important;text-align:center!important;line-height:1.1!important;margin:4px 0 2px!important;letter-spacing:-0.005em!important}
+        /* Section headers — claude design .sect-head style: small uppercase brand-gold with right-extending hairline */
+        h2,h3,.section-hdr{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-size:8pt!important;color:#B8901E!important;letter-spacing:0.14em!important;font-weight:700!important;text-transform:uppercase!important;border:none!important;padding:0!important;margin:12px 0 6px!important;display:flex!important;align-items:center!important;gap:6px!important}
+        h2::after,h3::after,.section-hdr::after{content:""!important;flex:1!important;height:1px!important;background:#E2E8F0!important}
+        h1{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;color:#0D1B2A!important;font-style:italic!important}
         /* Body text + numbers */
-        td,p,span,div,li{color:#1F2937}
+        td,p,span,div,li{color:#0F172A}
         td.num,.ga-money,.ga-mono,td[align="right"]{font-family:'JetBrains Mono',ui-monospace,monospace!important;font-variant-numeric:tabular-nums!important;font-feature-settings:"tnum" 1!important}
-        /* Section cards — each section becomes a printed "page card" with warm
-           accent: cream background, soft amber top rule, generous padding,
-           and rounded corners. */
-        .ga-section,.ga-section-card{background:#FFFFFF!important;border:1px solid #FDE68A!important;border-top:4px solid #F59E0B!important;border-radius:6px!important;padding:22px 22px 18px!important;margin:0 0 18px!important;box-shadow:0 1px 0 #FED7AA inset!important;page-break-inside:avoid!important;break-inside:avoid-page!important}
-        /* The KPI strip + 4-up grids — give them air on print */
-        [data-ga-grid="kpi-4"],[data-ga-grid="kpi-3"]{margin-bottom:18px!important}
-        /* Tables — softer, warmer borders */
-        table{border-collapse:collapse!important;width:100%!important}
-        th{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:700!important;color:#78350F!important;font-size:9pt!important;text-transform:uppercase!important;letter-spacing:0.04em!important;border-bottom:1px solid #FED7AA!important;padding:6px 6px 6px 0!important}
-        td{border-bottom:1px solid #FEF3C7!important;padding:6px 0!important;color:#1F2937!important}
-        tfoot td{border-top:2px solid #F59E0B!important;border-bottom:none!important;font-weight:700!important;padding-top:8px!important}
-        /* Brand-printed header (visible only in print). The component just needs class="ga-print-header". */
-        .ga-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;padding-bottom:10px!important;margin-bottom:16px!important;border-bottom:2px solid #F59E0B!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
-        .ga-print-header img.brand-mark{width:32px!important;height:32px!important;display:block!important}
-        .ga-print-header .brand-wordmark{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;letter-spacing:0.14em!important;font-size:11pt!important;color:#B8860B!important;text-transform:uppercase!important;line-height:1;font-style:italic!important}
-        .ga-print-header .brand-sub{font-family:'Source Serif 4',Georgia,serif!important;font-style:italic!important;font-size:8pt!important;color:#92400E!important;margin-top:3px!important}
-        .ga-print-header .client-name{font-weight:600!important;font-size:10pt!important;color:#1F2937!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
-        .ga-print-header .client-meta{font-size:8pt!important;color:#78350F!important;line-height:1.4}
-        /* Page breaks — explicit between sections marked .ga-print-page. */
-        .ga-print-page{break-before:page!important;page-break-before:always!important}
-        .ga-print-page:first-of-type{break-before:auto!important;page-break-before:auto!important}
-        /* Block elements that should never split. */
+        /* Compact section cards — minimal chrome, no top accent rule. Multiple cards per page. */
+        .ga-section,.ga-section-card{background:transparent!important;border:none!important;border-radius:0!important;padding:0 0 10px!important;margin:0 0 12px!important;box-shadow:none!important;page-break-inside:avoid!important;break-inside:avoid-page!important}
+        /* Tight grid spacing */
+        [data-ga-grid="kpi-4"],[data-ga-grid="kpi-3"]{margin-bottom:12px!important;gap:6px!important}
+        /* Tables — hairline, claude design */
+        table{border-collapse:collapse!important;width:100%!important;font-size:8.5pt!important}
+        th{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:700!important;color:#475569!important;font-size:7pt!important;text-transform:uppercase!important;letter-spacing:0.04em!important;border-bottom:1px solid #CBD5E1!important;padding:4px 4px 6px 0!important}
+        td{border-bottom:1px solid #F1F5F9!important;padding:4px 4px 4px 0!important;color:#0F172A!important}
+        tfoot td,tr.total td{border-top:1px solid #C9A84C!important;border-bottom:none!important;font-weight:700!important;padding-top:6px!important;font-size:9pt!important}
+        /* Brand-printed header — slimmer, brand-gold underline */
+        .ga-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;padding-bottom:8px!important;margin-bottom:12px!important;border-bottom:1px solid #C9A84C!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
+        .ga-print-header img.brand-mark{width:26px!important;height:26px!important;display:block!important}
+        .ga-print-header .brand-wordmark{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;letter-spacing:0.14em!important;font-size:9pt!important;color:#C9A84C!important;text-transform:uppercase!important;line-height:1;font-style:italic!important}
+        .ga-print-header .brand-sub{font-family:'Source Serif 4',Georgia,serif!important;font-style:italic!important;font-size:7pt!important;color:#475569!important;margin-top:1px!important}
+        .ga-print-header .client-name{font-weight:600!important;font-size:9pt!important;color:#0F172A!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
+        .ga-print-header .client-meta{font-size:7pt!important;color:#475569!important;line-height:1.4}
+        /* v0.45 — per-section breaks disabled. Sections flow naturally; only the
+           Financial Statements + Strategy Plan + Compare/Calcs sections still force
+           a break (they're large enough to deserve their own page each). */
+        .ga-print-page{break-before:auto!important;page-break-before:auto!important}
+        .ga-print-page-force,.ga-print-page.ga-print-page-force{break-before:page!important;page-break-before:always!important}
         h1,h2,h3,h4{page-break-after:avoid!important;break-after:avoid!important}
         table{page-break-inside:auto!important;break-inside:auto!important}
         thead{display:table-header-group}
         tr{page-break-inside:avoid!important;break-inside:avoid!important}
-        /* Hide leading emoji in section headers — see ga-emoji rule below. */
-        .ga-emoji{display:none!important}
-        /* Page margins + cream page background */
-        @page{margin:16mm 14mm 18mm 14mm;background:#FFFAF0}
-        /* Disclaimer footer — renders inline at the bottom of the printable content. */
-        .ga-print-footer{margin-top:20px!important;padding:12px 14px!important;background:#FEF3C7!important;border:1px solid #FCD34D!important;border-radius:6px!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-size:8pt!important;color:#78350F!important;line-height:1.55!important;font-style:italic!important;text-align:center!important}
-        /* Subtle watermark on every page footer */
-        .ga-print-watermark{position:fixed!important;bottom:6mm!important;right:14mm!important;font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-size:7pt!important;color:#D97706!important;letter-spacing:0.18em!important;text-transform:uppercase!important;opacity:0.65!important}
+        /* Hide leading emoji in section headers (existing .ga-emoji rule + Lucide nav SVGs which carry data-lucide attr) */
+        .ga-emoji,svg.lucide,[data-lucide]{display:none!important}
+        /* Tight page margins */
+        @page{margin:14mm 14mm 16mm 14mm;background:#FAFAF7}
+        /* Disclaimer footer — slim claude-design footer instead of a card */
+        .ga-print-footer{margin-top:14px!important;padding:8px 0!important;border-top:1px solid #C9A84C!important;border-radius:0!important;background:transparent!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-size:7pt!important;color:#6B7280!important;line-height:1.45!important;font-style:italic!important;text-align:left!important;display:flex!important;justify-content:space-between!important;letter-spacing:0.04em!important}
+        /* Watermark removed in v0.45 — claude design doesn't have it; cleaner pages */
+        .ga-print-watermark{display:none!important}
+        /* KPI strip cards — compact, claude design style */
+        .ga-sc{background:#FFFFFF!important;border:1px solid #E2E8F0!important;padding:6px 8px!important;border-radius:3px!important;box-shadow:none!important}
+        /* Mini chart inset — claude design .pdf-chart background */
+        .pdf-chart{background:#F8F6EF!important;border:1px solid #E8E2D0!important;border-radius:3px!important;padding:8px 10px 6px!important;margin-bottom:10px!important}
       }
       /* Print header is ONLY visible in print mode — hide on screen. */
       @media screen{.ga-print-header,.ga-print-footer,.ga-print-only{display:none!important}}
