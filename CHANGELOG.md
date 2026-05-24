@@ -2,6 +2,71 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.43.0 — 2026-05-24 — Landing page + reduced-motion + bundle splitting
+
+Three of four polish passes from the ui-ux-pro-max audit. The fourth (Lucide
+icon vocabulary) is deferred — it touches ~200 emoji prefixes and needs its
+own focused pass.
+
+**Landing page (Enterprise Gateway pattern with corner sign-in).**
+- Full marketing landing replaces the old centered-card login. Anyone not
+  signed in lands here.
+- Warm cream `#FFFBEB` bg with two decorative radial-gradient blobs (amber
+  + gold) for soft visual depth. Top bar: anchor monogram + italic
+  Newsreader wordmark on the left, light/dark toggle on the right.
+- Hero (2-col grid): big italic Newsreader headline left ("Your financial
+  picture, beautifully clear." / "Tu retrato financiero, perfectamente
+  claro."), corner sign-in card top-right (compact, 380px-ish, glass-feel
+  border + amber gradient top accent + warm shadow). Both move into a
+  stacked column on small screens via `auto-fit` grid.
+- Credentials pills row under the headline: MBA, FPWMP, FL · 0215, EN · ES.
+- Feature strip (3 cards) — "Where every dollar goes" (Sankey teaser),
+  "Health, scored at a glance" (gauges teaser), "Reports that look like
+  reports" (PDF teaser). Source Serif 4 body + italic Newsreader subheads.
+- Footer with disclaimer + email/site links.
+- Sign-in card keeps all existing logic (signin, forgot password, set-new
+  password via recovery hash). Errors get `role="alert"`, info messages get
+  `role="status"` (a11y fix surfaced by the audit).
+- Lang prop added to Login signature so the landing can render EN/ES headlines.
+
+**`useReducedMotion` hook + SMIL-aware animations.**
+- New top-level hook reads `window.matchMedia("(prefers-reduced-motion:
+  reduce)")` and subscribes to changes.
+- `SmoothAreaLine` now conditionally renders the pulsing live-dot SMIL
+  `<animate>` elements only when reduced-motion is NOT requested. Static
+  dot remains so the data still reads.
+- `useTweenedData` passes `0` duration when reduced-motion is set, so
+  values snap rather than tween.
+- The existing CSS `@media (prefers-reduced-motion)` rule already disabled
+  CSS-driven animations — this fills the SMIL gap the audit flagged as HIGH.
+
+**Bundle splitting via vite manualChunks.**
+- `vite.config.js` switched from default 1.9MB single chunk to 5 separate
+  output files via `manualChunks(id)` function:
+  - `index` (App.jsx + everything else) — 848KB (was 1909KB) — **55% smaller**
+  - `recharts` — 388KB (loads in parallel)
+  - `xlsx` — 331KB (loads in parallel)
+  - `supabase` — 196KB
+  - `react-vendor` — 189KB
+  - `icons` — placeholder for lucide-react (installed, not yet used)
+- Cold load smaller, parallel HTTP/2 transfer for the big chunks. Old single
+  file blocked render until all 1.9MB downloaded; now ~600KB ungz on the
+  critical path before first paint.
+- D-1 (single-file architecture for App.jsx) is preserved — splitting is at
+  the npm-package boundary, not inside App.jsx.
+
+**ui-ux-pro-max persisted output.**
+- `design-system/golden-anchor/MASTER.md` saved to the working folder
+  (`--persist` flag). 207-line source-of-truth for future sessions. Locks in
+  the warm-cream + amber palette, Calistoga/Inter/JetBrains Mono pairing,
+  Data-Dense Dashboard pattern. Page-level overrides go in
+  `design-system/golden-anchor/pages/<name>.md`.
+
+**Lucide-react installed but not yet used.**
+- `npm install lucide-react` ran (added to dependencies + isolated chunk).
+- Icon vocabulary swap (~200 emoji prefixes → `<Icon name="..." />` SVG)
+  deferred to v0.44 — it's a big focused pass that needs its own ship.
+
 ## v0.42.0 — 2026-05-24 — Gradient chart polish: thinner strokes + modern look
 
 Per Mauricio's direction ("gradient colors instead of static, thin line graphs

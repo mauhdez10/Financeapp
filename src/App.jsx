@@ -833,6 +833,21 @@ function useTweenedData(target,duration=800){
 // Stable unique ID per component instance for SVG <defs> (filters, gradients)
 function useSvgId(prefix){return useMemo(()=>`${prefix}-${Math.random().toString(36).slice(2,8)}`,[prefix]);}
 
+// v0.43.0 — Respect prefers-reduced-motion for SVG <animate> elements (CSS
+// reduced-motion rule already handles CSS animations; this hook lets us
+// conditionally skip SMIL animations + the tween hook).
+function useReducedMotion(){
+  const[reduced,setReduced]=useState(()=>typeof window!=="undefined"&&window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  useEffect(()=>{
+    if(typeof window==="undefined"||!window.matchMedia)return;
+    const mq=window.matchMedia("(prefers-reduced-motion: reduce)");
+    const h=()=>setReduced(mq.matches);
+    if(mq.addEventListener)mq.addEventListener("change",h);else if(mq.addListener)mq.addListener(h);
+    return()=>{if(mq.removeEventListener)mq.removeEventListener("change",h);else if(mq.removeListener)mq.removeListener(h);};
+  },[]);
+  return reduced;
+}
+
 /* ── v0.35.0 — Phase 5 Charts: Donut (v0.37 tween + drop shadow) ───────────
    Pure-SVG donut chart. Slice angles tween between states; soft drop-shadow
    gives subtle depth without 3D. */
@@ -946,8 +961,9 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
   dim=dim||th.dim||"#94A3B8";
   const W=600,H=height,padL=46,padR=14,padT=12,padB=28;
   const pts=Array.isArray(data)?data.filter(d=>d):[];
+  const reducedMotion=useReducedMotion();
   // v0.37.0 — tween the two numeric series; labels stay stable
-  const twPts=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),800);
+  const twPts=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),reducedMotion?0:800);
   const gradId=useSvgId("sal-grad");
   const glowId=useSvgId("sal-glow");
   if(pts.length<2)return<div style={{padding:14,fontSize:11,color:dim,fontStyle:"italic",textAlign:"center"}}>{(pts.length===0?"No data yet":"Need at least 2 months of data")}</div>;
@@ -1031,10 +1047,10 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
         <circle cx={c.x} cy={c.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
       </g>)}
       {livePt&&<g>
-        <circle cx={livePt.x} cy={livePt.y} r="5" fill={savingsColor} opacity="0.45">
+        {!reducedMotion&&<circle cx={livePt.x} cy={livePt.y} r="5" fill={savingsColor} opacity="0.45">
           <animate attributeName="r" values="5;11;5" dur="2.2s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.45;0;0.45" dur="2.2s" repeatCount="indefinite"/>
-        </circle>
+        </circle>}
         <circle cx={livePt.x} cy={livePt.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
       </g>}
       {apts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{xLabel(p[labelKey])}</text>)}
@@ -4037,7 +4053,7 @@ return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{fl
 </div>{tab==="report"&&<ClientReport client={client} onUpdate={onUpdate} lang={lang} t={t} settings={settings}/>}{tab==="monthly"&&<MonthlyTab client={client} onUpdate={onUpdate} lang={lang} t={t} settings={settings}/>}{tab==="financialStatements"&&<FinancialStatementsTab client={client} lang={lang} t={t}/>}{tab==="al"&&<AssetsLiabilitiesTab client={client} lang={lang} t={t}/>}{tab==="investments"&&<InvestmentsTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="plan"&&<FinancialPlanTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="backfill"&&<BackfillTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="calculators"&&<ClientCalculatorsTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="notes"&&<NotesSection client={client} onUpdate={onUpdate} t={t} settings={settings}/>}<div style={{height:40}}/></div></div></HideCtx.Provider>;}
 
 /* ── LOGIN (Supabase Auth) ──────────────────────────────────────────────── */
-function Login({onLogin,t,isDark,onToggle}){
+function Login({onLogin,t,isDark,onToggle,lang}){
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
   useEffect(()=>{if(typeof window==="undefined")return;const h=window.location.hash||"";if(h.includes("type=recovery")){setMode("setNew");setInfo(t.resetSetNewIntro||"Enter your new password below.");}},[]);
@@ -4070,7 +4086,113 @@ function Login({onLogin,t,isDark,onToggle}){
   const switchMode=(m)=>{setMode(m);setErr("");setInfo("");setPw("");};
   const title=mode==="forgot"?(t.resetPassword||"Reset Password"):mode==="setNew"?(t.setNewPassword||"Set New Password"):(t.signIn||"Sign In");
   const btnLabel=mode==="forgot"?(t.sendResetLink||"Send Reset Link"):mode==="setNew"?(t.updatePassword||"Update Password"):(t.signIn||"Sign In");
-  return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:isDark?"linear-gradient(135deg,#0D1724,#1F2937)":"linear-gradient(135deg,#1C3557,#2A4A73)"}}><div style={{width:340}}><div style={{textAlign:"center",marginBottom:32}}><div style={{fontSize:44,marginBottom:8}}>⚓</div><div style={{fontSize:26,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.10em",textTransform:"uppercase"}}>Golden Anchor</div><div style={{fontSize:10,color:"#94A3B8",letterSpacing:"0.2em",marginTop:2}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div></div><div style={{background:isDark?"#1F2937":"#FFFFFF",border:`1px solid ${isDark?"#374151":"#CBD5E1"}`,borderRadius:16,padding:28,boxShadow:"0 32px 80px #0006"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><span style={{fontSize:12,fontWeight:600,color:"#6B7280"}}>{title}</span><button onClick={onToggle} style={{fontSize:11,padding:"3px 10px",borderRadius:8,background:isDark?"#374151":"#EFF6FF",color:isDark?"#9CA3AF":"#1D4ED8",border:"none",cursor:"pointer"}}>{isDark?t.lightMode:t.darkMode}</button></div>{mode!=="setNew"&&<div style={{marginBottom:14}}><label style={{fontSize:11,color:"#6B7280",display:"block",marginBottom:5}}>{t.email}</label><input value={em} onChange={ev=>setEm(ev.target.value)} style={INP} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email"/></div>}{mode!=="forgot"&&<div style={{marginBottom:14}}><label style={{fontSize:11,color:"#6B7280",display:"block",marginBottom:5}}>{mode==="setNew"?(t.newPassword||"New Password"):t.password}</label><input type="password" value={pw} onChange={ev=>setPw(ev.target.value)} style={INP} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={mode==="setNew"?"new-password":"current-password"}/></div>}{err&&<div style={{fontSize:11,color:"#EF4444",marginBottom:12,padding:"8px 10px",background:"#EF444411",borderRadius:8}}>{err}</div>}{info&&<div style={{fontSize:11,color:"#10B981",marginBottom:12,padding:"8px 10px",background:"#10B98111",borderRadius:8}}>{info}</div>}<button onClick={go} disabled={busy} style={{width:"100%",padding:12,borderRadius:12,fontWeight:800,fontSize:14,cursor:busy?"wait":"pointer",background:`linear-gradient(135deg,${GOLD},#D4AF37)`,color:"#0D1B2A",border:"none",marginTop:4,opacity:busy?0.7:1}}>{busy?"…":btnLabel}</button>{mode==="signin"&&<div style={{textAlign:"center",marginTop:12}}><button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:isDark?"#9CA3AF":"#1D4ED8",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>{t.forgotPassword||"Forgot password?"}</button></div>}{mode==="forgot"&&<div style={{textAlign:"center",marginTop:12}}><button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:isDark?"#9CA3AF":"#1D4ED8",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>← {t.backToSignIn||"Back to Sign In"}</button></div>}<div style={{marginTop:10,padding:"8px 10px",background:isDark?"#111827":"#F0F7FF",borderRadius:8,fontSize:10,color:"#6B7280"}}>{t.noAccountYet||"Need an account? Contact Mauricio."}</div></div></div></div>;}
+  // v0.43.0 — Marketing landing page with corner sign-in. Warm cream + amber
+  // palette (matches v0.41 print + ui-ux-pro-max "SaaS Boutique" recommendation).
+  // Enterprise Gateway pattern: Hero → Features → Trust → Footer with Login as
+  // a corner CTA on the right side of the hero.
+  const PAL = {
+    bg: "#FFFBEB",          // warm cream
+    bgAccent: "#FEF3C7",    // soft yellow tint
+    text: "#1F2937",        // near-black with warmth
+    textHi: "#451A03",      // deep walnut (hero headline)
+    muted: "#78716C",       // warm grey
+    card: "#FFFFFF",
+    cardBorder: "#FDE68A",  // pale gold border
+    amber: "#D97706",       // primary accent / CTA
+    amberDeep: "#B45309",
+    gold: GOLD,
+  };
+  const INP_L = {background:"#FFFEFA",border:`1px solid ${PAL.cardBorder}`,color:PAL.text,borderRadius:10,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
+  return<div style={{minHeight:"100vh",background:`linear-gradient(180deg,${PAL.bg} 0%,#FFFDF6 60%,${PAL.bg} 100%)`,color:PAL.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
+    {/* Decorative warm-gradient blobs */}
+    <div aria-hidden style={{position:"absolute",top:-200,right:-150,width:500,height:500,borderRadius:"50%",background:`radial-gradient(circle,${PAL.amber}22,transparent 70%)`,pointerEvents:"none",filter:"blur(40px)"}}/>
+    <div aria-hidden style={{position:"absolute",top:300,left:-200,width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${PAL.gold}1c,transparent 70%)`,pointerEvents:"none",filter:"blur(50px)"}}/>
+
+    {/* TOP BAR — brand left, theme toggle right */}
+    <header style={{position:"relative",zIndex:2,padding:"22px 36px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <img src="/anchor-monogram.svg" alt="" style={{width:34,height:34}}/>
+        <div>
+          <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:PAL.amberDeep,letterSpacing:"0.12em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
+          <div style={{fontSize:9,color:PAL.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>Financial Advisory · Miami, FL</div>
+        </div>
+      </div>
+      <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:11,padding:"6px 14px",borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
+    </header>
+
+    {/* HERO — big italic tagline left, sign-in card top-right */}
+    <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px 60px",display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr)",gap:48,alignItems:"start"}}>
+      <div style={{paddingTop:36}}>
+        <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:PAL.amberDeep,letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:18,fontWeight:600}}>● {lang==="es"?"Asesoría Financiera Personal":"Personal Financial Advisory"}</div>
+        <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(2.4rem,5.5vw,4.2rem)",color:PAL.textHi,lineHeight:1.05,letterSpacing:"-0.01em",margin:"0 0 22px"}}>{lang==="es"?<>Tu retrato financiero, <span style={{color:PAL.amber}}>perfectamente claro.</span></>:<>Your financial picture, <span style={{color:PAL.amber}}>beautifully clear.</span></>}</h1>
+        <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Asesoría educativa de finanzas personales para parejas y familias. Una imagen completa de tus ingresos, gastos, deudas y ahorros — explicada con calma.":"Educational personal-finance coaching for individuals, couples, and families. A clear picture of your income, bills, debt, and savings — explained patiently, in plain English."}</p>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:PAL.muted,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>MBA</span>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>FPWMP</span>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>FL · 0215</span>
+          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
+        </div>
+      </div>
+
+      {/* Corner sign-in card */}
+      <div style={{background:PAL.card,border:`1px solid ${PAL.cardBorder}`,borderRadius:18,padding:24,boxShadow:`0 24px 60px ${PAL.amber}22, 0 4px 12px ${PAL.gold}18`,position:"relative",backdropFilter:"blur(6px)"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${PAL.amber},${PAL.gold})`,borderTopLeftRadius:18,borderTopRightRadius:18}}/>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:18}}>
+          <h2 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:PAL.textHi,margin:0,letterSpacing:"-0.005em"}}>{title}</h2>
+          {mode==="signin"&&<span style={{fontSize:9,color:PAL.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
+        </div>
+        {mode!=="setNew"&&<div style={{marginBottom:14}}>
+          <label style={{fontSize:10,color:PAL.muted,display:"block",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>{t.email||"Email"}</label>
+          <input value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
+        </div>}
+        {mode!=="forgot"&&<div style={{marginBottom:14}}>
+          <label style={{fontSize:10,color:PAL.muted,display:"block",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>{mode==="setNew"?(t.newPassword||"New Password"):t.password||"Password"}</label>
+          <input type="password" value={pw} onChange={ev=>setPw(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={mode==="setNew"?"new-password":"current-password"} placeholder="••••••••"/>
+        </div>}
+        {err&&<div role="alert" style={{fontSize:11,color:"#B91C1C",marginBottom:12,padding:"8px 12px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:8,lineHeight:1.5}}>{err}</div>}
+        {info&&<div role="status" style={{fontSize:11,color:"#15803D",marginBottom:12,padding:"8px 12px",background:"#DCFCE7",border:"1px solid #86EFAC",borderRadius:8,lineHeight:1.5}}>{info}</div>}
+        <button onClick={go} disabled={busy} style={{width:"100%",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:busy?"wait":"pointer",background:`linear-gradient(135deg,${PAL.amber},${PAL.amberDeep})`,color:"#FFFEF7",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${PAL.amber}44`,opacity:busy?0.7:1,transition:"transform 150ms ease,box-shadow 150ms ease"}}>{busy?"…":btnLabel}</button>
+        {mode==="signin"&&<div style={{textAlign:"center",marginTop:14}}>
+          <button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:11,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>{t.forgotPassword||"Forgot password?"}</button>
+        </div>}
+        {mode==="forgot"&&<div style={{textAlign:"center",marginTop:14}}>
+          <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:11,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>← {t.backToSignIn||"Back to Sign In"}</button>
+        </div>}
+        <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${PAL.cardBorder}`,fontSize:10,color:PAL.muted,textAlign:"center",lineHeight:1.5}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,fontWeight:600,textDecoration:"none"}}>Contact Mauricio</a></>}</div>
+      </div>
+    </section>
+
+    {/* FEATURE STRIP — 3 cards explaining what you get */}
+    <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:18}}>
+      {(lang==="es"?[
+        {icon:"🌊",title:"A dónde va cada dólar",body:"Un diagrama Sankey muestra cómo tu ingreso fluye hacia gastos, deuda y ahorros — al instante."},
+        {icon:"🎯",title:"Salud financiera al instante",body:"Indicadores de razón deuda, tasa de ahorro y meses de fondo de emergencia. Con metas claras."},
+        {icon:"📄",title:"Reportes que parecen reportes",body:"Informe profesional en PDF con cada sección en su propia página. Listo para revisar o compartir."},
+      ]:[
+        {icon:"🌊",title:"Where every dollar goes",body:"A live Sankey diagram shows how income flows into bills, debt payments, and savings — at a glance."},
+        {icon:"🎯",title:"Health, scored at a glance",body:"DSR, savings rate, and emergency-fund months as live gauges. Clear targets, no jargon."},
+        {icon:"📄",title:"Reports that look like reports",body:"Designer-grade PDF report — every section on its own page. Ready to review or share with confidence."},
+      ]).map((f,i)=><div key={i} style={{background:PAL.card,border:`1px solid ${PAL.cardBorder}`,borderRadius:14,padding:24,boxShadow:`0 2px 6px ${PAL.gold}14`,transition:"transform 200ms ease,box-shadow 200ms ease"}}>
+        <div style={{fontSize:28,marginBottom:12,filter:"saturate(0.85)"}}>{f.icon}</div>
+        <h3 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:19,color:PAL.textHi,margin:"0 0 8px",letterSpacing:"-0.005em"}}>{f.title}</h3>
+        <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:14,lineHeight:1.6,color:PAL.text,margin:0}}>{f.body}</p>
+      </div>)}
+    </section>
+
+    {/* TRUST / FOOTER */}
+    <footer style={{position:"relative",zIndex:2,maxWidth:1200,margin:"40px auto 0",padding:"24px 36px 36px",borderTop:`1px solid ${PAL.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+      <div style={{fontSize:11,color:PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640}}>
+        {lang==="es"?
+          "Este portal es solo educativo. No es asesoría de inversión, fiscal, o legal. Mauricio Hernandez, MBA, FPWMP, FL0215.":
+          "This portal is educational only. It does not constitute investment, tax, or legal advice. Mauricio Hernandez, MBA, FPWMP, FL0215."}
+      </div>
+      <div style={{display:"flex",gap:14,fontSize:11,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
+        <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,textDecoration:"none"}}>Email</a>
+        <a href="https://goldenanchor.life" target="_blank" rel="noreferrer" style={{color:PAL.amberDeep,textDecoration:"none"}}>Site</a>
+      </div>
+    </footer>
+  </div>;
+}
 
 /* ── APP ─────────────────────────────────────────────────────────────────── */
 
@@ -4316,7 +4438,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0420-gradient-charts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0430-landing-corner-signin";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -6100,7 +6222,7 @@ export default function App(){
   const NAV=[{id:"dashboard",l:"📊 "+t.dashboard},{id:"clients",l:"👥 "+t.clients},{id:"intake-submissions",l:"📥 "+(t.intakeSubmissions||"Intake Forms")},{id:"calculators",l:"🧮 "+t.calculators},{id:"promotions",l:"🏷️ "+t.promotions},{id:"resources",l:"📚 "+t.resources},{id:"about",l:"⚓ "+t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
-  if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)}/></ThemeCtx.Provider>;
+  if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang}/></ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;

@@ -16,6 +16,7 @@
   "dependencies": {
     "@sparticuz/chromium-min": "^140.0.0",
     "@supabase/supabase-js": "^2.105.4",
+    "lucide-react": "^1.16.0",
     "puppeteer-core": "^24.43.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
