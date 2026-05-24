@@ -422,7 +422,7 @@ function radarSVG(axes, values, target, size = 220) {
 }
 
 // ── print HTML builder (extended with all sections) ────────────────────────
-function buildPrintHTML(client, lang, advisor, include, reportType = "complete") {
+export function buildPrintHTML(client, lang, advisor, include, reportType = "complete") {
   const isEs = lang === "es";
   const L = isEs ? {
     title: "Reporte Financiero Completo",
@@ -443,6 +443,17 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
     financialRatiosHdr: "Ratios financieros",
     cashFlowHdr: "Estado de flujo de efectivo",
     strategyPlanHdr: "Plan estratégico",
+    portfolioHdr: "Portafolio seleccionado",
+    compareHdr: "Comparación de periodos",
+    calcsHdr: "Capturas de calculadora",
+    portfolioRisk: "Perfil de riesgo",
+    portfolioRate: "Retorno esperado",
+    portfolioMonthly: "Contribución mensual",
+    portfolioYears: "Horizonte",
+    portfolioHoldings: "Composición",
+    calcInputs: "Entradas",
+    calcOutputs: "Resultados",
+    snapshotSavedOn: "Guardado",
     item: "Concepto",
     amount: "Monto",
     type: "Tipo",
@@ -505,6 +516,17 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
     financialRatiosHdr: "Financial Ratios",
     cashFlowHdr: "Cash Flow Statement",
     strategyPlanHdr: "Strategy Plan",
+    portfolioHdr: "Selected Portfolio",
+    compareHdr: "Period Comparison",
+    calcsHdr: "Calculator Snapshots",
+    portfolioRisk: "Risk profile",
+    portfolioRate: "Expected return",
+    portfolioMonthly: "Monthly contribution",
+    portfolioYears: "Horizon",
+    portfolioHoldings: "Holdings",
+    calcInputs: "Inputs",
+    calcOutputs: "Results",
+    snapshotSavedOn: "Saved",
     item: "Item",
     amount: "Amount",
     type: "Type",
@@ -550,10 +572,26 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
     pageOf: "Page"
   };
 
-  // reportInclude toggles (if not provided, show everything)
-  const inc = include || {
+  // reportInclude toggles (if not provided, show everything).
+  // v0.52 — added portfolio/compare/calcs (previously missing from the
+  // server template even though the on-screen Complete Report includes them).
+  const inc = include ? {
+    income: include.income !== false,
+    bills: include.bills !== false,
+    debt: include.debt !== false,
+    assets: include.assets !== false,
+    notes: include.notes !== false,
+    investAllocation: include.investAllocation !== false,
+    financialRatios: include.financialRatios !== false,
+    cashFlow: include.cashFlow !== false,
+    strategyPlan: include.plan !== false && include.strategyPlan !== false,
+    portfolio: include.portfolio !== false,
+    compare: include.compare !== false,
+    calcs: include.calcs !== false,
+  } : {
     income: true, bills: true, debt: true, assets: true, notes: true,
-    investAllocation: true, financialRatios: true, cashFlow: true, strategyPlan: true
+    investAllocation: true, financialRatios: true, cashFlow: true, strategyPlan: true,
+    portfolio: true, compare: true, calcs: true
   };
 
   // ── reportType routes which sections appear (v0.12.6). ───────────────────
@@ -561,15 +599,17 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
   //    "monthly"   → cash-flow-style (income / bills / debt / accounts / notes)
   //    "financial" → balance-sheet-style (assets / financial ratios / cash-flow stmt / notes)
   // The L.title is also overridden so the document banner matches what the
-  // advisor clicked from.
+  // advisor clicked from. Portfolio/compare/calcs only appear in "complete".
   if (reportType === "monthly") {
     inc.income = true; inc.bills = true; inc.debt = true; inc.assets = true; inc.notes = true;
     inc.investAllocation = false; inc.financialRatios = false; inc.cashFlow = false; inc.strategyPlan = false;
+    inc.portfolio = false; inc.compare = false; inc.calcs = false;
     L.title = isEs ? "Reporte Mensual" : "Monthly Report";
     L.snapshot = isEs ? "Resumen del mes" : "Monthly snapshot";
   } else if (reportType === "financial") {
     inc.income = false; inc.bills = false; inc.debt = false; inc.assets = true; inc.notes = true;
     inc.investAllocation = false; inc.financialRatios = true; inc.cashFlow = true; inc.strategyPlan = false;
+    inc.portfolio = false; inc.compare = false; inc.calcs = false;
     L.title = isEs ? "Estados Financieros" : "Financial Statements";
     L.snapshot = isEs ? "Balance, ingresos y flujo de efectivo" : "Balance sheet, income & cash flow";
   }
@@ -825,6 +865,120 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
       }).join("")}
     </div>` : '';
 
+  // ── v0.52 — Selected Portfolio section. Reads client.savedPortfolio. ─────
+  const portfolioHTML = (() => {
+    if (!inc.portfolio) return '';
+    const p = client.savedPortfolio;
+    if (!p) return '';
+    const holdings = safeArr(p.holdings).filter(h => (Number(h.pct) || 0) > 0);
+    const rate = Number(p.rate) || 0;
+    const monthly = Number(p.monthly) || 0;
+    const years = Number(p.years) || 0;
+    const yrs = Math.max(1, years);
+    const fv = rate > 0
+      ? monthly * (((Math.pow(1 + rate / 12, yrs * 12) - 1) / (rate / 12)) * (1 + rate / 12))
+      : monthly * yrs * 12;
+    const contrib = monthly * yrs * 12;
+    const growth = fv - contrib;
+    return `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+      <div style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:3px;padding:6px 8px">
+        <div style="font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${L.portfolioRisk}</div>
+        <div style="font-size:11px;color:${TEXT};font-weight:700;margin-top:2px">${htmlEscape(p.nameKey || p.risk || L.none)}</div>
+      </div>
+      <div style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:3px;padding:6px 8px">
+        <div style="font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${L.portfolioRate}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:${POS};font-weight:700;margin-top:2px">${(rate * 100).toFixed(1)}%</div>
+      </div>
+      <div style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:3px;padding:6px 8px">
+        <div style="font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${L.portfolioMonthly}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:${TEXT};font-weight:700;margin-top:2px">${fmtUSD(monthly)}</div>
+      </div>
+      <div style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:3px;padding:6px 8px">
+        <div style="font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${L.portfolioYears}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:${TEXT};font-weight:700;margin-top:2px">${yrs} ${L.years}</div>
+      </div>
+    </div>
+    <div style="background:#F8F6EF;border:1px solid ${BORDER};border-radius:3px;padding:8px 10px;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${L.investmentProjection}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:${GOLD_DEEP};font-weight:700;margin-top:2px">${fmtUSD(fv)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:${MUTED}">${fmtUSD(contrib)} ${isEs ? 'aportado' : 'contributed'}</div>
+        <div style="font-size:9px;color:${POS};font-weight:600">+${fmtUSD(growth)} ${L.growth}</div>
+      </div>
+    </div>
+    ${holdings.length ? `
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:7pt;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${MUTED};margin-bottom:4px">${L.portfolioHoldings}</div>
+    <table>
+      <thead><tr><th>${L.item}</th><th style="text-align:right">%</th></tr></thead>
+      <tbody>${holdings.map(h => `<tr><td>${htmlEscape(h.alt || h.ticker || L.none)}${h.ticker && h.alt ? ` <span style="color:${MUTED};font-family:'JetBrains Mono',monospace;font-size:8pt">${htmlEscape(h.ticker)}</span>` : ''}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums">${(Number(h.pct) || 0).toFixed(1)}%</td></tr>`).join("")}</tbody>
+    </table>` : ''}`;
+  })();
+
+  // ── v0.52 — Period Comparison section. Reads client.savedCompare. ────────
+  const compareHTML = (() => {
+    if (!inc.compare) return '';
+    const sc = client.savedCompare;
+    if (!sc || !Array.isArray(sc.rows) || sc.rows.length < 2) return '';
+    const rows = sc.rows;
+    const fields = Array.isArray(sc.fields) && sc.fields.length ? sc.fields :
+      [{ k: "income", l: "Net Income" }, { k: "bills", l: "Bills" }, { k: "minPay", l: "Min Debt Pay" },
+       { k: "cashFlow", l: "Cash Flow" }, { k: "liquid", l: "Liquid Savings" }, { k: "debt", l: "Total Debt" },
+       { k: "assets", l: "Total Assets" }, { k: "netWorth", l: "Net Worth" }];
+    const stripEmoji = s => String(s || "").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s*/gu, "").trim();
+    const fmtCell = v => fmtUSD(Number(v) || 0);
+    return `
+    <div style="overflow:auto">
+      <table>
+        <thead><tr><th>${isEs ? 'Métrica' : 'Metric'}</th>${rows.map(r => `<th style="text-align:right">${htmlEscape(stripEmoji(r.label))}</th>`).join("")}<th style="text-align:right">Δ</th></tr></thead>
+        <tbody>${fields.map(f => {
+          const vals = rows.map(r => Number(r[f.k]) || 0);
+          const ch = vals[vals.length - 1] - vals[0];
+          const good = (f.k === "netWorth" || f.k === "cashFlow" || f.k === "liquid" || f.k === "assets" || f.k === "income") ? ch >= 0 : ch <= 0;
+          return `<tr><td style="color:${MUTED};font-weight:600">${htmlEscape(stripEmoji(f.l))}</td>${vals.map(v => `<td style="text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600">${fmtCell(v)}</td>`).join("")}<td style="text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;color:${good ? POS : NEG}">${ch !== 0 ? ((ch > 0 ? "+" : "") + fmtUSD(ch)) : "—"}</td></tr>`;
+        }).join("")}</tbody>
+      </table>
+    </div>`;
+  })();
+
+  // ── v0.52 — Calculator Snapshots section. Reads client.savedCalcs[]. ─────
+  const calcsHTML = (() => {
+    if (!inc.calcs) return '';
+    const calcs = safeArr(client.savedCalcs);
+    if (calcs.length === 0) return '';
+    const stripEmoji = s => String(s || "").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s*/gu, "").trim();
+    return calcs.map(c => {
+      const inputs = safeArr(c.inputs);
+      const outputs = safeArr(c.outputs);
+      const big = outputs.filter(o => o.big);
+      const reg = outputs.filter(o => !o.big);
+      return `
+      <div style="margin-bottom:14px;page-break-inside:avoid">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;border-bottom:1px solid ${BORDER};padding-bottom:4px">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10pt;font-weight:700;color:${TEXT}">${htmlEscape(stripEmoji(c.name))}</div>
+          <div style="font-size:7pt;color:${MUTED};font-style:italic">${c.scope ? htmlEscape(c.scope) + " · " : ""}${c.savedAt ? new Date(c.savedAt).toISOString().slice(0, 10) : ""}</div>
+        </div>
+        ${big.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(big.length, 3)},1fr);gap:6px;margin-bottom:8px">${big.slice(0, 3).map(o => `
+          <div style="background:${CARD_BG};border:1px solid ${BORDER};border-radius:3px;padding:6px 8px">
+            <div style="font-size:6.5pt;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700">${htmlEscape(o.label)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:${GOLD_DEEP};font-weight:700;margin-top:2px">${htmlEscape(o.value)}</div>
+          </div>`).join("")}</div>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          ${inputs.length ? `<div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:6.5pt;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${MUTED};margin-bottom:3px">${L.calcInputs}</div>
+            ${inputs.map(i => `<div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0;border-bottom:1px solid #F1F5F9"><span style="color:${MUTED}">${htmlEscape(i.label)}</span><span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:${TEXT};font-weight:600">${htmlEscape(i.value)}</span></div>`).join("")}
+          </div>` : ''}
+          ${reg.length ? `<div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:6.5pt;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${MUTED};margin-bottom:3px">${L.calcOutputs}</div>
+            ${reg.map(o => `<div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0;border-bottom:1px solid #F1F5F9"><span style="color:${MUTED}">${htmlEscape(o.label)}</span><span style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:${TEXT};font-weight:700">${htmlEscape(o.value)}</span></div>`).join("")}
+          </div>` : ''}
+        </div>
+      </div>`;
+    }).join("");
+  })();
+
   // ── KPI strip (Page 1 lead). v0.50 — compact claude-design cards.
   const kpis = [
     { label: L.kpiIncome, value: fmtUSD(agg.income), color: POS },
@@ -942,6 +1096,21 @@ ${inc.strategyPlan && (debtPayoffHTML || roadmapHTML || projectionHTML) ? `<div 
   ${debtPayoffHTML}
   ${roadmapHTML}
   ${projectionHTML}
+</div>` : ''}
+
+${portfolioHTML ? `<div class="section">
+  <div class="section-hdr">${htmlEscape(L.portfolioHdr)}</div>
+  ${portfolioHTML}
+</div>` : ''}
+
+${compareHTML ? `<div class="section">
+  <div class="section-hdr">${htmlEscape(L.compareHdr)}</div>
+  ${compareHTML}
+</div>` : ''}
+
+${calcsHTML ? `<div class="section">
+  <div class="section-hdr">${htmlEscape(L.calcsHdr)}</div>
+  ${calcsHTML}
 </div>` : ''}
 
 ${inc.notes && notesHTML ? `<div class="section">

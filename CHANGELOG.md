@@ -2,6 +2,62 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.52.0 — 2026-05-25 — PDF: portfolio, compare, calc snapshots added
+
+Mauricio reported the downloaded PDF for Miguel Torres was missing
+sections. Root cause: the server template (`api/render-report-pdf.js`)
+only rendered 9 of the 12 Complete Report sections — Portfolio,
+Period Comparison, and Calculator Snapshots had never been ported
+from the SPA's print stylesheet. The download path (v0.51) inherited
+this gap from the email path.
+
+**Added sections.**
+1. **Selected Portfolio** — reads `client.savedPortfolio`. Renders a
+   4-up KPI strip (risk profile, expected return, monthly contribution,
+   horizon), a projected-future-value card with contributed vs growth
+   split, and a holdings table (ticker + alt name + %).
+2. **Period Comparison** — reads `client.savedCompare`. Wide table:
+   one row per metric, one column per selected month, with a delta
+   column on the right. Cell colors green/red on improvement direction
+   per metric (income/cashflow/savings/assets/netWorth = up-is-good,
+   bills/debt = down-is-good).
+3. **Calculator Snapshots** — reads `client.savedCalcs[]`. One block
+   per saved calc: header with name + scope + saved date, big-output
+   tile row (up to 3), then a 2-column inputs / outputs detail grid.
+
+**Toggle behavior.** Three new keys in the `inc` map (`inc.portfolio`,
+`inc.compare`, `inc.calcs`) default ON for `complete` reportType, OFF
+for `monthly` and `financial`. Honored via the `reportInclude` map
+passed by the frontend (which respects each section's on-screen
+toggle on the Complete Report tab).
+
+**Locale.** 12 new strings in both `L.es` and `L.en`: `portfolioHdr`,
+`compareHdr`, `calcsHdr`, `portfolioRisk`, `portfolioRate`,
+`portfolioMonthly`, `portfolioYears`, `portfolioHoldings`,
+`calcInputs`, `calcOutputs`, `snapshotSavedOn`.
+
+**Visual treatment.** All 3 sections use the v0.50 warm-palette
+defaults — `.sect-head` amber hairline pattern, JetBrains Mono numbers
+with tabular-nums, gold `#C9A84C` total-row top rule, hairline grey
+table separators. Emoji stripped from compare/calcs labels before
+rendering (`stripEmoji` helper) per HANDOFF-v0.46 lock decision.
+
+**Verification.** Added `preview/_test-pdf-sections.mjs` (17 source
+regex checks) and `preview/_test-pdf-render.mjs` (14 end-to-end render
+checks against a stub Miguel-Torres-style client). Both green:
+- 17/17 source checks pass (L keys, inc defaults, monthly/financial
+  override branches, section render gates).
+- 14/14 render checks pass — all 3 new headers appear, holdings
+  rendered, compare rows + delta column present, calc inputs/outputs
+  visible, monthly mode correctly suppresses all 3.
+- DOM probe of the rendered HTML in dev server confirmed 11 section
+  headers in order: Income, Bills, Debts, Assets, Financial Ratios,
+  Cash Flow Statement, Strategy Plan, **Selected Portfolio**,
+  **Period Comparison**, **Calculator Snapshots**, Notes & Goals.
+
+`buildPrintHTML` is now exported so future ports can use the same
+verification harness without driving the full request handler.
+
 ## v0.51.0 — 2026-05-25 — Download PDF replaces in-app Print + handoff files
 
 **Headline.** The "🖨️ Print / Save PDF" button on the three report tabs
