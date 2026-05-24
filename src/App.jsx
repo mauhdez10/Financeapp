@@ -3924,6 +3924,21 @@ const dashChartOptions=t=>[
   {id:"clientsTreemap",label:"🗺️ "+(t?.clientsByNetWorthHdr||"Clients by Net Worth")},
   {id:"practiceHealth",label:"🎯 "+(t?.practiceHealthHdr||"Practice Health")},
   {id:"netWorthBridge",label:"⚖️ "+(t?.netWorthBridgeHdr||"Net Worth Bridge")},
+  // v0.47.0 — expanded slot options. Each renders practice-aggregated data.
+  {id:"debtVsSavingsTrend",label:"📈 "+(t?.debtVsSavingsSlot||"Debt vs Savings Trend")},
+  {id:"cashFlowTrend",label:"💰 "+(t?.cashFlowTrendSlot||"Cash Flow Trend")},
+  {id:"debtRanked",label:"🏦 "+(t?.debtRankedSlot||"Debts by Balance")},
+  {id:"practiceWaterfall",label:"🌊 "+(t?.practiceWaterfallSlot||"Practice Cash Flow Waterfall")},
+  {id:"healthRadar",label:"🎯 "+(t?.healthRadarSlot||"Practice Health (Radar)")},
+  {id:"netWorthForecast",label:"🔮 "+(t?.netWorthForecastSlot||"Net Worth Forecast")},
+  {id:"assetSunburst",label:"☀️ "+(t?.assetSunburstSlot||"Asset Allocation (Sunburst)")},
+  {id:"clientsDumbbell",label:"⚖️ "+(t?.clientsDumbbellSlot||"Client Net Worth Δ")},
+  {id:"netWorthSlope",label:"📐 "+(t?.netWorthSlopeSlot||"Net Worth Prior vs Current")},
+  {id:"billsStacked",label:"💳 "+(t?.billsStackedSlot||"Bills by Category")},
+  {id:"billsYoY",label:"📅 "+(t?.billsYoYSlot||"Bills YoY")},
+  {id:"spendingHeatmap",label:"🔥 "+(t?.spendingHeatmapSlot||"Spending Heatmap")},
+  {id:"payoffProgression",label:"📉 "+(t?.payoffProgressionSlot||"Debt Payoff Timeline")},
+  {id:"kpiSparklines",label:"✨ "+(t?.kpiSparklinesSlot||"KPI Sparklines")},
 ];
 
 /* ── v0.46.0 — ChartSettingsModal: rebuilt as a temporary Chart Gallery.
@@ -4017,13 +4032,21 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
       {from:"inc",to:"min",value:450},
       {from:"inc",to:"cash",value:7165},
     ]}/>},
-    {name:"SmoothAreaLine",status:"wired",desc:"Two-curve area chart. Debt vs Savings trend.",render:()=><SmoothAreaLine height={160} data={[
+    {name:"SmoothAreaLine — Debt vs Savings",status:"wired",desc:"Two-curve area trend. Red = debt, Green = savings. Used on every Client header.",render:()=><SmoothAreaLine height={160} debtColor="#EF4444" savingsColor="#10B981" data={[
       {label:"Dec",debt:38000,savings:9000},
       {label:"Jan",debt:35500,savings:11500},
       {label:"Feb",debt:33000,savings:14500},
       {label:"Mar",debt:30000,savings:17000},
       {label:"Apr",debt:27500,savings:21000},
       {label:"▶ Now",debt:25000,savings:24500},
+    ]}/>},
+    {name:"SmoothAreaLine — Cash Flow Trend",status:"wired",desc:"Same component, different signal. Green = cash flow, Gold = income.",render:()=><SmoothAreaLine height={160} debtColor="#10B981" savingsColor={GOLD} debtKey="cashFlow" savingsKey="income" data={[
+      {label:"Dec",cashFlow:1850,income:7200},
+      {label:"Jan",cashFlow:2100,income:7400},
+      {label:"Feb",cashFlow:2950,income:7800},
+      {label:"Mar",cashFlow:3400,income:8100},
+      {label:"Apr",cashFlow:4200,income:8400},
+      {label:"▶ Now",cashFlow:5165,income:9600},
     ]}/>},
     {name:"Radar5",status:"wired",desc:"5-axis radar. Financial Health Score.",render:()=><Radar5 size={220} axes={["DSR","Save Rate","EF","D/A","Cash Flow"]} values={[0.68,0.55,0.82,0.40,0.72]}/>},
     {name:"SlopeGraph",status:"new",desc:"Tufte slope — period-over-period. Last month vs this month.",render:()=><SlopeGraph height={210} leftLabel="Apr" rightLabel="May" data={[
@@ -4215,6 +4238,218 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>⚖️ {t.netWorthBridgeHdr||"Net Worth Bridge"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthBridgeSub||"Assets above zero, liabilities below."}</div></div>
         {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.needMoreSnapshots||"Need 2+ monthly snapshots."}</div>:<NetWorthBridge data={data} width={460} height={isMobile?200:240}/>}
+      </>;
+    }},
+    // v0.47.0 — expanded slot options ↓
+    debtVsSavingsTrend:{id:"debtVsSavingsTrend",label:"📈 "+(t.debtVsSavingsSlot||"Debt vs Savings Trend"),render:()=>{
+      const data=trend.map(p=>({label:p.m,debt:p.debt,savings:p.savings}));
+      const live={label:"▶ Now",debt:Math.round(active.reduce((s,c)=>s+c.cards.reduce((a,cd)=>a+(+cd.balance||0),0),0)),savings:Math.round(active.reduce((s,c)=>s+liquidA(c),0))};
+      data.push(live);
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📈 {t.debtVsSavingsSlot||"Debt vs Savings Trend"}</div><div style={{display:"flex",gap:14,marginBottom:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#EF4444"}}/>{t.totalDebt||"Debt"}</span>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#10B981"}}/>{t.savings||"Savings"}</span>
+        </div></div>
+        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<SmoothAreaLine data={data} height={isMobile?180:210} debtColor="#EF4444" savingsColor="#10B981"/>}
+      </>;
+    }},
+    cashFlowTrend:{id:"cashFlowTrend",label:"💰 "+(t.cashFlowTrendSlot||"Cash Flow Trend"),render:()=>{
+      const labels=_shownLabels.length?_shownLabels:[];
+      const data=labels.map(m=>{
+        let income=0,bills=0,minDebt=0;
+        active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn){income+=sn.income||0;bills+=sn.bills||0;minDebt+=(sn.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0);}});
+        const parts=m.split(" ");
+        return{label:parts[0]+(parts[1]?"’"+String(parts[1]).slice(-2):""),cashFlow:income-bills-minDebt,income};
+      });
+      const liveInc=active.reduce((s,c)=>s+sumN(c.incomeStreams||[]),0);
+      const liveBls=active.reduce((s,c)=>s+sumB(c.bills||[]),0);
+      const liveMin=active.reduce((s,c)=>s+sumMin(c.cards||[]),0);
+      data.push({label:"▶ Now",cashFlow:liveInc-liveBls-liveMin,income:liveInc});
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💰 {t.cashFlowTrendSlot||"Cash Flow Trend"}</div><div style={{display:"flex",gap:14,marginBottom:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#10B981"}}/>{t.cashFlow||"Cash Flow"}</span>
+          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:GOLD}}/>{t.income||"Income"}</span>
+        </div></div>
+        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<SmoothAreaLine data={data} height={isMobile?180:210} debtKey="cashFlow" savingsKey="income" debtColor="#10B981" savingsColor={GOLD}/>}
+      </>;
+    }},
+    debtRanked:{id:"debtRanked",label:"🏦 "+(t.debtRankedSlot||"Debts by Balance"),render:()=>{
+      const debts=[];
+      active.forEach(c=>{
+        (c.cards||[]).forEach(cd=>{const bal=+cd.balance||0;if(bal>0)debts.push({label:`${cd.name||"Card"} · ${c.firstName}`,value:bal,color:"#EF4444"});});
+        (c.loans||[]).forEach(ln=>{const bal=+ln.balance||0;if(bal>0)debts.push({label:`${ln.name||"Loan"} · ${c.firstName}`,value:bal,color:ln.type==="mortgage"?"#DC2626":ln.type==="vehicle"?"#F97316":"#3B82F6"});});
+      });
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🏦 {t.debtRankedSlot||"Debts by Balance"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.debtRankedSub||"Top debts across all active clients."}</div></div>
+        {debts.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noDebtYet||"No debt logged."}</div>:<RankedHBars data={debts} maxBars={10} width={460}/>}
+      </>;
+    }},
+    practiceWaterfall:{id:"practiceWaterfall",label:"🌊 "+(t.practiceWaterfallSlot||"Practice Cash Flow Waterfall"),render:()=>{
+      let inc=0,bls=0,mnd=0;
+      active.forEach(c=>{inc+=sumN(c.incomeStreams||[]);bls+=sumB(c.bills||[]);mnd+=sumMin(c.cards||[]);});
+      const free=inc-bls-mnd;
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🌊 {t.practiceWaterfallSlot||"Practice Cash Flow Waterfall"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.practiceWaterfallSub||"Income → bills → debt → free, aggregated."}</div></div>
+        {inc<=0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noIncomeYet||"Add client income."}</div>:<Waterfall width={460} height={isMobile?180:220} segments={[
+          {label:t.income||"Income",value:inc,color:"#10B981"},
+          {label:t.bills||"Bills",value:-bls,color:"#EF4444"},
+          {label:t.minPay||"Debt Min",value:-mnd,color:"#EF4444"},
+          {label:t.cashFlow||"Free",value:Math.max(0,free),kind:"total"},
+        ]}/>}
+      </>;
+    }},
+    healthRadar:{id:"healthRadar",label:"🎯 "+(t.healthRadarSlot||"Practice Health (Radar)"),render:()=>{
+      let inc=0,bls=0,mnd=0,liq=0,totL=0,totA=0;
+      active.forEach(c=>{inc+=sumN(c.incomeStreams||[]);bls+=sumB(c.bills||[]);mnd+=sumMin(c.cards||[]);liq+=liquidA(c);totL+=totalL(c);totA+=totalA(c);});
+      const dsr=inc>0?mnd/inc:0,sr=inc>0?Math.max(0,inc-bls-mnd)/inc:0,ef=bls>0?liq/bls:0,dta=totA>0?totL/totA:1,cf=inc>0?Math.max(0,inc-bls-mnd)/inc:0;
+      const values=[Math.max(0,Math.min(1,1-dsr/0.5)),Math.max(0,Math.min(1,sr/0.25)),Math.max(0,Math.min(1,ef/6)),Math.max(0,Math.min(1,1-dta/0.8)),Math.max(0,Math.min(1,cf/0.1))];
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🎯 {t.healthRadarSlot||"Practice Health (Radar)"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.healthRadarSub||"5-axis financial health, aggregated."}</div></div>
+        {active.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<div style={{display:"flex",justifyContent:"center"}}><Radar5 size={isMobile?220:250} axes={["DSR","Save","EF","D/A","CF"]} values={values}/></div>}
+      </>;
+    }},
+    netWorthForecast:{id:"netWorthForecast",label:"🔮 "+(t.netWorthForecastSlot||"Net Worth Forecast"),render:()=>{
+      const labels=_shownLabels.length?_shownLabels:[];
+      const history=labels.map(m=>{let nw=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){const a=(sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0);const l=(sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0);nw+=a-l;}});const parts=m.split(" ");return{label:parts[0]+(parts[1]?"’"+String(parts[1]).slice(-2):""),value:nw};});
+      const liveNW=active.reduce((s,c)=>s+(totalA(c)-totalL(c)),0);
+      history.push({label:"Now",value:liveNW});
+      const growth=history.length>=2?(history[history.length-1].value-history[0].value)/Math.max(1,history.length-1):liveNW*0.02;
+      const projection=[];
+      for(let i=1;i<=5;i++){projection.push({label:`+${i}y`,value:liveNW+growth*12*i});}
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🔮 {t.netWorthForecastSlot||"Net Worth Forecast"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthForecastSub||"History + 5-year projection cone."}</div></div>
+        {history.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<ForecastCone history={history} projection={projection} width={460} height={isMobile?200:230} confidence={0.22}/>}
+      </>;
+    }},
+    assetSunburst:{id:"assetSunburst",label:"☀️ "+(t.assetSunburstSlot||"Asset Allocation (Sunburst)"),render:()=>{
+      const cash={label:t.cashAssets||"Cash",color:"#06B6D4",children:[]};
+      const invest={label:t.investmentsLbl||"Investments",color:"#8B5CF6",children:[]};
+      const property={label:t.propertyLbl||"Property",color:"#10B981",children:[]};
+      const liqMap={},invMap={},propMap={};
+      active.forEach(c=>{
+        (c.accounts||[]).forEach(a=>{const meta=ACCT_META[a.type];const v=+a.value||0;if(v<=0)return;const name=ACCT_META[a.type]?.label||a.type||"Other";if(meta?.liquid){liqMap[name]=(liqMap[name]||0)+v;}else if(meta?.invest){invMap[name]=(invMap[name]||0)+v;}else{propMap[name]=(propMap[name]||0)+v;}});
+        (c.customAssets||[]).forEach(a=>{const v=+a.value||0;if(v<=0)return;const name=a.name||"Other";propMap[name]=(propMap[name]||0)+v;});
+      });
+      Object.entries(liqMap).forEach(([k,v],i)=>cash.children.push({label:k,value:v,color:["#3B82F6","#06B6D4","#0EA5E9","#22D3EE"][i%4]}));
+      Object.entries(invMap).forEach(([k,v],i)=>invest.children.push({label:k,value:v,color:["#8B5CF6","#A78BFA","#7C3AED","#6366F1"][i%4]}));
+      Object.entries(propMap).forEach(([k,v],i)=>property.children.push({label:k,value:v,color:["#10B981","#059669","#16A34A","#15803D"][i%4]}));
+      const data=[cash,invest,property].filter(g=>g.children.length>0);
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>☀️ {t.assetSunburstSlot||"Asset Allocation (Sunburst)"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.assetSunburstSub||"Cash / investments / property, nested."}</div></div>
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noAssetsYet||"No assets logged."}</div>:<div style={{display:"flex",justifyContent:"center"}}><Sunburst data={data} size={isMobile?220:250}/></div>}
+      </>;
+    }},
+    clientsDumbbell:{id:"clientsDumbbell",label:"⚖️ "+(t.clientsDumbbellSlot||"Client Net Worth Δ"),render:()=>{
+      const labels=_shownLabels;
+      const firstLbl=labels[0],lastLbl=labels[labels.length-1];
+      const data=active.map(c=>{
+        const first=firstLbl?(c.monthSnapshots||[]).find(x=>x.label===firstLbl):null;
+        const last=lastLbl?(c.monthSnapshots||[]).find(x=>x.label===lastLbl):null;
+        const aOf=sn=>sn?.data?((sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0)):0;
+        const lOf=sn=>sn?.data?((sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0)):0;
+        const was=first?aOf(first)-lOf(first):0;
+        const now=last?aOf(last)-lOf(last):(totalA(c)-totalL(c));
+        return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),a:was,b:now};
+      }).filter(d=>d.a||d.b);
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>⚖️ {t.clientsDumbbellSlot||"Client Net Worth Δ"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsDumbbellSub||"Where each client was vs where they are now."}</div></div>
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need snapshots."}</div>:<Dumbbell data={data} leftLabel={firstLbl||"Prior"} rightLabel="Now" width={460} maxRows={8}/>}
+      </>;
+    }},
+    netWorthSlope:{id:"netWorthSlope",label:"📐 "+(t.netWorthSlopeSlot||"Net Worth Prior vs Current"),render:()=>{
+      const labels=_shownLabels;
+      const firstLbl=labels[0],lastLbl=labels[labels.length-1];
+      const data=active.map((c,i)=>{
+        const first=firstLbl?(c.monthSnapshots||[]).find(x=>x.label===firstLbl):null;
+        const last=lastLbl?(c.monthSnapshots||[]).find(x=>x.label===lastLbl):null;
+        const aOf=sn=>sn?.data?((sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0)):0;
+        const lOf=sn=>sn?.data?((sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0)):0;
+        const a=first?aOf(first)-lOf(first):0;
+        const b=last?aOf(last)-lOf(last):(totalA(c)-totalL(c));
+        return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),a,b,color:b>=a?"#10B981":"#EF4444"};
+      });
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📐 {t.netWorthSlopeSlot||"Net Worth Prior vs Current"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthSlopeSub||"Tufte slope chart per client."}</div></div>
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients."}</div>:<SlopeGraph data={data} leftLabel={firstLbl?firstLbl.split(" ")[0]:"Prior"} rightLabel="Now" height={isMobile?200:230} width={460}/>}
+      </>;
+    }},
+    billsStacked:{id:"billsStacked",label:"💳 "+(t.billsStackedSlot||"Bills by Category"),render:()=>{
+      const labels=_shownLabels.length?_shownLabels:[];
+      const categories=["housing","transport","insurance","food","other"];
+      const data=labels.map(m=>{
+        const row={label:m.split(" ")[0],housing:0,transport:0,insurance:0,food:0,other:0};
+        active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){(sn.data.bills||[]).forEach(b=>{const cat=(b.category||"other").toLowerCase();const v=toM(+b.cost||0,b.freq);if(row[cat]!==undefined)row[cat]+=v;else row.other+=v;});}});
+        return row;
+      });
+      const colors={housing:"#3B82F6",transport:"#F97316",insurance:"#8B5CF6",food:"#F59E0B",other:"#94A3B8"};
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💳 {t.billsStackedSlot||"Bills by Category"}</div><div style={{display:"flex",gap:10,marginBottom:8,flexWrap:"wrap"}}>{categories.map(c=><span key={c} style={{fontSize:10,color:th.muted,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:colors[c]}}/>{c}</span>)}</div></div>
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need snapshots."}</div>:<StackedBars data={data} categories={categories} colors={colors} width={460} height={isMobile?180:210}/>}
+      </>;
+    }},
+    billsYoY:{id:"billsYoY",label:"📅 "+(t.billsYoYSlot||"Bills YoY"),render:()=>{
+      const labels=_shownLabels;
+      const thisYrLabel=labels[labels.length-1]?.split(" ")[1];
+      const buckets={};
+      active.forEach(c=>{
+        (c.monthSnapshots||[]).forEach(sn=>{
+          const parts=(sn.label||"").split(" ");
+          const yr=parts[1];if(!yr)return;
+          (sn.data?.bills||[]).forEach(b=>{const cat=(b.category||"Other").charAt(0).toUpperCase()+(b.category||"Other").slice(1);buckets[cat]=buckets[cat]||{current:0,prior:0};const v=toM(+b.cost||0,b.freq);if(yr===thisYrLabel)buckets[cat].current+=v;else buckets[cat].prior+=v;});
+        });
+      });
+      const data=Object.entries(buckets).map(([label,v])=>({label,current:v.current,prior:v.prior})).filter(d=>d.current||d.prior).slice(0,6);
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📅 {t.billsYoYSlot||"Bills YoY"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.billsYoYSub||"Current year vs prior year by category."}</div></div>
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need multi-year snapshots."}</div>:<GroupedYoY data={data} curLabel={thisYrLabel||"This Yr"} priorLabel={"Prior"} width={460} height={isMobile?180:210}/>}
+      </>;
+    }},
+    spendingHeatmap:{id:"spendingHeatmap",label:"🔥 "+(t.spendingHeatmapSlot||"Spending Heatmap"),render:()=>{
+      const cells=[];
+      active.forEach(c=>{
+        (c.monthSnapshots||[]).forEach(sn=>{const parts=(sn.label||"").split(" ");const monthName=parts[0];const yr=parts[1];const monthIdx=MS.indexOf(monthName)+1;if(monthIdx<=0||!yr)return;const v=(sn.bills||0)+((sn.data?.cards||[]).reduce((a,c)=>a+(+c.min||0),0));const exist=cells.find(x=>x.year===+yr&&x.month===monthIdx);if(exist)exist.value+=v;else cells.push({year:+yr,month:monthIdx,value:v});});
+      });
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🔥 {t.spendingHeatmapSlot||"Spending Heatmap"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.spendingHeatmapSub||"Year × month intensity. Cream → amber."}</div></div>
+        {cells.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need snapshots."}</div>:<HeatmapCalendar data={cells} width={460} height={isMobile?150:180}/>}
+      </>;
+    }},
+    payoffProgression:{id:"payoffProgression",label:"📉 "+(t.payoffProgressionSlot||"Debt Payoff Timeline"),render:()=>{
+      const debts=[];
+      active.forEach(c=>{
+        (c.cards||[]).forEach(cd=>{const bal=+cd.balance||0;if(bal>0)debts.push({name:`${cd.name||"Card"} · ${c.firstName}`,balance:bal,apr:+cd.apr||22,min:+cd.min||Math.max(25,bal*0.025),color:"#EF4444"});});
+        (c.loans||[]).forEach(ln=>{const bal=+ln.balance||0;if(bal>0&&ln.type!=="mortgage")debts.push({name:`${ln.name||"Loan"} · ${c.firstName}`,balance:bal,apr:+ln.apr||7,min:+ln.payment||Math.max(50,bal*0.015),color:ln.type==="vehicle"?"#F97316":"#3B82F6"});});
+      });
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📉 {t.payoffProgressionSlot||"Debt Payoff Timeline"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.payoffProgressionSub||"Avalanche projection, excludes mortgages."}</div></div>
+        {debts.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noDebtYet||"No debt logged."}</div>:<PayoffProgression debts={debts} width={460} height={isMobile?180:210} maxMonths={120}/>}
+      </>;
+    }},
+    kpiSparklines:{id:"kpiSparklines",label:"✨ "+(t.kpiSparklinesSlot||"KPI Sparklines"),render:()=>{
+      const labels=_shownLabels;
+      const nwSeries=labels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){const a=(sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0);const l=(sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0);v+=a-l;}});return v;});
+      const debtSeries=trend.map(p=>p.debt);
+      const savSeries=trend.map(p=>p.savings);
+      const cfSeries=labels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn){v+=(sn.income||0)-(sn.bills||0)-((sn.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0));}});return v;});
+      const liveNW=active.reduce((s,c)=>s+(totalA(c)-totalL(c)),0);
+      const liveDebt=active.reduce((s,c)=>s+c.cards.reduce((a,cd)=>a+(+cd.balance||0),0),0);
+      const liveSav=active.reduce((s,c)=>s+liquidA(c),0);
+      const liveCF=active.reduce((s,c)=>s+(sumN(c.incomeStreams||[])-sumB(c.bills||[])-sumMin(c.cards||[])),0);
+      const rows=[
+        {l:t.netWorth||"Net worth",d:[...nwSeries,liveNW],c:liveNW>=0?"#10B981":"#EF4444",v:fmtS(liveNW)},
+        {l:t.totalDebt||"Debt",d:[...debtSeries,liveDebt],c:"#EF4444",v:fmtS(liveDebt)},
+        {l:t.savings||"Savings",d:[...savSeries,liveSav],c:"#10B981",v:fmtS(liveSav)},
+        {l:t.cashFlow||"Cash flow",d:[...cfSeries,liveCF],c:GOLD,v:fmtS(liveCF)},
+      ];
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>✨ {t.kpiSparklinesSlot||"KPI Sparklines"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.kpiSparklinesSub||"At-a-glance trend per KPI."}</div></div>
+        <div style={{display:"flex",flexDirection:"column",gap:12,padding:"4px 8px",flex:1,justifyContent:"center"}}>
+          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:14,fontSize:12}}>
+            <span style={{color:th.muted,flex:"0 0 110px"}}>{r.l}</span>
+            <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={180} height={26}/></div>
+            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:62,textAlign:"right"}}>{r.v}</span>
+          </div>)}
+        </div>
       </>;
     }},
   };
@@ -4482,10 +4717,10 @@ const _rangeN=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:(client
 // state was stuck at whatever the user last clicked. startTab acts as the
 // controlled value; this useEffect keeps the local state matching.
 useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab);},[startTab]);
-return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button><div style={{width:40,height:40,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:700,fontSize:15,color:th.text}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}><SC label={"💼 "+t.totalIncome} value={fmt(sumN(client.incomeStreams))} color={th.pos}/><SC label={"💳 "+t.totalDebt} value={fmt(tL)} color={th.neg}/><SC label={"📊 "+t.totalAssets} value={fmt(tA)} color={th.blue}/><SC label={"💎 "+t.netWorth} value={fmt(tA-tL)} color={tA-tL>=0?th.pos:th.neg}/></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.34.0 — Phase 5: ClientDetail "● live" trend pair now uses SmoothAreaLine.
-   Debt vs Savings chart: gold = savings, orange = debt.
-   Cash Flow vs Income chart: gold = cash flow (primary), orange = income. */}
-{[{k1:"debt",k2:"savings",l:"📈 "+t.debtTrend,c1:"#ED7D31",c2:GOLD},{k1:"cashFlow",k2:"income",l:"💰 "+(t.cashFlowTrend||"Cash Flow Trend"),c1:"#ED7D31",c2:GOLD}].map((ch,ci)=><div key={ci} style={{...mCARD(th),padding:12}}>
+return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button><div style={{width:40,height:40,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:700,fontSize:15,color:th.text}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}><SC label={"💼 "+t.totalIncome} value={fmt(sumN(client.incomeStreams))} color={th.pos}/><SC label={"💳 "+t.totalDebt} value={fmt(tL)} color={th.neg}/><SC label={"📊 "+t.totalAssets} value={fmt(tA)} color={th.blue}/><SC label={"💎 "+t.netWorth} value={fmt(tA-tL)} color={tA-tL>=0?th.pos:th.neg}/></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.47.0 — Per Mauricio's preference, restored the original red/green
+   palette on Debt vs Savings (red = debt, green = savings). Cash Flow Trend
+   pair stays green/gold (cashflow is the gold "headline" curve here). */}
+{[{k1:"debt",k2:"savings",l:"📈 "+t.debtTrend,c1:"#EF4444",c2:"#10B981"},{k1:"cashFlow",k2:"income",l:"💰 "+(t.cashFlowTrend||"Cash Flow Trend"),c1:"#10B981",c2:GOLD}].map((ch,ci)=><div key={ci} style={{...mCARD(th),padding:12}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:8,flexWrap:"wrap",rowGap:6}}>
     <span style={{fontSize:11,fontWeight:700,color:th.dim,flex:"0 1 auto",minWidth:0}}>{ch.l} <span style={{fontSize:9,color:th.pos}}>● live</span></span>
     {ci===0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",alignItems:"center",flex:"0 1 auto"}}>{[["3","3m"],["6","6m"],["12","12m"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}<div style={{width:1,height:12,background:th.cardBorder,margin:"0 2px"}}/>{[["all",(t.filterAll||"All")],["revolving",(t.filterRev||"Rev")],["current",(t.filterCur||"Cur")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendMode===v?GOLD+"22":"transparent",color:trendMode===v?GOLD:th.dim,border:`1px solid ${trendMode===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}</div>}
@@ -4886,7 +5121,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0460-chart-gallery";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0470-redgreen-trends-slot-expansion";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/

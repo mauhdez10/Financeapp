@@ -2,6 +2,60 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.47.0 — 2026-05-25 — Red/green trends + 14 new Dashboard slot options
+
+Three asks from Mauricio after auditing v0.46's gallery:
+
+**(A) Restored the old red/green palette on the Debt vs Savings live
+trend.** In ClientDetail, the `● live` trend pair had drifted to
+orange (`#ED7D31`) for debt + gold for savings during the v0.34 chart
+overhaul. Per Mauricio's preference and the `preview/17-charts.html`
+design vocabulary, debt is now RED (`#EF4444`) and savings is GREEN
+(`#10B981`). The Cash Flow Trend card stays GREEN (cash flow) + GOLD
+(income) since cash flow is the gold "headline" curve there.
+
+**(B) Gallery now shows BOTH trend variants.** The single generic
+SmoothAreaLine card was split into:
+- **SmoothAreaLine — Debt vs Savings** (red + green, matches the
+  ClientDetail live trend)
+- **SmoothAreaLine — Cash Flow Trend** (green + gold, matches the
+  ClientDetail cash-flow card)
+
+Total gallery card count: **21** (was 20).
+
+**(C) Dashboard slot dropdown expanded 6 → 20 options.** Previously the
+3 Dashboard slot pickers (gear ⚙ on each card + the Chart Gallery
+modal dropdowns) could only pick from 6 chart types. Now you can fill
+any slot with any chart, each rendered with practice-aggregated data:
+
+1. Income vs Spending *(unchanged)*
+2. Cash Flow Map / Sankey *(unchanged)*
+3. Net Worth Distribution / Donut *(unchanged)*
+4. Clients by Net Worth / Treemap *(unchanged)*
+5. Practice Health / 3 Gauges *(unchanged)*
+6. Net Worth Bridge *(unchanged)*
+7. **Debt vs Savings Trend** — practice debt + savings over time, red/green
+8. **Cash Flow Trend** — practice cashflow + income over time, green/gold
+9. **Debts by Balance** — RankedHBars of top 10 debts across clients
+10. **Practice Cash Flow Waterfall** — income → bills → debt → free
+11. **Practice Health (Radar)** — 5-axis radar polygon, aggregate
+12. **Net Worth Forecast** — ForecastCone, history + 5-year projection
+13. **Asset Allocation (Sunburst)** — Cash/Investments/Property nested
+14. **Client Net Worth Δ** — Dumbbell, per-client was vs now
+15. **Net Worth Prior vs Current** — SlopeGraph per client
+16. **Bills by Category** — StackedBars over months
+17. **Bills YoY** — GroupedYoY current year vs prior
+18. **Spending Heatmap** — HeatmapCalendar year × month intensity
+19. **Debt Payoff Timeline** — PayoffProgression avalanche projection
+20. **KPI Sparklines** — 4-row mini-trend strip (NW, debt, savings, CF)
+
+Each new render guards on empty data ("Need 2+ snapshots", "No debt
+logged", etc.) so a fresh account with no history doesn't crash.
+
+**Translations:** 14 new slot-label keys + 12 sub-text keys + 5
+support keys (cashAssets, propertyLbl, investmentsLbl, noDebtYet,
+noIncomeYet) — 31 new strings × EN+ES = 62 total. Pitfall #9 honored.
+
 ## v0.46.0 — 2026-05-25 — Chart Gallery (temporary audit section)
 
 Converted the topbar avatar menu's **Chart Settings** entry into a **Chart
