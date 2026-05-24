@@ -1883,7 +1883,7 @@ const liveSnap={label:"▶ Now",debt:Math.round(totalL(client)),savings:Math.rou
 const trendData=[...snaps.slice(-5),liveSnap];
 const ai=[{k:"stocks",l:"Stocks",c:th.blue},{k:"retirement",l:"Retirement",c:"#8B5CF6"},{k:"realEstate",l:"Real Estate",c:th.pos},{k:"savings",l:"Savings",c:"#06B6D4"},{k:"vacation",l:"Vacation",c:th.warn},{k:"other",l:"Other",c:th.muted},{k:"debtRepayment",l:"Debt Repayment",c:th.neg}];
 const portfolioSel="growth";const portRates={conservative:5.5,growth:8.5,aggressive:11.0,...(client.portfolioCustom?.rates||{})};const ret=portRates[portfolioSel];const r=ret/100/12;const monthly=Math.round(avail*(client.alloc?.stocks||0)/100);const fv10=monthly>0?(monthly*((Math.pow(1+r,120)-1)/r)):0;
-const RS=({icon,title,children})=><div className="ga-section" style={{marginBottom:24,pageBreakInside:"avoid"}}><div style={{borderBottom:`2px solid ${th.accent}`,paddingBottom:6,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{icon}</span><span style={{fontSize:12,fontWeight:800,color:th.text,textTransform:"uppercase",letterSpacing:"0.07em"}}>{title}</span></div>{children}</div>;
+const RS=({icon,title,children})=><div className="ga-section ga-print-page" style={{marginBottom:24,pageBreakInside:"avoid"}}><div className="section-hdr" style={{borderBottom:`2px solid ${th.accent}`,paddingBottom:6,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span className="ga-emoji" style={{fontSize:16}}>{icon}</span><span style={{fontSize:12,fontWeight:800,color:th.text,textTransform:"uppercase",letterSpacing:"0.07em"}}>{title}</span></div>{children}</div>;
 const TR=({label,value,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${th.cardBorder}44`}}><span style={{fontSize:12,color:th.muted}}>{label}</span><span style={{fontSize:12,fontWeight:bold?700:600,color:color||th.muted}}>{value}</span></div>;
 const h1=actB(client.bills).filter(b=>(b.dueDay||1)<=15),h2=actB(client.bills).filter(b=>(b.dueDay||1)>15);
 return<div style={{paddingBottom:40}}>
@@ -1995,19 +1995,41 @@ function CompleteReportTab({client,onUpdate,lang,t,settings}){
           </div>;})}
         </div>
       </div>
+      {/* v0.41.0 — Branded print-only header: appears at top of printed PDF only */}
+      <div className="ga-print-header">
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <img className="brand-mark" src="/anchor-monogram.svg" alt=""/>
+          <div>
+            <div className="brand-wordmark">Golden Anchor</div>
+            <div className="brand-sub">{lang==="es"?"Asesoría Financiera":"Financial Advisory"}</div>
+          </div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div className="client-name">{(client.firstName||"")+" "+(client.lastName||"")+(client.partnerFirst?" & "+client.partnerFirst:"")}</div>
+          <div className="client-meta">{(lang==="es"?"Al ":"As of ")+new Date().toLocaleDateString(lang==="es"?"es":"en",{month:"long",day:"numeric",year:"numeric"})}</div>
+          <div className="client-meta">{(lang==="es"?"Asesor: ":"Advisor: ")+(settings?.advisorName||"Mauricio Hernandez")}</div>
+        </div>
+      </div>
       <ReportHdr client={client} selMonth={selMonth} isCur={isCur} t={t}/>
       {/* Main summary & detail (FullReport includes Income, Bills, Debt, Accounts, EF, Investment Allocation, Ratios, Trends, Portfolio Projection) */}
       <FullReport client={client} lang={lang} t={t} hClient={hClient}/>
       {/* Financial Statements: balance sheet, A&L, income stmt, cash flow — ratios are skipped to avoid duplication with FullReport */}
-      <div style={{marginTop:24,borderTop:`2px solid ${th.cardBorder}`,paddingTop:24}}>
-        <div style={{fontSize:12,fontWeight:800,color:th.accent,marginBottom:16,textTransform:"uppercase",letterSpacing:"0.08em"}}>📋 {t.financialStatements||"Financial Statements"}</div>
+      <div className="ga-section ga-print-page" style={{marginTop:24}}>
+        <div className="section-hdr" style={{fontSize:12,fontWeight:800,color:th.accent,marginBottom:16,textTransform:"uppercase",letterSpacing:"0.08em",paddingBottom:6,borderBottom:`2px solid ${th.accent}`}}><span className="ga-emoji">📋</span> {t.financialStatements||"Financial Statements"}</div>
         <FinancialStatementsTab client={hClient} lang={lang} t={t} fullPage={true} skipRatios={true}/>
       </div>
-      
-      {isOn("compare")&&<CompareReportBlock client={client} t={t}/>}
-      {isOn("calcs")&&<CalculatorsReportBlock client={client} t={t}/>}
-      {isOn("notes")&&<NotesSection client={client} onUpdate={()=>{}} t={t} reportMode={true}/>}
-      {isOn("plan")&&<PlanReportBlock client={client} lang={lang} t={t}/>}
+
+      {isOn("compare")&&<div className="ga-print-page"><CompareReportBlock client={client} t={t}/></div>}
+      {isOn("calcs")&&<div className="ga-print-page"><CalculatorsReportBlock client={client} t={t}/></div>}
+      {isOn("notes")&&<div className="ga-print-page"><NotesSection client={client} onUpdate={()=>{}} t={t} reportMode={true}/></div>}
+      {isOn("plan")&&<div className="ga-print-page"><PlanReportBlock client={client} lang={lang} t={t}/></div>}
+      {/* v0.41.0 — Disclaimer footer (visible only in print) */}
+      <div className="ga-print-footer">
+        {lang==="es"?
+          "Este reporte es solo con fines educativos y de planificación. No constituye asesoría de inversión, fiscal, o legal. Golden Anchor Financial Advisory — Mauricio Hernandez, MBA, FPWMP, FL0215.":
+          "This report is for educational and planning purposes only. It does not constitute investment, tax, or legal advice. Golden Anchor Financial Advisory — Mauricio Hernandez, MBA, FPWMP, FL0215."}
+      </div>
+      <div className="ga-print-watermark">⚓ Golden Anchor · Confidential</div>
     </>}
   </div>;
 }
@@ -4246,7 +4268,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0400-pdf-charts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0410-print-warm-palette";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -5950,48 +5972,60 @@ export default function App(){
         .ga-sc{overflow:hidden}
       }
       @media print{
-        /* v0.21.0 — Claude Design PDF spec (Prompt 10).
-           Brand-font'd, emoji-free, page-broken, branded-header print output. */
+        /* v0.41.0 — Premium Print: warm cream palette + per-section pages.
+           Section cards become "pages" with a soft amber top-rule and an
+           inline gold underline beneath every section header. Drops the
+           cool slate vibe for a warmer financial-report aesthetic. */
         #ga-sidebar,#ga-sidebar-mobile,#ga-appbar,.ga-top-bar{display:none!important}
         .ga-np{display:none!important}
-        html,body{background:#FFFFFF!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#0F172A!important;font-size:10.5pt!important;line-height:1.55!important;scrollbar-width:none!important}
+        html,body{background:#FFFAF0!important;margin:0;padding:0;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;font-family:'Source Serif 4',Georgia,'Times New Roman',serif!important;color:#1F2937!important;font-size:10.5pt!important;line-height:1.6!important;scrollbar-width:none!important}
         *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
         #root,div{overflow:visible!important;max-height:none!important}
         ::-webkit-scrollbar{display:none!important}
         .recharts-wrapper,.recharts-responsive-container{width:100%!important;overflow:visible!important}
         .recharts-surface{overflow:visible!important}
-        /* Report titles render in Newsreader italic — apply via a .ga-report-title class on the JSX */
-        .ga-report-title,h1.ga-report-title{font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-weight:500!important;font-size:22pt!important;color:#0D1B2A!important;text-align:center!important;line-height:1.1!important;margin:4px 0 4px!important;letter-spacing:-0.005em!important}
-        /* Section headers — Plus Jakarta Sans, 0.08em tracking, gold underline (hairline). */
-        h2,h3,.section-hdr{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#B8901E!important;font-size:9.5pt!important;border-bottom:1px solid #C9A84C!important;padding-bottom:2px!important;margin:14px 0 6px!important}
-        h1{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important}
-        /* Currency cells in JetBrains Mono with tabular numerals. */
+        /* Big italic report title (cover page) */
+        .ga-report-title,h1.ga-report-title{font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-weight:500!important;font-size:24pt!important;color:#451A03!important;text-align:center!important;line-height:1.1!important;margin:4px 0 6px!important;letter-spacing:-0.005em!important}
+        /* Section headers — warm amber on a light gold underline */
+        h2,h3,.section-hdr{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#B45309!important;font-size:10pt!important;border-bottom:1.5px solid #F59E0B!important;padding-bottom:4px!important;margin:0 0 12px!important}
+        h1{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;color:#451A03!important}
+        /* Body text + numbers */
+        td,p,span,div,li{color:#1F2937}
         td.num,.ga-money,.ga-mono,td[align="right"]{font-family:'JetBrains Mono',ui-monospace,monospace!important;font-variant-numeric:tabular-nums!important;font-feature-settings:"tnum" 1!important}
+        /* Section cards — each section becomes a printed "page card" with warm
+           accent: cream background, soft amber top rule, generous padding,
+           and rounded corners. */
+        .ga-section,.ga-section-card{background:#FFFFFF!important;border:1px solid #FDE68A!important;border-top:4px solid #F59E0B!important;border-radius:6px!important;padding:22px 22px 18px!important;margin:0 0 18px!important;box-shadow:0 1px 0 #FED7AA inset!important;page-break-inside:avoid!important;break-inside:avoid-page!important}
+        /* The KPI strip + 4-up grids — give them air on print */
+        [data-ga-grid="kpi-4"],[data-ga-grid="kpi-3"]{margin-bottom:18px!important}
+        /* Tables — softer, warmer borders */
+        table{border-collapse:collapse!important;width:100%!important}
+        th{font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-weight:700!important;color:#78350F!important;font-size:9pt!important;text-transform:uppercase!important;letter-spacing:0.04em!important;border-bottom:1px solid #FED7AA!important;padding:6px 6px 6px 0!important}
+        td{border-bottom:1px solid #FEF3C7!important;padding:6px 0!important;color:#1F2937!important}
+        tfoot td{border-top:2px solid #F59E0B!important;border-bottom:none!important;font-weight:700!important;padding-top:8px!important}
         /* Brand-printed header (visible only in print). The component just needs class="ga-print-header". */
-        .ga-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;padding-bottom:8px!important;margin-bottom:14px!important;border-bottom:1px solid #C9A84C!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
-        .ga-print-header img.brand-mark{width:28px!important;height:28px!important;display:block!important}
-        .ga-print-header .brand-wordmark{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;letter-spacing:0.14em!important;font-size:9pt!important;color:#C9A84C!important;text-transform:uppercase!important;line-height:1}
-        .ga-print-header .brand-sub{font-family:'Source Serif 4',Georgia,serif!important;font-style:italic!important;font-size:7pt!important;color:#475569!important;margin-top:2px!important}
-        .ga-print-header .client-name{font-weight:600!important;font-size:9.5pt!important;color:#0F172A!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
-        .ga-print-header .client-meta{font-size:7.5pt!important;color:#475569!important;line-height:1.4}
+        .ga-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;padding-bottom:10px!important;margin-bottom:16px!important;border-bottom:2px solid #F59E0B!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
+        .ga-print-header img.brand-mark{width:32px!important;height:32px!important;display:block!important}
+        .ga-print-header .brand-wordmark{font-family:'Newsreader',Georgia,serif!important;font-weight:500!important;letter-spacing:0.14em!important;font-size:11pt!important;color:#B8860B!important;text-transform:uppercase!important;line-height:1;font-style:italic!important}
+        .ga-print-header .brand-sub{font-family:'Source Serif 4',Georgia,serif!important;font-style:italic!important;font-size:8pt!important;color:#92400E!important;margin-top:3px!important}
+        .ga-print-header .client-name{font-weight:600!important;font-size:10pt!important;color:#1F2937!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important}
+        .ga-print-header .client-meta{font-size:8pt!important;color:#78350F!important;line-height:1.4}
         /* Page breaks — explicit between sections marked .ga-print-page. */
         .ga-print-page{break-before:page!important;page-break-before:always!important}
         .ga-print-page:first-of-type{break-before:auto!important;page-break-before:auto!important}
         /* Block elements that should never split. */
         h1,h2,h3,h4{page-break-after:avoid!important;break-after:avoid!important}
-        table{page-break-inside:avoid!important;break-inside:avoid!important}
+        table{page-break-inside:auto!important;break-inside:auto!important}
         thead{display:table-header-group}
         tr{page-break-inside:avoid!important;break-inside:avoid!important}
-        .ga-section,.ga-section-card{page-break-inside:avoid!important;break-inside:avoid-page!important}
-        /* Hide leading emoji in section headers — wrap them in a span.ga-emoji.
-           Existing JSX uses raw emoji prefixes; until we wrap them, this rule
-           is a no-op safety net. New code should use <span class="ga-emoji">📊</span> */
+        /* Hide leading emoji in section headers — see ga-emoji rule below. */
         .ga-emoji{display:none!important}
-        /* Page margins + footer area. */
-        @page{margin:18mm 14mm 22mm 14mm;background:#FFFFFF}
-        /* Disclaimer footer — renders inline at the bottom of the printable content.
-           Add <div class="ga-print-footer">...</div> at the end of each report. */
-        .ga-print-footer{margin-top:24px!important;padding-top:10px!important;border-top:1px solid #C9A84C!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-size:7.5pt!important;color:#6B7280!important;line-height:1.5!important;font-style:italic!important;text-align:center!important}
+        /* Page margins + cream page background */
+        @page{margin:16mm 14mm 18mm 14mm;background:#FFFAF0}
+        /* Disclaimer footer — renders inline at the bottom of the printable content. */
+        .ga-print-footer{margin-top:20px!important;padding:12px 14px!important;background:#FEF3C7!important;border:1px solid #FCD34D!important;border-radius:6px!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;font-size:8pt!important;color:#78350F!important;line-height:1.55!important;font-style:italic!important;text-align:center!important}
+        /* Subtle watermark on every page footer */
+        .ga-print-watermark{position:fixed!important;bottom:6mm!important;right:14mm!important;font-family:'Newsreader',Georgia,serif!important;font-style:italic!important;font-size:7pt!important;color:#D97706!important;letter-spacing:0.18em!important;text-transform:uppercase!important;opacity:0.65!important}
       }
       /* Print header is ONLY visible in print mode — hide on screen. */
       @media screen{.ga-print-header,.ga-print-footer,.ga-print-only{display:none!important}}

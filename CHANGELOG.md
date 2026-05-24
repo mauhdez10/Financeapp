@@ -2,6 +2,61 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.41.0 — 2026-05-24 — Premium print PDF: warm palette + per-section pages
+
+Print/Save PDF now produces a designer-grade document. Warm cream palette
+(matching the intake-form aesthetic we lost in v0.33's gold-pinning), each
+report section forced onto its own page, and a branded header + footer on
+every Complete Report. Triggered via the existing `Print / Save PDF` button
+— uses browser print + `@media print` CSS, no new server roundtrip.
+
+**Warm palette overhaul (`@media print` in App.jsx ~line 5952).**
+- Page background: `#FFFAF0` (floral white / warm cream).
+- Section card surface: `#FFFFFF` with a `4px solid #F59E0B` (amber) top
+  rule and `1px solid #FDE68A` (light yellow) border. Each card looks like
+  a "report page."
+- Section headers: `#B45309` (warm amber) on a `#F59E0B` underline — same
+  Plus Jakarta Sans uppercase shape, new warmer color.
+- Big report title: `#451A03` (deep walnut) in Newsreader italic, 24pt.
+- Tables: warmer borders (`#FED7AA` heads, `#FEF3C7` rows), `#78350F`
+  column headers, `#1F2937` cells, `#F59E0B` 2px footer rule.
+- Brand mark wordmark: `#B8860B` italic Newsreader, larger (11pt → from 9pt).
+- Brand sub-label and meta info shifted from cool slate to warm `#92400E` /
+  `#78350F` so everything reads as one warm document.
+
+**Per-section page breaks.**
+- `RS` inline component in `FullReport` now adds `ga-print-page` so every
+  section card (Income / Bills / Debt / Accounts / EF / Investment Allocation
+  / Financial Ratios / Trends / Portfolio Projection) prints on its own page.
+- Same wrapper added to the Financial Statements outer block, Compare
+  Report, Calculators Snapshots, Notes & Goals, and Strategy Plan.
+- Total: ~14 print pages on a typical Complete Report (was 1-2 long-scroll
+  pages before).
+- `.ga-print-page:first-of-type` keeps the cover (KPIs + first section) on
+  page 1 — no leading blank page.
+
+**Print-only branded header (new on Complete Report).**
+- Anchor monogram + Golden Anchor wordmark left, client name + "As of"
+  date + advisor right. Border-bottom in amber. Hidden on screen via
+  `@media screen { .ga-print-header { display: none } }`.
+
+**Print-only disclaimer footer + watermark.**
+- Cream-bg disclaimer card with the standard FPWMP/FL0215 fine print at
+  the end of the report, EN/ES.
+- `.ga-print-watermark` fixed-position "⚓ Golden Anchor · Confidential"
+  at the bottom-right of every printed page in 7pt amber italic.
+
+**Why this matters.** When advisors save the on-screen Complete Report as a
+PDF (via the browser print dialog), they now get the same designer-grade
+output as the emailed PDF — same warm palette, same per-section pagination,
+same brand voice. No extra clicks. Server-side email PDF still uses its own
+template (`api/render-report-pdf.js`) which got chart embeds in v0.40.
+
+**Pending for v0.42+.** Tie the new chart picker to PDF chart selection (so
+slot picks the user makes in Settings flow through to both screen + print +
+email). Server-side palette alignment (the email PDF still uses cool slate
+`#F1F5F9`; consider porting the warm palette there too).
+
 ## v0.40.0 — 2026-05-23 — PDF chart embeds (server-side SVG)
 
 Charts now render in emailed PDFs. The render is server-side (Puppeteer in the
