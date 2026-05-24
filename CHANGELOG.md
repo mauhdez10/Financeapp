@@ -2,6 +2,65 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.42.0 — 2026-05-24 — Gradient chart polish: thinner strokes + modern look
+
+Per Mauricio's direction ("gradient colors instead of static, thin line graphs
+with a more modern approach"). Every flat fill across the 9 most-visible chart
+components is now a gradient; every heavy stroke is now thinner. Visual style
+shift away from chunky/saturated toward modern fintech (Linear / Robinhood /
+Wealthfront aesthetic).
+
+**Per-component changes (all `useSvgId`-scoped gradients in `<defs>`):**
+
+- **Donut** — radial gradient per slice (denser at outer rim, lighter toward
+  center). Dropped the drop-shadow filter. Thin 0.5px slice stroke at 18%
+  opacity for definition without weight. Tabular numerals on center value.
+- **Waterfall** — vertical gradient per bar (light top → vivid bottom for
+  positives, mirrored for negatives). Bar width capped at 36px (was 48) with
+  10px gap (was 8). Dropped drop-shadow. Connector lines hairline 0.75px.
+  Labels in 0.04em letter-spaced uppercase muted.
+- **SmoothAreaLine** — dual area gradients (savings AND debt now both fade).
+  Stroke widths trimmed: savings 2.5→1.75, debt 2→1.5. Stroke uses a left-to-
+  right gradient (lighter at the start, fuller at the right). Glow filter
+  blur reduced from 2.5 to 1.4 — softer halo. Crossover and live dots
+  swapped from dark navy stroke to white stroke + outer halo ring.
+  Gridlines lighter (opacity 0.14, was 0.22).
+- **Sankey** — bolder color-transition bands (left-tone → mid-fade → right-
+  tone, opacities 0.85/0.55/0.85, was flat 0.6). Node rects now vertical
+  gradients (top vivid → bottom 65%). Dropped the glow filter entirely on
+  node rects.
+- **Treemap** — diagonal gradient per tile (top-left bright → bottom-right
+  muted, opacities 0.78 → 0.42). 4px corner radius (was 3). Thin 0.5px tile
+  outline. Drop-shadow filter removed.
+- **RadialGauge** — diagonal gradient on the arc fill (light start → dense
+  end). Track stroke 6→4px and 0.55→0.4 opacity (subtler). Fill stroke 6→5px.
+  Target marker thinner (1.5→1.25px).
+- **Radar5** — radial gradient on the polygon fill (center 0.42 → edge 0.1).
+  Ring lines thinner (1→0.75px) and lighter (0.6/0.3 → 0.45/0.2 opacity).
+  Polygon stroke 1.5→1.25px. Dots get halo ring + smaller core.
+  Axis labels in uppercase letter-spaced for editorial feel.
+- **RankedHBars** — horizontal gradient per bar (left 0.55 → right 0.95).
+  3px corner radius (was 2). Tabular-numerals on value column.
+- **Sparkline** — area gradient (top 0.35 → bottom 0). Stroke 1.5→1.25px.
+  End dot 2→1.75px.
+
+**ui-ux-pro-max alignment.** Pulled the "SaaS Mobile Boutique" pairing —
+Calistoga + Inter + JetBrains Mono — our existing stack already covers this
+(Newsreader + Plus Jakarta Sans + JetBrains Mono = same shapes/feel).
+Applied recommendations: `tabular-nums` everywhere on values, `letter-spacing
+0.04em` uppercase on labels, gridline contrast dropped below 0.2 opacity,
+gradient fills replacing flat fillOpacity, thinner strokes (1.25-1.75px
+range) as the new default.
+
+**Verified.** 12 gradient elements detected in the live DOM on the dashboard
+after login. No new console errors. Build clean.
+
+**Pending for v0.43+.** Landing page with corner sign-in (deferred per
+Mauricio's redirect — focus was charts first). Remaining chart components
+not touched in this pass (BulletChart, NetWorthBridge, PayoffProgression,
+AmortizationArea, StackedBars, HeatmapCalendar, GroupedYoY, ForecastCone) —
+apply the same gradient pattern next iteration.
+
 ## v0.41.0 — 2026-05-24 — Premium print PDF: warm palette + per-section pages
 
 Print/Save PDF now produces a designer-grade document. Warm cream palette

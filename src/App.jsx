@@ -840,9 +840,9 @@ function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,cente
   const th=useTh();
   const filtered=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.value||0)>0);
   const twValues=useTweenedData(filtered.map(d=>+d.value||0),700);
-  const dsId=useSvgId("donut-ds");
+  const baseId=useSvgId("donut");
   if(filtered.length===0){
-    return<div style={{width:size,height:size,borderRadius:999,border:`2px dashed ${th.cardBorder||"#E2E8F0"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:th.dim||"#94A3B8",textAlign:"center",padding:8,lineHeight:1.3}}>{placeholder||"No data"}</div>;
+    return<div style={{width:size,height:size,borderRadius:999,border:`1.5px dashed ${th.cardBorder||"#E2E8F0"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:th.dim||"#94A3B8",textAlign:"center",padding:8,lineHeight:1.3}}>{placeholder||"No data"}</div>;
   }
   const total=twValues.reduce((s,v)=>s+(+v||0),0)||1;
   const r=size/2,ir=r*innerRatio,cx=r,cy=r;
@@ -864,20 +864,18 @@ function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,cente
   return<div style={{position:"relative",width:size,height:size}}>
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible"}}>
       <defs>
-        <filter id={dsId} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-          <feOffset dx="0" dy="2"/>
-          <feComponentTransfer><feFuncA type="linear" slope="0.28"/></feComponentTransfer>
-          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        {/* v0.42 — radial gradient per slice: denser at outer rim, lighter toward center */}
+        {segs.map((s,i)=><radialGradient key={i} id={`${baseId}-g${i}`} cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+          <stop offset="0%" stopColor={s.color} stopOpacity="0.55"/>
+          <stop offset="65%" stopColor={s.color} stopOpacity="0.85"/>
+          <stop offset="100%" stopColor={s.color} stopOpacity="1"/>
+        </radialGradient>)}
       </defs>
-      <g filter={`url(#${dsId})`}>
-        {segs.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="none"/>)}
-      </g>
+      {segs.map((s,i)=><path key={i} d={s.path} fill={`url(#${baseId}-g${i})`} stroke={s.color} strokeOpacity="0.18" strokeWidth="0.5"/>)}
     </svg>
     {(centerLabel||centerValue)&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none",textAlign:"center"}}>
-      {centerLabel&&<div style={{fontSize:9,color:th.dim||"#94A3B8",letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:700}}>{centerLabel}</div>}
-      {centerValue&&<div style={{fontSize:size<=120?13:16,color:centerColor||GOLD,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.1,marginTop:2}}>{centerValue}</div>}
+      {centerLabel&&<div style={{fontSize:9,color:th.dim||"#94A3B8",letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:600}}>{centerLabel}</div>}
+      {centerValue&&<div style={{fontSize:size<=120?13:16,color:centerColor||GOLD,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.1,marginTop:2,fontVariantNumeric:"tabular-nums"}}>{centerValue}</div>}
     </div>}
   </div>;
 }
@@ -890,7 +888,7 @@ function Waterfall({segments,height=180,width=600,bg}){
   bg=bg||th.card||"transparent";
   const segs=Array.isArray(segments)?segments.filter(s=>s):[];
   const twVals=useTweenedData(segs.map(s=>+s.value||0),800);
-  const dsId=useSvgId("wf-ds");
+  const baseId=useSvgId("wf");
   if(segs.length===0)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
   let cum=0;
   const items=segs.map((s,i)=>{
@@ -908,33 +906,31 @@ function Waterfall({segments,height=180,width=600,bg}){
   const range=Math.max(1,maxV-minV);
   const padT=16,padB=36,padL=12,padR=12;
   const innerW=width-padL-padR,innerH=height-padT-padB;
-  const barW=Math.min(48,(innerW-(items.length-1)*8)/items.length);
+  const barW=Math.min(36,(innerW-(items.length-1)*10)/items.length);
   const yAt=v=>padT+innerH*(1-(v-minV)/range);
-  const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*8)/2+i*(barW+8);
+  const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*10)/2+i*(barW+10);
+  const barColor=it=>it.isTotal?GOLD:(it.delta>=0?(it.color||GOLD):(it.color||"#ED7D31"));
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
       <defs>
-        <filter id={dsId} x="-5%" y="-5%" width="110%" height="120%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
-          <feOffset dx="0" dy="2"/>
-          <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
-          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        {/* v0.42 — vertical gradient per bar (light at top → full at bottom for positives; mirrored for negatives) */}
+        {items.map((it,i)=>{const c=barColor(it);const ascending=it.delta>=0||it.isTotal;return<linearGradient key={i} id={`${baseId}-g${i}`} x1="0" y1={ascending?"0":"1"} x2="0" y2={ascending?"1":"0"}>
+          <stop offset="0%" stopColor={c} stopOpacity="0.55"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0.95"/>
+        </linearGradient>;})}
       </defs>
-      <line x1={padL} y1={yAt(0)} x2={width-padR} y2={yAt(0)} stroke={th.dim} strokeOpacity="0.3" strokeDasharray="3 3"/>
-      {items.map((it,i)=>{if(i===items.length-1)return null;const x1=xAt(i)+barW,x2=xAt(i+1);const yEnd=it.isTotal?yAt(0):yAt(it.end);return<line key={"c"+i} x1={x1} y1={yEnd} x2={x2} y2={yEnd} stroke={th.dim} strokeOpacity="0.45" strokeDasharray="2 3"/>;})}
-      <g filter={`url(#${dsId})`}>
+      <line x1={padL} y1={yAt(0)} x2={width-padR} y2={yAt(0)} stroke={th.dim} strokeOpacity="0.28" strokeDasharray="2 4" strokeWidth="0.75"/>
+      {items.map((it,i)=>{if(i===items.length-1)return null;const x1=xAt(i)+barW,x2=xAt(i+1);const yEnd=it.isTotal?yAt(0):yAt(it.end);return<line key={"c"+i} x1={x1} y1={yEnd} x2={x2} y2={yEnd} stroke={th.dim} strokeOpacity="0.4" strokeDasharray="1.5 3" strokeWidth="0.75"/>;})}
       {items.map((it,i)=>{
-        const color=it.isTotal?GOLD:(it.delta>=0?(it.color||GOLD):(it.color||"#ED7D31"));
+        const c=barColor(it);
         const y=it.isTotal?yAt(Math.max(it.end,0)):Math.min(yAt(it.start),yAt(it.end));
         const h=it.isTotal?Math.abs(yAt(it.end)-yAt(0)):Math.abs(yAt(it.end)-yAt(it.start));
         return<g key={i}>
-          <rect x={xAt(i)} y={y} width={barW} height={Math.max(1,h)} fill={color} rx="3"/>
-          <text x={xAt(i)+barW/2} y={height-22} textAnchor="middle" fontSize="9" fontWeight="700" fill={th.muted}>{it.label||""}</text>
-          <text x={xAt(i)+barW/2} y={height-9} textAnchor="middle" fontSize="9" fill={th.dim}>{(it.delta>=0?"+":"")+(it.delta>=1000||it.delta<=-1000?Math.round(it.delta/1000)+"K":Math.round(it.delta))}</text>
+          <rect x={xAt(i)} y={y} width={barW} height={Math.max(1,h)} fill={`url(#${baseId}-g${i})`} stroke={c} strokeOpacity="0.25" strokeWidth="0.5" rx="3"/>
+          <text x={xAt(i)+barW/2} y={height-22} textAnchor="middle" fontSize="9" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{it.label||""}</text>
+          <text x={xAt(i)+barW/2} y={height-9} textAnchor="middle" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>{(it.delta>=0?"+":"")+(it.delta>=1000||it.delta<=-1000?Math.round(it.delta/1000)+"K":Math.round(it.delta))}</text>
         </g>;
       })}
-      </g>
     </svg>
   </div>;
 }
@@ -992,38 +988,56 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
     }
   }
   const xLabel=l=>String(l||"").split(/\s|'/)[0].slice(0,3);
-  // v0.37.0 — detect "live" point (last label contains "Now" or "▶") for pulsing dot
   const lastLabel=String(apts[apts.length-1]?.[labelKey]||"");
   const isLive=/Now|▶/.test(lastLabel);
   const livePt=isLive?savCoords[savCoords.length-1]:null;
+  const debtGradId=useSvgId("sal-dgrad");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
       <defs>
+        {/* v0.42 — dual area gradients, thinner strokes for a modern line-chart feel */}
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.32"/>
-          <stop offset="100%" stopColor={savingsColor} stopOpacity="0.02"/>
+          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.42"/>
+          <stop offset="60%" stopColor={savingsColor} stopOpacity="0.12"/>
+          <stop offset="100%" stopColor={savingsColor} stopOpacity="0"/>
+        </linearGradient>
+        <linearGradient id={debtGradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={debtColor} stopOpacity="0.22"/>
+          <stop offset="100%" stopColor={debtColor} stopOpacity="0"/>
+        </linearGradient>
+        <linearGradient id={`${gradId}-stroke`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.7"/>
+          <stop offset="100%" stopColor={savingsColor} stopOpacity="1"/>
+        </linearGradient>
+        <linearGradient id={`${debtGradId}-stroke`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={debtColor} stopOpacity="0.7"/>
+          <stop offset="100%" stopColor={debtColor} stopOpacity="1"/>
         </linearGradient>
         <filter id={glowId} x="-10%" y="-30%" width="120%" height="160%">
-          <feGaussianBlur stdDeviation="2.5"/>
+          <feGaussianBlur stdDeviation="1.4"/>
           <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
       {ticks.map((v,i)=>{const y=yAt(v);return<g key={i}>
-        <line x1={padL} y1={y} x2={W-padR} y2={y} stroke={dim} strokeOpacity="0.22" strokeDasharray="2 4"/>
-        <text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={dim}>{fmtTick(v)}</text>
+        <line x1={padL} y1={y} x2={W-padR} y2={y} stroke={dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/>
+        <text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={dim} style={{fontVariantNumeric:"tabular-nums"}}>{fmtTick(v)}</text>
       </g>;})}
+      <path d={path(debtCoords,true)} fill={`url(#${debtGradId})`} stroke="none"/>
       <path d={path(savCoords,true)} fill={`url(#${gradId})`} stroke="none"/>
-      <path d={path(debtCoords,false)} fill="none" stroke={debtColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d={path(savCoords,false)} fill="none" stroke={savingsColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
-      {crossovers.map((c,i)=><circle key={i} cx={c.x} cy={c.y} r="4.5" fill={savingsColor} stroke="#0D1B2A" strokeWidth="1.5"/>)}
+      <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
+      {crossovers.map((c,i)=><g key={i}>
+        <circle cx={c.x} cy={c.y} r="5" fill={savingsColor} opacity="0.22"/>
+        <circle cx={c.x} cy={c.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
+      </g>)}
       {livePt&&<g>
-        <circle cx={livePt.x} cy={livePt.y} r="6" fill={savingsColor} opacity="0.55">
-          <animate attributeName="r" values="6;13;6" dur="1.8s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.55;0;0.55" dur="1.8s" repeatCount="indefinite"/>
+        <circle cx={livePt.x} cy={livePt.y} r="5" fill={savingsColor} opacity="0.45">
+          <animate attributeName="r" values="5;11;5" dur="2.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.45;0;0.45" dur="2.2s" repeatCount="indefinite"/>
         </circle>
-        <circle cx={livePt.x} cy={livePt.y} r="3.5" fill={savingsColor} stroke="#0D1B2A" strokeWidth="1.5"/>
+        <circle cx={livePt.x} cy={livePt.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
       </g>}
-      {apts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted}>{xLabel(p[labelKey])}</text>)}
+      {apts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{xLabel(p[labelKey])}</text>)}
     </svg>
   </div>;
 }
@@ -1087,20 +1101,21 @@ function Sankey({nodes,links,height=320,width=720,nodeWidth=12,nodeGap=10,labelS
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
       <defs>
-        <filter id={glowId} x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
-          <feOffset dx="0" dy="1"/>
-          <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
-          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        {/* v0.42 — bolder color-transition gradients (left node tone → right node tone) */}
         {safeLinks.map((l,i)=>{
           const sp=nodePos[l.from],dp=nodePos[l.to];
           if(!sp||!dp)return null;
           return<linearGradient key={i} id={`${glowId}-lk${i}`} x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor={l.color||sp.color} stopOpacity="0.6"/>
-            <stop offset="100%" stopColor={l.color||dp.color} stopOpacity="0.6"/>
+            <stop offset="0%" stopColor={l.color||sp.color} stopOpacity="0.85"/>
+            <stop offset="55%" stopColor={l.color||sp.color} stopOpacity="0.55"/>
+            <stop offset="100%" stopColor={l.color||dp.color} stopOpacity="0.85"/>
           </linearGradient>;
         })}
+        {/* Node rect gradients (vertical) */}
+        {Object.entries(nodePos).map(([id,p],i)=><linearGradient key={"n"+i} id={`${glowId}-n${i}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={p.color} stopOpacity="0.95"/>
+          <stop offset="100%" stopColor={p.color} stopOpacity="0.65"/>
+        </linearGradient>)}
       </defs>
       {safeLinks.map((l,i)=>{
         const sp=nodePos[l.from],dp=nodePos[l.to];
@@ -1112,17 +1127,17 @@ function Sankey({nodes,links,height=320,width=720,nodeWidth=12,nodeGap=10,labelS
         const d=`M${x0} ${sy0} C${mx} ${sy0} ${mx} ${dy0} ${x1} ${dy0} L${x1} ${dy1} C${mx} ${dy1} ${mx} ${sy1} ${x0} ${sy1} Z`;
         return<path key={i} d={d} fill={`url(#${glowId}-lk${i})`} stroke="none"/>;
       })}
-      {Object.entries(nodePos).map(([id,p])=>{
+      {Object.entries(nodePos).map(([id,p],i)=>{
         const lyr=layerKeys.indexOf(p.layer);
         const isLast=lyr===layerKeys.length-1;
         const lblX=isLast?(p.x-6):(p.x+nodeWidth+6);
         const lblAnchor=isLast?"end":"start";
         const v=nodeVal(id);
         const valStr=v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
-        return<g key={id} filter={`url(#${glowId})`}>
-          <rect x={p.x} y={p.y} width={nodeWidth} height={Math.max(2,p.h)} fill={p.color} rx="2"/>
-          <text x={lblX} y={p.y+p.h/2-1} textAnchor={lblAnchor} fontSize={labelSize} fontWeight="700" fill={th.text}>{p.label}</text>
-          <text x={lblX} y={p.y+p.h/2+labelSize+1} textAnchor={lblAnchor} fontSize={labelSize-1} fill={th.dim}>${valStr}</text>
+        return<g key={id}>
+          <rect x={p.x} y={p.y} width={nodeWidth} height={Math.max(2,p.h)} fill={`url(#${glowId}-n${i})`} rx="2"/>
+          <text x={lblX} y={p.y+p.h/2-1} textAnchor={lblAnchor} fontSize={labelSize} fontWeight="600" fill={th.text} style={{letterSpacing:"0.02em"}}>{p.label}</text>
+          <text x={lblX} y={p.y+p.h/2+labelSize+1} textAnchor={lblAnchor} fontSize={labelSize-1} fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${valStr}</text>
         </g>;
       })}
     </svg>
@@ -1183,12 +1198,11 @@ function Treemap({data,height=260,width=520,placeholder,valuePrefix="$"}){
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
       <defs>
-        <filter id={dsId} x="-5%" y="-5%" width="110%" height="110%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1.2"/>
-          <feOffset dx="0" dy="1"/>
-          <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
-          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        {/* v0.42 — diagonal gradient per tile (top-left bright → bottom-right muted) */}
+        {tiles.map((t,i)=>{const color=t.color||GOLD;return<linearGradient key={i} id={`${dsId}-g${i}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.78"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0.42"/>
+        </linearGradient>;})}
       </defs>
       {tiles.map((t,i)=>{
         const color=t.color||GOLD;
@@ -1196,10 +1210,10 @@ function Treemap({data,height=260,width=520,placeholder,valuePrefix="$"}){
         const valFits=t.w>56&&t.h>44;
         const maxChars=Math.max(4,Math.floor(t.w/7));
         const lbl=String(t.label||t.name||"").slice(0,maxChars);
-        return<g key={i} filter={`url(#${dsId})`}>
-          <rect x={t.x+1} y={t.y+1} width={Math.max(0,t.w-2)} height={Math.max(0,t.h-2)} fill={color} fillOpacity="0.55" stroke={color} strokeOpacity="0.25" rx="3"/>
-          {labelFits&&<text x={t.x+8} y={t.y+18} fontSize="11" fontWeight="600" fill="#fff">{lbl}</text>}
-          {valFits&&<text x={t.x+8} y={t.y+32} fontSize="10" fill="rgba(255,255,255,0.78)">{valuePrefix+fmtVal(t.value)}</text>}
+        return<g key={i}>
+          <rect x={t.x+2} y={t.y+2} width={Math.max(0,t.w-4)} height={Math.max(0,t.h-4)} fill={`url(#${dsId}-g${i})`} stroke={color} strokeOpacity="0.35" strokeWidth="0.5" rx="4"/>
+          {labelFits&&<text x={t.x+10} y={t.y+19} fontSize="11" fontWeight="600" fill="#fff" style={{letterSpacing:"0.01em"}}>{lbl}</text>}
+          {valFits&&<text x={t.x+10} y={t.y+33} fontSize="10" fill="rgba(255,255,255,0.82)" style={{fontVariantNumeric:"tabular-nums"}}>{valuePrefix+fmtVal(t.value)}</text>}
         </g>;
       })}
     </svg>
@@ -1234,15 +1248,25 @@ function RadialGauge({value,max=100,target,size=140,label,subLabel,color,directi
   }
   const strokeColor=auto||GOLD;
   if(!value&&value!==0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No data"}</div>;
+  const gid=useSvgId("rg");
+  // Gradient stop angles for the arc — gradient runs from start of arc (light) toward fill end (full color)
   return<div style={{position:"relative",width:size,height:size}}>
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible"}}>
-      <path d={arcPath(startA,endA)} fill="none" stroke={th.cardBorder} strokeWidth="6" strokeLinecap="round" strokeOpacity="0.55"/>
-      <path d={arcPath(startA,fillA)} fill="none" stroke={strokeColor} strokeWidth="6" strokeLinecap="round"/>
-      {tgt!=null&&(()=>{const a=startA+(endA-startA)*tgt;const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);return<g><line x1={cx+(r-9)*Math.cos(a)} y1={cy+(r-9)*Math.sin(a)} x2={cx+(r+9)*Math.cos(a)} y2={cy+(r+9)*Math.sin(a)} stroke={th.text} strokeWidth="1.5" strokeOpacity="0.5"/></g>;})()}
+      <defs>
+        {/* v0.42 — arc gradient: lighter at start, deeper at fill end */}
+        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.55"/>
+          <stop offset="55%" stopColor={strokeColor} stopOpacity="0.85"/>
+          <stop offset="100%" stopColor={strokeColor} stopOpacity="1"/>
+        </linearGradient>
+      </defs>
+      <path d={arcPath(startA,endA)} fill="none" stroke={th.cardBorder} strokeWidth="4" strokeLinecap="round" strokeOpacity="0.4"/>
+      <path d={arcPath(startA,fillA)} fill="none" stroke={`url(#${gid})`} strokeWidth="5" strokeLinecap="round"/>
+      {tgt!=null&&(()=>{const a=startA+(endA-startA)*tgt;return<line x1={cx+(r-8)*Math.cos(a)} y1={cy+(r-8)*Math.sin(a)} x2={cx+(r+8)*Math.cos(a)} y2={cy+(r+8)*Math.sin(a)} stroke={th.text} strokeWidth="1.25" strokeOpacity="0.5"/>;})()}
     </svg>
     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none",textAlign:"center"}}>
-      {label&&<div style={{fontSize:9,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:600,marginBottom:2}}>{label}</div>}
-      <div style={{fontSize:size<=120?17:20,color:strokeColor,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",lineHeight:1}}>{fmtFn?fmtFn(v):Math.round(v*10)/10}</div>
+      {label&&<div style={{fontSize:9,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600,marginBottom:2}}>{label}</div>}
+      <div style={{fontSize:size<=120?17:20,color:strokeColor,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",lineHeight:1,fontVariantNumeric:"tabular-nums"}}>{fmtFn?fmtFn(v):Math.round(v*10)/10}</div>
       {subLabel&&<div style={{fontSize:9,color:th.muted,marginTop:3,maxWidth:size-30,lineHeight:1.3}}>{subLabel}</div>}
     </div>
   </div>;
@@ -1255,6 +1279,7 @@ function RankedHBars({data,maxBars=10,barH=14,gap=8,width=460,labelW=140,valueW=
   const th=useTh();
   const items=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.value||0)>0).slice().sort((a,b)=>(+b.value||0)-(+a.value||0)).slice(0,maxBars);
   const twVals=useTweenedData(items.map(d=>+d.value||0),700);
+  const gid=useSvgId("rh");
   if(items.length===0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No data to rank"}</div>;
   const maxV=Math.max(1,...twVals);
   const innerW=width-labelW-valueW-12;
@@ -1262,15 +1287,22 @@ function RankedHBars({data,maxBars=10,barH=14,gap=8,width=460,labelW=140,valueW=
   const fmtV=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${totalH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        {/* v0.42 — horizontal gradient per bar (left light → right vivid) */}
+        {items.map((d,i)=>{const color=d.color||GOLD;return<linearGradient key={i} id={`${gid}-${i}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={color} stopOpacity="0.55"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0.95"/>
+        </linearGradient>;})}
+      </defs>
       {items.map((d,i)=>{
         const y=i*(barH+gap);
         const w=Math.max(2,(twVals[i]||0)/maxV*innerW);
         const color=d.color||GOLD;
         return<g key={i}>
-          <text x={labelW-8} y={y+barH-2} textAnchor="end" fontSize="11" fill={th.text} fontWeight="500">{(d.label||"").slice(0,18)}</text>
-          <rect x={labelW} y={y+barH*0.15} width={innerW} height={barH*0.7} fill={th.cardBorder} fillOpacity="0.35" rx="2"/>
-          <rect x={labelW} y={y+barH*0.15} width={w} height={barH*0.7} fill={color} fillOpacity="0.7" rx="2"/>
-          <text x={labelW+innerW+8} y={y+barH-2} fontSize="11" fill={color} fontWeight="700">${fmtV(twVals[i]||0)}</text>
+          <text x={labelW-8} y={y+barH-2} textAnchor="end" fontSize="11" fill={th.text} fontWeight="500" style={{letterSpacing:"0.01em"}}>{(d.label||"").slice(0,18)}</text>
+          <rect x={labelW} y={y+barH*0.18} width={innerW} height={barH*0.64} fill={th.cardBorder} fillOpacity="0.28" rx="3"/>
+          <rect x={labelW} y={y+barH*0.18} width={w} height={barH*0.64} fill={`url(#${gid}-${i})`} rx="3"/>
+          <text x={labelW+innerW+8} y={y+barH-2} fontSize="11" fill={color} fontWeight="700" style={{fontVariantNumeric:"tabular-nums"}}>${fmtV(twVals[i]||0)}</text>
         </g>;
       })}
     </svg>
@@ -1305,10 +1337,11 @@ function BulletChart({value,target,max,label,sublabel,color,width=320,height=40}
 
 /* ── v0.38.0 — Phase 5 Charts: Sparkline ────────────────────────────────────
    Tiny minimalist trend line, no axes, optional area fill. For KPI tiles. */
-function Sparkline({data,width=80,height=24,color,fill=true,strokeWidth=1.5}){
+function Sparkline({data,width=80,height=24,color,fill=true,strokeWidth=1.25}){
   const th=useTh();
   const pts=(Array.isArray(data)?data:[]).filter(d=>d!=null).map(d=>+d||0);
   const tw=useTweenedData(pts,600);
+  const gid=useSvgId("spk");
   if(tw.length<2)return<div style={{width,height,display:"flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:9}}>—</div>;
   const mn=Math.min(...tw),mx=Math.max(...tw);
   const range=Math.max(1,mx-mn);
@@ -1317,9 +1350,16 @@ function Sparkline({data,width=80,height=24,color,fill=true,strokeWidth=1.5}){
   const ptStr=tw.map((v,i)=>`${xAt(i)} ${yAt(v)}`).join(" L");
   const c=color||GOLD;
   return<svg viewBox={`0 0 ${width} ${height}`} style={{width,height,display:"block"}}>
-    {fill&&<path d={`M${xAt(0)} ${height-3} L${ptStr} L${xAt(tw.length-1)} ${height-3} Z`} fill={c} fillOpacity="0.18" stroke="none"/>}
+    <defs>
+      {/* v0.42 — sparkline area gradient: vivid at top → transparent at bottom */}
+      <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={c} stopOpacity="0.35"/>
+        <stop offset="100%" stopColor={c} stopOpacity="0"/>
+      </linearGradient>
+    </defs>
+    {fill&&<path d={`M${xAt(0)} ${height-3} L${ptStr} L${xAt(tw.length-1)} ${height-3} Z`} fill={`url(#${gid})`} stroke="none"/>}
     <path d={`M${ptStr}`} fill="none" stroke={c} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx={xAt(tw.length-1)} cy={yAt(tw[tw.length-1])} r="2" fill={c}/>
+    <circle cx={xAt(tw.length-1)} cy={yAt(tw[tw.length-1])} r="1.75" fill={c}/>
   </svg>;
 }
 
@@ -1339,13 +1379,21 @@ function Radar5({axes,values,target,size=240,color,placeholder}){
   const polyPath=(vals)=>vals.map((v,i)=>{const p=pt(v,i);return`${p.x} ${p.y}`;}).join(" L");
   const c=color||GOLD;
   const targetPath=target?safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x} ${p.y}`;}).join(" L"):null;
+  const gid=useSvgId("rd");
   return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-    {ringLvls.map((lv,i)=><polygon key={i} points={safeAxes.map((_,j)=>{const p=pt(lv,j);return`${p.x},${p.y}`;}).join(" ")} fill="none" stroke={th.cardBorder} strokeOpacity={lv===1?0.6:0.3} strokeWidth="1" strokeDasharray={lv===1?"":"2 3"}/>)}
-    {safeAxes.map((_,i)=>{const p=pt(1,i);return<line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={th.cardBorder} strokeOpacity="0.3" strokeWidth="1"/>;})}
-    {targetPath&&<polygon points={safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x},${p.y}`;}).join(" ")} fill="none" stroke={th.text} strokeOpacity="0.45" strokeWidth="1.5" strokeDasharray="3 3"/>}
-    <polygon points={tw.map((v,i)=>{const p=pt(v,i);return`${p.x},${p.y}`;}).join(" ")} fill={c} fillOpacity="0.18" stroke={c} strokeOpacity="0.8" strokeWidth="1.5"/>
-    {tw.map((v,i)=>{const p=pt(v,i);return<circle key={i} cx={p.x} cy={p.y} r="3" fill={c}/>;})}
-    {safeAxes.map((ax,i)=>{const p=pt(1.18,i);const isRight=p.x>cx+5,isLeft=p.x<cx-5;const anchor=isRight?"start":isLeft?"end":"middle";return<text key={i} x={p.x} y={p.y+3} textAnchor={anchor} fontSize="10" fontWeight="600" fill={th.muted}>{ax}</text>;})}
+    <defs>
+      {/* v0.42 — radial gradient on polygon fill: dense at center → fading toward edge */}
+      <radialGradient id={gid} cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor={c} stopOpacity="0.42"/>
+        <stop offset="100%" stopColor={c} stopOpacity="0.1"/>
+      </radialGradient>
+    </defs>
+    {ringLvls.map((lv,i)=><polygon key={i} points={safeAxes.map((_,j)=>{const p=pt(lv,j);return`${p.x},${p.y}`;}).join(" ")} fill="none" stroke={th.cardBorder} strokeOpacity={lv===1?0.45:0.2} strokeWidth="0.75" strokeDasharray={lv===1?"":"1.5 3"}/>)}
+    {safeAxes.map((_,i)=>{const p=pt(1,i);return<line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={th.cardBorder} strokeOpacity="0.2" strokeWidth="0.75"/>;})}
+    {targetPath&&<polygon points={safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x},${p.y}`;}).join(" ")} fill="none" stroke={th.text} strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3"/>}
+    <polygon points={tw.map((v,i)=>{const p=pt(v,i);return`${p.x},${p.y}`;}).join(" ")} fill={`url(#${gid})`} stroke={c} strokeOpacity="0.85" strokeWidth="1.25" strokeLinejoin="round"/>
+    {tw.map((v,i)=>{const p=pt(v,i);return<g key={i}><circle cx={p.x} cy={p.y} r="4" fill={c} opacity="0.25"/><circle cx={p.x} cy={p.y} r="2" fill={c}/></g>;})}
+    {safeAxes.map((ax,i)=>{const p=pt(1.18,i);const isRight=p.x>cx+5,isLeft=p.x<cx-5;const anchor=isRight?"start":isLeft?"end":"middle";return<text key={i} x={p.x} y={p.y+3} textAnchor={anchor} fontSize="10" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{ax}</text>;})}
   </svg>;
 }
 
@@ -4268,7 +4316,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0410-print-warm-palette";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0420-gradient-charts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
