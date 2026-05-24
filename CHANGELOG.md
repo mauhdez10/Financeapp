@@ -2,6 +2,70 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.38.0 — 2026-05-23 — Charts wave 2: full component library + wires across calcs/sections
+
+Per Mauricio's direction ("implement everything in one go, design review after").
+Built 12 new chart components and wired them into the highest-traffic surfaces.
+Visual style intentionally lighter than v0.37 (50-70% fill opacity, 1.5-1.75px
+strokes, no drop-shadow filters) — design review phase will polish further.
+
+**New chart components (12, all pure-SVG, all tweened via `useTweenedData`).**
+- `RadialGauge` — 270° arc gauge with target marker, threshold-based color
+  shift (good/warn/bad). Used for DSR, savings rate, EF months, DTI.
+- `RankedHBars` — sorted horizontal bars with label left, monospace value
+  right. Used for debt sort, bill sort, income streams.
+- `BulletChart` — Tufte-style: bg range bar + actual + target tick. For
+  goal progress.
+- `Sparkline` — minimalist trend line with optional area fill. For KPI tiles.
+- `Radar5` — 5-axis polygon with rings + optional target overlay. For
+  Financial Health Score across DSR / Savings Rate / EF / D-to-A / Cash.
+- `NetWorthBridge` — stacked area: assets above zero (gold/green tones),
+  liabilities below zero (red/orange), gold net-worth line on top.
+- `PayoffProgression` — stacked area projecting debt balances dropping to
+  zero given current monthly payments. Avalanche-ordered extras.
+- `AmortizationArea` — single-curve area showing loan balance over term.
+  For car loans + home affordability.
+- `StackedBars` — vertical stacked bars over time across categories. For
+  bills by category over months.
+- `HeatmapCalendar` — year×month grid, opacity intensity by value. For
+  spending heatmap.
+- `GroupedYoY` — side-by-side bars: current year vs prior year per category.
+- `ForecastCone` — solid history line + dashed projection + widening
+  confidence band. For retirement / net worth projection.
+
+**Wires (5 high-impact locations).**
+- ClientDetail Monthly Report's `SummarySection`: new health row above the
+  existing donut+area pair. Three `RadialGauge`s (DSR 60% scale w/ 36%
+  target, Savings Rate 40% scale w/ 20% target, EF Months 12 scale w/ 3
+  target) + a `Radar5` Financial Health Score with 0.8 target overlay.
+- `CashFlowStatement`: a `Waterfall` (Income → −Bills → −Debt Min → Net)
+  above the existing two-column inflows/outflows tables. Total bar in gold.
+- `AssetsLiabilitiesTab` (Balance Sheet): the v0.37 single Asset Map card
+  is now a paired Asset Map + Liability Map. Both `Treemap`s, side by side,
+  using `LOAN_META[type].c` for loan colors and red for credit cards.
+- `ClientDebtCalc`: two new chart cards below the payoff summary —
+  `RankedHBars` of selected debts (color-coded by APR severity for cards,
+  loan-type color for loans) and `PayoffProgression` showing the timeline
+  to zero given current min payments + extras.
+- `ClientCarLoanCalc`: `AmortizationArea` of the loan balance over the
+  selected term. Color-tied to vehicle loan orange (#F97316).
+- `AffordabilityCalc`: paired `Donut` (PITI breakdown — P&I / Tax / Insurance
+  / HOA with totalPITI centered) + `RadialGauge` (DTI ratio against 36%
+  target).
+- `RetirementCalc`: a `ForecastCone` (base case projection ±18% confidence)
+  appended below the existing three-scenario Recharts chart. Shows the same
+  base-case story with explicit uncertainty.
+
+**No behavior changes to anything else.** No new translation keys yet —
+fallback strings render inline. Calculator output math is unchanged. The
+chart picker setting (per Mauricio's plan) is deferred to v0.39 along with
+remaining calc/section wires (Bills stacked bars, Savings bullet charts,
+HomeEquity stacked breakdown, Income calc sankey).
+
+**Why no polish pass.** Mauricio's call: "let me ship everything, I'll run
+it through design review and they'll recommend visual changes." So this
+ship is breadth-first. Visual refinement is the next phase.
+
 ## v0.37.0 — 2026-05-23 — Charts wave 1: animation foundation + Sankey + Treemap
 
 First ship of the major chart-overhaul plan Mauricio asked for. Goal: stop the
