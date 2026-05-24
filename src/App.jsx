@@ -46,7 +46,7 @@ const HideCtx=createContext({hide:false});
 const useHN=()=>useContext(HideCtx);
 const FH=({v,c:client,forcePts})=>{const{hide}=useHN();return hide||(client?.hideNumbers)?<span style={{letterSpacing:"0.1em",color:"inherit",filter:"blur(4px)",userSelect:"none"}}>{"●●●●"}</span>:<>{v}</>;};
 /* helper: wrap fmt with hide */
-const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#2563EB",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#F1F5F9",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","client-checkup":"https://buy.stripe.com/fZu4gAfou4nh1tq6XJfrW03","quarterly-review":"https://buy.stripe.com/cNieVe6RY7ztdc86XJfrW05","strategy-session":"https://buy.stripe.com/14A9AU1xE2f98VSgyjfrW02","monthly-lite":"https://buy.stripe.com/9B68wQ9062f91tq95RfrW00","monthly-lite-plus":"https://buy.stripe.com/eVq3cw1xEg5Z8VS3LxfrW07","annual-bundle":"https://buy.stripe.com/aFa00kekqg5Z7ROa9VfrW01","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null};
+const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#2563EB",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#F1F5F9",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","client-checkup":"https://buy.stripe.com/fZu4gAfou4nh1tq6XJfrW03","quarterly-review":"https://buy.stripe.com/cNieVe6RY7ztdc86XJfrW05","strategy-session":"https://buy.stripe.com/14A9AU1xE2f98VSgyjfrW02","monthly-lite":"https://buy.stripe.com/9B68wQ9062f91tq95RfrW00","monthly-lite-plus":"https://buy.stripe.com/eVq3cw1xEg5Z8VS3LxfrW07","annual-bundle":"https://buy.stripe.com/aFa00kekqg5Z7ROa9VfrW01","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null,dashboardSlots:["incomeVsSpending","sankey","netWorthDonut"]};
 
 /* ── STYLES ─────────────────────────────────────────────────────────────── */
 const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
@@ -3533,6 +3533,55 @@ function BackupImportModal({onImport,onClose,existingClients,t}){const th=useTh(
 function ArchivedSection({clients,onRestore,onDelete,t}){const th=useTh();const archived=clients.filter(c=>c.archived);const[open,setOpen]=useState(false);const[delTarget,setDelTarget]=useState(null);if(!archived.length)return null;return<div style={{...mCARD(th),padding:14,marginTop:16,border:`1px solid ${th.warn}33`}}>{delTarget&&<DeleteClientModal client={delTarget} onConfirm={()=>{onDelete(delTarget.id);setDelTarget(null);}} onClose={()=>setDelTarget(null)} t={t}/>}<div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}><span style={{fontSize:12,fontWeight:700,color:th.warn}}>📦 Archived Clients ({archived.length})</span><span style={{color:th.dim,fontSize:12}}>{open?"▲":"▼"}</span></div>{open&&<div style={{marginTop:12,display:"flex",flexDirection:"column",gap:6}}>{archived.map(c=><div key={c.id} style={{...mCARD(th),padding:"10px 14px",display:"flex",alignItems:"center",gap:12}}><div style={{width:32,height:32,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,background:th.muted+"22",color:th.muted,border:`2px solid ${th.muted}44`,flexShrink:0,filter:"grayscale(1)"}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:th.muted}}>{c.firstName} {c.lastName}{c.partnerFirst?` & ${c.partnerFirst}`:""}</div><div style={{fontSize:11,color:th.dim}}>{c.email}</div></div><div style={{display:"flex",gap:6}}><Btn small onClick={()=>onRestore(c.id)} color={th.pos}>↩ Restore</Btn><Btn small onClick={()=>{expBackup([c],{});}} color={th.blue}>⬇ Export</Btn><Btn small onClick={()=>setDelTarget(c)} color={th.neg}>🗑️</Btn></div></div>)}</div>}</div>;}
 function ExportModal({clients,onClose,t}){const th=useTh();const[format,setFormat]=useState("backup");const[mode,setMode]=useState("all");const[search,setSearch]=useState("");const[sel,setSel]=useState(new Set(clients.map(c=>c.id)));const filtered=clients.filter(c=>!c.archived&&`${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()));const doExport=()=>{const toExp=mode==="all"?clients.filter(c=>!c.archived):clients.filter(c=>sel.has(c.id));if(format==="backup")expBackup(toExp,{});else{const rows=["Name,Email,Phone,DOB,Address,SSN,Type,Referred By"];toExp.forEach(c=>{rows.push(`"${c.firstName} ${c.lastName}","${c.email||""}","${c.phone||""}","${c.dob||""}","${c.address||""}","${c.social||""}","${c.clientType||""}","${c.recommendedBy||""}"`);});const blob=new Blob([rows.join("\n")],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_clients_${new Date().toISOString().slice(0,10)}.csv`;a.click();}onClose();};return<Modal title={"⬇️ "+(t?.exportClientsTitle||"Export Clients")} onClose={onClose} width={500}><div style={{marginBottom:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>Format</div><div style={{display:"flex",gap:8}}>{[["backup","💾 Full Backup (.json)","Includes all financial data, snapshots — re-importable"],["csv","👤 Profile CSV","Names, email, phone, DOB — importable as CRM profiles"]].map(([v,l,d])=><div key={v} onClick={()=>setFormat(v)} style={{...mCARD(th),padding:12,cursor:"pointer",flex:1,border:`1px solid ${format===v?th.accent:th.cardBorder}`}}><div style={{fontSize:12,fontWeight:700,color:format===v?th.accent:th.text,marginBottom:3}}>{l}</div><div style={{fontSize:10,color:th.muted}}>{d}</div></div>)}</div></div><div style={{marginBottom:14}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>Which clients</div><div style={{display:"flex",gap:8,marginBottom:10}}>{[["all","All Active"],["select","Select Clients"]].map(([v,l])=><button key={v} onClick={()=>setMode(v)} style={{fontSize:11,padding:"5px 14px",borderRadius:8,cursor:"pointer",background:mode===v?th.accent+"22":"transparent",color:mode===v?th.accent:th.muted,border:`1px solid ${mode===v?th.accent:th.cardBorder}`,fontWeight:mode===v?700:400}}>{l}</button>)}</div>{mode==="select"&&<><div style={{display:"flex",gap:8,marginBottom:6}}><input placeholder={t?.searchPh||"Search…"} aria-label={t?.searchClientsPh||"Search clients"} value={search} onChange={e=>setSearch(e.target.value)} style={{...mINP(th),flex:1,padding:"5px 10px"}}/><Btn small onClick={()=>setSel(new Set(clients.filter(c=>!c.archived).map(c=>c.id)))}>All</Btn><Btn small onClick={()=>setSel(new Set())}>None</Btn></div><div style={{maxHeight:200,overflowY:"auto",display:"flex",flexDirection:"column",gap:4}}>{filtered.map(c=>{const s=sel.has(c.id);return<div key={c.id} onClick={()=>{const ns=new Set(sel);s?ns.delete(c.id):ns.add(c.id);setSel(ns);}} style={{...mCARD(th),padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,border:`1px solid ${s?th.accent:th.cardBorder}`}}><div style={{width:15,height:15,borderRadius:3,background:s?th.accent:th.cardBorder,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff"}}>{s&&"✓"}</div><span style={{fontSize:12,color:th.text}}>{c.firstName} {c.lastName}</span><span style={{fontSize:10,color:th.dim,marginLeft:"auto"}}>{(c.monthSnapshots||[]).length}mo</span></div>;})} </div><div style={{fontSize:11,color:th.dim,marginTop:6}}>{sel.size} selected</div></>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={onClose}>Cancel</Btn><BSolid onClick={doExport}>{format==="backup"?"💾 Export Backup":"📄 Export CSV"}</BSolid></div></Modal>;}
 
+/* ── v0.39.0 — Dashboard chart catalog (option labels). Shared by the gear
+   dropdown on each card and by the ChartSettingsModal in the avatar menu. */
+const dashChartOptions=t=>[
+  {id:"incomeVsSpending",label:"📊 "+(t?.incomeVsSpendingHdr||"Income vs Spending")},
+  {id:"sankey",label:"🌊 "+(t?.cashFlowMapHdr||"Cash Flow Map (Sankey)")},
+  {id:"netWorthDonut",label:"💎 "+(t?.netWorthDistributionHdr||"Net Worth Distribution")},
+  {id:"clientsTreemap",label:"🗺️ "+(t?.clientsByNetWorthHdr||"Clients by Net Worth")},
+  {id:"practiceHealth",label:"🎯 "+(t?.practiceHealthHdr||"Practice Health")},
+  {id:"netWorthBridge",label:"⚖️ "+(t?.netWorthBridgeHdr||"Net Worth Bridge")},
+];
+
+/* ── v0.39.0 — ChartSettingsModal: opened from the topbar avatar menu. Lets
+   the user pick which chart fills each Dashboard slot via dropdowns. */
+function ChartSettingsModal({settings,onSave,onClose,t}){
+  const th=useTh();
+  const slots=(settings.dashboardSlots||["incomeVsSpending","sankey","netWorthDonut"]).slice(0,3);
+  while(slots.length<3)slots.push(["incomeVsSpending","sankey","netWorthDonut"][slots.length]);
+  const opts=dashChartOptions(t);
+  const setSlot=(i,id)=>{const s=[...slots];s[i]=id;onSave({...settings,dashboardSlots:s});};
+  const INP=mINP(th);
+  return<Modal title={"📊 "+(t.chartSettingsHdr||"Chart Settings")} onClose={onClose} width={480}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:14,lineHeight:1.6}}>{t.chartSettingsBlurb||"Pick which chart fills each Dashboard slot. Changes save automatically and apply on the next reload."}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {slots.map((id,i)=><div key={i}>
+        <label style={{fontSize:11,fontWeight:600,color:th.muted,display:"block",marginBottom:5,letterSpacing:"0.04em",textTransform:"uppercase"}}>{(t.dashboardSlotLbl||"Dashboard slot")+" "+(i+1)}</label>
+        <select style={INP} value={id} onChange={e=>setSlot(i,e.target.value)}>{opts.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select>
+      </div>)}
+    </div>
+    <div style={{fontSize:10,color:th.dim,marginTop:14,lineHeight:1.6,padding:"10px 12px",background:th.cardBorder+"22",borderRadius:8}}>{t.chartSettingsTip||"Tip: you can also change a chart inline by clicking the ⚙ gear on any Dashboard card."}</div>
+    <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:18}}><BSolid onClick={onClose}>{t.done||"Done"}</BSolid></div>
+  </Modal>;
+}
+
+/* ── v0.39.0 — DashSlotPicker: gear icon on each dashboard card; click → dropdown
+   of available chart options; pick one → swap that slot's chart. ─────────── */
+function DashSlotPicker({currentId,options,onPick,th,t}){
+  const[open,setOpen]=useState(false);
+  return<div style={{position:"absolute",top:8,right:8,zIndex:5}}>
+    <button onClick={()=>setOpen(o=>!o)} title={t?.changeChart||"Change chart"} aria-label={t?.changeChart||"Change chart"} aria-haspopup="menu" aria-expanded={open} style={{width:26,height:26,padding:0,borderRadius:6,background:open?th.accent+"22":"transparent",border:`1px solid ${open?th.accent:th.cardBorder}`,color:open?th.accent:th.dim,cursor:"pointer",fontSize:13,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>⚙</button>
+    {open&&<>
+      <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:9}}/>
+      <div role="menu" style={{position:"absolute",top:32,right:0,minWidth:240,background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:10,padding:6,zIndex:10,boxShadow:"0 12px 40px rgba(0,0,0,0.45)"}}>
+        <div style={{fontSize:9,fontWeight:700,color:th.dim,padding:"4px 8px",letterSpacing:"0.04em",textTransform:"uppercase"}}>{t?.changeChart||"Change chart"}</div>
+        {options.map(o=><button key={o.id} role="menuitem" onClick={()=>{onPick(o.id);setOpen(false);}} style={{display:"block",width:"100%",textAlign:"left",padding:"7px 10px",fontSize:12,borderRadius:6,cursor:"pointer",background:o.id===currentId?th.accent+"22":"transparent",color:o.id===currentId?th.accent:th.text,border:"none",fontWeight:o.id===currentId?700:400}}>{o.label}{o.id===currentId&&<span style={{float:"right",fontSize:10}}>✓</span>}</button>)}
+      </div>
+    </>}
+  </div>;
+}
+
 /* ── DASHBOARD ───────────────────────────────────────────────────────────── */
 
 function Dashboard({clients,t,settings,setSettings,onSelect,onAdd,onImportNew,onArchive,onRestore,onDelete,onRestoreBackup,onToggleHide,hideNumbers}){const th=useTh();const{isMobile}=useViewport();const[importOpen,setImportOpen]=useState(false);const[restoreOpen,setRestoreOpen]=useState(false);const[exportOpen,setExportOpen]=useState(false);const[dashSearch,setDashSearch]=useState("");const active=clients.filter(c=>!c.archived).filter(c=>{if(!dashSearch)return true;const q=dashSearch.toLowerCase();return `${c.firstName} ${c.lastName} ${c.partnerFirst||""} ${c.email||""}`.toLowerCase().includes(q);});const td=active.reduce((s,c)=>s+totalL(c),0);const ti=active.reduce((s,c)=>s+sumN(c.incomeStreams),0);const fO=active.filter(c=>c.clientType==="financeOnly").length;const fH=active.filter(c=>c.clientType==="financeAndHealth").length;const calcTrend=c=>{const s=c.monthSnapshots||[];if(s.length<2)return"stable";const diff=s[s.length-1].debt-s[0].debt;if(diff<0)return"improving";if(diff>100)return"worsening";return"stable";};const improvCount=active.filter(c=>calcTrend(c)==="improving").length;const stableCount=active.filter(c=>calcTrend(c)==="stable").length;const worseCount=active.filter(c=>calcTrend(c)==="worsening").length;const[trendMode,setTrendMode]=useState("revolving");// "all" | "revolving" | "current"
@@ -3547,111 +3596,109 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
   <SC label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmt(active.reduce((s,c)=>s+liquidA(c),0))} color={GOLD} sub={t.checkingSavingsLbl||"checking + savings"}/>
 </div>
 
-{/* v0.37.0 — Three-chart dashboard row: Income vs Spending + Cash Flow Sankey + Net Worth Donut. Stacks on mobile. */}
-<div data-ga-grid="three-col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"minmax(0,4fr) minmax(0,4fr) minmax(0,3fr)",gap:12,marginBottom:14}}>
-  {/* ── Left: Income vs Spending (composed bars + net line) ── */}
-  <div style={{...mCARD(th),padding:isMobile?14:16}}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-      <div>
-        <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>📊 {t.incomeVsSpendingHdr||"Income vs Spending"}</div>
-        <div style={{display:"flex",gap:14,marginTop:6,flexWrap:"wrap"}}>
-          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.pos}}/>{t.income||"Income"}</span>
-          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.neg}}/>{t.spending||"Spending"}</span>
-          <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,background:GOLD,borderRadius:1}}/>{t.netLbl||"Net"}</span>
+{/* v0.39.0 — Slot-driven dashboard row. Each card has a gear icon to swap charts.
+    Slot choices persist to settings.dashboardSlots. */}
+{(()=>{
+  const dashCharts={
+    incomeVsSpending:{id:"incomeVsSpending",label:"📊 "+(t.incomeVsSpendingHdr||"Income vs Spending"),render:()=><>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8,paddingRight:30}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase"}}>📊 {t.incomeVsSpendingHdr||"Income vs Spending"}</div>
+          <div style={{display:"flex",gap:14,marginTop:6,flexWrap:"wrap"}}>
+            <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.pos}}/>{t.income||"Income"}</span>
+            <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.neg}}/>{t.spending||"Spending"}</span>
+            <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,background:GOLD,borderRadius:1}}/>{t.netLbl||"Net"}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+          {[["3","3mo"],["6","6mo"],["12","12mo"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}
         </div>
       </div>
-      <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-        {[["3","3mo"],["6","6mo"],["12","12mo"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}
-      </div>
-    </div>
-    <ResponsiveContainer width="100%" height={isMobile?200:230} style={{outline:"none"}}>
-      <ComposedChart data={(()=>{const labels=_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"];
-        // v0.24.0 — disambiguate duplicate month names by appending '<YY> when the same month appears more than once in the range.
-        const monthCounts={};labels.forEach(l=>{const k=l.split(" ")[0];monthCounts[k]=(monthCounts[k]||0)+1;});
-        return labels.map(m=>{
-          const parts=m.split(" ");const monthKey=monthCounts[parts[0]]>1&&parts[1]?`${parts[0]} '${String(parts[1]).slice(-2)}`:parts[0];
-          const income=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);
-          const spending=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);
-          return{m:monthKey,income,spending,net:income-spending};
-        });
-      })()} margin={{top:12,right:12,left:0,bottom:0}}>
-        <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false}/>
-        <XAxis dataKey="m" tick={{fontSize:11,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
-        <YAxis tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtS(v)} width={50}/>
-        <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/>
-        <Bar dataKey="income" name={t.income||"Income"} fill={th.pos} radius={[3,3,0,0]} maxBarSize={32}/>
-        <Bar dataKey="spending" name={t.spending||"Spending"} fill={th.neg} radius={[3,3,0,0]} maxBarSize={32}/>
-        <Line type="monotone" dataKey="net" name={t.netLbl||"Net"} stroke={GOLD} strokeWidth={2.5} dot={{r:3,fill:GOLD,strokeWidth:0}} activeDot={{r:5,fill:GOLD,strokeWidth:0}}/>
-      </ComposedChart>
-    </ResponsiveContainer>
-  </div>
-  {/* ── Middle (v0.37.0): Practice Cash Flow Sankey ── */}
-  <div style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column"}}>
-    <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>🌊 {t.cashFlowMapHdr||"Cash Flow Map"}</div>
-    <div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.cashFlowMapSub||"Where the practice's aggregate income flows."}</div>
-    {(()=>{
+      <ResponsiveContainer width="100%" height={isMobile?200:230} style={{outline:"none"}}>
+        <ComposedChart data={(()=>{const labels=_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"];const monthCounts={};labels.forEach(l=>{const k=l.split(" ")[0];monthCounts[k]=(monthCounts[k]||0)+1;});return labels.map(m=>{const parts=m.split(" ");const monthKey=monthCounts[parts[0]]>1&&parts[1]?`${parts[0]} '${String(parts[1]).slice(-2)}`:parts[0];const income=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);const spending=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);return{m:monthKey,income,spending,net:income-spending};});})()} margin={{top:12,right:12,left:0,bottom:0}}>
+          <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false}/>
+          <XAxis dataKey="m" tick={{fontSize:11,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
+          <YAxis tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtS(v)} width={50}/>
+          <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/>
+          <Bar dataKey="income" name={t.income||"Income"} fill={th.pos} radius={[3,3,0,0]} maxBarSize={32}/>
+          <Bar dataKey="spending" name={t.spending||"Spending"} fill={th.neg} radius={[3,3,0,0]} maxBarSize={32}/>
+          <Line type="monotone" dataKey="net" name={t.netLbl||"Net"} stroke={GOLD} strokeWidth={2.5} dot={{r:3,fill:GOLD,strokeWidth:0}} activeDot={{r:5,fill:GOLD,strokeWidth:0}}/>
+        </ComposedChart>
+      </ResponsiveContainer>
+    </>},
+    sankey:{id:"sankey",label:"🌊 "+(t.cashFlowMapHdr||"Cash Flow Map (Sankey)"),render:()=>{
       let totalI=0,totalB=0,totalM=0;
       active.forEach(c=>{totalI+=sumN(c.incomeStreams||[]);totalB+=sumB(c.bills||[]);totalM+=sumMin(c.cards||[]);});
       const cashFlow=Math.max(0,totalI-totalB-totalM);
-      if(totalI<=0){
-        return<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center",padding:20,minHeight:isMobile?180:200}}>{t.noFlowYet||"Add client income to see flow."}</div>;
-      }
-      return<Sankey
-        width={460} height={isMobile?220:260}
-        nodes={[
-          {id:"inc",label:"💼 "+(t.income||"Income"),layer:0,color:th.pos},
-          {id:"bills",label:"💳 "+(t.bills||"Bills"),layer:1,color:th.neg},
-          {id:"min",label:"🏦 "+(t.minPay||"Debt Min"),layer:1,color:th.warn},
-          {id:"cash",label:"💰 "+(t.cashFlow||"Cash Flow"),layer:1,color:GOLD},
-        ]}
-        links={[
-          {from:"inc",to:"bills",value:totalB,color:th.neg},
-          {from:"inc",to:"min",value:totalM,color:th.warn},
-          {from:"inc",to:"cash",value:cashFlow,color:GOLD},
-        ]}
-      />;
-    })()}
-  </div>
-  {/* ── Right: Practice Net Worth Distribution donut ── */}
-  {(()=>{
-    const tiers={neg:0,low:0,mid:0,high:0};
-    let totalNW=0;
-    active.forEach(c=>{const nw=totalA(c)-totalL(c);totalNW+=nw;if(nw<0)tiers.neg++;else if(nw<50000)tiers.low++;else if(nw<250000)tiers.mid++;else tiers.high++;});
-    const donutData=[
-      {name:t.tierNeg||"Negative",value:tiers.neg,color:th.neg},
-      {name:t.tierLow||"$0–50K",value:tiers.low,color:th.warn},
-      {name:t.tierMid||"$50K–250K",value:tiers.mid,color:th.blue},
-      {name:t.tierHigh||"$250K+",value:tiers.high,color:GOLD},
-    ].filter(d=>d.value>0);
-    return <div style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column"}}>
-      <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>💎 {t.netWorthDistributionHdr||"Net Worth Distribution"}</div>
-      <div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthDistributionSub||"Active clients grouped by current net worth tier."}</div>
-      <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minHeight:isMobile?180:200}}>
-        {/* v0.35.0 — Phase 5 Donut replaces the Recharts PieChart here. Same data,
-           same center overlay, but rendered as pure SVG with the brand padding angle. */}
-        <Donut
-          data={donutData}
-          size={isMobile?120:130}
-          innerRatio={isMobile?(40/60):(46/65)}
-          paddingAngle={donutData.length>1?2:0}
-          centerLabel={t.totalNet||"Total Net"}
-          centerValue={fmtS(totalNW)}
-          centerColor={totalNW>=0?GOLD:th.neg}
-          placeholder={t.noClientsYet||"No clients yet"}
-        />
-        <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:8}}>
-          {donutData.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"Add clients to populate."}</div>:
-            donutData.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}>
-              <span style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/>
-              <span style={{color:th.muted,flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.name}</span>
-              <span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{d.value}</span>
-            </div>)
-          }
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🌊 {t.cashFlowMapHdr||"Cash Flow Map"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.cashFlowMapSub||"Where the practice's aggregate income flows."}</div></div>
+        {totalI<=0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center",padding:20,minHeight:isMobile?180:200}}>{t.noFlowYet||"Add client income to see flow."}</div>:<Sankey width={460} height={isMobile?220:260} nodes={[{id:"inc",label:"💼 "+(t.income||"Income"),layer:0,color:th.pos},{id:"bills",label:"💳 "+(t.bills||"Bills"),layer:1,color:th.neg},{id:"min",label:"🏦 "+(t.minPay||"Debt Min"),layer:1,color:th.warn},{id:"cash",label:"💰 "+(t.cashFlow||"Cash Flow"),layer:1,color:GOLD}]} links={[{from:"inc",to:"bills",value:totalB,color:th.neg},{from:"inc",to:"min",value:totalM,color:th.warn},{from:"inc",to:"cash",value:cashFlow,color:GOLD}]}/>}
+      </>;
+    }},
+    netWorthDonut:{id:"netWorthDonut",label:"💎 "+(t.netWorthDistributionHdr||"Net Worth Distribution"),render:()=>{
+      const tiers={neg:0,low:0,mid:0,high:0};let totalNW=0;
+      active.forEach(c=>{const nw=totalA(c)-totalL(c);totalNW+=nw;if(nw<0)tiers.neg++;else if(nw<50000)tiers.low++;else if(nw<250000)tiers.mid++;else tiers.high++;});
+      const donutData=[{name:t.tierNeg||"Negative",value:tiers.neg,color:th.neg},{name:t.tierLow||"$0–50K",value:tiers.low,color:th.warn},{name:t.tierMid||"$50K–250K",value:tiers.mid,color:th.blue},{name:t.tierHigh||"$250K+",value:tiers.high,color:GOLD}].filter(d=>d.value>0);
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💎 {t.netWorthDistributionHdr||"Net Worth Distribution"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthDistributionSub||"Active clients grouped by current net worth tier."}</div></div>
+        <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minHeight:isMobile?180:200}}>
+          <Donut data={donutData} size={isMobile?120:130} innerRatio={isMobile?(40/60):(46/65)} paddingAngle={donutData.length>1?2:0} centerLabel={t.totalNet||"Total Net"} centerValue={fmtS(totalNW)} centerColor={totalNW>=0?GOLD:th.neg} placeholder={t.noClientsYet||"No clients yet"}/>
+          <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:8}}>
+            {donutData.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"Add clients to populate."}</div>:donutData.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}><span style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/><span style={{color:th.muted,flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.name}</span><span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{d.value}</span></div>)}
+          </div>
         </div>
-      </div>
-    </div>;
-  })()}
-</div><RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:20,marginBottom:10,gap:8,flexWrap:"wrap"}}><div style={{fontSize:12,fontWeight:700,color:th.dim}}>👥 {active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={"🔍 "+(t.searchClients||"Search clients...")} aria-label={t?.searchClientsPh||"Search clients"} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:isMobile?12:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
+      </>;
+    }},
+    clientsTreemap:{id:"clientsTreemap",label:"🗺️ "+(t.clientsByNetWorthHdr||"Clients by Net Worth"),render:()=>{
+      const tmData=active.map(c=>{const nw=totalA(c)-totalL(c);return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),value:Math.max(0,nw),color:nw>=250000?GOLD:nw>=50000?th.blue:nw>=0?th.warn:th.neg};}).filter(d=>d.value>0);
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🗺️ {t.clientsByNetWorthHdr||"Clients by Net Worth"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsByNetWorthSub||"Tile size = current net worth per client."}</div></div>
+        <Treemap data={tmData} width={460} height={isMobile?220:240} placeholder={t.noClientsYet||"No clients yet."}/>
+      </>;
+    }},
+    practiceHealth:{id:"practiceHealth",label:"🎯 "+(t.practiceHealthHdr||"Practice Health"),render:()=>{
+      let inc=0,bls=0,mnd=0,liq=0;
+      active.forEach(c=>{inc+=sumN(c.incomeStreams||[]);bls+=sumB(c.bills||[]);mnd+=sumMin(c.cards||[]);liq+=liquidA(c);});
+      const dsr=inc>0?mnd/inc:0;
+      const sr=inc>0?Math.max(0,inc-bls-mnd)/inc:0;
+      const ef=bls>0?liq/bls:0;
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🎯 {t.practiceHealthHdr||"Practice Health"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.practiceHealthSub||"Aggregate across all active clients."}</div></div>
+        {active.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noClientsYet||"No clients yet."}</div>:<div style={{display:"flex",alignItems:"center",justifyContent:"space-around",flex:1,flexWrap:"wrap",gap:8,minHeight:isMobile?180:220}}>
+          <RadialGauge value={dsr*100} max={60} target={36} size={104} label={"DSR"} subLabel={"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
+          <RadialGauge value={sr*100} max={40} target={20} size={104} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
+          <RadialGauge value={ef} max={12} target={3} size={104} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+        </div>}
+      </>;
+    }},
+    netWorthBridge:{id:"netWorthBridge",label:"⚖️ "+(t.netWorthBridgeHdr||"Net Worth Bridge"),render:()=>{
+      const labels=_shownLabels.length?_shownLabels:[];
+      const data=labels.map(m=>{
+        const a={liquid:0,invest:0,property:0,other:0};const l={cards:0,loans:0};
+        active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){(sn.data.accounts||[]).forEach(x=>{const meta=ACCT_META[x.type];const v=+x.value||0;if(meta?.liquid)a.liquid+=v;else if(meta?.invest)a.invest+=v;else a.other+=v;});(sn.data.customAssets||[]).forEach(x=>a.property+=+x.value||0);(sn.data.cards||[]).forEach(cd=>l.cards+=+cd.balance||0);(sn.data.loans||[]).forEach(ln=>l.loans+=+ln.balance||0);}});
+        return{label:m,assets:a,liabilities:l};
+      });
+      return<>
+        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>⚖️ {t.netWorthBridgeHdr||"Net Worth Bridge"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthBridgeSub||"Assets above zero, liabilities below."}</div></div>
+        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.needMoreSnapshots||"Need 2+ monthly snapshots."}</div>:<NetWorthBridge data={data} width={460} height={isMobile?200:240}/>}
+      </>;
+    }},
+  };
+  const dashOpts=dashChartOptions(t);
+  const rawSlots=settings.dashboardSlots||["incomeVsSpending","sankey","netWorthDonut"];
+  const slots=rawSlots.slice(0,3);
+  while(slots.length<3)slots.push(["incomeVsSpending","sankey","netWorthDonut"][slots.length]);
+  const setSlot=(i,id)=>{const s=[...slots];s[i]=id;setSettings({...settings,dashboardSlots:s});};
+  return<div data-ga-grid="three-col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"minmax(0,4fr) minmax(0,4fr) minmax(0,3fr)",gap:12,marginBottom:14}}>
+    {slots.map((slotId,i)=>{
+      const ch=dashCharts[slotId]||dashCharts.incomeVsSpending;
+      return<div key={i} style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column",position:"relative"}}>
+        <DashSlotPicker currentId={slotId} options={dashOpts} onPick={id=>setSlot(i,id)} th={th} t={t}/>
+        {ch.render()}
+      </div>;
+    })}
+  </div>;
+})()}<RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:20,marginBottom:10,gap:8,flexWrap:"wrap"}}><div style={{fontSize:12,fontWeight:700,color:th.dim}}>👥 {active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={"🔍 "+(t.searchClients||"Search clients...")} aria-label={t?.searchClientsPh||"Search clients"} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:isMobile?12:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
 
 /* ── PAGES ───────────────────────────────────────────────────────────────── */
 /* ── CLIENT LIST ─ v0.8.0 action-first bulk actions (WORKPLAN §3 Chat 4) ── */
@@ -4199,7 +4246,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0380-chart-library-wired";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0390-chart-picker";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -5571,7 +5618,7 @@ function AvatarBubble({initials,size,ring,onClick,title}){
    Title + breadcrumb on the left; EN/ES + hide + theme + avatar dropdown on
    the right. Avatar opens the big account menu (Profile, Settings, Security,
    Billing, Backup, Archived clients, What's new, Help, Sign out).          */
-function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onNav,onPickAvatar,onSignOut,advisorName,advisorEmail,avatarId,avatarInitials,th,isMobile,onOpenDrawer,t,version,archivedCount}){
+function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onNav,onPickAvatar,onOpenChartSettings,onSignOut,advisorName,advisorEmail,avatarId,avatarInitials,th,isMobile,onOpenDrawer,t,version,archivedCount}){
   const[menu,setMenu]=useState(false);
   const menuRef=useRef();
   useEffect(()=>{
@@ -5581,6 +5628,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
   },[]);
   const items=[
     {icon:"🖼",label:t?.menuProfile||"Profile",sub:t?.menuProfileSub||"Change profile image",onClick:onPickAvatar},
+    {icon:"📊",label:t?.menuChartSettings||"Chart Settings",sub:t?.menuChartSettingsSub||"Pick Dashboard charts",onClick:onOpenChartSettings},
     {icon:"⚙️",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, info",onClick:()=>onNav("settings")},
     {icon:"🛡️",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Change password",onClick:()=>onNav("security")},
     {icon:"🏷️",label:t?.menuBilling||"Billing & plan",sub:t?.menuBillingSub||"Services & Stripe links",onClick:()=>onNav("billing")},
@@ -5656,7 +5704,7 @@ export default function App(){
   const _idleWarnTimerRef=useRef(null);
   const _baseTh=isDark?makeDark(settings.darkAccent||GOLD):makeLight(settings.lightAccent||"#2563EB");const theme={..._baseTh,bg:(isDark?settings.darkBg:settings.lightBg)||_baseTh.bg,card:(isDark?settings.darkCard:settings.lightCard)||_baseTh.card};const t=T[lang]||T.en; // EN/ES toggle wired in v0.2.0; v0.8.1 page/card bg overrides
   const[nav,setNav]=useState("dashboard");const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState("report");const[selectedCalc,setSelectedCalc]=useState(null);// v0.13.1 — which calculator is open inside the /calculators page
-  const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
+  const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
   const[clients,setClients]=useState(()=>{try{const s=localStorage.getItem("ga_v3");return s?JSON.parse(s).map(mig):SEED.map(mig);}catch{return SEED.map(mig);}});
@@ -5983,6 +6031,7 @@ export default function App(){
     {importDupResolver&&<DuplicateResolverModal incoming={importDupResolver.incoming} existing={clients} onResolve={importDupResolver.resolver} onClose={()=>setImportDupResolver(null)} t={t}/>}{addOpen&&<NewClientModal onSave={addClient} onClose={()=>setAddOpen(false)} t={t}/>}
     {profileOpen&&<ProfileModal settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);}} onClose={()=>setProfileOpen(false)} t={t}/>}
     <AvatarPickerModal open={avatarPickerOpen} current={settings.avatarId||"mh-gold"} onPick={id=>{setSettings(s=>({...s,avatarId:id}));setAvatarPickerOpen(false);}} onClose={()=>setAvatarPickerOpen(false)} t={t} theme={theme}/>
+    {chartSettingsOpen&&<ChartSettingsModal settings={settings} onSave={setSettings} onClose={()=>setChartSettingsOpen(false)} t={t}/>}
     {sidebarImportOpen&&<ImportWizard onClose={()=>setSidebarImportOpen(false)} onImport={cs=>{importMultiple(cs);setSidebarImportOpen(false);}} existingClients={clients} t={t}/>}
     {/* v0.9.1 — mobile drawer + scrim live OUTSIDE the zoom-applying flex below.
         CSS `zoom` creates a containing block for position:fixed in WebKit/iOS,
@@ -6057,6 +6106,7 @@ export default function App(){
           signedIn={!!authUser}
           onNav={(n)=>{setNav(n);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}}
           onPickAvatar={()=>setAvatarPickerOpen(true)}
+          onOpenChartSettings={()=>setChartSettingsOpen(true)}
           onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}setAuthUser(null);}}
           advisorName={settings.advisorName||authUser?.email||"Mauricio Hernandez"}
           advisorEmail={settings.advisorEmail||authUser?.email||""}

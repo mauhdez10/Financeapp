@@ -2,6 +2,59 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.39.0 — 2026-05-23 — Dashboard chart picker + Chart Settings in topbar menu
+
+Two new ways to pick which charts the Dashboard shows.
+
+**Per-slot gear on each Dashboard card.** Tiny ⚙ button in the top-right of
+every Dashboard chart card. Click → dropdown lists all 6 chart options, the
+current one is checked. Pick a different chart → that slot swaps immediately
+and saves to `settings.dashboardSlots`. Persists across reloads.
+
+**"📊 Chart Settings" entry in the topbar avatar menu.** New item between
+"Profile" and "Settings". Opens a modal with 3 dropdowns (one per dashboard
+slot), each listing the available charts. Same backing state as the gear
+buttons.
+
+**Dashboard refactored to slot-driven render.** The hardcoded 3-col grid is
+gone — each slot now reads from `settings.dashboardSlots: [string, string,
+string]` (default `["incomeVsSpending", "sankey", "netWorthDonut"]`) and
+dispatches to a chart catalog. Adding new chart options is a one-entry
+addition to `dashCharts` + an entry in `dashChartOptions(t)`.
+
+**New chart options available for Dashboard slots:**
+- `incomeVsSpending` (existing — Recharts composed bar+line)
+- `sankey` (existing — v0.37 aggregate cash flow Sankey)
+- `netWorthDonut` (existing — net worth tier donut)
+- **`clientsTreemap`** (new) — Treemap with each client as a tile, sized by
+  net worth, colored by tier
+- **`practiceHealth`** (new) — 3 RadialGauges side by side (aggregate DSR,
+  Savings Rate, EF Months across all active clients)
+- **`netWorthBridge`** (new) — Assets above zero / liabilities below per
+  monthly snapshot, net worth line on top. Requires 2+ snapshots.
+
+**Settings schema addition.**
+- `settings.dashboardSlots: ["incomeVsSpending","sankey","netWorthDonut"]`
+  added to `DEF_SETTINGS`. Backward compatible — older accounts inherit the
+  default until they pick something.
+
+**31 new translation keys × EN+ES = 62 entries.**
+- `menuChartSettings`, `menuChartSettingsSub`, `chartSettingsHdr`,
+  `chartSettingsBlurb`, `chartSettingsTip`, `dashboardSlotLbl`,
+  `changeChart`, `cashFlowMapHdr` (override v0.37 default),
+  `clientsByNetWorthHdr/Sub`, `practiceHealthHdr/Sub`,
+  `netWorthBridgeHdr/Sub`, `needMoreSnapshots`, `savingsRateLbl`,
+  `efMonthsLbl`, `healthScoreHdr`, `srAxisShort/efAxisShort/dtaAxisShort/cfAxisShort`,
+  `dsrSubLbl`, `debtRankHdr`, `payoffTimelineHdr`, `amortizationHdr`,
+  `pitiBreakdownHdr`, `dtiGaugeHdr`, `forecastConeHdr`, `liabilityMapHdr`,
+  `debtFree`, `done`.
+
+**Still pending.** Per-section picker (Client Detail summary slots). PDF
+chart embeds. Sparkline strips on KPI tiles. Bills/Savings section charts.
+HomeEquity + Income + Savings + Interest + Portfolio calculator charts.
+The basic dashboard picker covers the visible "change my dashboard charts"
+request — sections/PDFs/remaining calcs come in v0.40+.
+
 ## v0.38.0 — 2026-05-23 — Charts wave 2: full component library + wires across calcs/sections
 
 Per Mauricio's direction ("implement everything in one go, design review after").
