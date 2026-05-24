@@ -2,6 +2,73 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.53.0 — 2026-05-25 — PR 6 live-pair upgrade (line/bar toggle, screen palette)
+
+First port from `HANDOFF-v0.46.md`. The `● live` trend pair on the
+ClientDetail header gets the v0.46 design treatment from
+`preview/28-live-pair.html`.
+
+**New components.**
+- `PairedBars` — pure-SVG paired bar chart, two series per x-tick
+  (10px wide bars, 1px inner gap per pair). Tweens via `useTweenedData`.
+- `LiveTrendCard` — wrapper holding line/bar mode state and the
+  values row beneath the chart. Mode persists to
+  `localStorage["client.{id}.live-view.{templateId}"]` per card per
+  client, default `"line"`. Each card carries a 2-button segmented
+  toggle (Line · Bar) with gold-tinted active state, 9.5px caps,
+  inline SVG icons (line graph / bar chart).
+
+**Values row.** Three cells under each chart, JetBrains Mono tabular
+numbers, delta arrows (▼/▲ green/red):
+- Cell 1: latest debt/cashflow + % change vs first period
+- Cell 2: latest savings/income + % change vs first period
+- Cell 3 (right-aligned): crossover month label if curves cross
+  during the range, OR net value (cashflow card)
+
+**Palette swap — handoff screen tones.** ClientDetail trend pair
+moves from v0.47 `#EF4444`/`#10B981` to the deeper screen palette
+locked in HANDOFF-v0.46:
+- Debt → `#DC2626`
+- Savings → `#059669`
+Cash Flow Trend card stays green/gold (cashflow=`#059669`, income=GOLD)
+since cashflow is the gold headline on that card.
+
+**SmoothAreaLine internal fixes** (only the live ClientDetail call
+site triggers these visibly — gallery + Dashboard slots inherit):
+- Both line strokes unified at 1.75px (was 1.5/1.75 split).
+- Crossover circle: white outline → `#111827` per spec. Outer halo
+  changed from `savingsColor @ 22%` to `GOLD @ 22%` since the
+  crossover marker is a brand moment, not a data series.
+- Live pulse dot stroke: `#fff` → `#111827`.
+
+**Layout.** Card min-height 200px (head + chart + values row +
+borders). Chart height 130px inside LiveTrendCard. The leftControl
+slot on card 1 carries the existing range (3m/6m/12m/All) and mode
+(All/Rev/Cur) chips — they still apply to both cards' shared
+`trendData` upstream.
+
+**Translations.** 5 new EN+ES strings: `liveLbl`, `viewLine`,
+`viewBar`, `viewModeLbl`, `crossoverLbl`. Pitfall #9 honored.
+
+**Verification in dev (Amanda Chen).**
+- Build marker `2026-05-25-v0530-live-pair-upgrade-pr6` confirmed.
+- LIVE badge renders on both cards.
+- 2 segmented toggles present, both default to Line.
+- Debt stroke color `#DC2626`, savings `#059669`, both at width
+  `1.75` — confirmed via SVG gradient stop + path stroke-width
+  probes.
+- Click "Bar" on card 1: line path count drops to 0, paired-bar rect
+  count rises to 8 (4 months × 2 bars). `localStorage` writes
+  `client.2.live-view.smoothAreaLine.debtVsSavings = "bar"`.
+- Gold crossover marker on the line-mode card has `fill=#C9A84C`,
+  `stroke=#111827` — matches spec.
+
+**What's deliberately NOT in this PR.** The handoff line says only
+PR 6. Did not port PR 5 (Dashboard row Sankey→Waterfall etc.,
+Mauricio said "besides the Sankey i like the rest" — partial port
+deferred), PR 7 (CC vs Loan), PR 8 (Portfolio chart), PR 9 (calc
+charts), PR 1 (Landing), or PR 2 (Intake colors). One PR per ship.
+
 ## v0.52.0 — 2026-05-25 — PDF: portfolio, compare, calc snapshots added
 
 Mauricio reported the downloaded PDF for Miguel Torres was missing

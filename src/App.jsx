@@ -1061,6 +1061,112 @@ function Waterfall({segments,height=180,width=600,bg}){
   </div>;
 }
 
+/* ── v0.53.0 — PR 6 from HANDOFF-v0.46. Live-pair upgrade for the ClientDetail
+   header trend cards. Wraps SmoothAreaLine (line mode) or PairedBars (bar mode),
+   with a per-card line/bar toggle persisted to
+   localStorage[`client.${id}.live-view.${templateId}`] (default "line").
+   Adds a 3-cell values row below: debt · savings · crossover/net with delta
+   arrows. Spec from preview/28-live-pair.html. ────────────────────────────── */
+function PairedBars({data,debtKey,savingsKey,debtColor,savingsColor,height=130,labelKey="label"}){
+  const th=useTh();
+  const pts=Array.isArray(data)?data:[];
+  const tw=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),800);
+  if(pts.length<1)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
+  const W=600,H=height,padL=46,padR=14,padT=12,padB=24;
+  const innerW=W-padL-padR,innerH=H-padT-padB;
+  const mx=Math.max(1,...tw.flatMap(p=>[p.d,p.s]));
+  const slot=innerW/pts.length;
+  const barW=Math.min(10,(slot-6)/2);
+  const yAt=v=>padT+innerH*(1-v/mx);
+  const fmtTick=v=>v>=1000?Math.round(v/1000)+"K":Math.round(v);
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      {[0,0.5,1].map((tk,i)=>{const y=yAt(mx*tk);return<g key={i}>
+        <line x1={padL} y1={y} x2={W-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/>
+        <text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtTick(mx*tk)}</text>
+      </g>;})}
+      {pts.map((p,i)=>{
+        const cx=padL+slot*i+slot/2;
+        const xs=cx-barW-0.5,xd=cx+0.5;
+        const sv=tw[i]?.s||0,dv=tw[i]?.d||0;
+        const ys=yAt(sv),yd=yAt(dv);
+        return<g key={i}>
+          <rect x={xs} y={ys} width={barW} height={Math.max(0,padT+innerH-ys)} fill={savingsColor} opacity="0.92" rx="1.5"/>
+          <rect x={xd} y={yd} width={barW} height={Math.max(0,padT+innerH-yd)} fill={debtColor} opacity="0.92" rx="1.5"/>
+          <text x={cx} y={H-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{String(p[labelKey]||"").split(/\s|'/)[0].slice(0,3)}</text>
+        </g>;
+      })}
+    </svg>
+  </div>;
+}
+
+function LiveTrendCard({client,trendData,debtKey,savingsKey,debtColor,savingsColor,title,templateId,leftControl,t}){
+  const th=useTh();
+  const persistKey=`client.${client.id}.live-view.${templateId||"default"}`;
+  const[mode,setMode]=useState(()=>{try{return localStorage.getItem(persistKey)||"line";}catch{return"line";}});
+  const switchMode=m=>{setMode(m);try{localStorage.setItem(persistKey,m);}catch{}};
+  const last=trendData[trendData.length-1]||{};
+  const first=trendData[0]||{};
+  const lastDebt=+last[debtKey]||0,lastSav=+last[savingsKey]||0;
+  const firstDebt=+first[debtKey]||0,firstSav=+first[savingsKey]||0;
+  const debtPct=firstDebt?((lastDebt-firstDebt)/Math.abs(firstDebt)*100):0;
+  const savPct=firstSav?((lastSav-firstSav)/Math.abs(firstSav)*100):0;
+  // Crossover: find first pair index where (sav-debt) flips sign
+  let crossLabel=null;
+  for(let i=0;i<trendData.length-1;i++){
+    const dA=(+trendData[i][savingsKey]||0)-(+trendData[i][debtKey]||0);
+    const dB=(+trendData[i+1][savingsKey]||0)-(+trendData[i+1][debtKey]||0);
+    if(dA===0&&dB===0)continue;
+    if((dA<=0&&dB>=0)||(dA>=0&&dB<=0)){crossLabel=trendData[i+1].label;break;}
+  }
+  const isCashCard=debtKey!=="debt";
+  const debtLbl=isCashCard?(t?.cashFlow||"Cash Flow"):(t?.totalDebt||"Debt");
+  const savLbl=isCashCard?(t?.income||"Income"):(t?.savings||"Savings");
+  const netVal=isCashCard?lastSav-lastDebt:null;
+  const lineIcon=<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{width:11,height:11}}><path d="M3 18 L9 12 L13 14 L21 6"/></svg>;
+  const barIcon=<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{width:11,height:11}}><rect x="4" y="14" width="3" height="6"/><rect x="10" y="9" width="3" height="11"/><rect x="16" y="4" width="3" height="16"/></svg>;
+  return<div style={{minHeight:200,display:"flex",flexDirection:"column"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:8,flexWrap:"wrap",rowGap:6}}>
+      <span style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:6,minWidth:0}}>
+        {title}
+        <span style={{fontSize:9,color:th.pos,display:"inline-flex",alignItems:"center",gap:3,fontFamily:"'JetBrains Mono',monospace"}}>
+          <span style={{width:5,height:5,borderRadius:99,background:th.pos,boxShadow:`0 0 0 3px ${th.pos}22`}}/>{t?.liveLbl||"LIVE"}
+        </span>
+      </span>
+      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+        {leftControl}
+        <div role="tablist" aria-label={t?.viewModeLbl||"View mode"} style={{display:"flex",gap:0,background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6,overflow:"hidden",padding:2}}>
+          {[["line",t?.viewLine||"Line",lineIcon],["bar",t?.viewBar||"Bar",barIcon]].map(([m,lbl,icon])=>
+            <button key={m} role="tab" aria-selected={mode===m} onClick={()=>switchMode(m)} style={{background:mode===m?GOLD+"22":"transparent",border:"none",color:mode===m?GOLD:th.dim,fontFamily:"inherit",fontSize:9.5,fontWeight:700,letterSpacing:"0.06em",padding:"4px 9px",borderRadius:4,cursor:"pointer",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:4}}>
+              {icon}{lbl}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+    <div style={{flex:1,minHeight:130}}>
+      {mode==="line"
+        ? <SmoothAreaLine data={trendData} height={130} debtKey={debtKey} savingsKey={savingsKey} debtColor={debtColor} savingsColor={savingsColor} templateId={templateId}/>
+        : <PairedBars data={trendData} debtKey={debtKey} savingsKey={savingsKey} debtColor={debtColor} savingsColor={savingsColor} height={130}/>
+      }
+    </div>
+    <div style={{display:"flex",gap:14,paddingTop:8,marginTop:8,borderTop:`1px solid ${th.cardBorder}`,fontSize:10}}>
+      <div style={{color:th.dim,minWidth:0}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:14,fontWeight:700,color:debtColor,lineHeight:1.1}}>{fmt(lastDebt)}</div>
+        {debtLbl} {firstDebt?<span style={{color:debtPct<=0?th.pos:th.neg,marginLeft:2}}>{debtPct<=0?"▼":"▲"} {Math.abs(debtPct).toFixed(0)}%</span>:null}
+      </div>
+      <div style={{color:th.dim,minWidth:0}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:14,fontWeight:700,color:savingsColor,lineHeight:1.1}}>{fmt(lastSav)}</div>
+        {savLbl} {firstSav?<span style={{color:savPct>=0?th.pos:th.neg,marginLeft:2}}>{savPct>=0?"▲":"▼"} {Math.abs(savPct).toFixed(0)}%</span>:null}
+      </div>
+      <div style={{marginLeft:"auto",textAlign:"right",color:th.dim,minWidth:0}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:14,fontWeight:700,color:GOLD,lineHeight:1.1}}>{crossLabel||(netVal!=null?fmt(netVal):"—")}</div>
+        {crossLabel?(t?.crossoverLbl||"Crossover"):(t?.netLbl||"Net")}
+      </div>
+    </div>
+  </div>;
+}
+
 /* ── v0.34.0 — Phase 5 Charts: SmoothAreaLine (v0.37 tween + glow + live dot)
    Pure-SVG two-curve area chart. Numeric values tween over ~800ms so the
    curve morphs between states. Gold glow filter under the savings curve.
@@ -1162,18 +1268,20 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
       </g>;})}
       <path d={path(debtCoords,true)} fill={`url(#${debtGradId})`} stroke="none"/>
       <path d={path(savCoords,true)} fill={`url(#${gradId})`} stroke="none"/>
-      <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth={Math.max(0.5,sw-0.25)} strokeLinecap="round" strokeLinejoin="round"/>
+      {/* v0.53 (PR 6) — both lines now 1.75px (was 1.5/1.75 split). Crossover
+         and live dots use #111827 stroke per handoff spec instead of #fff. */}
+      <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/>
       <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
       {crossovers.map((c,i)=><g key={i}>
-        <circle cx={c.x} cy={c.y} r="5" fill={savingsColor} opacity="0.22"/>
-        <circle cx={c.x} cy={c.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
+        <circle cx={c.x} cy={c.y} r="5" fill={GOLD} opacity="0.22"/>
+        <circle cx={c.x} cy={c.y} r="3.5" fill={GOLD} stroke="#111827" strokeWidth="1.2"/>
       </g>)}
       {livePt&&<g>
         {!reducedMotion&&<circle cx={livePt.x} cy={livePt.y} r="5" fill={savingsColor} opacity="0.45">
           <animate attributeName="r" values="5;11;5" dur="2.2s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.45;0;0.45" dur="2.2s" repeatCount="indefinite"/>
         </circle>}
-        <circle cx={livePt.x} cy={livePt.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
+        <circle cx={livePt.x} cy={livePt.y} r="3" fill={savingsColor} stroke="#111827" strokeWidth="1.2"/>
       </g>}
       {apts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{xLabel(p[labelKey])}</text>)}
     </svg>
@@ -4897,17 +5005,16 @@ const _rangeN=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:(client
 // state was stuck at whatever the user last clicked. startTab acts as the
 // controlled value; this useEffect keeps the local state matching.
 useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab);},[startTab]);
-return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button><div style={{width:40,height:40,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:700,fontSize:15,color:th.text}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}><SC label={"💼 "+t.totalIncome} value={fmt(sumN(client.incomeStreams))} color={th.pos}/><SC label={"💳 "+t.totalDebt} value={fmt(tL)} color={th.neg}/><SC label={"📊 "+t.totalAssets} value={fmt(tA)} color={th.blue}/><SC label={"💎 "+t.netWorth} value={fmt(tA-tL)} color={tA-tL>=0?th.pos:th.neg}/></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.47.0 — Per Mauricio's preference, restored the original red/green
-   palette on Debt vs Savings (red = debt, green = savings). Cash Flow Trend
-   pair stays green/gold (cashflow is the gold "headline" curve here).
-   v0.48 — Each card carries a stable templateId so customizations from the
-   gallery editor propagate here automatically. */}
-{[{k1:"debt",k2:"savings",l:"📈 "+t.debtTrend,c1:"#EF4444",c2:"#10B981",tid:"smoothAreaLine.debtVsSavings"},{k1:"cashFlow",k2:"income",l:"💰 "+(t.cashFlowTrend||"Cash Flow Trend"),c1:"#10B981",c2:GOLD,tid:"smoothAreaLine.cashFlowTrend"}].map((ch,ci)=><div key={ci} style={{...mCARD(th),padding:12}}>
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:8,flexWrap:"wrap",rowGap:6}}>
-    <span style={{fontSize:11,fontWeight:700,color:th.dim,flex:"0 1 auto",minWidth:0}}>{ch.l} <span style={{fontSize:9,color:th.pos}}>● live</span></span>
-    {ci===0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",alignItems:"center",flex:"0 1 auto"}}>{[["3","3m"],["6","6m"],["12","12m"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}<div style={{width:1,height:12,background:th.cardBorder,margin:"0 2px"}}/>{[["all",(t.filterAll||"All")],["revolving",(t.filterRev||"Rev")],["current",(t.filterCur||"Cur")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendMode===v?GOLD+"22":"transparent",color:trendMode===v?GOLD:th.dim,border:`1px solid ${trendMode===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}</div>}
-  </div>
-  <SmoothAreaLine data={trendData} height={110} debtKey={ch.k1} savingsKey={ch.k2} debtColor={ch.c1} savingsColor={ch.c2} templateId={ch.tid}/>
+return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button><div style={{width:40,height:40,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:700,fontSize:15,color:th.text}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}><SC label={"💼 "+t.totalIncome} value={fmt(sumN(client.incomeStreams))} color={th.pos}/><SC label={"💳 "+t.totalDebt} value={fmt(tL)} color={th.neg}/><SC label={"📊 "+t.totalAssets} value={fmt(tA)} color={th.blue}/><SC label={"💎 "+t.netWorth} value={fmt(tA-tL)} color={tA-tL>=0?th.pos:th.neg}/></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.53.0 — PR 6 (HANDOFF-v0.46). The "● live" trend pair now uses
+   LiveTrendCard which wraps SmoothAreaLine (line) or PairedBars (bar)
+   behind a per-card toggle persisted to localStorage. Colors moved to
+   the handoff "screen" palette (#DC2626 / #059669). Cash Flow card
+   keeps cashflow=green, income=gold. */}
+{[
+  {k1:"debt",k2:"savings",l:"📈 "+t.debtTrend,c1:"#DC2626",c2:"#059669",tid:"smoothAreaLine.debtVsSavings"},
+  {k1:"cashFlow",k2:"income",l:"💰 "+(t.cashFlowTrend||"Cash Flow Trend"),c1:"#059669",c2:GOLD,tid:"smoothAreaLine.cashFlowTrend"}
+].map((ch,ci)=><div key={ci} style={{...mCARD(th),padding:12}}>
+  <LiveTrendCard client={client} trendData={trendData} debtKey={ch.k1} savingsKey={ch.k2} debtColor={ch.c1} savingsColor={ch.c2} title={ch.l} templateId={ch.tid} t={t} leftControl={ci===0?<div style={{display:"flex",gap:3,flexWrap:"wrap",alignItems:"center"}}>{[["3","3m"],["6","6m"],["12","12m"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}<div style={{width:1,height:12,background:th.cardBorder,margin:"0 2px"}}/>{[["all",(t.filterAll||"All")],["revolving",(t.filterRev||"Rev")],["current",(t.filterCur||"Cur")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendMode===v?GOLD+"22":"transparent",color:trendMode===v?GOLD:th.dim,border:`1px solid ${trendMode===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}</div>:null}/>
 </div>)}</div></div><div style={{padding:isMobile?"0 14px":"0 24px"}}><div className="ga-np" style={{display:"flex",alignItems:"stretch",gap:0,marginBottom:16,borderBottom:`1px solid ${th.cardBorder}`,position:"relative"}}>
   <button onClick={()=>tabRowRef.current?.scrollBy({left:-260,behavior:"smooth"})} title="Scroll left" disabled={!canScrollL} style={{flexShrink:0,width:28,height:36,display:"flex",alignItems:"center",justifyContent:"center",background:canScrollL?th.card:"transparent",border:canScrollL?`1px solid ${th.cardBorder}`:"1px solid transparent",borderBottom:"none",color:canScrollL?th.text:th.dim,cursor:canScrollL?"pointer":"default",opacity:canScrollL?1:0.3,fontSize:14,lineHeight:1,padding:0,borderRadius:"6px 6px 0 0"}}>‹</button>
   <div ref={tabRowRef} style={{flex:1,display:"flex",gap:6,overflowX:"auto",overflowY:"hidden",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none",scrollSnapType:"x proximity"}} onWheel={e=>{if(e.deltaY!==0&&Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.currentTarget.scrollLeft+=e.deltaY;}}}>
@@ -5303,7 +5410,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0520-pdf-portfolio-compare-calcs";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0530-live-pair-upgrade-pr6";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
