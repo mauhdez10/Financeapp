@@ -2,8 +2,36 @@ import { useState, useEffect, useCallback, useRef, useMemo, createContext, useCo
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
+import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, HelpCircle, LogOut, ImageIcon, BarChart3 } from "lucide-react";
 import { T } from "./translations";
 import { ENGAGEMENT_LETTER, ELT_DEFAULTS, fillTokens } from "./engagementLetterTemplate";
+
+// v0.44.0 — Lucide icon wrapper. Map a stable key → SVG component so callers
+// can do <GAIcon name="dashboard" size={16}/> without importing each one.
+const _GA_ICONS = {
+  dashboard: LayoutDashboard,
+  clients: Users,
+  intake: FileInput,
+  calculators: Calculator,
+  promotions: Tag,
+  resources: BookOpen,
+  about: Anchor,
+  settings: SettingsIcon,
+  security: Shield,
+  billing: Receipt,
+  backup: HardDriveDownload,
+  archived: Archive,
+  whatsNew: Sparkles,
+  help: HelpCircle,
+  signOut: LogOut,
+  profile: ImageIcon,
+  charts: BarChart3,
+};
+function GAIcon({name,size=16,color,style,className}){
+  const Comp=_GA_ICONS[name];
+  if(!Comp)return null;
+  return<Comp size={size} color={color||"currentColor"} strokeWidth={1.6} style={{flexShrink:0,...style}} className={className}/>;
+}
 
 /* ── SUPABASE CLIENT ─────────────────────────────────────────────────────── */
 const SUPABASE_URL=(typeof import.meta!=="undefined"&&import.meta.env?import.meta.env.VITE_SUPABASE_URL:"")||"";
@@ -1337,15 +1365,22 @@ function BulletChart({value,target,max,label,sublabel,color,width=320,height=40}
   const c=color||GOLD;
   const barH=12;
   const innerW=width-12;
+  const gid=useSvgId("blt");
   return<div style={{width,padding:4}}>
     {label&&<div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:th.dim,marginBottom:4,fontWeight:600,letterSpacing:"0.04em"}}>
       <span style={{textTransform:"uppercase"}}>{label}</span>
-      <span style={{fontFamily:"'JetBrains Mono',monospace"}}>${v>=1000?Math.round(v/100)/10+"K":Math.round(v)} / ${tg>=1000?Math.round(tg/100)/10+"K":Math.round(tg)}</span>
+      <span style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>${v>=1000?Math.round(v/100)/10+"K":Math.round(v)} / ${tg>=1000?Math.round(tg/100)/10+"K":Math.round(tg)}</span>
     </div>}
     <svg viewBox={`0 0 ${width} ${barH+8}`} preserveAspectRatio="none" style={{width:"100%",height:barH+8,display:"block"}}>
-      <rect x={6} y={4} width={innerW} height={barH} fill={th.cardBorder} fillOpacity="0.4" rx="2"/>
-      <rect x={6} y={4} width={innerW*pct} height={barH} fill={c} fillOpacity="0.65" rx="2"/>
-      {tg>0&&<line x1={6+innerW*tpct} y1={1} x2={6+innerW*tpct} y2={barH+7} stroke={th.text} strokeWidth="1.5" strokeOpacity="0.7"/>}
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={c} stopOpacity="0.5"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0.95"/>
+        </linearGradient>
+      </defs>
+      <rect x={6} y={4} width={innerW} height={barH} fill={th.cardBorder} fillOpacity="0.3" rx="3"/>
+      <rect x={6} y={4} width={innerW*pct} height={barH} fill={`url(#${gid})`} rx="3"/>
+      {tg>0&&<line x1={6+innerW*tpct} y1={1} x2={6+innerW*tpct} y2={barH+7} stroke={th.text} strokeWidth="1.25" strokeOpacity="0.6"/>}
     </svg>
     {sublabel&&<div style={{fontSize:9,color:th.muted,marginTop:2}}>{sublabel}</div>}
   </div>;
@@ -1473,16 +1508,32 @@ function NetWorthBridge({data,height=200,width=600,placeholder}){
   const netY=v=>{if(v>=0)return yAtA(v);return yAtL(-v);};
   const netPath="M"+totals.map((t,i)=>`${xAt(i)} ${netY(t.net)}`).join(" L");
   const fmtTick=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/1000)+"K":Math.round(v);
+  const gid=useSvgId("nwb");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      <line x1={padL} y1={zero} x2={width-padR} y2={zero} stroke={th.dim} strokeOpacity="0.5" strokeWidth="1"/>
-      <text x={padL-6} y={padT+3} textAnchor="end" fontSize="9" fill={th.dim}>{fmtTick(maxA)}</text>
+      <defs>
+        {/* v0.44 — gradient per asset band (fading top→bottom) and per liability band (mirrored) */}
+        {assetBands.map((b,i)=><linearGradient key={"ga"+i} id={`${gid}-a${i}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={b.color} stopOpacity="0.7"/>
+          <stop offset="100%" stopColor={b.color} stopOpacity="0.28"/>
+        </linearGradient>)}
+        {liabBands.map((b,i)=><linearGradient key={"gl"+i} id={`${gid}-l${i}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={b.color} stopOpacity="0.28"/>
+          <stop offset="100%" stopColor={b.color} stopOpacity="0.62"/>
+        </linearGradient>)}
+        <linearGradient id={`${gid}-net`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={GOLD} stopOpacity="0.7"/>
+          <stop offset="100%" stopColor={GOLD} stopOpacity="1"/>
+        </linearGradient>
+      </defs>
+      <line x1={padL} y1={zero} x2={width-padR} y2={zero} stroke={th.dim} strokeOpacity="0.35" strokeWidth="0.75"/>
+      <text x={padL-6} y={padT+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>{fmtTick(maxA)}</text>
       <text x={padL-6} y={zero+3} textAnchor="end" fontSize="9" fill={th.dim}>0</text>
-      <text x={padL-6} y={padT+innerH+3} textAnchor="end" fontSize="9" fill={th.dim}>-{fmtTick(maxL)}</text>
-      {assetBands.map((b,i)=><path key={"a"+i} d={b.d} fill={b.color} fillOpacity="0.45" stroke="none"/>)}
-      {liabBands.map((b,i)=><path key={"l"+i} d={b.d} fill={b.color} fillOpacity="0.4" stroke="none"/>)}
-      <path d={netPath} fill="none" stroke={GOLD} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-      {apts.map((p,i)=><text key={i} x={xAt(i)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted}>{String(p.label||"").split(/\s|'/)[0].slice(0,3)}</text>)}
+      <text x={padL-6} y={padT+innerH+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>-{fmtTick(maxL)}</text>
+      {assetBands.map((b,i)=><path key={"a"+i} d={b.d} fill={`url(#${gid}-a${i})`} stroke="none"/>)}
+      {liabBands.map((b,i)=><path key={"l"+i} d={b.d} fill={`url(#${gid}-l${i})`} stroke="none"/>)}
+      <path d={netPath} fill="none" stroke={`url(#${gid}-net)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {apts.map((p,i)=><text key={i} x={xAt(i)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{String(p.label||"").split(/\s|'/)[0].slice(0,3)}</text>)}
     </svg>
   </div>;
 }
@@ -1541,10 +1592,18 @@ function PayoffProgression({debts,maxMonths=120,height=180,width=600,extraPay=0,
   const fmtTick=v=>v>=1000?Math.round(v/1000)+"K":Math.round(v);
   const fmtMonth=m=>m<12?`${m}mo`:`${(m/12).toFixed(0)}y`;
   const monthTicks=series.months<=12?[0,Math.floor(series.months/2),series.months-1]:[0,12,24,Math.min(series.months-1,60),series.months-1].filter((v,i,a)=>a.indexOf(v)===i);
+  const gid=useSvgId("pop");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {[0,0.5,1].map((t,i)=>{const y=yAt(maxTotal*t);return<g key={i}><line x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.18" strokeDasharray="2 3"/><text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim}>${fmtTick(maxTotal*t)}</text></g>;})}
-      {bands.map((b,i)=><path key={i} d={b.d} fill={b.color} fillOpacity="0.55" stroke={b.color} strokeOpacity="0.7" strokeWidth="0.5"/>)}
+      <defs>
+        {/* v0.44 — gradient per debt band (left vivid → right faded as it pays off) */}
+        {bands.map((b,i)=><linearGradient key={i} id={`${gid}-${i}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={b.color} stopOpacity="0.75"/>
+          <stop offset="100%" stopColor={b.color} stopOpacity="0.25"/>
+        </linearGradient>)}
+      </defs>
+      {[0,0.5,1].map((t,i)=>{const y=yAt(maxTotal*t);return<g key={i}><line x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/><text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtTick(maxTotal*t)}</text></g>;})}
+      {bands.map((b,i)=><path key={i} d={b.d} fill={`url(#${gid}-${i})`} stroke={b.color} strokeOpacity="0.4" strokeWidth="0.5"/>)}
       {monthTicks.map((m,i)=><text key={i} x={xAt(m)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted}>{fmtMonth(m)}</text>)}
     </svg>
   </div>;
@@ -1571,6 +1630,7 @@ function AmortizationArea({principal,apr,termMonths,extraPay=0,height=140,width=
     return out;
   },[principal,apr,termMonths,extraPay]);
   const tw=useTweenedData(trail,800);
+  const gid=useSvgId("amr");
   if(tw.length<2)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>Adjust values</div>;
   const padT=10,padB=22,padL=42,padR=14;
   const innerW=width-padL-padR,innerH=height-padT-padB;
@@ -1580,12 +1640,22 @@ function AmortizationArea({principal,apr,termMonths,extraPay=0,height=140,width=
   const linePts=tw.map((v,i)=>`${xAt(i)} ${yAt(v)}`).join(" L");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      <path d={`M${linePts} L${xAt(tw.length-1)} ${padT+innerH} L${xAt(0)} ${padT+innerH} Z`} fill={c} fillOpacity="0.2"/>
-      <path d={`M${linePts}`} fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-      <text x={padL-6} y={padT+5} textAnchor="end" fontSize="9" fill={th.dim}>${mx>=1000?Math.round(mx/1000)+"K":Math.round(mx)}</text>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={c} stopOpacity="0.4"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0"/>
+        </linearGradient>
+        <linearGradient id={`${gid}-s`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={c} stopOpacity="0.7"/>
+          <stop offset="100%" stopColor={c} stopOpacity="1"/>
+        </linearGradient>
+      </defs>
+      <path d={`M${linePts} L${xAt(tw.length-1)} ${padT+innerH} L${xAt(0)} ${padT+innerH} Z`} fill={`url(#${gid})`}/>
+      <path d={`M${linePts}`} fill="none" stroke={`url(#${gid}-s)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <text x={padL-6} y={padT+5} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${mx>=1000?Math.round(mx/1000)+"K":Math.round(mx)}</text>
       <text x={padL-6} y={padT+innerH+3} textAnchor="end" fontSize="9" fill={th.dim}>0</text>
-      <text x={xAt(0)} y={height-6} textAnchor="start" fontSize="9" fill={th.muted}>Mo 0</text>
-      <text x={xAt(tw.length-1)} y={height-6} textAnchor="end" fontSize="9" fill={th.muted}>Mo {tw.length}</text>
+      <text x={xAt(0)} y={height-6} textAnchor="start" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Mo 0</text>
+      <text x={xAt(tw.length-1)} y={height-6} textAnchor="end" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Mo {tw.length}</text>
     </svg>
   </div>;
 }
@@ -1599,30 +1669,36 @@ function StackedBars({data,categories,colors,height=200,width=520,placeholder}){
   const cats=Array.isArray(categories)?categories:[];
   const flatten=p=>{const o={};for(const c of cats)o[c]=+p[c]||0;return o;};
   const twPts=useTweenedData(pts.map(flatten),700);
+  const gid=useSvgId("sb");
   if(pts.length===0||cats.length===0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No data"}</div>;
   const padT=10,padB=24,padL=42,padR=14;
   const innerW=width-padL-padR,innerH=height-padT-padB;
   const totals=twPts.map(p=>cats.reduce((s,c)=>s+(+p[c]||0),0));
   const mx=Math.max(1,...totals);
-  const barW=Math.min(28,(innerW-(pts.length-1)*6)/pts.length);
-  const xAt=i=>padL+(innerW-pts.length*barW-(pts.length-1)*6)/2+i*(barW+6);
+  const barW=Math.min(24,(innerW-(pts.length-1)*8)/pts.length);
+  const xAt=i=>padL+(innerW-pts.length*barW-(pts.length-1)*8)/2+i*(barW+8);
   const yAt=v=>padT+innerH*(1-v/mx);
   const cmap=colors||{};
   const palette=["#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#F97316","#84CC16"];
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {[0,0.5,1].map((t,i)=>{const y=yAt(mx*t);return<line key={i} x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.18" strokeDasharray="2 3"/>;})}
+      <defs>
+        {cats.map((c,ci)=>{const color=cmap[c]||palette[ci%palette.length];return<linearGradient key={ci} id={`${gid}-${ci}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.9"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0.55"/>
+        </linearGradient>;})}
+      </defs>
+      {[0,0.5,1].map((t,i)=>{const y=yAt(mx*t);return<line key={i} x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/>;})}
       {twPts.map((p,i)=>{
         let cumY=padT+innerH;
         return cats.map((c,ci)=>{
           const v=+p[c]||0;
           const h=mx>0?innerH*v/mx:0;
           cumY-=h;
-          const color=cmap[c]||palette[ci%palette.length];
-          return<rect key={i+"_"+ci} x={xAt(i)} y={cumY} width={barW} height={Math.max(0,h)} fill={color} fillOpacity="0.7" rx="1.5"/>;
+          return<rect key={i+"_"+ci} x={xAt(i)} y={cumY} width={barW} height={Math.max(0,h)} fill={`url(#${gid}-${ci})`} rx="2"/>;
         });
       })}
-      {pts.map((p,i)=><text key={i} x={xAt(i)+barW/2} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted}>{String(p.label||"").split(/\s|'/)[0].slice(0,3)}</text>)}
+      {pts.map((p,i)=><text key={i} x={xAt(i)+barW/2} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{String(p.label||"").split(/\s|'/)[0].slice(0,3)}</text>)}
     </svg>
   </div>;
 }
@@ -1642,15 +1718,17 @@ function HeatmapCalendar({data,colorScale,height=140,width=520,placeholder}){
   const colW=innerW/12,rowH=Math.min(28,innerH/Math.max(1,years.length));
   const base=colorScale||GOLD;
   const monthLabels=["J","F","M","A","M","J","J","A","S","O","N","D"];
+  // v0.44 — color gradient interpolation: low intensity = soft cream, high = deep amber
+  const lerpHex=(t)=>{const low={r:0xFE,g:0xF3,b:0xC7};const high=(c=>({r:parseInt(c.slice(1,3),16),g:parseInt(c.slice(3,5),16),b:parseInt(c.slice(5,7),16)}))(base);const r=Math.round(low.r+(high.r-low.r)*t);const g=Math.round(low.g+(high.g-low.g)*t);const b=Math.round(low.b+(high.b-low.b)*t);return`rgb(${r},${g},${b})`;};
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {monthLabels.map((m,i)=><text key={i} x={padL+colW*i+colW/2} y={padT-3} textAnchor="middle" fontSize="9" fill={th.dim}>{m}</text>)}
-      {years.map((y,yi)=><text key={y} x={padL-6} y={padT+rowH*yi+rowH/2+3} textAnchor="end" fontSize="9" fill={th.dim}>{y}</text>)}
+      {monthLabels.map((m,i)=><text key={i} x={padL+colW*i+colW/2} y={padT-3} textAnchor="middle" fontSize="9" fill={th.dim} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{m}</text>)}
+      {years.map((y,yi)=><text key={y} x={padL-6} y={padT+rowH*yi+rowH/2+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>{y}</text>)}
       {cells.map((c,i)=>{
         const yi=years.indexOf(c.year);
         const m=(c.month||1)-1;
         const intensity=mx>0?(tw[i]||0)/mx:0;
-        return<rect key={i} x={padL+colW*m+1} y={padT+rowH*yi+1} width={colW-2} height={rowH-2} fill={base} fillOpacity={0.08+intensity*0.7} rx="2"/>;
+        return<rect key={i} x={padL+colW*m+2} y={padT+rowH*yi+2} width={colW-4} height={rowH-4} fill={intensity>0.02?lerpHex(intensity):"transparent"} stroke={base} strokeOpacity={intensity>0.02?0:0.18} strokeWidth="0.75" rx="3"/>;
       })}
     </svg>
   </div>;
@@ -1662,31 +1740,36 @@ function GroupedYoY({data,height=180,width=520,curColor,priorColor,curLabel="Thi
   const th=useTh();
   const items=Array.isArray(data)?data:[];
   const tw=useTweenedData(items.map(d=>({c:+d.current||0,p:+d.prior||0})),800);
+  const gid=useSvgId("yoy");
   if(items.length===0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No data"}</div>;
-  const padT=18,padB=28,padL=42,padR=14;
+  const padT=22,padB=28,padL=42,padR=14;
   const innerW=width-padL-padR,innerH=height-padT-padB;
   const mx=Math.max(1,...tw.flatMap(p=>[p.c,p.p]));
   const slot=innerW/items.length;
-  const barW=Math.min(18,(slot-12)/2);
+  const barW=Math.min(16,(slot-12)/2);
   const yAt=v=>padT+innerH*(1-v/mx);
   const cc=curColor||GOLD,pc=priorColor||th.dim;
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        <linearGradient id={`${gid}-c`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={cc} stopOpacity="0.92"/><stop offset="100%" stopColor={cc} stopOpacity="0.5"/></linearGradient>
+        <linearGradient id={`${gid}-p`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={pc} stopOpacity="0.72"/><stop offset="100%" stopColor={pc} stopOpacity="0.32"/></linearGradient>
+      </defs>
       <g>
-        <rect x={padL} y={3} width={9} height={5} fill={cc} fillOpacity="0.7" rx="1"/>
-        <text x={padL+12} y={9} fontSize="9" fill={th.muted} fontWeight="600">{curLabel}</text>
-        <rect x={padL+62} y={3} width={9} height={5} fill={pc} fillOpacity="0.6" rx="1"/>
-        <text x={padL+74} y={9} fontSize="9" fill={th.muted} fontWeight="600">{priorLabel}</text>
+        <rect x={padL} y={5} width={9} height={5} fill={`url(#${gid}-c)`} rx="1.5"/>
+        <text x={padL+12} y={11} fontSize="9" fill={th.muted} fontWeight="600" style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{curLabel}</text>
+        <rect x={padL+70} y={5} width={9} height={5} fill={`url(#${gid}-p)`} rx="1.5"/>
+        <text x={padL+82} y={11} fontSize="9" fill={th.muted} fontWeight="600" style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{priorLabel}</text>
       </g>
-      {[0,0.5,1].map((t,i)=>{const y=yAt(mx*t);return<line key={i} x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.18" strokeDasharray="2 3"/>;})}
+      {[0,0.5,1].map((t,i)=>{const y=yAt(mx*t);return<line key={i} x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/>;})}
       {items.map((d,i)=>{
         const slotX=padL+slot*i+slot/2;
-        const xCur=slotX-barW-1,xPrior=slotX+1;
+        const xCur=slotX-barW-2,xPrior=slotX+2;
         const c=tw[i]?.c||0,p=tw[i]?.p||0;
         return<g key={i}>
-          <rect x={xCur} y={yAt(c)} width={barW} height={padT+innerH-yAt(c)} fill={cc} fillOpacity="0.75" rx="1.5"/>
-          <rect x={xPrior} y={yAt(p)} width={barW} height={padT+innerH-yAt(p)} fill={pc} fillOpacity="0.55" rx="1.5"/>
-          <text x={slotX} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted}>{(d.label||"").slice(0,8)}</text>
+          <rect x={xCur} y={yAt(c)} width={barW} height={padT+innerH-yAt(c)} fill={`url(#${gid}-c)`} rx="2"/>
+          <rect x={xPrior} y={yAt(p)} width={barW} height={padT+innerH-yAt(p)} fill={`url(#${gid}-p)`} rx="2"/>
+          <text x={slotX} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{(d.label||"").slice(0,8)}</text>
         </g>;
       })}
     </svg>
@@ -1716,18 +1799,33 @@ function ForecastCone({history,projection,confidence=0.2,height=200,width=600,co
   const conePath=(()=>{const top=[],bot=[];for(let i=projStart;i<all.length;i++){const v=tw[i]||0;const distance=i-projStart;const range=v*confidence*Math.sqrt(distance);top.push(`${xAt(i)} ${yAt(v+range)}`);bot.push(`${xAt(i)} ${yAt(Math.max(0,v-range))}`);}return"M"+top.join(" L")+" L"+bot.reverse().join(" L")+" Z";})();
   const projPath=proj.map((p,i)=>`${xAt(projStart+i)} ${yAt(tw[projStart+i]||0)}`).join(" L");
   const fmtT=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/1000)+"K":Math.round(v);
+  const gid=useSvgId("fc");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {[0,0.5,1].map((t,i)=>{const y=yAt(mx*t);return<g key={i}><line x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.18" strokeDasharray="2 3"/><text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim}>${fmtT(mx*t)}</text></g>;})}
-      {/* divider line between history and projection */}
-      <line x1={xAt(projStart)} y1={padT} x2={xAt(projStart)} y2={padT+innerH} stroke={th.dim} strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 4"/>
-      <path d={conePath} fill={c} fillOpacity="0.16" stroke="none"/>
-      <path d={`M${histPath} L${xAt(hist.length-1)} ${padT+innerH} L${xAt(0)} ${padT+innerH} Z`} fill={c} fillOpacity="0.12" stroke="none"/>
-      <path d={`M${histPath}`} fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d={`M${projPath}`} fill="none" stroke={c} strokeOpacity="0.75" strokeWidth="1.5" strokeDasharray="4 3" strokeLinecap="round"/>
-      <text x={xAt(0)} y={height-8} textAnchor="start" fontSize="9" fill={th.muted}>{hist[0]?.label||""}</text>
-      <text x={xAt(projStart)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted}>Now</text>
-      <text x={xAt(all.length-1)} y={height-8} textAnchor="end" fontSize="9" fill={th.muted}>{proj[proj.length-1]?.label||""}</text>
+      <defs>
+        {/* v0.44 — cone widening fade + history area gradient */}
+        <linearGradient id={`${gid}-cone`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={c} stopOpacity="0.32"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0.08"/>
+        </linearGradient>
+        <linearGradient id={`${gid}-hist`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={c} stopOpacity="0.32"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0"/>
+        </linearGradient>
+        <linearGradient id={`${gid}-stroke`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={c} stopOpacity="0.65"/>
+          <stop offset="100%" stopColor={c} stopOpacity="1"/>
+        </linearGradient>
+      </defs>
+      {[0,0.5,1].map((t,i)=>{const y=yAt(mx*t);return<g key={i}><line x1={padL} y1={y} x2={width-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/><text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtT(mx*t)}</text></g>;})}
+      <line x1={xAt(projStart)} y1={padT} x2={xAt(projStart)} y2={padT+innerH} stroke={th.dim} strokeOpacity="0.3" strokeWidth="0.75" strokeDasharray="2 3"/>
+      <path d={conePath} fill={`url(#${gid}-cone)`} stroke="none"/>
+      <path d={`M${histPath} L${xAt(hist.length-1)} ${padT+innerH} L${xAt(0)} ${padT+innerH} Z`} fill={`url(#${gid}-hist)`} stroke="none"/>
+      <path d={`M${histPath}`} fill="none" stroke={`url(#${gid}-stroke)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={`M${projPath}`} fill="none" stroke={c} strokeOpacity="0.55" strokeWidth="1.25" strokeDasharray="3 3" strokeLinecap="round"/>
+      <text x={xAt(0)} y={height-8} textAnchor="start" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{hist[0]?.label||""}</text>
+      <text x={xAt(projStart)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Now</text>
+      <text x={xAt(all.length-1)} y={height-8} textAnchor="end" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{proj[proj.length-1]?.label||""}</text>
     </svg>
   </div>;
 }
@@ -4438,7 +4536,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0430-landing-corner-signin";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0440-gradients-icons";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -5818,19 +5916,20 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     document.addEventListener("mousedown",h);
     return()=>document.removeEventListener("mousedown",h);
   },[]);
+  // v0.44.0 — Avatar menu items use Lucide icon keys (rendered via <GAIcon/>)
   const items=[
-    {icon:"🖼",label:t?.menuProfile||"Profile",sub:t?.menuProfileSub||"Change profile image",onClick:onPickAvatar},
-    {icon:"📊",label:t?.menuChartSettings||"Chart Settings",sub:t?.menuChartSettingsSub||"Pick Dashboard charts",onClick:onOpenChartSettings},
-    {icon:"⚙️",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, info",onClick:()=>onNav("settings")},
-    {icon:"🛡️",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Change password",onClick:()=>onNav("security")},
-    {icon:"🏷️",label:t?.menuBilling||"Billing & plan",sub:t?.menuBillingSub||"Services & Stripe links",onClick:()=>onNav("billing")},
+    {icon:"profile",label:t?.menuProfile||"Profile",sub:t?.menuProfileSub||"Change profile image",onClick:onPickAvatar},
+    {icon:"charts",label:t?.menuChartSettings||"Chart Settings",sub:t?.menuChartSettingsSub||"Pick Dashboard charts",onClick:onOpenChartSettings},
+    {icon:"settings",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, info",onClick:()=>onNav("settings")},
+    {icon:"security",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Change password",onClick:()=>onNav("security")},
+    {icon:"billing",label:t?.menuBilling||"Billing & plan",sub:t?.menuBillingSub||"Services & Stripe links",onClick:()=>onNav("billing")},
     {divider:true},
-    {icon:"💾",label:t?.menuBackup||"Backup data",sub:t?.menuBackupSub||"Download / restore JSON",onClick:()=>onNav("backup")},
-    {icon:"🗂",label:t?.menuArchived||"Archived clients"+(archivedCount?` (${archivedCount})`:""),onClick:()=>onNav("archived")},
-    {icon:"📥",label:t?.menuWhatsNew||"What's new",sub:version||"v0.36.0",onClick:()=>onNav("whats-new")},
-    {icon:"❓",label:t?.menuHelp||"Help & support",onClick:()=>onNav("help")},
+    {icon:"backup",label:t?.menuBackup||"Backup data",sub:t?.menuBackupSub||"Download / restore JSON",onClick:()=>onNav("backup")},
+    {icon:"archived",label:t?.menuArchived||"Archived clients"+(archivedCount?` (${archivedCount})`:""),onClick:()=>onNav("archived")},
+    {icon:"whatsNew",label:t?.menuWhatsNew||"What's new",sub:version||"v0.44.0",onClick:()=>onNav("whats-new")},
+    {icon:"help",label:t?.menuHelp||"Help & support",onClick:()=>onNav("help")},
     {divider:true},
-    {icon:"🚪",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
+    {icon:"signOut",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
   ];
   return <div className="ga-np" style={{padding:isMobile?"12px 14px":"16px 24px",borderBottom:`1px solid ${th.cardBorder}`,background:th.bg,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
     <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
@@ -5861,7 +5960,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
           </div>
           {items.map((it,i)=>it.divider?<div key={i} style={{height:1,background:th.cardBorder,margin:"4px 8px"}}/>:
             <button key={i} onClick={()=>{setMenu(false);it.onClick&&it.onClick();}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",padding:"8px 10px",background:"transparent",border:"none",color:it.danger?th.neg:th.text,fontSize:12,cursor:"pointer",borderRadius:8,fontWeight:it.danger?700:500}} onMouseEnter={e=>{e.currentTarget.style.background=th.bg;}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
-              <span style={{width:18,fontSize:13,lineHeight:1,textAlign:"center"}}>{it.icon}</span>
+              <span style={{width:18,display:"flex",alignItems:"center",justifyContent:"center",color:it.danger?th.neg:th.muted}}><GAIcon name={it.icon} size={15}/></span>
               <span style={{flex:1,minWidth:0}}>
                 <span style={{display:"block",lineHeight:1.2}}>{it.label}</span>
                 {it.sub&&<span style={{display:"block",fontSize:10,color:th.dim,marginTop:2,fontWeight:400,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{it.sub}</span>}
@@ -6219,7 +6318,8 @@ export default function App(){
   const restoreMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.map(c=>s.has(c.id)?{...c,archived:false}:c));},[]);
   const deleteMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.filter(c=>!s.has(c.id)));setSelected(null);},[]);
   const splitClientPair=useCallback((origId,p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==origId),p1,p2]);setSelected(null);},[]);
-  const NAV=[{id:"dashboard",l:"📊 "+t.dashboard},{id:"clients",l:"👥 "+t.clients},{id:"intake-submissions",l:"📥 "+(t.intakeSubmissions||"Intake Forms")},{id:"calculators",l:"🧮 "+t.calculators},{id:"promotions",l:"🏷️ "+t.promotions},{id:"resources",l:"📚 "+t.resources},{id:"about",l:"⚓ "+t.about}];
+  // v0.44.0 — Sidebar items use Lucide icons (`icon` key) instead of emoji prefixes
+  const NAV=[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
   if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang}/></ThemeCtx.Provider>;
@@ -6245,7 +6345,7 @@ export default function App(){
     {vp.isMobile&&drawerOpen&&<div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,background:"#000a",zIndex:90,touchAction:"none"}} aria-hidden="true"/>}
     {vp.isMobile&&<div id="ga-sidebar-mobile" style={{width:260,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",transform:drawerOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.25s ease-out",zIndex:100,boxShadow:drawerOpen?"4px 0 32px #000a":"none",visibility:drawerOpen?"visible":"hidden"}}>
       <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
-      <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=><button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:nav===n.id&&!selected?GOLD+"22":"transparent",color:nav===n.id&&!selected?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}>{n.l}</button>)}</nav>
+      <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:active?GOLD+"22":"transparent",color:active?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}><GAIcon name={n.icon} size={18} color={active?GOLD:undefined}/><span>{n.l}</span></button>;})}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
         {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
             now live in the TopBar avatar dropdown so they don't duplicate. */}
@@ -6278,7 +6378,7 @@ export default function App(){
             </>
           }
         </div>
-        <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const parts=n.l.split(" ");const icon=parts[0];const label=parts.slice(1).join(" ");const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?label:""} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarCollapsed?"10px 0":"8px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:active?GOLD+"22":"transparent",color:active?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",position:"relative"}}>{active&&!sidebarCollapsed&&<span style={{position:"absolute",left:0,top:"22%",bottom:"22%",width:3,background:GOLD,borderRadius:"0 3px 3px 0"}}/>}{sidebarCollapsed?icon:n.l}</button>;})}</nav>
+        <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?n.l:""} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:sidebarCollapsed?"10px 0":"9px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:active?GOLD+"22":"transparent",color:active?GOLD:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",position:"relative"}}>{active&&!sidebarCollapsed&&<span style={{position:"absolute",left:0,top:"22%",bottom:"22%",width:3,background:GOLD,borderRadius:"0 3px 3px 0"}}/>}<GAIcon name={n.icon} size={17} color={active?GOLD:undefined}/>{!sidebarCollapsed&&<span>{n.l}</span>}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
           {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
               moved to the TopBar avatar dropdown so they don't duplicate. */}

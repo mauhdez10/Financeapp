@@ -2,6 +2,59 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.44.0 — 2026-05-24 — Remaining chart gradients + Lucide nav icons
+
+Closing the two open polish tracks from the ui-ux-pro-max audit.
+
+**(f) Gradient polish on the 8 remaining chart components** — same pattern as
+v0.42, applied to the chart components that didn't get touched there.
+- **BulletChart** — horizontal gradient fill (left light → right vivid),
+  3px radius, thinner target tick (1.25px), tabular numerals.
+- **NetWorthBridge** — vertical gradient per asset/liability band (assets:
+  vivid top → fading; liabilities: fading → vivid bottom). Gradient stroke
+  on the gold net-worth line. Hairline zero divider.
+- **PayoffProgression** — horizontal gradient per debt band (vivid left →
+  fading right, mirroring the paydown), thinner outline (0.5px).
+- **AmortizationArea** — vertical gradient under curve + horizontal gradient
+  stroke. Stroke 1.75→1.5px.
+- **StackedBars** — vertical gradient per category segment (vivid top →
+  muted bottom). 2px radius. Bar width 28→24, 6px gap → 8px gap.
+- **HeatmapCalendar** — switched from opacity-modulation on a single base
+  color to RGB-interpolated **color gradient** between `#FEF3C7` (low) and
+  the chosen base (high). Subtle stroke on empty cells. 3px radius.
+- **GroupedYoY** — vertical gradient per bar (current: vivid → 50%; prior:
+  72% → 32%). Legend swatch uses gradient too. Bar width 18→16, 1px gap →
+  4px gap. Tabular-numerals labels.
+- **ForecastCone** — horizontal gradient on cone fill (vivid at "now" →
+  fading at horizon), gradient stroke on history line. Cone fill opacity
+  doubled where the "now" boundary lands; projection line dasharray
+  tightened (4 3 → 3 3).
+
+**(e) Lucide icon vocabulary — sidebar + avatar menu.**
+- `lucide-react` imports added to App.jsx (in its own `icons` chunk).
+- New `GAIcon({name, size, color, style})` wrapper. Maps stable keys
+  (`dashboard`, `clients`, `settings`, `signOut`, etc.) to Lucide
+  components so callers don't import each one. Stroke width 1.6, current
+  color by default.
+- **Sidebar nav** (desktop + mobile): the `NAV` array now carries an `icon`
+  key per item; render path uses `<GAIcon name={n.icon}/>` instead of the
+  emoji prefix split. 7 items: LayoutDashboard, Users, FileInput,
+  Calculator, Tag, BookOpen, Anchor.
+- **Topbar avatar menu**: 11 items now carry icon keys. Profile → ImageIcon,
+  Chart Settings → BarChart3, Settings → SettingsIcon, Security → Shield,
+  Billing → Receipt, Backup → HardDriveDownload, Archived → Archive,
+  What's new → Sparkles, Help → HelpCircle, Sign out → LogOut. Dangerous
+  items inherit the menu's `th.neg` color via the wrapper span.
+- Verified: 7 SVG icons render in the mobile nav drawer, 12 total Lucide
+  SVGs across the page (sidebar + menu + chart filters that already
+  rendered).
+
+**Pending for v0.45+:** The bulk of in-content emojis still live in:
+KPI tile labels (`💼 Net Income`, `💳 Bills`, `🏦 Total Debt`, etc.),
+section header bars (`📊 INCOME`, `💳 BILLS`, etc.), modal titles
+(`📅 New Month`, etc.), and calculator tab labels. Those ~150 swaps will
+ship in a future focused pass — the foundation (`GAIcon` + import) is in.
+
 ## v0.43.0 — 2026-05-24 — Landing page + reduced-motion + bundle splitting
 
 Three of four polish passes from the ui-ux-pro-max audit. The fourth (Lucide
