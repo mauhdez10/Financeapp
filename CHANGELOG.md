@@ -2,6 +2,63 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.51.0 — 2026-05-25 — Download PDF replaces in-app Print + handoff files
+
+**Headline.** The "🖨️ Print / Save PDF" button on the three report tabs
+(Monthly, Financial Statements, Complete) is gone. In its place: a
+"📥 Download PDF" button that hits the same Puppeteer endpoint as
+"📧 Email" — so the downloaded PDF is byte-identical to the emailed
+artifact. Both paths now produce the v0.50 warm-palette PDF. Per
+Mauricio: *"the pdf print shouldn't be print anymore … should be the
+same report"*.
+
+**Backend** (`api/render-report-pdf.js`).
+- Handler accepts `mode: "email" | "download"` (defaults `"email"` for
+  back-compat — existing email modal callers don't pass mode).
+- Email mode unchanged: validates recipient, sends via Resend.
+- Download mode skips both. Returns the raw PDF buffer with
+  `Content-Type: application/pdf`, `Content-Disposition: attachment;
+  filename=…`, `Cache-Control: no-store`, and `Content-Length`. Same
+  HTML + same `renderPDF(html)` Puppeteer step — only the response
+  branch differs.
+- `RESEND_API_KEY` no longer a startup blocker for download mode (gated
+  behind the `mode === "email"` check).
+
+**Frontend** (`src/App.jsx`).
+- New `gaDownloadCompleteReport(payload)` helper next to
+  `gaEmailCompleteReport`. POSTs with `mode:"download"`, validates the
+  response is `application/pdf`, parses the `Content-Disposition`
+  filename, creates a Blob URL, programmatically clicks an anchor, then
+  revokes the URL after 250ms.
+- New `<DownloadPdfBtn client lang reportType settings t disabled/>`
+  component — same gold pill styling as the old PrintBtn, shows
+  "⏳ Preparing PDF…" busy state, surfaces server errors inline as a
+  red "⚠ …" badge (truncated at 60 chars).
+- `<PrintBtn/>` definition kept (unwired) for a future "Print raw data"
+  surface — per Mauricio: *"next we can have print page if you want
+  to have more raw data instead of those collapsed pdf"*.
+- Wired on all three report tabs: MonthlyReportTab,
+  FinancialStatementReportTab, CompleteReportTab. Disabled when
+  `!hasData` (same gate as the Email button).
+
+**Verified in dev.**
+- Button renders with `📥 Download PDF` label on Complete Report tab
+  for Amanda Chen.
+- Click captured the outgoing payload via stubbed `fetch`:
+  `{mode:"download", clientId, reportType:"complete", lang,
+  advisorName, advisorEmail, include}`. Authorization Bearer attached.
+- Old "🖨️ Print / Save PDF" button gone from the tab — confirmed via
+  DOM probe.
+
+**Design-system files imported.** `HANDOFF-v0.46.md` (the 9-PR plan
+from the design side) + 11 new `preview/*.html` mockups (20-30 plus
+`redesign-index.html`) copied into the working copy. PRs 1, 4-9 are
+the upcoming visual ports; PR 2 (intake colors) and PR 3 (email PDF
+warm) are partially or fully done. PRs 23 and 24 are pending design's
+verdict. Per Mauricio's "don't delete duplicates — add versions"
+rule, the v0.48 customization scaffolding is the vehicle for applying
+each redesigned chart as a NEW version selectable per template.
+
 ## v0.50.0 — 2026-05-25 — Email PDF warm palette (port v0.45 in-app print)
 
 Ported the warm linen + amber + Newsreader story from `preview/18-pdf-reports.html`

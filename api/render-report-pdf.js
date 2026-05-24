@@ -1026,9 +1026,7 @@ export default async function handler(req, res) {
   if (!SUPABASE_URL || !SERVICE_ROLE) {
     return res.status(500).json({ ok: false, error: "Supabase env vars missing on server" });
   }
-  if (!RESEND_API_KEY) {
-    return res.status(500).json({ ok: false, error: "Resend env var missing on server" });
-  }
+  // v0.51 — Resend only required for email mode; download mode skips it.
 
   // Auth
   const authHeader = req.headers.authorization || "";
@@ -1054,6 +1052,7 @@ export default async function handler(req, res) {
   }
   body = body || {};
 
+  const mode = body.mode === "download" ? "download" : "email";
   const clientId = String(body.clientId || "").trim();
   const to = String(body.to || "").trim();
   const subject = String(body.subject || "").trim().slice(0, 200) || "Your financial report";
@@ -1065,7 +1064,15 @@ export default async function handler(req, res) {
   const reportType = ["monthly", "financial", "complete"].includes(body.reportType) ? body.reportType : "complete";
 
   if (!clientId) return res.status(400).json({ ok: false, error: "clientId required" });
-  if (!vEmail(to)) return res.status(400).json({ ok: false, error: "Valid recipient email required" });
+  // v0.51 — only email mode requires recipient + Resend.
+  if (mode === "email") {
+    if (!RESEND_API_KEY) {
+      return res.status(500).json({ ok: false, error: "Resend env var missing on server" });
+    }
+    if (!vEmail(to)) {
+      return res.status(400).json({ ok: false, error: "Valid recipient email required" });
+    }
+  }
 
   // Load the client row owned by this advisor. Match local_id first, fallback to data->>id.
   let clientRow = null;
@@ -1121,6 +1128,17 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().slice(0, 10);
   const TYPE_SLUG = { monthly: "monthly", financial: "financial-statements", complete: "complete-report" };
   const filename = `golden-anchor-${TYPE_SLUG[reportType] || "report"}-${safeName}-${today}.pdf`;
+
+  // v0.51 — download mode: return the PDF buffer directly with attachment headers.
+  // The same render path produces the same artifact whether emailed or downloaded.
+  if (mode === "download") {
+    const pdfBytes = Buffer.from(pdfBuffer);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", String(pdfBytes.length));
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(pdfBytes);
+  }
 
   // Send via Resend
   const { text, html: bodyHTML } = buildEmailBody(lang, message, advisor);
