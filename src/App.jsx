@@ -3926,25 +3926,177 @@ const dashChartOptions=t=>[
   {id:"netWorthBridge",label:"⚖️ "+(t?.netWorthBridgeHdr||"Net Worth Bridge")},
 ];
 
-/* ── v0.39.0 — ChartSettingsModal: opened from the topbar avatar menu. Lets
-   the user pick which chart fills each Dashboard slot via dropdowns. */
+/* ── v0.46.0 — ChartSettingsModal: rebuilt as a temporary Chart Gallery.
+   Renders every chart component the app supports with realistic sample data
+   so we can audit which to keep / swap / retire. Dashboard slot picker
+   preserved below the gallery for in-place swaps. */
+function ChartGalleryCard({name,status,desc,th,t,children}){
+  const isNew=status==="new";
+  return<div style={{background:th.card,border:`1px solid ${th.cardBorder}`,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,minHeight:240,overflow:"hidden"}}>
+    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
+      <div style={{fontSize:10,fontWeight:700,color:th.text,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{name}</div>
+      <span style={{fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:99,letterSpacing:"0.08em",textTransform:"uppercase",background:isNew?"#F59E0B22":GOLD+"22",color:isNew?"#F59E0B":GOLD,border:`1px solid ${isNew?"#F59E0B66":GOLD+"66"}`,whiteSpace:"nowrap"}}>{isNew?(t.chartGalleryNew||"New"):(t.chartGalleryWired||"Wired")}</span>
+    </div>
+    <div style={{fontSize:10,color:th.muted,lineHeight:1.45,minHeight:28}}>{desc}</div>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",minHeight:140,width:"100%"}}>{children}</div>
+  </div>;
+}
+
 function ChartSettingsModal({settings,onSave,onClose,t}){
   const th=useTh();
+  const{isMobile}=useViewport();
   const slots=(settings.dashboardSlots||["incomeVsSpending","sankey","netWorthDonut"]).slice(0,3);
   while(slots.length<3)slots.push(["incomeVsSpending","sankey","netWorthDonut"][slots.length]);
   const opts=dashChartOptions(t);
   const setSlot=(i,id)=>{const s=[...slots];s[i]=id;onSave({...settings,dashboardSlots:s});};
   const INP=mINP(th);
-  return<Modal title={"📊 "+(t.chartSettingsHdr||"Chart Settings")} onClose={onClose} width={480}>
-    <div style={{fontSize:11,color:th.muted,marginBottom:14,lineHeight:1.6}}>{t.chartSettingsBlurb||"Pick which chart fills each Dashboard slot. Changes save automatically and apply on the next reload."}</div>
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      {slots.map((id,i)=><div key={i}>
-        <label style={{fontSize:11,fontWeight:600,color:th.muted,display:"block",marginBottom:5,letterSpacing:"0.04em",textTransform:"uppercase"}}>{(t.dashboardSlotLbl||"Dashboard slot")+" "+(i+1)}</label>
-        <select style={INP} value={id} onChange={e=>setSlot(i,e.target.value)}>{opts.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select>
+  // Sample data, common to all cards. Amanda-Chen-style numbers.
+  const heatmapData=(()=>{const out=[];[2024,2025,2026].forEach(y=>{for(let m=1;m<=12;m++){if(y===2026&&m>5)continue;out.push({year:y,month:m,value:1800+Math.round(Math.abs(Math.sin(m*0.7+y*1.3))*1600)+(y-2024)*220});}});return out;})();
+  const gallery=[
+    {name:"Sparkline",status:"wired",desc:"Tiny trend lines for KPI tiles. No axes.",render:()=><div style={{width:"100%",maxWidth:280,display:"flex",flexDirection:"column",gap:8}}>
+      {[
+        ["Net worth",[18,22,21,26,28,30,34,38,42,48],th.pos,"$48K"],
+        ["Debt",[42,40,38,36,34,32,30,28,26,22],th.neg,"$22K"],
+        ["Liquid mo.",[3.2,3.8,4.1,5.0,5.8,6.4,7.1,7.6,8.0],GOLD,"8.0"],
+      ].map(([l,d,c,v],i)=><div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,fontSize:11}}>
+        <span style={{color:th.dim,flex:"0 0 70px"}}>{l}</span>
+        <Sparkline data={d} color={c} width={120} height={22}/>
+        <span style={{color:c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:50,textAlign:"right"}}>{v}</span>
       </div>)}
+    </div>},
+    {name:"RadialGauge",status:"wired",desc:"Single-value arc gauge with target marker.",render:()=><RadialGauge value={68} max={100} target={75} size={150} label="HEALTH" subLabel="Strong" thresholds={[0.6,0.4]} direction="higher"/>},
+    {name:"BulletChart",status:"wired",desc:"Tufte-style goal progress with target tick.",render:()=><div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:14}}>
+      <BulletChart value={4200} target={6000} max={10000} label="Emergency Fund" sublabel="3.5 of 6 mo" width={320}/>
+      <BulletChart value={2800} target={2500} max={5000} label="Monthly Save" sublabel="112% of $2.5K goal" color="#10B981" width={320}/>
+    </div>},
+    {name:"Donut",status:"wired",desc:"Composition by slice. Center label/value.",render:()=><Donut size={150} centerLabel="Net Worth" centerValue="$28.1K" data={[
+      {label:"Retirement",value:22000,color:"#8B5CF6"},
+      {label:"Brokerage",value:22000,color:"#10B981"},
+      {label:"Savings",value:12000,color:"#06B6D4"},
+      {label:"Checking",value:3800,color:"#3B82F6"},
+    ]}/>},
+    {name:"Treemap",status:"wired",desc:"Proportional rectangles. Bigger = more $.",render:()=><Treemap width={400} height={180} data={[
+      {label:"Mortgage",value:285000,color:"#DC2626"},
+      {label:"Auto",value:24000,color:"#F97316"},
+      {label:"Student",value:18000,color:"#3B82F6"},
+      {label:"Cards",value:8400,color:"#EF4444"},
+      {label:"Personal",value:3200,color:"#F59E0B"},
+    ]}/>},
+    {name:"Sunburst",status:"new",desc:"Nested radial — parent groups + children. Asset-map candidate.",render:()=><Sunburst size={210} data={[
+      {label:"Cash",color:"#06B6D4",children:[
+        {label:"Checking",value:3800,color:"#3B82F6"},
+        {label:"Savings",value:12000,color:"#06B6D4"},
+      ]},
+      {label:"Investments",color:"#8B5CF6",children:[
+        {label:"401k",value:18000,color:"#8B5CF6"},
+        {label:"IRA",value:4000,color:"#A78BFA"},
+        {label:"Brokerage",value:22000,color:"#10B981"},
+      ]},
+    ]}/>},
+    {name:"RankedHBars",status:"wired",desc:"Horizontal bars sorted high → low. Debt by balance.",render:()=><RankedHBars width={400} data={[
+      {label:"Mortgage",value:285000,color:"#DC2626"},
+      {label:"Auto Loan",value:24000,color:"#F97316"},
+      {label:"Student Loan",value:18000,color:"#3B82F6"},
+      {label:"Chase Card",value:5200,color:"#EF4444"},
+      {label:"Capital One",value:3200,color:"#EF4444"},
+    ]}/>},
+    {name:"Waterfall",status:"wired",desc:"Stepwise cash-flow walk. Income → minus → free.",render:()=><Waterfall width={420} height={160} segments={[
+      {label:"Income",value:9600,color:"#10B981"},
+      {label:"Bills",value:-1985,color:"#EF4444"},
+      {label:"Min Debt",value:-450,color:"#EF4444"},
+      {label:"Savings",value:-1500,color:"#F59E0B"},
+      {label:"Free",value:5665,kind:"total"},
+    ]}/>},
+    {name:"Sankey",status:"wired",desc:"Flow diagram. Proportional bands.",render:()=><Sankey width={420} height={200} nodes={[
+      {id:"inc",label:"Income",layer:0,color:"#10B981"},
+      {id:"bills",label:"Bills",layer:1,color:"#EF4444"},
+      {id:"min",label:"Debt Min",layer:1,color:"#F59E0B"},
+      {id:"cash",label:"Free Cash",layer:1,color:GOLD},
+    ]} links={[
+      {from:"inc",to:"bills",value:1985},
+      {from:"inc",to:"min",value:450},
+      {from:"inc",to:"cash",value:7165},
+    ]}/>},
+    {name:"SmoothAreaLine",status:"wired",desc:"Two-curve area chart. Debt vs Savings trend.",render:()=><SmoothAreaLine height={160} data={[
+      {label:"Dec",debt:38000,savings:9000},
+      {label:"Jan",debt:35500,savings:11500},
+      {label:"Feb",debt:33000,savings:14500},
+      {label:"Mar",debt:30000,savings:17000},
+      {label:"Apr",debt:27500,savings:21000},
+      {label:"▶ Now",debt:25000,savings:24500},
+    ]}/>},
+    {name:"Radar5",status:"wired",desc:"5-axis radar. Financial Health Score.",render:()=><Radar5 size={220} axes={["DSR","Save Rate","EF","D/A","Cash Flow"]} values={[0.68,0.55,0.82,0.40,0.72]}/>},
+    {name:"SlopeGraph",status:"new",desc:"Tufte slope — period-over-period. Last month vs this month.",render:()=><SlopeGraph height={210} leftLabel="Apr" rightLabel="May" data={[
+      {label:"Net Worth",a:42000,b:48000,color:GOLD},
+      {label:"Savings",a:21000,b:24500,color:"#10B981"},
+      {label:"Auto Loan",a:24600,b:24000,color:"#F97316"},
+      {label:"Cards",a:8800,b:8400,color:"#EF4444"},
+      {label:"Mortgage",a:286000,b:285200,color:"#DC2626"},
+    ]}/>},
+    {name:"Dumbbell",status:"new",desc:"Before/after rows. Auto-colors green if decreasing.",render:()=><Dumbbell width={400} leftLabel="Was" rightLabel="Now" data={[
+      {label:"Chase Card",a:6800,b:5200},
+      {label:"Cap One",a:4400,b:3200},
+      {label:"Auto Loan",a:24600,b:24000},
+      {label:"Savings",a:21000,b:24500},
+    ]}/>},
+    {name:"GroupedYoY",status:"wired",desc:"Current year vs prior year per category.",render:()=><GroupedYoY width={400} curLabel="2026" priorLabel="2025" data={[
+      {label:"Housing",current:18000,prior:17400},
+      {label:"Food",current:7200,prior:6500},
+      {label:"Auto",current:5800,prior:6200},
+      {label:"Travel",current:3200,prior:2100},
+      {label:"Other",current:4800,prior:4500},
+    ]}/>},
+    {name:"StackedBars",status:"wired",desc:"Stacked categories across periods.",render:()=><StackedBars width={400} height={170} data={[
+      {label:"Jan",rent:1500,food:600,utility:240},
+      {label:"Feb",rent:1500,food:680,utility:255},
+      {label:"Mar",rent:1500,food:520,utility:200},
+      {label:"Apr",rent:1500,food:710,utility:220},
+      {label:"May",rent:1500,food:640,utility:260},
+    ]} categories={["rent","food","utility"]} colors={{rent:"#3B82F6",food:"#F59E0B",utility:"#10B981"}}/>},
+    {name:"NetWorthBridge",status:"wired",desc:"Assets above zero, liabilities below.",render:()=><NetWorthBridge width={400} height={180} data={[
+      {label:"Jan",assets:{checking:3000,savings:8000,retirement:14000,investments:18000},liabilities:{cards:6500,auto:25000,mortgage:290000}},
+      {label:"Feb",assets:{checking:3200,savings:9500,retirement:15500,investments:19000},liabilities:{cards:5800,auto:24800,mortgage:289000}},
+      {label:"Mar",assets:{checking:3400,savings:11000,retirement:16800,investments:21000},liabilities:{cards:5000,auto:24400,mortgage:288000}},
+      {label:"Apr",assets:{checking:3600,savings:12500,retirement:18000,investments:21500},liabilities:{cards:4400,auto:24000,mortgage:287000}},
+      {label:"May",assets:{checking:3800,savings:14000,retirement:19000,investments:22500},liabilities:{cards:3600,auto:23500,mortgage:286000}},
+    ]}/>},
+    {name:"PayoffProgression",status:"wired",desc:"Stacked payoff timeline projection.",render:()=><PayoffProgression width={400} height={160} extraPay={300} debts={[
+      {name:"Chase",balance:5200,apr:24.99,min:130,color:"#EF4444"},
+      {name:"Cap One",balance:3200,apr:21.99,min:80,color:"#F97316"},
+      {name:"Student",balance:18000,apr:6.5,min:220,color:"#3B82F6"},
+    ]}/>},
+    {name:"AmortizationArea",status:"wired",desc:"Loan balance dropping over the term.",render:()=><AmortizationArea width={400} height={150} principal={28000} apr={6.99} termMonths={60}/>},
+    {name:"ForecastCone",status:"wired",desc:"History solid line + widening projection cone.",render:()=><ForecastCone width={400} height={160} confidence={0.18} history={[
+      {label:"2022",value:18000},
+      {label:"2023",value:24000},
+      {label:"2024",value:34000},
+      {label:"2025",value:42000},
+      {label:"2026",value:48000},
+    ]} projection={[
+      {label:"2027",value:58000},
+      {label:"2028",value:70000},
+      {label:"2030",value:100000},
+      {label:"2032",value:140000},
+      {label:"2035",value:185000},
+    ]}/>},
+    {name:"HeatmapCalendar",status:"wired",desc:"Year × month intensity grid. Cream → amber.",render:()=><HeatmapCalendar width={400} height={130} data={heatmapData}/>},
+  ];
+  return<Modal title={"📊 "+(t.chartSettingsHdr||"Chart Gallery")} onClose={onClose} width={920}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:16,lineHeight:1.6}}>{t.chartSettingsBlurb||"Every chart available in the app, rendered with sample data. Temporary section — decide which to keep, swap, or retire."}</div>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:20}}>
+      {gallery.map((c,i)=><ChartGalleryCard key={i} name={c.name} status={c.status} desc={c.desc} th={th} t={t}>{c.render()}</ChartGalleryCard>)}
     </div>
-    <div style={{fontSize:10,color:th.dim,marginTop:14,lineHeight:1.6,padding:"10px 12px",background:th.cardBorder+"22",borderRadius:8}}>{t.chartSettingsTip||"Tip: you can also change a chart inline by clicking the ⚙ gear on any Dashboard card."}</div>
-    <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:18}}><BSolid onClick={onClose}>{t.done||"Done"}</BSolid></div>
+    <div style={{borderTop:`1px solid ${th.cardBorder}`,paddingTop:16,marginTop:4}}>
+      <div style={{fontSize:11,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{t.chartGallerySlotsHdr||"Dashboard Slots"}</div>
+      <div style={{fontSize:10,color:th.dim,marginBottom:12,lineHeight:1.6}}>{t.chartSettingsTip||"Tip: pick which charts fill the Dashboard slots below — or use the ⚙ gear on any Dashboard card."}</div>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
+        {slots.map((id,i)=><div key={i}>
+          <label style={{fontSize:10,fontWeight:600,color:th.muted,display:"block",marginBottom:5,letterSpacing:"0.04em",textTransform:"uppercase"}}>{(t.dashboardSlotLbl||"Dashboard slot")+" "+(i+1)}</label>
+          <select style={INP} value={id} onChange={e=>setSlot(i,e.target.value)}>{opts.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select>
+        </div>)}
+      </div>
+    </div>
+    <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:20}}><BSolid onClick={onClose}>{t.done||"Done"}</BSolid></div>
   </Modal>;
 }
 
@@ -4734,7 +4886,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-24-v0450-compact-print-new-charts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0460-chart-gallery";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/

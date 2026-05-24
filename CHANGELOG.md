@@ -2,6 +2,49 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.46.0 — 2026-05-25 — Chart Gallery (temporary audit section)
+
+Converted the topbar avatar menu's **Chart Settings** entry into a **Chart
+Gallery** — a temporary showcase of every chart component the app ships
+with, rendered with realistic finance sample data. Lets Mauricio audit
+which to keep, swap, or retire before we commit to wiring them
+everywhere.
+
+**Gallery contents — 20 components, two-column grid:**
+
+Sparkline · RadialGauge · BulletChart · Donut · Treemap · **Sunburst** ·
+RankedHBars · Waterfall · Sankey · SmoothAreaLine · Radar5 ·
+**SlopeGraph** · **Dumbbell** · GroupedYoY · StackedBars ·
+NetWorthBridge · PayoffProgression · AmortizationArea · ForecastCone ·
+HeatmapCalendar.
+
+The three v0.45-built-but-unwired components (Sunburst, SlopeGraph,
+Dumbbell) are tagged with an amber `NEW` pill — the other 17 carry a
+gold `WIRED` pill. Each card has the component name in JetBrains Mono
+caps, a one-line description of what the chart is good for, and the
+chart itself rendered with hand-picked Amanda-Chen-style sample data
+(net worth ~$28K, debts $285K mortgage / $24K auto / $18K student /
+$8K cards, savings climbing $9K → $24K over six months, etc.).
+
+**Dashboard Slot Picker preserved.** Below the gallery, the original
+3-dropdown picker (Slot 1 / 2 / 3 → which chart fills each Dashboard
+card) is retained as a separate section so the modal still does its
+original job. The ⚙ gear on each Dashboard card still works for inline
+swaps.
+
+**Translations:** repurposed the existing `chartSettings*` keys (header
+"Chart Gallery", new blurb + tip copy) and `menuChartSettings*` (avatar
+menu now reads "Chart Gallery / Browse every chart"). Added three new
+keys × EN+ES: `chartGalleryWired`, `chartGalleryNew`,
+`chartGallerySlotsHdr`.
+
+Modal width bumped 480 → 920 to fit the two-column gallery on desktop.
+Mobile falls back to single-column with full-width modal as before.
+
+**This is explicitly temporary** — the goal is to converge on a final
+chart vocabulary, then trim the gallery (or remove it entirely) once
+that's settled.
+
 ## v0.45.0 — 2026-05-24 — Compact print + new charts + standalone calc wires
 
 Three things in one ship: rewrite the print stylesheet to match the claude
