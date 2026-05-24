@@ -781,25 +781,75 @@ function MonthSelector({client,value,onChange,t}){const th=useTh();const snaps=c
 function PrintBtn({label="🖨️ Print / Save PDF",style={}}){const th=useTh();return<button className="ga-np" onClick={()=>window.print()} style={{fontSize:12,padding:"7px 16px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,border:"none",cursor:"pointer",...style}}>{label}</button>;}
 function NoDataMsg({snap}){const th=useTh();return<div style={{...mCARD(th),padding:24,textAlign:"center"}}><div style={{fontSize:18,marginBottom:8}}>📊</div><div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:12}}>{snap?.label}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16,maxWidth:400,margin:"0 auto 16px"}}>{[["Income",snap?.income,th.pos],["Bills",snap?.bills,th.neg],["Debt",snap?.debt,th.warn],["Savings",snap?.savings,th.blue]].map(([l,v,c])=><div key={l}><div style={{fontSize:10,color:th.dim,marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:800,color:c}}>{fmt(v||0)}</div></div>)}</div><div style={{fontSize:11,color:th.dim}}>Full detail data was not saved for this snapshot.<br/>Only summary totals are available.</div></div>;}
 function ReportHdr({client,selMonth,isCur,t}){const th=useTh();const now=new Date();const curLabel=`${MS[now.getMonth()]} ${now.getFullYear()}`;const displayMonth=isCur?curLabel:selMonth;return<div style={{...mCARD(th),padding:20,marginBottom:20,background:`linear-gradient(135deg,${th.nav},#1F2937)`}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><div style={{fontSize:22,fontWeight:800,color:"#FFFFFF"}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:"rgba(255,255,255,0.7)",fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:4}}>{client.email}{client.phone?` · ${client.phone}`:""}{client.address?` · ${client.address}`:""}</div></div><div style={{textAlign:"right"}}><div style={{fontSize:22,fontWeight:800,color:GOLD,fontFamily:"Georgia,serif"}}>⚓ Golden Anchor</div><div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:2}}>{mLabel(displayMonth,_gaLang())}{isCur&&<span style={{opacity:0.7}}> · {t.liveSuffix||"Live"}</span>} · {fmtDate(new Date(),_gaLang())}</div></div></div></div>;}
-/* ── v0.35.0 — Phase 5 Charts: Donut ───────────────────────────────────────
-   Pure-SVG donut chart with optional center value/label and 4-row legend
-   (positioned by the caller — Donut just renders the SVG). Replaces the
-   Recharts PieChart/Pie/Cell combo on the Dashboard's Net Worth Distribution.
-   Slices use the colors passed in; padding angle stays subtle (~1.5°). */
+/* ── v0.37.0 — Chart animation foundation ───────────────────────────────────
+   useTweenedData(target, durationMs?) — tween any numeric value, array, or
+   object-of-numbers from current state to a new target over ~800ms with
+   easeOutCubic. Used by every chart so values morph smoothly when the
+   underlying data changes (toggling p1/p2/both, switching client, new
+   month snapshot). Shape changes (different array length, new keys) snap
+   instantly — only same-shape transitions tween. */
+const _easeOutCubic=t=>1-Math.pow(1-t,3);
+function _lerpAny(a,b,k){
+  if(typeof a==="number"&&typeof b==="number"&&isFinite(a)&&isFinite(b))return a+(b-a)*k;
+  if(Array.isArray(a)&&Array.isArray(b)&&a.length===b.length)return a.map((x,i)=>_lerpAny(x,b[i],k));
+  if(a&&b&&typeof a==="object"&&typeof b==="object"&&!Array.isArray(a)&&!Array.isArray(b)){
+    const o={...b};for(const key of Object.keys(b))if(key in a)o[key]=_lerpAny(a[key],b[key],k);return o;
+  }
+  return b;
+}
+function _sameShape(a,b){
+  if(a===null||b===null)return a===b;
+  if(typeof a!==typeof b)return false;
+  if(Array.isArray(a)!==Array.isArray(b))return false;
+  if(Array.isArray(a))return a.length===b.length&&a.every((x,i)=>_sameShape(x,b[i]));
+  if(a&&b&&typeof a==="object"){const ka=Object.keys(a).sort(),kb=Object.keys(b).sort();return ka.length===kb.length&&ka.every((k,i)=>k===kb[i]);}
+  return true;
+}
+function useTweenedData(target,duration=800){
+  const[cur,setCur]=useState(target);
+  const ref=useRef({to:target,raf:0,cur:target});
+  ref.current.cur=cur;
+  useEffect(()=>{
+    if(!_sameShape(ref.current.to,target)){
+      cancelAnimationFrame(ref.current.raf);
+      ref.current.to=target;
+      setCur(target);
+      return;
+    }
+    cancelAnimationFrame(ref.current.raf);
+    const from=ref.current.cur,t0=performance.now();
+    ref.current.to=target;
+    const tick=now=>{
+      const k=Math.min(1,(now-t0)/duration);
+      setCur(_lerpAny(from,target,_easeOutCubic(k)));
+      if(k<1)ref.current.raf=requestAnimationFrame(tick);
+    };
+    ref.current.raf=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(ref.current.raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[JSON.stringify(target),duration]);
+  return cur;
+}
+// Stable unique ID per component instance for SVG <defs> (filters, gradients)
+function useSvgId(prefix){return useMemo(()=>`${prefix}-${Math.random().toString(36).slice(2,8)}`,[prefix]);}
+
+/* ── v0.35.0 — Phase 5 Charts: Donut (v0.37 tween + drop shadow) ───────────
+   Pure-SVG donut chart. Slice angles tween between states; soft drop-shadow
+   gives subtle depth without 3D. */
 function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,centerValue,centerColor,placeholder}){
   const th=useTh();
   const filtered=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.value||0)>0);
+  const twValues=useTweenedData(filtered.map(d=>+d.value||0),700);
+  const dsId=useSvgId("donut-ds");
   if(filtered.length===0){
     return<div style={{width:size,height:size,borderRadius:999,border:`2px dashed ${th.cardBorder||"#E2E8F0"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:th.dim||"#94A3B8",textAlign:"center",padding:8,lineHeight:1.3}}>{placeholder||"No data"}</div>;
   }
-  const total=filtered.reduce((s,d)=>s+(+d.value||0),0);
-  const r=size/2;
-  const ir=r*innerRatio;
-  const cx=r,cy=r;
+  const total=twValues.reduce((s,v)=>s+(+v||0),0)||1;
+  const r=size/2,ir=r*innerRatio,cx=r,cy=r;
   let angle=-Math.PI/2;
   const gapRad=paddingAngle*Math.PI/180;
-  const segs=filtered.map(d=>{
-    const frac=(+d.value||0)/total;
+  const segs=filtered.map((d,i)=>{
+    const frac=(twValues[i]||0)/total;
     const startA=angle+gapRad/2;
     const endA=angle+frac*2*Math.PI-gapRad/2;
     angle+=frac*2*Math.PI;
@@ -812,8 +862,18 @@ function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,cente
     return{...d,path};
   });
   return<div style={{position:"relative",width:size,height:size}}>
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block"}}>
-      {segs.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="none"/>)}
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible"}}>
+      <defs>
+        <filter id={dsId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+          <feOffset dx="0" dy="2"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.28"/></feComponentTransfer>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <g filter={`url(#${dsId})`}>
+        {segs.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="none"/>)}
+      </g>
     </svg>
     {(centerLabel||centerValue)&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none",textAlign:"center"}}>
       {centerLabel&&<div style={{fontSize:9,color:th.dim||"#94A3B8",letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:700}}>{centerLabel}</div>}
@@ -822,27 +882,24 @@ function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,cente
   </div>;
 }
 
-/* ── v0.35.0 — Phase 5 Charts: Waterfall ──────────────────────────────────
+/* ── v0.35.0 — Phase 5 Charts: Waterfall (v0.37 tween + drop shadow) ──────
    Pure-SVG cash-flow waterfall — segments stacked Income → −Bills → −Debt →
-   +Save → Net. Each segment is a vertical bar from the running cumulative to
-   the new value; positive segments grow up (gold or green), negative segments
-   shrink down (orange or red). Dashed connector lines link consecutive
-   segments. The final "Net" bar is the full-height baseline-to-net total in gold. */
+   +Save → Net. Bar heights tween between states. */
 function Waterfall({segments,height=180,width=600,bg}){
   const th=useTh();
   bg=bg||th.card||"transparent";
   const segs=Array.isArray(segments)?segments.filter(s=>s):[];
+  const twVals=useTweenedData(segs.map(s=>+s.value||0),800);
+  const dsId=useSvgId("wf-ds");
   if(segs.length===0)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
-  // Compute running cumulative for each non-net segment; the last segment is the Net total.
   let cum=0;
   const items=segs.map((s,i)=>{
+    const tv=twVals[i]||0;
     if(s.kind==="total"){
-      // Net total bar — from 0 to the cumulative sum so far (or s.value if provided).
-      const v=s.value!=null?+s.value:cum;
+      const v=s.value!=null?tv:cum;
       return{...s,start:0,end:v,delta:v,isTotal:true};
     }
-    const v=+s.value||0;
-    const start=cum,end=cum+v;
+    const v=tv,start=cum,end=cum+v;
     cum=end;
     return{...s,start,end,delta:v,isTotal:false};
   });
@@ -854,14 +911,19 @@ function Waterfall({segments,height=180,width=600,bg}){
   const barW=Math.min(48,(innerW-(items.length-1)*8)/items.length);
   const yAt=v=>padT+innerH*(1-(v-minV)/range);
   const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*8)/2+i*(barW+8);
-  const goldDeep="#755023";
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {/* baseline */}
+      <defs>
+        <filter id={dsId} x="-5%" y="-5%" width="110%" height="120%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+          <feOffset dx="0" dy="2"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
       <line x1={padL} y1={yAt(0)} x2={width-padR} y2={yAt(0)} stroke={th.dim} strokeOpacity="0.3" strokeDasharray="3 3"/>
-      {/* connectors (between bars) */}
       {items.map((it,i)=>{if(i===items.length-1)return null;const x1=xAt(i)+barW,x2=xAt(i+1);const yEnd=it.isTotal?yAt(0):yAt(it.end);return<line key={"c"+i} x1={x1} y1={yEnd} x2={x2} y2={yEnd} stroke={th.dim} strokeOpacity="0.45" strokeDasharray="2 3"/>;})}
-      {/* bars */}
+      <g filter={`url(#${dsId})`}>
       {items.map((it,i)=>{
         const color=it.isTotal?GOLD:(it.delta>=0?(it.color||GOLD):(it.color||"#ED7D31"));
         const y=it.isTotal?yAt(Math.max(it.end,0)):Math.min(yAt(it.start),yAt(it.end));
@@ -872,21 +934,15 @@ function Waterfall({segments,height=180,width=600,bg}){
           <text x={xAt(i)+barW/2} y={height-9} textAnchor="middle" fontSize="9" fill={th.dim}>{(it.delta>=0?"+":"")+(it.delta>=1000||it.delta<=-1000?Math.round(it.delta/1000)+"K":Math.round(it.delta))}</text>
         </g>;
       })}
+      </g>
     </svg>
   </div>;
 }
 
-/* ── v0.34.0 — Phase 5 Charts: SmoothAreaLine ──────────────────────────────
-   Pure-SVG two-curve area chart. Replaces the Recharts AreaChart in
-   SummarySection's debt/savings trend per the Claude Design spec:
-     • Smooth curves (Catmull-Rom → cubic Bezier conversion)
-     • Gold (#C9A84C) for savings, orange (#ED7D31) for debt
-     • Soft vertical gold gradient under the savings curve only
-     • 4 horizontal gridlines + JetBrains Mono Y-axis ticks (left)
-     • Month abbreviations on the X-axis (no year prefix)
-     • Crossover dot marker in gold (first place curves cross)
-   No tooltips/labels on data points — totals are shown in the summary
-   pills above the chart per Phase 5 rule. */
+/* ── v0.34.0 — Phase 5 Charts: SmoothAreaLine (v0.37 tween + glow + live dot)
+   Pure-SVG two-curve area chart. Numeric values tween over ~800ms so the
+   curve morphs between states. Gold glow filter under the savings curve.
+   Pulsing dot at the rightmost point when the last label contains "Now". */
 function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,bg,muted,dim,labelKey="label",debtKey="debt",savingsKey="savings"}){
   const th=useTh();
   bg=bg||th.card||"transparent";
@@ -894,14 +950,17 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
   dim=dim||th.dim||"#94A3B8";
   const W=600,H=height,padL=46,padR=14,padT=12,padB=28;
   const pts=Array.isArray(data)?data.filter(d=>d):[];
+  // v0.37.0 — tween the two numeric series; labels stay stable
+  const twPts=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),800);
+  const gradId=useSvgId("sal-grad");
+  const glowId=useSvgId("sal-glow");
   if(pts.length<2)return<div style={{padding:14,fontSize:11,color:dim,fontStyle:"italic",textAlign:"center"}}>{(pts.length===0?"No data yet":"Need at least 2 months of data")}</div>;
-  // Y-range: 0 to nice-rounded max of debt/savings across all points.
-  const rawMax=Math.max(0,...pts.map(p=>Math.max(+p[debtKey]||0,+p[savingsKey]||0)));
+  const apts=pts.map((p,i)=>({...p,[debtKey]:twPts[i]?.d??(+p[debtKey]||0),[savingsKey]:twPts[i]?.s??(+p[savingsKey]||0)}));
+  const rawMax=Math.max(0,...apts.map(p=>Math.max(+p[debtKey]||0,+p[savingsKey]||0)));
   const niceMax=(v=>{if(!v)return 1000;const e=Math.pow(10,Math.floor(Math.log10(v)));const n=v/e;const m=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return m*e;})(rawMax);
   const innerW=W-padL-padR,innerH=H-padT-padB;
-  const xAt=i=>padL+(pts.length===1?innerW/2:innerW*i/(pts.length-1));
+  const xAt=i=>padL+(apts.length===1?innerW/2:innerW*i/(apts.length-1));
   const yAt=v=>padT+innerH*(1-(v/niceMax));
-  // Catmull-Rom → cubic Bezier path for smoother curves than monotone lines.
   const path=(coords,close)=>{
     if(coords.length===0)return"";
     let d="M"+coords[0].x+" "+coords[0].y;
@@ -917,28 +976,26 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
     }
     return d;
   };
-  const savCoords=pts.map((p,i)=>({x:xAt(i),y:yAt(+p[savingsKey]||0)}));
-  const debtCoords=pts.map((p,i)=>({x:xAt(i),y:yAt(+p[debtKey]||0)}));
-  // 4 Y-tick values: 0, max/3, 2max/3, max (or simpler quartiles)
+  const savCoords=apts.map((p,i)=>({x:xAt(i),y:yAt(+p[savingsKey]||0)}));
+  const debtCoords=apts.map((p,i)=>({x:xAt(i),y:yAt(+p[debtKey]||0)}));
   const ticks=[0,niceMax/3,niceMax*2/3,niceMax];
   const fmtTick=v=>{if(v>=1e6)return(v/1e6).toFixed(1).replace(/\.0$/,"")+"M";if(v>=1000)return Math.round(v/1000)+"K";return Math.round(v).toString();};
-  // Crossover detection between consecutive samples — linear interp for fractional x.
   const crossovers=[];
-  for(let i=0;i<pts.length-1;i++){
-    const dA=(+pts[i][savingsKey]||0)-(+pts[i][debtKey]||0),dB=(+pts[i+1][savingsKey]||0)-(+pts[i+1][debtKey]||0);
+  for(let i=0;i<apts.length-1;i++){
+    const dA=(+apts[i][savingsKey]||0)-(+apts[i][debtKey]||0),dB=(+apts[i+1][savingsKey]||0)-(+apts[i+1][debtKey]||0);
     if(dA===0&&dB===0)continue;
     if((dA<=0&&dB>=0)||(dA>=0&&dB<=0)){
       const t=Math.abs(dA)/(Math.abs(dA)+Math.abs(dB)||1);
       const x=xAt(i)+(xAt(i+1)-xAt(i))*t;
-      const yv=(+pts[i][savingsKey]||0)+((+pts[i+1][savingsKey]||0)-(+pts[i+1][savingsKey]||0))*t;
-      // recompute the y on the savings curve at the crossover (debt=savings here so either works)
-      const yMix=(+pts[i][savingsKey]||0)*(1-t)+(+pts[i+1][savingsKey]||0)*t;
+      const yMix=(+apts[i][savingsKey]||0)*(1-t)+(+apts[i+1][savingsKey]||0)*t;
       crossovers.push({x,y:yAt(yMix)});
     }
   }
-  // Strip year prefix from labels: "Mar 2026" → "Mar", "Mar '26" → "Mar"
   const xLabel=l=>String(l||"").split(/\s|'/)[0].slice(0,3);
-  const gradId=useMemo(()=>"ga-sal-grad-"+Math.random().toString(36).slice(2,8),[]);
+  // v0.37.0 — detect "live" point (last label contains "Now" or "▶") for pulsing dot
+  const lastLabel=String(apts[apts.length-1]?.[labelKey]||"");
+  const isLive=/Now|▶/.test(lastLabel);
+  const livePt=isLive?savCoords[savCoords.length-1]:null;
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
       <defs>
@@ -946,22 +1003,205 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
           <stop offset="0%" stopColor={savingsColor} stopOpacity="0.32"/>
           <stop offset="100%" stopColor={savingsColor} stopOpacity="0.02"/>
         </linearGradient>
+        <filter id={glowId} x="-10%" y="-30%" width="120%" height="160%">
+          <feGaussianBlur stdDeviation="2.5"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
       </defs>
-      {/* Gridlines + Y-axis tick labels */}
       {ticks.map((v,i)=>{const y=yAt(v);return<g key={i}>
         <line x1={padL} y1={y} x2={W-padR} y2={y} stroke={dim} strokeOpacity="0.22" strokeDasharray="2 4"/>
         <text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={dim}>{fmtTick(v)}</text>
       </g>;})}
-      {/* Savings area fill (gold gradient) */}
       <path d={path(savCoords,true)} fill={`url(#${gradId})`} stroke="none"/>
-      {/* Debt curve (orange, no fill) */}
       <path d={path(debtCoords,false)} fill="none" stroke={debtColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Savings curve (gold, on top of fill) */}
-      <path d={path(savCoords,false)} fill="none" stroke={savingsColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Crossover marker — gold dot with thin navy stroke */}
+      <path d={path(savCoords,false)} fill="none" stroke={savingsColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
       {crossovers.map((c,i)=><circle key={i} cx={c.x} cy={c.y} r="4.5" fill={savingsColor} stroke="#0D1B2A" strokeWidth="1.5"/>)}
-      {/* X-axis labels */}
-      {pts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted}>{xLabel(p[labelKey])}</text>)}
+      {livePt&&<g>
+        <circle cx={livePt.x} cy={livePt.y} r="6" fill={savingsColor} opacity="0.55">
+          <animate attributeName="r" values="6;13;6" dur="1.8s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.55;0;0.55" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx={livePt.x} cy={livePt.y} r="3.5" fill={savingsColor} stroke="#0D1B2A" strokeWidth="1.5"/>
+      </g>}
+      {apts.map((p,i)=><text key={i} x={xAt(i)} y={H-8} textAnchor="middle" fontSize="9" fill={muted}>{xLabel(p[labelKey])}</text>)}
+    </svg>
+  </div>;
+}
+
+/* ── v0.37.0 — Phase 5 Charts: Sankey ───────────────────────────────────────
+   Pure-SVG sankey flow diagram. Takes nodes (each with `layer` column index)
+   and links (with from/to/value) and renders proportional bands connecting
+   them. Used to show cash flow — income sources → spending categories →
+   savings. Link widths tween between states. */
+function Sankey({nodes,links,height=320,width=720,nodeWidth=12,nodeGap=10,labelSize=10,placeholder}){
+  const th=useTh();
+  const safeLinks=Array.isArray(links)?links.filter(l=>l&&(+l.value||0)>0):[];
+  const safeNodes=Array.isArray(nodes)?nodes:[];
+  const twLinkVals=useTweenedData(safeLinks.map(l=>+l.value||0),900);
+  const glowId=useSvgId("sky-glow");
+  if(safeNodes.length===0||safeLinks.length===0){
+    return<div style={{padding:24,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"Add income, bills, or savings to see flow"}</div>;
+  }
+  const layers={};
+  safeNodes.forEach(n=>{(layers[n.layer]=layers[n.layer]||[]).push(n);});
+  const layerKeys=Object.keys(layers).map(Number).sort((a,b)=>a-b);
+  const nodeIn={},nodeOut={};
+  safeLinks.forEach((l,i)=>{const v=twLinkVals[i]||0;nodeIn[l.to]=(nodeIn[l.to]||0)+v;nodeOut[l.from]=(nodeOut[l.from]||0)+v;});
+  const nodeVal=id=>Math.max(nodeIn[id]||0,nodeOut[id]||0);
+  const padT=18,padB=18,padL=70,padR=70;
+  const innerW=width-padL-padR,innerH=height-padT-padB;
+  const layerX=k=>{const i=layerKeys.indexOf(k);return padL+(layerKeys.length===1?innerW/2:innerW*i/(layerKeys.length-1))-nodeWidth/2;};
+  const layerTotal=lyr=>(layers[lyr]||[]).reduce((s,n)=>s+nodeVal(n.id),0);
+  const maxLayer=Math.max(1,...layerKeys.map(layerTotal));
+  // Pick the layer with the most nodes for sizing gaps
+  const widestLayer=layerKeys.reduce((a,b)=>(layers[a]||[]).length>(layers[b]||[]).length?a:b,layerKeys[0]);
+  const widestNodeCount=(layers[widestLayer]||[]).length;
+  const pxPerVal=maxLayer>0?(innerH-Math.max(0,widestNodeCount-1)*nodeGap)/maxLayer:0;
+  const nodePos={};
+  layerKeys.forEach(lyr=>{
+    const ns=layers[lyr];
+    const total=layerTotal(lyr);
+    const gaps=ns.length-1;
+    let y=padT+(innerH-(total*pxPerVal+gaps*nodeGap))/2;
+    ns.forEach(n=>{
+      const h=Math.max(2,nodeVal(n.id)*pxPerVal);
+      nodePos[n.id]={x:layerX(lyr),y,h,layer:lyr,color:n.color||GOLD,label:n.label||n.id};
+      y+=h+nodeGap;
+    });
+  });
+  const linkSrcY={},linkDstY={};
+  const srcCur={},dstCur={};
+  safeLinks.forEach((l,i)=>{
+    const v=twLinkVals[i]||0;
+    const sp=nodePos[l.from],dp=nodePos[l.to];
+    if(!sp||!dp)return;
+    const srcY=srcCur[l.from]??sp.y;
+    const srcH=nodeVal(l.from)>0?(v/nodeVal(l.from))*sp.h:0;
+    srcCur[l.from]=srcY+srcH;
+    const dstY=dstCur[l.to]??dp.y;
+    const dstH=nodeVal(l.to)>0?(v/nodeVal(l.to))*dp.h:0;
+    dstCur[l.to]=dstY+dstH;
+    linkSrcY[i]={y0:srcY,y1:srcY+srcH};
+    linkDstY[i]={y0:dstY,y1:dstY+dstH};
+  });
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        <filter id={glowId} x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+          <feOffset dx="0" dy="1"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        {safeLinks.map((l,i)=>{
+          const sp=nodePos[l.from],dp=nodePos[l.to];
+          if(!sp||!dp)return null;
+          return<linearGradient key={i} id={`${glowId}-lk${i}`} x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor={l.color||sp.color} stopOpacity="0.6"/>
+            <stop offset="100%" stopColor={l.color||dp.color} stopOpacity="0.6"/>
+          </linearGradient>;
+        })}
+      </defs>
+      {safeLinks.map((l,i)=>{
+        const sp=nodePos[l.from],dp=nodePos[l.to];
+        if(!sp||!dp||!linkSrcY[i])return null;
+        const{y0:sy0,y1:sy1}=linkSrcY[i];
+        const{y0:dy0,y1:dy1}=linkDstY[i];
+        const x0=sp.x+nodeWidth,x1=dp.x;
+        const mx=(x0+x1)/2;
+        const d=`M${x0} ${sy0} C${mx} ${sy0} ${mx} ${dy0} ${x1} ${dy0} L${x1} ${dy1} C${mx} ${dy1} ${mx} ${sy1} ${x0} ${sy1} Z`;
+        return<path key={i} d={d} fill={`url(#${glowId}-lk${i})`} stroke="none"/>;
+      })}
+      {Object.entries(nodePos).map(([id,p])=>{
+        const lyr=layerKeys.indexOf(p.layer);
+        const isLast=lyr===layerKeys.length-1;
+        const lblX=isLast?(p.x-6):(p.x+nodeWidth+6);
+        const lblAnchor=isLast?"end":"start";
+        const v=nodeVal(id);
+        const valStr=v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
+        return<g key={id} filter={`url(#${glowId})`}>
+          <rect x={p.x} y={p.y} width={nodeWidth} height={Math.max(2,p.h)} fill={p.color} rx="2"/>
+          <text x={lblX} y={p.y+p.h/2-1} textAnchor={lblAnchor} fontSize={labelSize} fontWeight="700" fill={th.text}>{p.label}</text>
+          <text x={lblX} y={p.y+p.h/2+labelSize+1} textAnchor={lblAnchor} fontSize={labelSize-1} fill={th.dim}>${valStr}</text>
+        </g>;
+      })}
+    </svg>
+  </div>;
+}
+
+/* ── v0.37.0 — Phase 5 Charts: Treemap ──────────────────────────────────────
+   Pure-SVG squarified treemap. Each leaf becomes a proportional rectangle —
+   bigger = more $. Used to show net worth allocation, spending categories,
+   account composition. Aspect-ratio-optimized for readable labels. Values
+   tween between states. */
+function Treemap({data,height=260,width=520,placeholder,valuePrefix="$"}){
+  const th=useTh();
+  const items=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.value||0)>0);
+  const twVals=useTweenedData(items.map(d=>+d.value||0),800);
+  const dsId=useSvgId("tm-ds");
+  if(items.length===0){
+    return<div style={{padding:24,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No data to display"}</div>;
+  }
+  const sorted=items.map((d,i)=>({...d,value:twVals[i]||0})).sort((a,b)=>b.value-a.value);
+  const total=sorted.reduce((s,d)=>s+d.value,0)||1;
+  const scale=(width*height)/total;
+  const worst=(row,short)=>{
+    if(!row.length)return Infinity;
+    const sum=row.reduce((s,r)=>s+r._a,0);
+    const ma=Math.max(...row.map(r=>r._a));
+    const mi=Math.min(...row.map(r=>r._a));
+    return Math.max((short*short*ma)/(sum*sum),(sum*sum)/(short*short*mi));
+  };
+  const layout=(rows,x,y,w,h)=>{
+    const out=[];
+    let remaining=rows.slice();
+    let cx=x,cy=y,cw=w,ch=h;
+    while(remaining.length){
+      const short=Math.min(cw,ch);
+      const row=[remaining.shift()];
+      while(remaining.length){
+        const test=row.concat(remaining[0]);
+        if(worst(test,short)>=worst(row,short))break;
+        row.push(remaining.shift());
+      }
+      const rowTotal=row.reduce((s,r)=>s+r._a,0);
+      const rowLen=rowTotal/Math.max(1,short);
+      if(cw>=ch){
+        let yy=cy;
+        for(const r of row){const hh=r._a/Math.max(1,rowLen);out.push({...r,x:cx,y:yy,w:rowLen,h:hh});yy+=hh;}
+        cx+=rowLen;cw-=rowLen;
+      }else{
+        let xx=cx;
+        for(const r of row){const ww=r._a/Math.max(1,rowLen);out.push({...r,x:xx,y:cy,w:ww,h:rowLen});xx+=ww;}
+        cy+=rowLen;ch-=rowLen;
+      }
+    }
+    return out;
+  };
+  const tiles=layout(sorted.map(d=>({...d,_a:d.value*scale})),0,0,width,height);
+  const fmtVal=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
+  return<div style={{width:"100%",overflow:"hidden"}}>
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+      <defs>
+        <filter id={dsId} x="-5%" y="-5%" width="110%" height="110%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.2"/>
+          <feOffset dx="0" dy="1"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      {tiles.map((t,i)=>{
+        const color=t.color||GOLD;
+        const labelFits=t.w>56&&t.h>28;
+        const valFits=t.w>56&&t.h>44;
+        const maxChars=Math.max(4,Math.floor(t.w/7));
+        const lbl=String(t.label||t.name||"").slice(0,maxChars);
+        return<g key={i} filter={`url(#${dsId})`}>
+          <rect x={t.x+1} y={t.y+1} width={Math.max(0,t.w-2)} height={Math.max(0,t.h-2)} fill={color} fillOpacity="0.9" stroke={color} strokeOpacity="0.4" rx="3"/>
+          {labelFits&&<text x={t.x+8} y={t.y+18} fontSize="11" fontWeight="700" fill="#fff">{lbl}</text>}
+          {valFits&&<text x={t.x+8} y={t.y+32} fontSize="10" fill="rgba(255,255,255,0.85)">{valuePrefix+fmtVal(t.value)}</text>}
+        </g>;
+      })}
     </svg>
   </div>;
 }
@@ -1773,6 +2013,22 @@ function AssetsLiabilitiesTab({client,lang,t}){const th=useTh();const[view,setVi
   const Row=({label,value,color,bold,indent})=><tr><td style={{...mTD(th),paddingLeft:indent?16:0,fontWeight:bold?700:400,color:bold?th.text:th.muted,fontSize:bold?13:12}}>{label}</td><td style={{...mTDR(th),fontWeight:bold?700:500,color:color||th.muted,fontSize:bold?13:12}}>{fmt(value)}</td></tr>;
   return<div><div style={{display:"flex",gap:6,marginBottom:14}}>{[["all",(t.filterAll||"All")],["current",(t.filterCurrentOnly||"Current Only")],["noncurrent",(t.filterNonCurrentOnly||"Non-Current Only")]].map(([v,l])=><button key={v} onClick={()=>setView(v)} style={{fontSize:11,padding:"5px 12px",borderRadius:8,cursor:"pointer",background:view===v?th.accent+"22":"transparent",color:view===v?th.accent:th.muted,border:`1px solid ${view===v?th.accent:th.cardBorder}`,fontWeight:view===v?700:400}}>{l}</button>)}</div>
   <div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}><SC label={"📊 "+(t.totalAssets||"Total Assets")} value={fmt(totA)} color={th.pos}/><SC label={"📋 "+(t.totalLiabilities||"Total Liabilities")} value={fmt(totL)} color={th.neg}/><SC label={"💎 "+(t.netWorth||"Net Worth")} value={fmt(totA-totL)} color={totA-totL>=0?th.pos:th.neg}/><SC label={"💧 "+(t.currentRatio||"Current Ratio")} value={curLiab===0?"N/A":currentRatio.toFixed(2)+"x"} color={ratColor("currentRatio",currentRatio,th)}/></div>
+  {/* v0.37.0 — Asset Treemap above the balance-sheet tables: each tile sized by current $ value */}
+  {(()=>{
+    const tmData=[
+      ...accounts.map(a=>({label:(ACCT_META[a.type]?.icon||"")+" "+a.name,value:+a.value||0,color:ACCT_META[a.type]?.c||"#94A3B8"})),
+      ...props.map(a=>({label:"🏛️ "+a.name,value:+a.value||0,color:"#059669"})),
+      ...miAcct.map(a=>({label:"📈 "+(a.ticker||a.name||""),value:+a.value||0,color:"#10B981"})),
+    ].filter(d=>d.value>0);
+    if(tmData.length===0)return null;
+    return<div style={{...mCARD(th),padding:14,marginBottom:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>🗺️ {t.assetMapHdr||"Asset Map"}</div>
+        <div style={{fontSize:10,color:th.muted}}>{t.assetMapSub||"Each tile sized by current value."}</div>
+      </div>
+      <Treemap data={tmData} width={720} height={220} placeholder={t.noAssetsYet||"Add accounts or assets to populate."}/>
+    </div>;
+  })()}
   <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
     {(view==="all"||view==="current")&&<div style={{...mCARD(th),padding:16}}><div style={{fontSize:12,fontWeight:800,color:th.accent,marginBottom:12,paddingBottom:6,borderBottom:`2px solid ${th.accent}`}}>💧 {t.currentAssetsHdr||"CURRENT ASSETS"}</div><table style={{width:"100%"}}><tbody>{curAssets.map(a=><Row key={a.id} label={"  "+(ACCT_META[a.type]?.icon||"")+" "+a.name} value={+a.value||0} color={th.pos} indent/>)}{curAssets.length===0&&<tr><td colSpan={2} style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:6}}>{t.noneLbl||"None"}</td></tr>}<tr style={{borderTop:`1px solid ${th.cardBorder}`}}><td style={{...mTD(th),fontWeight:700,paddingTop:8}}>{t.totalCurrentAssets||"TOTAL CURRENT ASSETS"}</td><td style={{...mTDR(th),fontWeight:800,color:th.pos,paddingTop:8}}>{fmt(curAssetsTotal)}</td></tr></tbody></table></div>}
     {(view==="all"||view==="current")&&<div style={{...mCARD(th),padding:16}}><div style={{fontSize:12,fontWeight:800,color:th.neg,marginBottom:12,paddingBottom:6,borderBottom:`2px solid ${th.neg}`}}>📌 {t.currentLiabHdr||"CURRENT LIABILITIES"}</div><table style={{width:"100%"}}><tbody>{cards.map(c=><Row key={c.id} label={"  💳 "+c.name} value={+c.balance||0} color={th.neg} indent/>)}{loans.filter(isCurrentLiability).map(l=><Row key={l.id} label={"  🏦 "+l.name} value={+l.balance||0} color={th.neg} indent/>)}{cards.length===0&&loans.filter(isCurrentLiability).length===0&&<tr><td colSpan={2} style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:6}}>{t.noneLbl||"None"}</td></tr>}<tr style={{borderTop:`1px solid ${th.cardBorder}`}}><td style={{...mTD(th),fontWeight:700,paddingTop:8}}>{t.totalCurrentLiab||"TOTAL CURRENT LIABILITIES"}</td><td style={{...mTDR(th),fontWeight:800,color:th.neg,paddingTop:8}}>{fmt(curLiab)}</td></tr></tbody></table></div>}
@@ -2736,9 +2992,8 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
   <SC label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmt(active.reduce((s,c)=>s+liquidA(c),0))} color={GOLD} sub={t.checkingSavingsLbl||"checking + savings"}/>
 </div>
 
-{/* v0.20.0 — Two-chart dashboard row: Income vs Spending (composed, 3fr) +
-    Net Worth Distribution donut (2fr). Stacks on mobile. */}
-<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"3fr 2fr",gap:12,marginBottom:14}}>
+{/* v0.37.0 — Three-chart dashboard row: Income vs Spending + Cash Flow Sankey + Net Worth Donut. Stacks on mobile. */}
+<div data-ga-grid="three-col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"minmax(0,4fr) minmax(0,4fr) minmax(0,3fr)",gap:12,marginBottom:14}}>
   {/* ── Left: Income vs Spending (composed bars + net line) ── */}
   <div style={{...mCARD(th),padding:isMobile?14:16}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
@@ -2775,6 +3030,33 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </ComposedChart>
     </ResponsiveContainer>
   </div>
+  {/* ── Middle (v0.37.0): Practice Cash Flow Sankey ── */}
+  <div style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column"}}>
+    <div style={{fontSize:11,fontWeight:800,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>🌊 {t.cashFlowMapHdr||"Cash Flow Map"}</div>
+    <div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.cashFlowMapSub||"Where the practice's aggregate income flows."}</div>
+    {(()=>{
+      let totalI=0,totalB=0,totalM=0;
+      active.forEach(c=>{totalI+=sumN(c.incomeStreams||[]);totalB+=sumB(c.bills||[]);totalM+=sumMin(c.cards||[]);});
+      const cashFlow=Math.max(0,totalI-totalB-totalM);
+      if(totalI<=0){
+        return<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center",padding:20,minHeight:isMobile?180:200}}>{t.noFlowYet||"Add client income to see flow."}</div>;
+      }
+      return<Sankey
+        width={460} height={isMobile?220:260}
+        nodes={[
+          {id:"inc",label:"💼 "+(t.income||"Income"),layer:0,color:th.pos},
+          {id:"bills",label:"💳 "+(t.bills||"Bills"),layer:1,color:th.neg},
+          {id:"min",label:"🏦 "+(t.minPay||"Debt Min"),layer:1,color:th.warn},
+          {id:"cash",label:"💰 "+(t.cashFlow||"Cash Flow"),layer:1,color:GOLD},
+        ]}
+        links={[
+          {from:"inc",to:"bills",value:totalB,color:th.neg},
+          {from:"inc",to:"min",value:totalM,color:th.warn},
+          {from:"inc",to:"cash",value:cashFlow,color:GOLD},
+        ]}
+      />;
+    })()}
+  </div>
   {/* ── Right: Practice Net Worth Distribution donut ── */}
   {(()=>{
     const tiers={neg:0,low:0,mid:0,high:0};
@@ -2794,8 +3076,8 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
            same center overlay, but rendered as pure SVG with the brand padding angle. */}
         <Donut
           data={donutData}
-          size={isMobile?130:150}
-          innerRatio={isMobile?(44/65):(52/75)}
+          size={isMobile?120:130}
+          innerRatio={isMobile?(40/60):(46/65)}
           paddingAngle={donutData.length>1?2:0}
           centerLabel={t.totalNet||"Total Net"}
           centerValue={fmtS(totalNW)}
@@ -3362,7 +3644,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0360-doc-hygiene";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-23-v0370-anim-sankey-treemap";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/

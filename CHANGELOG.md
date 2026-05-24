@@ -2,6 +2,70 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.37.0 — 2026-05-23 — Charts wave 1: animation foundation + Sankey + Treemap
+
+First ship of the major chart-overhaul plan Mauricio asked for. Goal: stop the
+"static picture" feel of the v0.34/v0.35 pure-SVG charts, and start building
+the financial-industry vocabulary (Sankey, Treemap, Waterfall, etc.) so the
+app reads as professional/wow-tier without complicating the math.
+
+**Animation foundation.**
+- New `useTweenedData(target, duration?)` hook (App.jsx near line 784). Tweens
+  any numeric value, array, or object-of-numbers from current state to a new
+  target over ~800ms with easeOutCubic. Shape changes (different array length,
+  new keys) snap instantly — only same-shape transitions tween. Used by every
+  pure-SVG chart.
+- Helpers: `_easeOutCubic`, `_lerpAny` (number/array/object), `_sameShape`,
+  `useSvgId` (collision-free `<defs>` IDs for filters/gradients).
+
+**Existing charts now animate + glow.**
+- `Donut` (line 850-ish): slice angles tween between states. Soft drop-shadow
+  filter for subtle depth.
+- `Waterfall` (line 910-ish): bar heights tween. Same drop-shadow on the bar
+  group.
+- `SmoothAreaLine` (line 980-ish): two-curve area chart now tweens values.
+  Gold glow filter under the savings stroke. Pulsing dot at the rightmost
+  point when the last label contains "Now" / "▶" — visualizes "this is the
+  live current value" without a separate badge.
+
+**New chart components.**
+- `Sankey` (~150 lines, single function): pure-SVG flow diagram. Takes nodes
+  (each with `layer` column index) + links (`from`, `to`, `value`). Renders
+  proportional bands with gradient transitions between source and sink
+  colors. Link widths tween between states.
+- `Treemap` (~80 lines): pure-SVG squarified treemap. Each leaf becomes a
+  proportional rectangle, sized by `value`. Aspect-ratio-optimized for
+  readable labels. Drop-shadow for depth. Values tween between states.
+
+**New chart placements (v0.37 only — more in v0.38+).**
+- Dashboard: 3-column row now — Income vs Spending + **Cash Flow Sankey** +
+  Net Worth Donut. Sankey aggregates active clients (income → bills + debt
+  min + cash flow). Grid uses `minmax(0,Nfr)` so the donut column can't push
+  the others narrow. Donut shrunk to 130 (desktop) / 120 (mobile) for the
+  new tighter slot.
+- AssetsLiabilitiesTab (Balance Sheet): new **Asset Map** Treemap card
+  between the 4-KPI row and the four current/non-current tables. Tiles
+  sized by current value; colors from `ACCT_META[type].c` with property and
+  investment defaults.
+
+**Translation keys added (6 keys × EN+ES = 12 entries).**
+- `cashFlowMapHdr` / `cashFlowMapSub` / `noFlowYet` for the Dashboard Sankey
+- `assetMapHdr` / `assetMapSub` / `noAssetsYet` for the Balance Sheet Treemap
+
+**Behavior of existing charts is unchanged besides animation.** Recharts
+ComposedChart on the Dashboard (Income vs Spending) and the Recharts PieChart
+in SummarySection's "Where Income Goes" still animate via Recharts'
+`isAnimationActive`. Net Worth Distribution donut on dashboard still uses
+the in-house pure-SVG `Donut` — now with the tween.
+
+**Why this is split into a series.** v0.37 ships the foundation + the two
+showcase components (Sankey, Treemap). v0.38 rolls charts into every
+calculator. v0.39 hits the section pages (Bills, Debt, Savings, Balance
+Sheet pairing, Cash Flow Statement). v0.40 adds health charts (radial
+gauges, radar). v0.41 adds patterns (heatmap, YoY, debt payoff progression,
+forecast cone). v0.42 adds the chart-picker setting + PDF embeds + table
+toggles. The plan is to ship all charts first so Mauricio can prune live.
+
 ## v0.36.0 — 2026-05-23 — Doc hygiene + dead-code cleanup (autonomous audit pass)
 
 Surfaced during an autonomous audit while Mauricio was away. All fixes are no-behavior-change, no new features, no migrations.
