@@ -2,6 +2,58 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.48.0 — 2026-05-25 — Chart customization MVP (SmoothAreaLine slice)
+
+Foundation for self-service chart styling. The Chart Gallery becomes the
+control room — edit colors / stroke / labels for a chart, and changes
+propagate to every place that chart appears (ClientDetail trend pair,
+Dashboard slots, gallery card itself).
+
+**Architecture.**
+- New `ChartConfigCtx` React context fed from `settings.chartCustomizations`.
+- `useChartConfig(templateId, defaults)` hook merges saved overrides with
+  the chart's built-in defaults. Nested merge for `colors{}` and
+  `legendLabels{}` so a single override doesn't wipe siblings.
+- Each chart instance (gallery card + live use-site + dashboard slot)
+  shares a stable `templateId` like `smoothAreaLine.debtVsSavings`. Editing
+  in the gallery propagates to every site sharing that ID.
+- Customizations persist to `settings.chartCustomizations` → Supabase.
+
+**This slice — SmoothAreaLine family only.** Wired end-to-end:
+- `smoothAreaLine.debtVsSavings` — ClientDetail live trend + gallery card
+  + Dashboard "Debt vs Savings Trend" slot
+- `smoothAreaLine.cashFlowTrend` — ClientDetail live trend + gallery card
+  + Dashboard "Cash Flow Trend" slot
+
+**Editor UI.** Every gallery card with a `templateId` gets an "✏️ Edit"
+pill (next to Wired/New status). Click → `ChartEditModal` opens with:
+- Display Name (text)
+- Per-slot color pickers (color input + hex text)
+- Line Thickness slider (0.5 → 4px, 0.25 step)
+- Legend Labels (text inputs)
+- Reset to Default
+
+Changes auto-apply on every form mutation (no Save button — saves on
+each color pick / slider drag so you see the chart update behind the
+modal). First render is skipped so opening the editor doesn't mark a
+template as "Edited" by mounting alone. Customized cards get a gold
+border + "✏️ Edited" pill state.
+
+**Remaining 18 chart families** (Donut, Waterfall, Sankey, Treemap,
+RadialGauge, Radar5, RankedHBars, BulletChart, Sparkline, NetWorthBridge,
+PayoffProgression, AmortizationArea, StackedBars, HeatmapCalendar,
+GroupedYoY, ForecastCone, SlopeGraph, Sunburst, Dumbbell) — same pattern,
+queued for v0.49 once the MVP feels right.
+
+**Translations.** 10 new keys × EN+ES (chartEdit, chartEdited,
+chartEditTip, chartEditHdr, chartEditBlurb, chartEditNameLbl,
+chartEditColorsLbl, chartEditStrokeLbl, chartEditLabelsLbl,
+chartEditReset). Pitfall #9 honored.
+
+**Verified in dev.** Set debt color → `#FF00FF`, stroke → 3.5; confirmed
+gallery card AND ClientDetail live trend both showed magenta gradient
+stops + 3.25/3.5 stroke widths. Reset cleanly restored `#EF4444` + 1.5/1.75.
+
 ## v0.47.0 — 2026-05-25 — Red/green trends + 14 new Dashboard slot options
 
 Three asks from Mauricio after auditing v0.46's gallery:

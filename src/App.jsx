@@ -72,9 +72,26 @@ const ThemeCtx=createContext(makeDark());
 const useTh=()=>useContext(ThemeCtx);
 const HideCtx=createContext({hide:false});
 const useHN=()=>useContext(HideCtx);
+/* v0.48.0 — Chart customization context. Provides per-template overrides
+   (colors, strokeWidth, legendLabels, displayName, version) so the gallery
+   editor can edit a chart's appearance from one place and have changes
+   propagate to every use-site (ClientDetail, Dashboard slots, gallery). */
+const ChartConfigCtx=createContext({});
+const useChartConfig=(templateId,defaults)=>{
+  const map=useContext(ChartConfigCtx);
+  const saved=(templateId&&map?.[templateId])||{};
+  // Merge: defaults are the chart's built-in props; saved overrides win.
+  // Nested merge for colors{} and legendLabels{} so partial overrides don't wipe siblings.
+  return{
+    ...(defaults||{}),
+    ...saved,
+    colors:{...(defaults?.colors||{}),...(saved.colors||{})},
+    legendLabels:{...(defaults?.legendLabels||{}),...(saved.legendLabels||{})},
+  };
+};
 const FH=({v,c:client,forcePts})=>{const{hide}=useHN();return hide||(client?.hideNumbers)?<span style={{letterSpacing:"0.1em",color:"inherit",filter:"blur(4px)",userSelect:"none"}}>{"●●●●"}</span>:<>{v}</>;};
 /* helper: wrap fmt with hide */
-const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#2563EB",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#F1F5F9",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","client-checkup":"https://buy.stripe.com/fZu4gAfou4nh1tq6XJfrW03","quarterly-review":"https://buy.stripe.com/cNieVe6RY7ztdc86XJfrW05","strategy-session":"https://buy.stripe.com/14A9AU1xE2f98VSgyjfrW02","monthly-lite":"https://buy.stripe.com/9B68wQ9062f91tq95RfrW00","monthly-lite-plus":"https://buy.stripe.com/eVq3cw1xEg5Z8VS3LxfrW07","annual-bundle":"https://buy.stripe.com/aFa00kekqg5Z7ROa9VfrW01","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null,dashboardSlots:["incomeVsSpending","sankey","netWorthDonut"]};
+const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#2563EB",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#F1F5F9",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","client-checkup":"https://buy.stripe.com/fZu4gAfou4nh1tq6XJfrW03","quarterly-review":"https://buy.stripe.com/cNieVe6RY7ztdc86XJfrW05","strategy-session":"https://buy.stripe.com/14A9AU1xE2f98VSgyjfrW02","monthly-lite":"https://buy.stripe.com/9B68wQ9062f91tq95RfrW00","monthly-lite-plus":"https://buy.stripe.com/eVq3cw1xEg5Z8VS3LxfrW07","annual-bundle":"https://buy.stripe.com/aFa00kekqg5Z7ROa9VfrW01","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null,dashboardSlots:["incomeVsSpending","sankey","netWorthDonut"],chartCustomizations:{}};
 
 /* ── STYLES ─────────────────────────────────────────────────────────────── */
 const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
@@ -982,8 +999,19 @@ function Waterfall({segments,height=180,width=600,bg}){
    Pure-SVG two-curve area chart. Numeric values tween over ~800ms so the
    curve morphs between states. Gold glow filter under the savings curve.
    Pulsing dot at the rightmost point when the last label contains "Now". */
-function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,bg,muted,dim,labelKey="label",debtKey="debt",savingsKey="savings"}){
+function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,labelKey="label",debtKey="debt",savingsKey="savings",templateId,strokeWidth,legendDebt,legendSav}){
   const th=useTh();
+  // v0.48 — pull color/stroke/legend overrides from the chart-config context.
+  // Saved customizations win over explicit props so the gallery editor can
+  // override per-template without code edits at the call site.
+  const cfg=useChartConfig(templateId,{
+    colors:{primary:debtColor||"#ED7D31",secondary:savingsColor||GOLD},
+    strokeWidth:strokeWidth??1.75,
+    legendLabels:{primary:legendDebt||"Debt",secondary:legendSav||"Savings"},
+  });
+  debtColor=cfg.colors.primary;
+  savingsColor=cfg.colors.secondary;
+  const sw=cfg.strokeWidth;
   bg=bg||th.card||"transparent";
   muted=muted||th.muted||"#475569";
   dim=dim||th.dim||"#94A3B8";
@@ -1068,8 +1096,8 @@ function SmoothAreaLine({data,height=170,debtColor="#ED7D31",savingsColor=GOLD,b
       </g>;})}
       <path d={path(debtCoords,true)} fill={`url(#${debtGradId})`} stroke="none"/>
       <path d={path(savCoords,true)} fill={`url(#${gradId})`} stroke="none"/>
-      <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
+      <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth={Math.max(0.5,sw-0.25)} strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
       {crossovers.map((c,i)=><g key={i}>
         <circle cx={c.x} cy={c.y} r="5" fill={savingsColor} opacity="0.22"/>
         <circle cx={c.x} cy={c.y} r="3" fill={savingsColor} stroke="#fff" strokeWidth="1.2"/>
@@ -3945,16 +3973,93 @@ const dashChartOptions=t=>[
    Renders every chart component the app supports with realistic sample data
    so we can audit which to keep / swap / retire. Dashboard slot picker
    preserved below the gallery for in-place swaps. */
-function ChartGalleryCard({name,status,desc,th,t,children}){
+function ChartGalleryCard({name,status,desc,th,t,templateId,onEdit,isCustomized,children}){
   const isNew=status==="new";
-  return<div style={{background:th.card,border:`1px solid ${th.cardBorder}`,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,minHeight:240,overflow:"hidden"}}>
+  return<div style={{background:th.card,border:`1px solid ${isCustomized?GOLD+"66":th.cardBorder}`,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,minHeight:240,overflow:"hidden",position:"relative"}}>
     <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
       <div style={{fontSize:10,fontWeight:700,color:th.text,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{name}</div>
-      <span style={{fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:99,letterSpacing:"0.08em",textTransform:"uppercase",background:isNew?"#F59E0B22":GOLD+"22",color:isNew?"#F59E0B":GOLD,border:`1px solid ${isNew?"#F59E0B66":GOLD+"66"}`,whiteSpace:"nowrap"}}>{isNew?(t.chartGalleryNew||"New"):(t.chartGalleryWired||"Wired")}</span>
+      <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
+        {templateId&&<button onClick={()=>onEdit?.(templateId)} title={t.chartEditTip||"Edit colors, stroke, labels"} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:99,letterSpacing:"0.06em",textTransform:"uppercase",background:isCustomized?GOLD+"33":"transparent",color:GOLD,border:`1px solid ${GOLD}66`,cursor:"pointer",whiteSpace:"nowrap",lineHeight:1}}>✏️ {isCustomized?(t.chartEdited||"Edited"):(t.chartEdit||"Edit")}</button>}
+        <span style={{fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:99,letterSpacing:"0.08em",textTransform:"uppercase",background:isNew?"#F59E0B22":GOLD+"22",color:isNew?"#F59E0B":GOLD,border:`1px solid ${isNew?"#F59E0B66":GOLD+"66"}`,whiteSpace:"nowrap"}}>{isNew?(t.chartGalleryNew||"New"):(t.chartGalleryWired||"Wired")}</span>
+      </div>
     </div>
     <div style={{fontSize:10,color:th.muted,lineHeight:1.45,minHeight:28}}>{desc}</div>
     <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",minHeight:140,width:"100%"}}>{children}</div>
   </div>;
+}
+
+/* v0.48.0 — ChartEditModal: per-template editor. Reads & writes
+   settings.chartCustomizations[templateId]. Color pickers, stroke slider,
+   label inputs. Changes propagate live via ChartConfigCtx. */
+function ChartEditModal({templateId,defaults,settings,onSave,onClose,t}){
+  const th=useTh();
+  const current=settings.chartCustomizations?.[templateId]||{};
+  const colorSlots=Object.keys(defaults?.colors||{});
+  const labelSlots=Object.keys(defaults?.legendLabels||{});
+  const merged={
+    displayName:current.displayName||defaults?.displayName||templateId,
+    colors:{...(defaults?.colors||{}),...(current.colors||{})},
+    strokeWidth:current.strokeWidth??defaults?.strokeWidth??1.75,
+    legendLabels:{...(defaults?.legendLabels||{}),...(current.legendLabels||{})},
+  };
+  const[form,setForm]=useState(merged);
+  const skipFirst=useRef(true);
+  const setColor=(k,v)=>setForm(f=>({...f,colors:{...f.colors,[k]:v}}));
+  const setLabel=(k,v)=>setForm(f=>({...f,legendLabels:{...f.legendLabels,[k]:v}}));
+  const reset=()=>{
+    const cust2={...(settings.chartCustomizations||{})};
+    delete cust2[templateId];
+    onSave({...settings,chartCustomizations:cust2});
+    skipFirst.current=true;// don't immediately re-write defaults
+    setForm(merged);
+  };
+  const INP=mINP(th);
+  // Auto-apply on every edit (after first render) so the user sees changes
+  // live in the gallery behind the modal. First render is skipped so opening
+  // the editor doesn't mark a template as "Edited" just by mounting.
+  useEffect(()=>{
+    if(skipFirst.current){skipFirst.current=false;return;}
+    const cust2={...(settings.chartCustomizations||{})};
+    cust2[templateId]={...form};
+    onSave({...settings,chartCustomizations:cust2});
+  },[form]);
+  return<Modal title={"✏️ "+(t.chartEditHdr||"Edit Chart")+" — "+(form.displayName||templateId)} onClose={onClose} width={520}>
+    <div style={{fontSize:11,color:th.muted,marginBottom:14,lineHeight:1.6}}>{t.chartEditBlurb||"Changes save and apply automatically. They propagate to every place this chart appears (Client headers, Dashboard slots, gallery)."}</div>
+    <label style={{display:"block",marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:600,color:th.muted,marginBottom:5,letterSpacing:"0.04em",textTransform:"uppercase"}}>{t.chartEditNameLbl||"Display Name"}</div>
+      <input style={INP} value={form.displayName||""} onChange={e=>setForm(f=>({...f,displayName:e.target.value}))}/>
+    </label>
+    {colorSlots.length>0&&<div style={{marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:600,color:th.muted,marginBottom:8,letterSpacing:"0.04em",textTransform:"uppercase"}}>{t.chartEditColorsLbl||"Colors"}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {colorSlots.map(k=><div key={k} style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:11,color:th.muted,flex:"0 0 90px",textTransform:"capitalize"}}>{form.legendLabels?.[k]||k}</span>
+          <input type="color" value={form.colors[k]||"#000000"} onChange={e=>setColor(k,e.target.value)} style={{width:36,height:30,cursor:"pointer",border:"none",borderRadius:6,padding:0}}/>
+          <input value={form.colors[k]||""} onChange={e=>setColor(k,e.target.value)} style={{...INP,fontFamily:"'JetBrains Mono',monospace",fontSize:11,width:100}}/>
+        </div>)}
+      </div>
+    </div>}
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+        <div style={{fontSize:11,fontWeight:600,color:th.muted,letterSpacing:"0.04em",textTransform:"uppercase"}}>{t.chartEditStrokeLbl||"Line Thickness"}</div>
+        <div style={{fontSize:11,fontWeight:700,color:GOLD,fontFamily:"'JetBrains Mono',monospace"}}>{form.strokeWidth.toFixed(2)}px</div>
+      </div>
+      <input type="range" min="0.5" max="4" step="0.25" value={form.strokeWidth} onChange={e=>setForm(f=>({...f,strokeWidth:+e.target.value}))} style={{width:"100%",accentColor:GOLD,cursor:"pointer"}}/>
+    </div>
+    {labelSlots.length>0&&<div style={{marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:600,color:th.muted,marginBottom:8,letterSpacing:"0.04em",textTransform:"uppercase"}}>{t.chartEditLabelsLbl||"Legend Labels"}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {labelSlots.map(k=><div key={k} style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:11,color:th.muted,flex:"0 0 90px",textTransform:"capitalize"}}>{k}</span>
+          <input style={INP} value={form.legendLabels[k]||""} onChange={e=>setLabel(k,e.target.value)}/>
+        </div>)}
+      </div>
+    </div>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:18,paddingTop:14,borderTop:`1px solid ${th.cardBorder}`}}>
+      <button onClick={reset} style={{fontSize:11,padding:"7px 14px",borderRadius:8,background:"transparent",color:th.neg,border:`1px solid ${th.neg}55`,cursor:"pointer"}}>{t.chartEditReset||"Reset to Default"}</button>
+      <BSolid onClick={onClose}>{t.done||"Done"}</BSolid>
+    </div>
+  </Modal>;
 }
 
 function ChartSettingsModal({settings,onSave,onClose,t}){
@@ -3965,6 +4070,14 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
   const opts=dashChartOptions(t);
   const setSlot=(i,id)=>{const s=[...slots];s[i]=id;onSave({...settings,dashboardSlots:s});};
   const INP=mINP(th);
+  // v0.48 — Per-template chart editor. Click ✏️ on any card → opens the editor.
+  const[editingTid,setEditingTid]=useState(null);
+  // Defaults registry: per templateId, what knobs are available + their defaults.
+  const TEMPLATE_DEFAULTS={
+    "smoothAreaLine.debtVsSavings":{displayName:t.debtVsSavingsSlot||"Debt vs Savings Trend",colors:{primary:"#EF4444",secondary:"#10B981"},strokeWidth:1.75,legendLabels:{primary:"Debt",secondary:"Savings"}},
+    "smoothAreaLine.cashFlowTrend":{displayName:t.cashFlowTrendSlot||"Cash Flow Trend",colors:{primary:"#10B981",secondary:GOLD},strokeWidth:1.75,legendLabels:{primary:"Cash Flow",secondary:"Income"}},
+  };
+  const cust=settings.chartCustomizations||{};
   // Sample data, common to all cards. Amanda-Chen-style numbers.
   const heatmapData=(()=>{const out=[];[2024,2025,2026].forEach(y=>{for(let m=1;m<=12;m++){if(y===2026&&m>5)continue;out.push({year:y,month:m,value:1800+Math.round(Math.abs(Math.sin(m*0.7+y*1.3))*1600)+(y-2024)*220});}});return out;})();
   const gallery=[
@@ -4032,7 +4145,7 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
       {from:"inc",to:"min",value:450},
       {from:"inc",to:"cash",value:7165},
     ]}/>},
-    {name:"SmoothAreaLine — Debt vs Savings",status:"wired",desc:"Two-curve area trend. Red = debt, Green = savings. Used on every Client header.",render:()=><SmoothAreaLine height={160} debtColor="#EF4444" savingsColor="#10B981" data={[
+    {name:"SmoothAreaLine — Debt vs Savings",status:"wired",templateId:"smoothAreaLine.debtVsSavings",desc:"Two-curve area trend. Red = debt, Green = savings. Used on every Client header.",render:()=><SmoothAreaLine height={160} debtColor="#EF4444" savingsColor="#10B981" templateId="smoothAreaLine.debtVsSavings" legendDebt="Debt" legendSav="Savings" data={[
       {label:"Dec",debt:38000,savings:9000},
       {label:"Jan",debt:35500,savings:11500},
       {label:"Feb",debt:33000,savings:14500},
@@ -4040,7 +4153,7 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
       {label:"Apr",debt:27500,savings:21000},
       {label:"▶ Now",debt:25000,savings:24500},
     ]}/>},
-    {name:"SmoothAreaLine — Cash Flow Trend",status:"wired",desc:"Same component, different signal. Green = cash flow, Gold = income.",render:()=><SmoothAreaLine height={160} debtColor="#10B981" savingsColor={GOLD} debtKey="cashFlow" savingsKey="income" data={[
+    {name:"SmoothAreaLine — Cash Flow Trend",status:"wired",templateId:"smoothAreaLine.cashFlowTrend",desc:"Same component, different signal. Green = cash flow, Gold = income.",render:()=><SmoothAreaLine height={160} debtColor="#10B981" savingsColor={GOLD} debtKey="cashFlow" savingsKey="income" templateId="smoothAreaLine.cashFlowTrend" legendDebt="Cash Flow" legendSav="Income" data={[
       {label:"Dec",cashFlow:1850,income:7200},
       {label:"Jan",cashFlow:2100,income:7400},
       {label:"Feb",cashFlow:2950,income:7800},
@@ -4107,7 +4220,7 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
   return<Modal title={"📊 "+(t.chartSettingsHdr||"Chart Gallery")} onClose={onClose} width={920}>
     <div style={{fontSize:11,color:th.muted,marginBottom:16,lineHeight:1.6}}>{t.chartSettingsBlurb||"Every chart available in the app, rendered with sample data. Temporary section — decide which to keep, swap, or retire."}</div>
     <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:20}}>
-      {gallery.map((c,i)=><ChartGalleryCard key={i} name={c.name} status={c.status} desc={c.desc} th={th} t={t}>{c.render()}</ChartGalleryCard>)}
+      {gallery.map((c,i)=><ChartGalleryCard key={i} name={c.name} status={c.status} desc={c.desc} th={th} t={t} templateId={c.templateId} isCustomized={c.templateId&&!!cust[c.templateId]} onEdit={tid=>setEditingTid(tid)}>{c.render()}</ChartGalleryCard>)}
     </div>
     <div style={{borderTop:`1px solid ${th.cardBorder}`,paddingTop:16,marginTop:4}}>
       <div style={{fontSize:11,fontWeight:700,color:GOLD,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>{t.chartGallerySlotsHdr||"Dashboard Slots"}</div>
@@ -4120,6 +4233,7 @@ function ChartSettingsModal({settings,onSave,onClose,t}){
       </div>
     </div>
     <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:20}}><BSolid onClick={onClose}>{t.done||"Done"}</BSolid></div>
+    {editingTid&&TEMPLATE_DEFAULTS[editingTid]&&<ChartEditModal templateId={editingTid} defaults={TEMPLATE_DEFAULTS[editingTid]} settings={settings} onSave={onSave} onClose={()=>setEditingTid(null)} t={t}/>}
   </Modal>;
 }
 
@@ -4250,7 +4364,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#EF4444"}}/>{t.totalDebt||"Debt"}</span>
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#10B981"}}/>{t.savings||"Savings"}</span>
         </div></div>
-        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<SmoothAreaLine data={data} height={isMobile?180:210} debtColor="#EF4444" savingsColor="#10B981"/>}
+        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<SmoothAreaLine data={data} height={isMobile?180:210} debtColor="#EF4444" savingsColor="#10B981" templateId="smoothAreaLine.debtVsSavings" legendDebt="Debt" legendSav="Savings"/>}
       </>;
     }},
     cashFlowTrend:{id:"cashFlowTrend",label:"💰 "+(t.cashFlowTrendSlot||"Cash Flow Trend"),render:()=>{
@@ -4270,7 +4384,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#10B981"}}/>{t.cashFlow||"Cash Flow"}</span>
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:GOLD}}/>{t.income||"Income"}</span>
         </div></div>
-        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<SmoothAreaLine data={data} height={isMobile?180:210} debtKey="cashFlow" savingsKey="income" debtColor="#10B981" savingsColor={GOLD}/>}
+        {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<SmoothAreaLine data={data} height={isMobile?180:210} debtKey="cashFlow" savingsKey="income" debtColor="#10B981" savingsColor={GOLD} templateId="smoothAreaLine.cashFlowTrend" legendDebt="Cash Flow" legendSav="Income"/>}
       </>;
     }},
     debtRanked:{id:"debtRanked",label:"🏦 "+(t.debtRankedSlot||"Debts by Balance"),render:()=>{
@@ -4719,13 +4833,15 @@ const _rangeN=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:(client
 useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab);},[startTab]);
 return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button><div style={{width:40,height:40,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,background:GOLD+"22",color:GOLD,border:`2px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:700,fontSize:15,color:th.text}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}><SC label={"💼 "+t.totalIncome} value={fmt(sumN(client.incomeStreams))} color={th.pos}/><SC label={"💳 "+t.totalDebt} value={fmt(tL)} color={th.neg}/><SC label={"📊 "+t.totalAssets} value={fmt(tA)} color={th.blue}/><SC label={"💎 "+t.netWorth} value={fmt(tA-tL)} color={tA-tL>=0?th.pos:th.neg}/></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.47.0 — Per Mauricio's preference, restored the original red/green
    palette on Debt vs Savings (red = debt, green = savings). Cash Flow Trend
-   pair stays green/gold (cashflow is the gold "headline" curve here). */}
-{[{k1:"debt",k2:"savings",l:"📈 "+t.debtTrend,c1:"#EF4444",c2:"#10B981"},{k1:"cashFlow",k2:"income",l:"💰 "+(t.cashFlowTrend||"Cash Flow Trend"),c1:"#10B981",c2:GOLD}].map((ch,ci)=><div key={ci} style={{...mCARD(th),padding:12}}>
+   pair stays green/gold (cashflow is the gold "headline" curve here).
+   v0.48 — Each card carries a stable templateId so customizations from the
+   gallery editor propagate here automatically. */}
+{[{k1:"debt",k2:"savings",l:"📈 "+t.debtTrend,c1:"#EF4444",c2:"#10B981",tid:"smoothAreaLine.debtVsSavings"},{k1:"cashFlow",k2:"income",l:"💰 "+(t.cashFlowTrend||"Cash Flow Trend"),c1:"#10B981",c2:GOLD,tid:"smoothAreaLine.cashFlowTrend"}].map((ch,ci)=><div key={ci} style={{...mCARD(th),padding:12}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:8,flexWrap:"wrap",rowGap:6}}>
     <span style={{fontSize:11,fontWeight:700,color:th.dim,flex:"0 1 auto",minWidth:0}}>{ch.l} <span style={{fontSize:9,color:th.pos}}>● live</span></span>
     {ci===0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",alignItems:"center",flex:"0 1 auto"}}>{[["3","3m"],["6","6m"],["12","12m"],["all",t.allRange||"All"]].map(([v,l])=><button key={v} onClick={()=>setTrendRange(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendRange===v?GOLD+"22":"transparent",color:trendRange===v?GOLD:th.dim,border:`1px solid ${trendRange===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendRange===v?700:400}}>{l}</button>)}<div style={{width:1,height:12,background:th.cardBorder,margin:"0 2px"}}/>{[["all",(t.filterAll||"All")],["revolving",(t.filterRev||"Rev")],["current",(t.filterCur||"Cur")]].map(([v,l])=><button key={v} onClick={()=>setTrendMode(v)} style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:trendMode===v?GOLD+"22":"transparent",color:trendMode===v?GOLD:th.dim,border:`1px solid ${trendMode===v?GOLD:th.cardBorder}`,cursor:"pointer",fontWeight:trendMode===v?700:400}}>{l}</button>)}</div>}
   </div>
-  <SmoothAreaLine data={trendData} height={110} debtKey={ch.k1} savingsKey={ch.k2} debtColor={ch.c1} savingsColor={ch.c2}/>
+  <SmoothAreaLine data={trendData} height={110} debtKey={ch.k1} savingsKey={ch.k2} debtColor={ch.c1} savingsColor={ch.c2} templateId={ch.tid}/>
 </div>)}</div></div><div style={{padding:isMobile?"0 14px":"0 24px"}}><div className="ga-np" style={{display:"flex",alignItems:"stretch",gap:0,marginBottom:16,borderBottom:`1px solid ${th.cardBorder}`,position:"relative"}}>
   <button onClick={()=>tabRowRef.current?.scrollBy({left:-260,behavior:"smooth"})} title="Scroll left" disabled={!canScrollL} style={{flexShrink:0,width:28,height:36,display:"flex",alignItems:"center",justifyContent:"center",background:canScrollL?th.card:"transparent",border:canScrollL?`1px solid ${th.cardBorder}`:"1px solid transparent",borderBottom:"none",color:canScrollL?th.text:th.dim,cursor:canScrollL?"pointer":"default",opacity:canScrollL?1:0.3,fontSize:14,lineHeight:1,padding:0,borderRadius:"6px 6px 0 0"}}>‹</button>
   <div ref={tabRowRef} style={{flex:1,display:"flex",gap:6,overflowX:"auto",overflowY:"hidden",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none",scrollSnapType:"x proximity"}} onWheel={e=>{if(e.deltaY!==0&&Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.currentTarget.scrollLeft+=e.deltaY;}}}>
@@ -5121,7 +5237,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0470-redgreen-trends-slot-expansion";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0480-chart-customization-mvp";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -6916,7 +7032,7 @@ export default function App(){
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
   const globalHide=settings.hideNumbers||false;
-  return<ThemeCtx.Provider value={theme}><HideCtx.Provider value={{hide:globalHide}}>
+  return<ThemeCtx.Provider value={theme}><HideCtx.Provider value={{hide:globalHide}}><ChartConfigCtx.Provider value={settings.chartCustomizations||{}}>
     {/* v0.5.2a — Idle warning modal */}
     {idleWarn&&<div style={{position:"fixed",inset:0,background:"#0008",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}><div style={{background:theme.modal,border:`2px solid ${theme.warn}`,borderRadius:14,padding:24,maxWidth:380,boxShadow:"0 32px 80px #0009"}}><div style={{fontSize:28,marginBottom:8,textAlign:"center"}}>⏰</div><div style={{fontSize:14,fontWeight:700,color:theme.text,marginBottom:8,textAlign:"center"}}>{t.idleWarnTitle||"You'll be signed out soon"}</div><div style={{fontSize:12,color:theme.muted,marginBottom:16,textAlign:"center",lineHeight:1.5}}>{t.idleWarnBody||"You've been inactive for a while. Click below to stay signed in, or you'll be logged out in 1 minute. Any in-flight client edits will be saved as a draft."}</div><button onClick={()=>{setIdleWarn(false);}} style={{width:"100%",padding:"10px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:theme.accent,color:"#0D1B2A",border:"none"}}>{t.stayLoggedIn||"Stay Signed In"}</button></div></div>}
     {/* v0.5.2a — Toast (save failures / info) */}
@@ -7029,5 +7145,5 @@ export default function App(){
           <AboutPage t={t} settings={settings} lang={lang}/>}
       </div></div>
     </div>
-  </HideCtx.Provider></ThemeCtx.Provider>;
+  </ChartConfigCtx.Provider></HideCtx.Provider></ThemeCtx.Provider>;
 }
