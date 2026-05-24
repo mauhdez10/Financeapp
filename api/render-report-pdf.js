@@ -248,6 +248,171 @@ function barCompareSVG(title, items) {
   </div>`;
 }
 
+// ── v0.40.0 — Account / loan color maps (mirror ACCT_META.c + LOAN_META.c) ──
+const ACCT_COLORS = {
+  checking: "#3B82F6", savings: "#06B6D4", money_market: "#14B8A6",
+  retirement: "#8B5CF6", ira: "#7C3AED", brokerage: "#10B981", other: "#94A3B8"
+};
+const LOAN_COLORS = {
+  vehicle: "#F97316", student: "#3B82F6", personal: "#8B5CF6",
+  mortgage: "#059669", business: "#06B6D4", other: "#94A3B8"
+};
+
+// ── v0.40.0 — Waterfall: stepped Income → −Bills → −Debt Min → Net. ────────
+function waterfallSVG(segments, w = 540, h = 180) {
+  const segs = (segments || []).filter(s => s);
+  if (!segs.length) return '';
+  let cum = 0;
+  const items = segs.map(s => {
+    if (s.kind === 'total') {
+      const v = s.value != null ? +s.value : cum;
+      return { ...s, start: 0, end: v, delta: v, isTotal: true };
+    }
+    const v = +s.value || 0, start = cum, end = cum + v;
+    cum = end;
+    return { ...s, start, end, delta: v, isTotal: false };
+  });
+  const minV = Math.min(0, ...items.map(it => Math.min(it.start, it.end)));
+  const maxV = Math.max(...items.map(it => Math.max(it.start, it.end)), 0);
+  const range = Math.max(1, maxV - minV);
+  const padT = 16, padB = 36, padL = 12, padR = 12;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+  const barW = Math.min(48, (innerW - (items.length - 1) * 8) / items.length);
+  const yAt = v => padT + innerH * (1 - (v - minV) / range);
+  const xAt = i => padL + (innerW - items.length * barW - (items.length - 1) * 8) / 2 + i * (barW + 8);
+  const fmtDelta = d => (d >= 0 ? '+' : '') + (d >= 1000 || d <= -1000 ? Math.round(d / 1000) + 'K' : Math.round(d));
+  const bars = items.map((it, i) => {
+    const color = it.isTotal ? GOLD : (it.delta >= 0 ? (it.color || GOLD) : (it.color || "#ED7D31"));
+    const y = it.isTotal ? yAt(Math.max(it.end, 0)) : Math.min(yAt(it.start), yAt(it.end));
+    const ht = it.isTotal ? Math.abs(yAt(it.end) - yAt(0)) : Math.abs(yAt(it.end) - yAt(it.start));
+    return `<rect x="${xAt(i)}" y="${y}" width="${barW}" height="${Math.max(1, ht)}" fill="${color}" rx="3"/><text x="${xAt(i) + barW / 2}" y="${h - 22}" text-anchor="middle" font-size="9" font-weight="600" fill="${MUTED}">${htmlEscape(it.label || '')}</text><text x="${xAt(i) + barW / 2}" y="${h - 9}" text-anchor="middle" font-size="9" fill="${MUTED}">${fmtDelta(it.delta)}</text>`;
+  }).join('');
+  const connectors = items.map((it, i) => {
+    if (i === items.length - 1) return '';
+    const x1 = xAt(i) + barW, x2 = xAt(i + 1);
+    const yEnd = it.isTotal ? yAt(0) : yAt(it.end);
+    return `<line x1="${x1}" y1="${yEnd}" x2="${x2}" y2="${yEnd}" stroke="${MUTED}" stroke-opacity="0.45" stroke-dasharray="2 3"/>`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><line x1="${padL}" y1="${yAt(0)}" x2="${w - padR}" y2="${yAt(0)}" stroke="${MUTED}" stroke-opacity="0.3" stroke-dasharray="3 3"/>${connectors}${bars}</svg>`;
+}
+
+// ── v0.40.0 — Treemap (squarified). Tiles sized by value, labels inside. ──
+function treemapSVG(data, w = 420, h = 200) {
+  const items = (data || []).filter(d => d && (+d.value || 0) > 0);
+  if (items.length === 0) return '';
+  const sorted = items.slice().sort((a, b) => (+b.value || 0) - (+a.value || 0));
+  const total = sorted.reduce((s, d) => s + (+d.value || 0), 0) || 1;
+  const scale = (w * h) / total;
+  const worst = (row, short) => {
+    if (!row.length) return Infinity;
+    const sum = row.reduce((s, r) => s + r._a, 0);
+    const ma = Math.max(...row.map(r => r._a));
+    const mi = Math.min(...row.map(r => r._a));
+    return Math.max((short * short * ma) / (sum * sum), (sum * sum) / (short * short * mi));
+  };
+  const layout = (rows, x, y, wd, ht) => {
+    const out = []; let remaining = rows.slice();
+    let cx = x, cy = y, cw = wd, ch = ht;
+    while (remaining.length) {
+      const short = Math.min(cw, ch);
+      const row = [remaining.shift()];
+      while (remaining.length) {
+        const test = row.concat(remaining[0]);
+        if (worst(test, short) >= worst(row, short)) break;
+        row.push(remaining.shift());
+      }
+      const rowTotal = row.reduce((s, r) => s + r._a, 0);
+      const rowLen = rowTotal / Math.max(1, short);
+      if (cw >= ch) {
+        let yy = cy;
+        for (const r of row) { const hh = r._a / Math.max(1, rowLen); out.push({ ...r, x: cx, y: yy, w: rowLen, h: hh }); yy += hh; }
+        cx += rowLen; cw -= rowLen;
+      } else {
+        let xx = cx;
+        for (const r of row) { const ww = r._a / Math.max(1, rowLen); out.push({ ...r, x: xx, y: cy, w: ww, h: rowLen }); xx += ww; }
+        cy += rowLen; ch -= rowLen;
+      }
+    }
+    return out;
+  };
+  const tiles = layout(sorted.map(d => ({ ...d, _a: (+d.value || 0) * scale })), 0, 0, w, h);
+  const fmtV = v => v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : v >= 1000 ? Math.round(v / 100) / 10 + 'K' : Math.round(v);
+  const rects = tiles.map(t => {
+    const color = t.color || GOLD;
+    const labelFits = t.w > 56 && t.h > 28;
+    const valFits = t.w > 56 && t.h > 44;
+    const maxChars = Math.max(4, Math.floor(t.w / 7));
+    const lbl = htmlEscape(String(t.label || t.name || '').slice(0, maxChars));
+    return `<rect x="${t.x + 1}" y="${t.y + 1}" width="${Math.max(0, t.w - 2)}" height="${Math.max(0, t.h - 2)}" fill="${color}" fill-opacity="0.55" stroke="${color}" stroke-opacity="0.25" rx="3"/>${labelFits ? `<text x="${t.x + 8}" y="${t.y + 18}" font-size="11" font-weight="600" fill="#fff">${lbl}</text>` : ''}${valFits ? `<text x="${t.x + 8}" y="${t.y + 32}" font-size="10" fill="rgba(255,255,255,0.78)">$${fmtV(+t.value || 0)}</text>` : ''}`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
+}
+
+// ── v0.40.0 — RadialGauge: 270° arc with target marker + threshold color. ──
+function radialGaugeSVG(value, max, target, label, subLabel, color, size = 124, direction = 'higher', thresholds) {
+  const v = +value || 0, mx = (+max) || 100;
+  const pct = Math.max(0, Math.min(1, v / mx));
+  const r = size / 2 - 10, cx = size / 2, cy = size / 2;
+  const startA = Math.PI * 0.75, endA = Math.PI * 2.25;
+  const arcPath = (a0, a1) => {
+    const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    return `M${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1}`;
+  };
+  const fillA = startA + (endA - startA) * pct;
+  const tgt = target != null ? Math.max(0, Math.min(1, (+target) / mx)) : null;
+  let strokeColor = color;
+  if (!strokeColor && thresholds) {
+    const [good, warn] = thresholds;
+    if (direction === 'higher') strokeColor = pct >= good ? POS : pct >= warn ? WARN : NEG;
+    else strokeColor = pct <= good ? POS : pct <= warn ? WARN : NEG;
+  }
+  strokeColor = strokeColor || GOLD;
+  let tickElem = '';
+  if (tgt != null) {
+    const a = startA + (endA - startA) * tgt;
+    tickElem = `<line x1="${cx + (r - 9) * Math.cos(a)}" y1="${cy + (r - 9) * Math.sin(a)}" x2="${cx + (r + 9) * Math.cos(a)}" y2="${cy + (r + 9) * Math.sin(a)}" stroke="${TEXT}" stroke-width="1.5" stroke-opacity="0.5"/>`;
+  }
+  const valStr = direction === 'lower' ? v.toFixed(0) + '%' : (v >= 10 ? v.toFixed(0) + '%' : v.toFixed(1));
+  return `<div style="position:relative;width:${size}px;height:${size}px;display:inline-block">
+<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><path d="${arcPath(startA, endA)}" fill="none" stroke="${BORDER}" stroke-width="6" stroke-linecap="round" stroke-opacity="0.55"/><path d="${arcPath(startA, fillA)}" fill="none" stroke="${strokeColor}" stroke-width="6" stroke-linecap="round"/>${tickElem}</svg>
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center"><div style="font-size:8px;color:${MUTED};letter-spacing:0.04em;text-transform:uppercase;font-weight:600;margin-bottom:2px">${htmlEscape(label || '')}</div><div style="font-size:${size <= 120 ? 14 : 17}px;color:${strokeColor};font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1">${valStr}</div>${subLabel ? `<div style="font-size:8px;color:${MUTED};margin-top:3px">${htmlEscape(subLabel)}</div>` : ''}</div>
+</div>`;
+}
+
+// ── v0.40.0 — Radar5: 5-axis polygon with rings + optional target overlay. ──
+function radarSVG(axes, values, target, size = 220) {
+  const safeAxes = (axes || []).slice(0, 5);
+  if (safeAxes.length < 3) return '';
+  const safeValues = (values || []).slice(0, safeAxes.length).map(v => Math.max(0, Math.min(1, +v || 0)));
+  const cx = size / 2, cy = size / 2, r = size / 2 - 30;
+  const angleAt = i => (-Math.PI / 2) + (2 * Math.PI * i / safeAxes.length);
+  const pt = (val, i) => { const a = angleAt(i); return { x: cx + r * val * Math.cos(a), y: cy + r * val * Math.sin(a) }; };
+  const ringLvls = [0.25, 0.5, 0.75, 1];
+  const rings = ringLvls.map(lv => {
+    const points = safeAxes.map((_, j) => { const p = pt(lv, j); return `${p.x},${p.y}`; }).join(' ');
+    return `<polygon points="${points}" fill="none" stroke="${BORDER}" stroke-opacity="${lv === 1 ? 0.6 : 0.3}" stroke-width="1" ${lv === 1 ? '' : 'stroke-dasharray="2 3"'}/>`;
+  }).join('');
+  const spokes = safeAxes.map((_, i) => { const p = pt(1, i); return `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${BORDER}" stroke-opacity="0.3"/>`; }).join('');
+  const targetPoly = target ? (() => {
+    const points = safeAxes.map((_, i) => { const p = pt(target, i); return `${p.x},${p.y}`; }).join(' ');
+    return `<polygon points="${points}" fill="none" stroke="${TEXT}" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+  })() : '';
+  const valuePoly = (() => {
+    const points = safeValues.map((v, i) => { const p = pt(v, i); return `${p.x},${p.y}`; }).join(' ');
+    return `<polygon points="${points}" fill="${GOLD}" fill-opacity="0.18" stroke="${GOLD}" stroke-opacity="0.8" stroke-width="1.5"/>`;
+  })();
+  const dots = safeValues.map((v, i) => { const p = pt(v, i); return `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${GOLD}"/>`; }).join('');
+  const labels = safeAxes.map((ax, i) => {
+    const p = pt(1.18, i);
+    const isRight = p.x > cx + 5, isLeft = p.x < cx - 5;
+    const anchor = isRight ? 'start' : isLeft ? 'end' : 'middle';
+    return `<text x="${p.x}" y="${p.y + 3}" text-anchor="${anchor}" font-size="10" font-weight="600" fill="${MUTED}">${htmlEscape(ax)}</text>`;
+  }).join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">${rings}${spokes}${targetPoly}${valuePoly}${dots}${labels}</svg>`;
+}
+
 // ── print HTML builder (extended with all sections) ────────────────────────
 function buildPrintHTML(client, lang, advisor, include, reportType = "complete") {
   const isEs = lang === "es";
@@ -459,9 +624,36 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
       <tr style="background:#FEF2F2"><td style="padding:6px 8px;font-weight:700;color:${TEXT}">${L.kpiDebt}</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${NEG}">${fmtUSD(agg.debt)}</td><td style="padding:6px 8px;text-align:right;font-weight:600;color:${MUTED}">${fmtUSD(agg.debtMinPay)}</td><td></td></tr></tbody>
     </table>` : (inc.debt ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
-  // ── Assets summary
+  // ── Assets summary (v0.40.0 — paired Asset/Liability Treemap above the tables)
   const accountsRows = safeArr(client.accounts);
   const customRows = safeArr(client.customAssets);
+  const miRows = safeArr(client.marketInvestments);
+  const assetTM = [
+    ...accountsRows.map(a => ({ label: (ACCT_ICONS[a.type] || "💼") + " " + (a.name || ""), value: +a.value || 0, color: ACCT_COLORS[a.type] || "#94A3B8" })),
+    ...customRows.map(a => ({ label: "🏛️ " + (a.name || ""), value: +a.value || 0, color: "#059669" })),
+    ...miRows.map(a => ({ label: "📈 " + (a.ticker || a.name || ""), value: +a.value || 0, color: "#10B981" })),
+  ].filter(d => d.value > 0);
+  const liabTM = [
+    ...safeArr(client.cards).map(c => ({ label: "💳 " + (c.name || ""), value: +c.balance || 0, color: "#EF4444" })),
+    ...safeArr(client.loans).map(l => ({ label: "🏦 " + (l.name || ""), value: +l.balance || 0, color: LOAN_COLORS[l.type] || "#F97316" })),
+  ].filter(d => d.value > 0);
+  const balanceTreemapsHTML = inc.assets && (assetTM.length || liabTM.length) ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="background:#fff;border:1px solid ${BORDER};border-radius:6px;padding:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:9px;color:${POS};text-transform:uppercase;letter-spacing:0.05em;font-weight:700">🗺️ ${isEs?'Mapa de Activos':'Asset Map'}</div>
+          <div style="font-size:10px;color:${MUTED};font-family:'JetBrains Mono',monospace">${fmtUSD(agg.totalAssets)}</div>
+        </div>
+        ${assetTM.length ? treemapSVG(assetTM, 280, 180) : `<div style="padding:24px;font-size:10px;color:${MUTED};font-style:italic;text-align:center">${isEs?'Sin activos':'No assets'}</div>`}
+      </div>
+      <div style="background:#fff;border:1px solid ${BORDER};border-radius:6px;padding:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:9px;color:${NEG};text-transform:uppercase;letter-spacing:0.05em;font-weight:700">🗺️ ${isEs?'Mapa de Pasivos':'Liability Map'}</div>
+          <div style="font-size:10px;color:${MUTED};font-family:'JetBrains Mono',monospace">${fmtUSD(agg.debt)}</div>
+        </div>
+        ${liabTM.length ? treemapSVG(liabTM, 280, 180) : `<div style="padding:24px;font-size:10px;color:${MUTED};font-style:italic;text-align:center">${isEs?'Sin deudas':'Debt-free.'}</div>`}
+      </div>
+    </div>` : '';
   const assetsTable = inc.assets && (accountsRows.length || customRows.length) ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
       <thead><tr style="background:#F8FAFC;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.value}</th></tr></thead>
@@ -504,10 +696,23 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
       </tbody>
     </table>` : '';
 
-  // ── Financial Ratios
+  // ── Financial Ratios (v0.40.0 — adds 3 Radial Gauges + 5-axis Radar)
   const liquidityRatio = agg.bills > 0 ? (agg.cashAccounts / agg.bills).toFixed(2) : 0;
   const debtToAsset = agg.totalAssets > 0 ? ((agg.debt / agg.totalAssets) * 100).toFixed(0) : 0;
   const emergencyFundMo = agg.bills > 0 ? (agg.cashAccounts / agg.bills).toFixed(1) : 0;
+  // v0.40.0 — health metrics for gauges + radar
+  const dsrPct = agg.income > 0 ? (agg.debtMinPay / agg.income) * 100 : 0;
+  const srPct = agg.income > 0 ? (Math.max(0, agg.netMonthly) / agg.income) * 100 : 0;
+  const efMo = +emergencyFundMo;
+  const dtaPct = +debtToAsset;
+  const radarVals = [
+    Math.max(0, Math.min(1, 1 - (dsrPct / 50))),
+    Math.max(0, Math.min(1, srPct / 25)),
+    Math.max(0, Math.min(1, efMo / 6)),
+    Math.max(0, Math.min(1, 1 - (dtaPct / 80))),
+    Math.max(0, Math.min(1, agg.income > 0 ? (agg.netMonthly / agg.income) / 0.1 : 0)),
+  ];
+  const radarAxes = isEs ? ["DSR","Ahorro","EF","D/A","Flujo"] : ["DSR","Savings","EF","D/A","Cash"];
   const financialRatiosHTML = inc.financialRatios ? `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:10px 0">
       <div style="background:#F8FAFC;border:1px solid ${BORDER};border-radius:6px;padding:10px">
@@ -523,7 +728,21 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
         <div style="font-size:16px;color:${agg.netWorth >= 0 ? POS : NEG};font-weight:700">${fmtUSD(agg.netWorth)}</div>
       </div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div style="background:#fff;border:1px solid ${BORDER};border-radius:6px;padding:10px">
+        <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;font-weight:600">${isEs?'Indicadores de Salud':'Health Gauges'}</div>
+        <div style="display:flex;justify-content:space-around;align-items:flex-start;gap:6px">
+          ${radialGaugeSVG(dsrPct, 60, 36, "DSR", isEs?"≤ 36%":"≤ 36%", null, 116, "lower", [0.6, 0.83])}
+          ${radialGaugeSVG(srPct, 40, 20, isEs?"Ahorro":"Savings", "≥ 20%", null, 116, "higher", [0.5, 0.25])}
+          ${radialGaugeSVG(efMo, 12, 3, isEs?"Meses EF":"EF Months", "3-6", null, 116, "higher", [0.25, 0.125])}
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid ${BORDER};border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;font-weight:600">${isEs?'Puntaje de Salud':'Health Score'}</div>
+        ${radarSVG(radarAxes, radarVals, 0.8, 200)}
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:14px">
       <tbody>
       <tr style="border-bottom:1px solid ${BORDER}"><td style="padding:8px;color:${TEXT}">${L.liquidityRatio}</td><td style="padding:8px;text-align:right;color:${MUTED}">${L.benchmark}: &gt; 1.0x</td><td style="padding:8px;text-align:right;font-weight:700;color:${liquidityRatio >= 1 ? POS : WARN}">${liquidityRatio}x</td><td style="padding:8px;text-align:right;font-size:9px;color:${liquidityRatio >= 1 ? POS : WARN}">${liquidityRatio >= 1 ? L.good : L.attention}</td></tr>
       <tr style="border-bottom:1px solid ${BORDER}"><td style="padding:8px;color:${TEXT}">${L.debtToAsset}</td><td style="padding:8px;text-align:right;color:${MUTED}">${L.benchmark}: &lt; 40%</td><td style="padding:8px;text-align:right;font-weight:700;color:${debtToAsset < 40 ? POS : WARN}">${debtToAsset}%</td><td style="padding:8px;text-align:right;font-size:9px;color:${debtToAsset < 40 ? POS : WARN}">${debtToAsset < 40 ? L.good : L.attention}</td></tr>
@@ -531,8 +750,18 @@ function buildPrintHTML(client, lang, advisor, include, reportType = "complete")
       </tbody>
     </table>` : '';
 
-  // ── Cash Flow Statement
+  // ── Cash Flow Statement (v0.40.0 — Waterfall at the top)
+  const wfSegments = [
+    { label: isEs?"Ingreso":"Income", value: agg.income, color: POS },
+    { label: isEs?"Gastos":"Bills", value: -agg.bills, color: NEG },
+    { label: isEs?"Pago Mín":"Debt Min", value: -agg.debtMinPay, color: "#ED7D31" },
+    { label: isEs?"Neto":"Net", kind: "total", value: agg.netMonthly, color: GOLD },
+  ];
   const cashFlowHTML = inc.cashFlow ? `
+    ${agg.income > 0 ? `<div style="margin:10px 0 14px;background:#fff;border:1px solid ${BORDER};border-radius:6px;padding:10px;text-align:center">
+      <div style="font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;font-weight:600">${isEs?'Cascada de Flujo Mensual':'Monthly Cash Flow Waterfall'}</div>
+      ${waterfallSVG(wfSegments, 540, 180)}
+    </div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0">
       <div>
         <div style="font-size:11px;font-weight:700;color:${POS};margin-bottom:6px">💰 ${L.inflows}</div>
@@ -673,6 +902,7 @@ ${inc.debt ? `<div class="section">
 
 ${inc.assets ? `<div class="section">
   <div class="section-hdr">${htmlEscape(L.assetsHdr)}</div>
+  ${balanceTreemapsHTML}
   ${assetsTable}
 </div>` : ''}
 

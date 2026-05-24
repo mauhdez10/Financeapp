@@ -2,6 +2,49 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.40.0 — 2026-05-23 — PDF chart embeds (server-side SVG)
+
+Charts now render in emailed PDFs. The render is server-side (Puppeteer in the
+existing `api/render-report-pdf.js`, per D-34 — self-contained print HTML, not
+SPA-driven). Four new pure-SVG-string functions ported from the React chart
+components, then wired into the existing section blocks.
+
+**New server-side SVG functions in `api/render-report-pdf.js`:**
+- `waterfallSVG(segments, w, h)` — stepped Income → −Bills → −Debt Min → Net
+  with dashed connectors. Same algorithm as the React `Waterfall`.
+- `treemapSVG(data, w, h)` — squarified treemap with proportional tiles,
+  labels and values inside, fillOpacity tuned to the lighter v0.38+ style.
+- `radialGaugeSVG(value, max, target, label, sublabel, color, size, direction,
+  thresholds)` — 270° arc with optional target marker, threshold-based color
+  shift (good/warn/bad). Same shape as the React `RadialGauge`.
+- `radarSVG(axes, values, target, size)` — 5-axis polygon with ring grid +
+  optional target overlay. Same shape as the React `Radar5`.
+
+Plus `ACCT_COLORS` and `LOAN_COLORS` constants matching App.jsx's
+`ACCT_META.c` / `LOAN_META.c` so PDF colors stay consistent with the live app.
+
+**Wired into PDF sections:**
+- **Cash Flow Statement** — `waterfallSVG` at the top of the section showing
+  Income → −Bills → −Debt Min → Net flow. Conditional on `agg.income > 0`.
+- **Financial Ratios** — new row above the existing ratios table: 3 Radial
+  Gauges (DSR / Savings Rate / EF Months) side by side, paired with a 5-axis
+  Radar (Health Score) on the right. Same metrics + same target lines as the
+  on-screen `SummarySection`.
+- **Assets** — `treemapSVG` Asset Map + Liability Map paired side by side
+  above the existing Assets table. Same colors as ACCT_META / LOAN_META.
+
+Verified the new SVG functions produce the expected output (4-bar waterfall,
+3-tile treemap, gauge with label, 6-polygon radar = 4 rings + target + value).
+
+**Section toggles still respected.** `inc.financialRatios`, `inc.cashFlow`,
+`inc.assets` still gate visibility in `client.reportInclude`. Defaults
+unchanged.
+
+**Pending for v0.41+:** Server-side Sankey, NetWorthBridge, PayoffProgression
+SVGs. Picker entries that map ChartSettings to which PDF charts appear.
+Per-section pickers (ClientDetail summary slots). Remaining calculator chart
+wires (HomeEquity, IncomeCalc, SavingsCalc, etc).
+
 ## v0.39.0 — 2026-05-23 — Dashboard chart picker + Chart Settings in topbar menu
 
 Two new ways to pick which charts the Dashboard shows.
