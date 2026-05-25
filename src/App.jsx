@@ -5650,13 +5650,14 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
         {/* v0.55 — pills + disclaimer use amberDeep on dark mode (gold-cream `#EDD594`)
        so they read on navy; were previously muted grey-on-grey = invisible. */}
-        {/* v0.56 — pills go pure white on dark (was gold-cream which read as
-           the gold tile bg, making them disappear). Stay muted slate on light. */}
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:isDark?"#F1F5F9":PAL.muted,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
+        {/* v0.56-r5 — pills match the "Sign In" button typography per Mauricio:
+           title case (no uppercase), 13px size, weight 700, gentle tracking.
+           Now read as feature labels, not screaming all-caps tags. */}
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:isDark?"#F1F5F9":PAL.muted,fontWeight:700,letterSpacing:"0.02em"}}>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
         </div>
       </div>
 
@@ -5964,7 +5965,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-r4-swatches-bars-treemaps-cashflow";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-r5-pills-appearance-swatches";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7281,14 +7282,26 @@ function SettingsPage({settings,onEdit,onBackup,onRestoreBackup,t,clients}){
     [t?.instagram||"Instagram", settings.ig||"—"],
     [t?.company||"Company", settings.companyName||"—"],
   ];
+  // v0.56-r5 — Appearance summary shows actual color swatches instead of
+  // hex codes ("color boxes" per Mauricio's persistent ask). Each row's
+  // value is JSX: 16px colored tile + name + small mono hex caption.
   const accent=(settings.darkAccent||GOLD).toString().toUpperCase();
   const bg=((settings.darkBg)||"#111827").toString().toUpperCase();
   const card=((settings.darkCard)||"#1F2937").toString().toUpperCase();
+  const lightAccent=(settings.lightAccent||"#2563EB").toString().toUpperCase();
+  const lightBg=((settings.lightBg)||"#F1F5F9").toString().toUpperCase();
+  const lightCard=((settings.lightCard)||"#FFFFFF").toString().toUpperCase();
+  const isDarkTheme=settings.darkMode!==false;
+  const ColorRow=({color,name,hex})=><span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+    <span style={{width:18,height:18,borderRadius:5,background:color,border:`1px solid ${th.cardBorder}`,boxShadow:"inset 0 0 0 1px rgba(0,0,0,0.05)"}}/>
+    <span style={{color:th.text,fontWeight:600}}>{name}</span>
+    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:th.dim,fontWeight:400}}>{hex}</span>
+  </span>;
   const appearanceRows=[
-    [t?.theme||"Theme", settings.darkMode!==false?(t?.darkMode||"Dark"):(t?.lightMode||"Light")],
-    [t?.accent||"Accent", `Gold ${accent}`],
-    [t?.background||"Background", `Navy ${bg}`],
-    [t?.card||"Card", `Navy 600 ${card}`],
+    [t?.theme||"Theme", settings.darkMode!==false?("🌙 "+(t?.darkMode||"Dark")):("☀️ "+(t?.lightMode||"Light"))],
+    [t?.accent||"Accent", <ColorRow key="acc" color={isDarkTheme?accent:lightAccent} name={isDarkTheme?"Gold":"Blue"} hex={isDarkTheme?accent:lightAccent}/>],
+    [t?.background||"Background", <ColorRow key="bg" color={isDarkTheme?bg:lightBg} name={isDarkTheme?"Navy":"Cream"} hex={isDarkTheme?bg:lightBg}/>],
+    [t?.card||"Card", <ColorRow key="card" color={isDarkTheme?card:lightCard} name={isDarkTheme?"Navy 600":"White"} hex={isDarkTheme?card:lightCard}/>],
     [t?.appZoom||"App zoom", Math.round((settings.appZoom||1)*100)+"%"],
   ];
   const localizationRows=[
