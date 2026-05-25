@@ -6,11 +6,27 @@
 
 ---
 
-## 🗓 Session handoff — last update 2026-05-23
+## 🗓 Session handoff — last update 2026-05-25
 
 ### Currently shipped (live on Vercel)
 
-**v0.36.0** — `2026-05-23-v0360-doc-hygiene`
+**v0.56.0** — `2026-05-25-v0560-pills-spark-promos-cashflow-swatches`
+
+Shipped via the `v0.56-preview` branch + `--no-ff` merge into main (commit `d137dbf`). Highlights:
+- Animated SVG hero on landing (Lottie infra wired, `LOTTIE_HERO_URL` slot left empty)
+- Landing pills white on dark + sentence case (match Sign-In typography)
+- Monthly Report health row: 4-up gauges + radar (was 2-card with blank padding)
+- Global `SC` card compaction (JetBrains Mono values, tabular nums, smaller padding)
+- Dashboard KPI tiles: inline sparklines + delta arrows
+- KPI Sparklines slot: sparkline now extends to touch the value
+- Promotions: table layout per design ref + Stripe-sync info banner
+- Profile → Appearance summary card: actual color swatches (was hex strings)
+- Trend bar mode: combo positive/negative bars + dashed cumulative net line
+- Asset/Liability maps: Treemap → RankedHBars (per "blocks don't read as data")
+- Cash Flow Statement: split into 3 panels (Waterfall + Donut + KPI tiles)
+- Calculators tile grid: 300px tiles, 48px icon square, hover lift
+
+**Earlier:** v0.54.0 — `2026-05-25-v0540-big-batch-prs-1-2-4-5-7-8-9`
 
 Verify the live build is current:
 ```bash
@@ -22,6 +38,21 @@ curl -s "https://finance.goldenanchor.life/assets/<that-hash>.js" | grep -oE 'v[
 
 | Version | What shipped |
 |---|---|
+| **v0.52.0** | PDF — Portfolio + Compare + Calc Snapshots sections added. Miguel-Torres-style fix: server template (`api/render-report-pdf.js`) was missing 3 sections that exist on the SPA Complete Report. Now renders Selected Portfolio (`client.savedPortfolio`), Period Comparison (`client.savedCompare`), Calculator Snapshots (`client.savedCalcs[]`). All warm-palette, JetBrains Mono numerals, `.sect-head` amber hairline. New `inc.portfolio`/`inc.compare`/`inc.calcs` toggles default ON for `complete` reportType, OFF for monthly/financial. 12 new bilingual L keys. Verification harness at `preview/_test-pdf-sections.mjs` + `preview/_test-pdf-render.mjs` — 17/17 source + 14/14 render checks green. `buildPrintHTML` is now exported. |
+| **v0.51.0** | Download PDF replaces in-app Print. Backend `api/render-report-pdf.js` now accepts `mode:"email"\|"download"`. Email mode unchanged (Resend send). Download mode returns the same PDF buffer as `application/pdf` with `Content-Disposition: attachment`. Frontend `DownloadPdfBtn` replaces `PrintBtn` on Monthly + Financial Statements + Complete report tabs — same gold pill, busy state "⏳ Preparing PDF…", inline error surfacing. `PrintBtn` kept defined (unwired) for a future "Print raw data" surface. Also imported `HANDOFF-v0.46.md` + 11 new `preview/*.html` design mockups (PRs 1, 4-9 approved; 23/24 pending). New bilingual keys: `downloadPdfBtn`, `downloadPdfBusy`, `downloadPdfFailed`. |
+| **v0.50.0** | Email PDF warm palette. `api/render-report-pdf.js` palette ported from `preview/18-pdf-reports.html` + v0.45 in-app print. Page bg `#FAFAF7` warm linen (was `#F1F5F9` cool slate). Pos `#047857` deep green, Neg `#B91C1C` deep red, Net Worth `#B8901E` deep amber. Section cards lost the white-with-border treatment — claude `.sect-head` pattern (8pt amber uppercase, `::after` hairline). Report title centered Newsreader italic 22px, no card. Disclaimer slim italic with gold top rule. KPI strip 3px-radius compact cards, JetBrains Mono 13px values. Tables hairline grey with gold totals top rule. Verification mockup at `preview/email-pdf-warm-preview.html`. |
+| **v0.48.0** | Chart customization MVP — SmoothAreaLine slice. New `ChartConfigCtx` + `useChartConfig(templateId,defaults)` hook merges per-template saved overrides with built-in defaults. Each gallery card with a `templateId` grows an ✏️ Edit pill → opens `ChartEditModal` with color pickers (per slot), 0.5-4px stroke slider, legend label inputs, display name, Reset to Default. Changes auto-apply (no Save button), persist to `settings.chartCustomizations`, propagate live to every use-site (ClientDetail trend pair, Dashboard slots, gallery). Wired for `smoothAreaLine.debtVsSavings` + `smoothAreaLine.cashFlowTrend`. Remaining 18 chart families queued for v0.49. 10 new translation keys × EN+ES. |
+| **v0.47.0** | Red/green trends + Dashboard slot expansion. ClientDetail Debt vs Savings live trend restored to RED (`#EF4444`) for debt + GREEN (`#10B981`) for savings (was orange/gold during v0.34). Cash Flow Trend kept green/gold. Gallery split SmoothAreaLine into two cards (Debt vs Savings + Cash Flow Trend), total 21 cards. Dashboard slot dropdown expanded 6 → 20 options — each new option renders practice-aggregated data: Debt vs Savings Trend, Cash Flow Trend, Debts by Balance, Practice Cash Flow Waterfall, Practice Health (Radar), Net Worth Forecast, Asset Allocation (Sunburst), Client Net Worth Δ (Dumbbell), Net Worth Prior vs Current (Slope), Bills by Category, Bills YoY, Spending Heatmap, Debt Payoff Timeline, KPI Sparklines. 31 new translation keys × EN+ES. |
+| **v0.46.0** | Chart Gallery (temporary audit section). Topbar avatar "Chart Settings" → "Chart Gallery" — a 20-card showcase of every chart component (Sparkline, RadialGauge, BulletChart, Donut, Treemap, Sunburst, RankedHBars, Waterfall, Sankey, SmoothAreaLine, Radar5, SlopeGraph, Dumbbell, GroupedYoY, StackedBars, NetWorthBridge, PayoffProgression, AmortizationArea, ForecastCone, HeatmapCalendar) rendered with Amanda-Chen-style sample data. Three amber NEW pills (Sunburst, SlopeGraph, Dumbbell — built in v0.45 but unwired); 17 gold WIRED pills. 3-slot Dashboard picker preserved below the gallery. Modal width 480→920. Three new translation keys × EN+ES (`chartGalleryWired`, `chartGalleryNew`, `chartGallerySlotsHdr`). |
+| **v0.45.0** | Compact print stylesheet matching claude design template (multi-section per page, claude `.sect-head` pattern, hairline tables, warm linen `#FAFAF7` bg) — Complete Report now ~6-7 pages instead of ~14. Three new chart components: **SlopeGraph** (Tufte two-period comparison), **Sunburst** (nested radial allocations), **Dumbbell** (before/after comparison with auto-color by direction). Standalone calc wires: CarLoanCalc → AmortizationArea, IncomeCalc → paycheck Donut + effective-tax-rate RadialGauge, HomeEquityCalc equity tab → Donut showing home value composition (owed / borrowable / locked equity). |
+| **v0.44.0** | Gradient polish on the remaining 8 chart components (BulletChart, NetWorthBridge, PayoffProgression, AmortizationArea, StackedBars, HeatmapCalendar, GroupedYoY, ForecastCone) following the v0.42 pattern. Plus Lucide icon vocabulary wired into sidebar nav (desktop + mobile) and topbar avatar menu via a new `GAIcon` wrapper. HeatmapCalendar switched from opacity-only to RGB color gradient (cream → amber). Remaining ~150 in-content emojis (KPI labels, section headers, modal titles) deferred to v0.45+. |
+| **v0.43.0** | Landing page (Enterprise Gateway with corner sign-in) + reduced-motion hook + bundle splitting. New marketing landing replaces full-screen Login: italic Newsreader hero left, compact sign-in card top-right, 3 feature cards, credentials pills, disclaimer footer. Warm cream `#FFFBEB` + amber `#D97706` palette (matches v0.41 print). `useReducedMotion` hook gates SMIL `<animate>` + tween hook so charts respect prefers-reduced-motion. Vite manualChunks splits recharts/xlsx/supabase/react-vendor into separate async chunks — initial bundle 1909KB → 848KB (-55%). Lucide-react installed but icon vocabulary swap deferred to v0.44. `design-system/golden-anchor/MASTER.md` persisted via ui-ux-pro-max `--persist`. |
+| **v0.42.0** | Gradient chart polish pass — replaced flat fills with gradients + reduced stroke weights across 9 chart components (Donut, Waterfall, SmoothAreaLine, Sankey, Treemap, RadialGauge, Radar5, RankedHBars, Sparkline). ui-ux-pro-max alignment: tabular numerals everywhere, 0.04em letter-spaced uppercase labels, hairline gridlines, thinner strokes (1.25-1.75px). Drop-shadow filters removed where they read as chunky. 12 gradient elements verified rendering live. |
+| **v0.41.0** | Premium print PDF — warm cream/amber palette + per-section page breaks. Print/Save PDF on the Complete Report now produces a designer-grade document: section cards with `4px solid #F59E0B` (amber) top rules + `#FDE68A` borders, warm-amber section headers (`#B45309`) on gold underlines, deep-walnut italic title in Newsreader. Every `RS` block in `FullReport` plus the Financial Statements / Compare / Calcs / Notes / Plan outer wrappers get `.ga-print-page` so each section prints on its own page (~14 pages typical). Print-only branded header (anchor + client + advisor) at top, disclaimer card + watermark at bottom. Browser print path only — server-side email PDF still uses its own template. |
+| **v0.40.0** | PDF chart embeds. Four new server-side pure-SVG-string functions in `api/render-report-pdf.js`: `waterfallSVG`, `treemapSVG`, `radialGaugeSVG`, `radarSVG` (ported from the React chart components). Wired into Cash Flow Statement (Waterfall top), Financial Ratios (3 Radial Gauges + Radar Health Score row above table), and Assets (paired Asset/Liability Treemaps above table). `ACCT_COLORS` + `LOAN_COLORS` maps added so PDF colors match the live app. Section toggles (`inc.financialRatios`, `inc.cashFlow`, `inc.assets`) still respected. Verified with isolated SVG function tests. |
+| **v0.39.0** | Dashboard chart picker + topbar menu entry. Per-card gear ⚙ icon on each Dashboard slot opens a dropdown of 6 chart options (Income vs Spending, Sankey, Net Worth Donut, Clients Treemap, Practice Health gauges, Net Worth Bridge) — swap any slot, persists to `settings.dashboardSlots`. New "📊 Chart Settings" entry in the topbar avatar menu opens a modal with 3 dropdowns (same picker as gear). Default slots match v0.38 (Income vs Spending / Sankey / Donut). 31 new translation keys × EN+ES. |
+| **v0.38.0** | Charts wave 2 — full component library + wires across calcs/sections. 12 new pure-SVG charts (RadialGauge, RankedHBars, BulletChart, Sparkline, Radar5, NetWorthBridge, PayoffProgression, AmortizationArea, StackedBars, HeatmapCalendar, GroupedYoY, ForecastCone). Wired into ClientDetail SummarySection (3 gauges + Radar5 health row), CashFlowStatement (Waterfall), Balance Sheet (paired Asset/Liability Treemaps), ClientDebtCalc (RankedHBars + PayoffProgression), ClientCarLoanCalc (AmortizationArea), AffordabilityCalc (PITI Donut + DTI Gauge), RetirementCalc (ForecastCone). Lighter visual style (50-70% fill, 1.5-1.75px strokes, no drop-shadow filters) — refinement coming via design review. |
+| **v0.37.0** | Charts wave 1 — animation foundation + Sankey + Treemap. New `useTweenedData` hook (~800ms easeOutCubic) wired into Donut, Waterfall, SmoothAreaLine so values morph instead of snapping. Gold glow filter + pulsing "live" dot on SmoothAreaLine's last point. Two brand-new components: `Sankey` (flow diagram, pure-SVG, ~150 lines) wired into Dashboard as a new middle column between Income vs Spending and Net Worth Donut; `Treemap` (squarified, pure-SVG, ~80 lines) wired into AssetsLiabilitiesTab as an "Asset Map" card above the four tables. Dashboard grid now 3 columns with `minmax(0,Nfr)`. 6 new translation keys × EN+ES. |
 | **v0.36.0** | Doc hygiene + dead-code pass. Deduped 3 silent-overwrite translations (`totalLbl` / `partnerEmailLbl` / `close`). Added 11 missing EN+ES keys. Backfilled WHATS_NEW_ENTRIES for v0.29-v0.35. Deleted IntakeFormV2 (~64 lines dead code from the v0.31 restore). Refreshed AGENT.md §3 + this handoff. No behavior changes. |
 | **v0.35.1** | Hotfix: `fmtSSN` was a local const inside `SSNInput`, throwing `ReferenceError` on every keystroke into the prospect SSN field on public intake. Hoisted to module scope alongside `fmtPh`. |
 | **v0.35.0** | Phase 5 + 6. New pure-SVG `Donut` (replaces Recharts PieChart on Dashboard's Net Worth Distribution) + `Waterfall` component (built, not yet wired). `.ga-print-page` wrappers around the 6 FullMonthView sections — each prints on its own page. |
@@ -37,15 +68,23 @@ curl -s "https://finance.goldenanchor.life/assets/<that-hash>.js" | grep -oE 'v[
 
 ### Pending work (priority order)
 
-**Phase 5 charts library — remaining (Claude Design workplan):**
+The chart vocabulary is now in place (v0.37→v0.45) and the Chart Gallery
+(v0.46) lets Mauricio audit every component in one place. Next passes
+target landing-page hygiene, chart visual polish based on his feedback,
+and email-PDF palette parity.
 
-1. **Wire `Waterfall`** (built v0.35.0, not yet integrated). Drop into Cash Flow Statement or Monthly Snapshot to replace the table-driven layout.
-2. **Remaining chart components** — `KPITileRow`, `RankedHBars`, `GoalProgressList`, `RadialProgress3`, `HeatmapMonth`, `SparklineRow`, `Radar5`, `Candlestick`, `CircularBar`, `PackedBubble`, `TimelinePins`, `RadialHistogram`, `PairedBars`, `StackedBars`, `GroupedYoY`, `NetWorthAgePyramid`, `Pie`, `PyramidChart`, `PictorialFraction`, `ProcessCycle`, `SplineChart`, `StackedArea`. ~22 components left. Build incrementally.
+1. **v0.47 — Landing page rework.** Strip Mauricio's personal credentials (MBA / FPWMP / FL0215 / advisor name pills) from the Login page; re-pitch as a product, not an advisor. Fix the light/dark toggle so it actually theme-switches the landing. Resolve the sign-in card color story (currently reads yellow button + grey labels + white inputs random — pick one warm-palette story).
+2. **v0.48 — Chart visual fixes (bundle).** Debt/Savings + Cash Flow Trend pair: thinner lines, line↔bar toggle, RED for debt + GREEN for savings (not orange + yellow). Waterfall on Cash Flow Statement: shrink dramatically — cap bars at ~36px, drop labels to 9pt, overall height ~140-160px. CC vs Loan cards in ClientDebtCalc: tighten padding. Portfolio standalone calc bottom chart: swap (AmortizationArea or ForecastCone). Asset Map + Liability Map Treemaps: replace with Sunburst (Assets) + paired Donuts or stacked segment bar (Liabilities) — gallery v0.46 will help compare.
+3. **v0.49 — Standalone calc charts.** Port the "Debts by Balance" RankedHBars from `ClientDebtCalc` into the standalone `/calculators` → Debt Reduction tab. Interest calc: add an AmortizationArea-style compound-growth chart.
+4. **v0.50 — Email PDF warm palette.** Port the v0.45 warm linen (`#FAFAF7`) + amber + Newsreader/Source-Serif typography from the in-app print stylesheet into `api/render-report-pdf.js`. Current emailed PDF still uses cool slate.
+5. **v0.51 — Intake form warm palette.** Recolor `PublicIntake` to cream `#FFFBEB` + amber `#D97706` (claude design Boutique style). **Color-only** — keep the 5-stage structure intact.
 
-**Phase 6 PDF print — remaining:**
+**Polish backlog (revisit after the series):**
 
-3. **Emoji-strip refactor** (deferred from v0.35.0). Wrap ~200 leading emojis in report headers with `<span class="ga-emoji">…</span>` so the existing `@media print { .ga-emoji { display:none } }` rule actually fires. Will give cleaner emoji-free PDF exports.
-4. **Three-up KPI strip on Monthly Snapshot print view** (per Phase 6 spec). Net Income / Bills / Discretionary tiles at the top of each Monthly Snapshot PDF page.
+- Sankey on the Dashboard is small relative to its slot — the SVG honors aspect ratio but the row auto-equalizes height to match the taller Income vs Spending card. Consider wrapping in a flex:1 container or increasing native viewBox height.
+- Sankey gradient colors lean brown/gold when the source is green and the sinks are red/orange/gold — the green source isn't very visible. Consider stronger source color or wider source band.
+- Emoji-strip refactor (deferred from v0.35.0). Wrap ~200 leading emojis in report headers with `<span class="ga-emoji">…</span>` so the existing `@media print { .ga-emoji { display:none } }` rule actually fires. Cleaner emoji-free PDF exports.
+- Three-up KPI strip on Monthly Snapshot print view.
 
 **Open bugs (low-confidence — needs Mauricio reproduction):**
 
