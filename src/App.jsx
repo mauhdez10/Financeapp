@@ -5298,7 +5298,72 @@ return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{fl
 </div>{tab==="report"&&<ClientReport client={client} onUpdate={onUpdate} lang={lang} t={t} settings={settings}/>}{tab==="monthly"&&<MonthlyTab client={client} onUpdate={onUpdate} lang={lang} t={t} settings={settings}/>}{tab==="financialStatements"&&<FinancialStatementsTab client={client} lang={lang} t={t}/>}{tab==="al"&&<AssetsLiabilitiesTab client={client} lang={lang} t={t}/>}{tab==="investments"&&<InvestmentsTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="plan"&&<FinancialPlanTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="backfill"&&<BackfillTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="calculators"&&<ClientCalculatorsTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="notes"&&<NotesSection client={client} onUpdate={onUpdate} t={t} settings={settings}/>}<div style={{height:40}}/></div></div></HideCtx.Provider>;}
 
 /* ── LOGIN (Supabase Auth) ──────────────────────────────────────────────── */
+// v0.56 — HeroVisual: animated brand element on the landing page.
+//
+// Strategy: ship an animated SVG fallback that looks Lottie-quality with zero
+// external assets, AND wire lottie-react infrastructure to swap in a real
+// Lottie animation when LOTTIE_HERO_URL is set (paste a LottieFiles JSON URL
+// or local /public/*.json path). Mauricio: visit lottiefiles.com, search
+// "anchor" / "finance growth" / "chart drawing", pick one, copy its `.json`
+// URL, drop into LOTTIE_HERO_URL below. Reduced motion suppresses ALL motion.
+const LOTTIE_HERO_URL = ""; // <- paste LottieFiles JSON URL here to enable Lottie hero
+function HeroVisual({palette,reducedMotion}){
+  const [LottieComp,setLottieComp]=useState(null);
+  const [lottieData,setLottieData]=useState(null);
+  useEffect(()=>{
+    if(!LOTTIE_HERO_URL||reducedMotion)return;
+    let cancelled=false;
+    import("lottie-react").then(m=>{if(!cancelled)setLottieComp(()=>m.default);}).catch(()=>{});
+    fetch(LOTTIE_HERO_URL).then(r=>r.ok?r.json():null).then(j=>{if(!cancelled&&j)setLottieData(j);}).catch(()=>{});
+    return()=>{cancelled=true;};
+  },[reducedMotion]);
+  // Pause animations when tab is hidden — saves battery on idle.
+  const[visible,setVisible]=useState(true);
+  useEffect(()=>{const h=()=>setVisible(!document.hidden);document.addEventListener("visibilitychange",h);return()=>document.removeEventListener("visibilitychange",h);},[]);
+  if(LottieComp&&lottieData&&!reducedMotion){
+    return<LottieComp animationData={lottieData} loop autoplay={visible} style={{width:"100%",height:"100%"}}/>;
+  }
+  // SVG fallback — animated gold rings + anchor monogram + drifting particles.
+  const animate=!reducedMotion&&visible;
+  return<svg viewBox="0 0 400 400" style={{width:"100%",height:"100%",overflow:"visible"}} aria-hidden="true">
+    <defs>
+      <radialGradient id="hero-glow-r" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor={palette.amber} stopOpacity="0.35"/>
+        <stop offset="60%" stopColor={palette.gold} stopOpacity="0.10"/>
+        <stop offset="100%" stopColor={palette.gold} stopOpacity="0"/>
+      </radialGradient>
+      <linearGradient id="hero-arc-l" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor={palette.gold}/>
+        <stop offset="50%" stopColor={palette.amber}/>
+        <stop offset="100%" stopColor={palette.gold}/>
+      </linearGradient>
+    </defs>
+    <circle cx="200" cy="200" r="180" fill="url(#hero-glow-r)"/>
+    <circle cx="200" cy="200" r="160" fill="none" stroke="url(#hero-arc-l)" strokeWidth="0.75" strokeOpacity="0.55" strokeDasharray="4 6">
+      {animate&&<animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="60s" repeatCount="indefinite"/>}
+    </circle>
+    <circle cx="200" cy="200" r="128" fill="none" stroke={palette.amber} strokeWidth="0.5" strokeOpacity="0.45" strokeDasharray="2 8">
+      {animate&&<animateTransform attributeName="transform" type="rotate" from="360 200 200" to="0 200 200" dur="45s" repeatCount="indefinite"/>}
+    </circle>
+    <g>
+      <path d="M 200 80 A 120 120 0 0 1 320 200" fill="none" stroke="url(#hero-arc-l)" strokeWidth="2.5" strokeLinecap="round" opacity="0.85"/>
+      {animate&&<animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="18s" repeatCount="indefinite"/>}
+    </g>
+    <image href="/anchor-monogram.svg" x="155" y="155" width="90" height="90" opacity="0.95"/>
+    {animate&&[0,1,2,3,4,5].map(i=>{
+      const angle=(i/6)*Math.PI*2;
+      const cx=200+Math.cos(angle)*145;
+      const cy=200+Math.sin(angle)*145;
+      return<g key={i}><circle cx={cx} cy={cy} r="2.5" fill={palette.gold} opacity="0.7">
+        <animate attributeName="opacity" values="0.7;0.2;0.7" dur="3.5s" begin={`${i*0.5}s`} repeatCount="indefinite"/>
+        <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="30s" repeatCount="indefinite"/>
+      </circle></g>;
+    })}
+  </svg>;
+}
+
 function Login({onLogin,t,isDark,onToggle,lang}){
+  const reducedMotion=useReducedMotion();
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
   useEffect(()=>{if(typeof window==="undefined")return;const h=window.location.hash||"";if(h.includes("type=recovery")){setMode("setNew");setInfo(t.resetSetNewIntro||"Enter your new password below.");}},[]);
@@ -5384,6 +5449,13 @@ function Login({onLogin,t,isDark,onToggle,lang}){
       <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:11,padding:"6px 14px",borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
     </header>
 
+    {/* v0.56 — animated brand visual behind the hero. Z-index 1 so it sits
+       under the hero text + sign-in card (which are z-index 2). Low opacity
+       so it never competes with content. Drops into LOTTIE_HERO_URL slot
+       if Mauricio sets one; otherwise SVG fallback. */}
+    <div aria-hidden style={{position:"absolute",top:60,right:-120,width:560,height:560,zIndex:1,opacity:0.55,pointerEvents:"none"}}>
+      <HeroVisual palette={PAL} reducedMotion={reducedMotion}/>
+    </div>
     {/* HERO — big italic tagline left, sign-in card top-right */}
     <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px 60px",display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr)",gap:48,alignItems:"start"}}>
       <div style={{paddingTop:36}}>
@@ -5706,7 +5778,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0550-bugfixes-warm-light-layout";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-lottie-hero-wip";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
