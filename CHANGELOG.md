@@ -2,6 +2,92 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.55.0 — 2026-05-25 — Bug fixes, warm light palette, layout shrinks
+
+Direct response to Mauricio's v0.54 audit feedback. Critical visibility bugs
+first, then global light-mode swap, then size shrinks on the worst offenders.
+
+**Critical visibility bug — landing dark mode.** Product pills (Monthly
+snapshot / Debt models / Public intake / EN·ES) and footer disclaimer
+were `color: PAL.muted` = `#94A3B8` on `#0D1B2A` navy = invisible. Fix:
+dark-mode `PAL.muted` bumped to `#CBD5E1`; pills now use `PAL.amberDeep`
+(`#EDD594` gold-cream) on dark mode, footer disclaimer uses `PAL.text`
+at 0.85 opacity. Light mode unchanged.
+
+**Portfolio calc removed from client-side calc tabs.** Was a duplicate
+of the Portfolios section + the standalone `/calculators/portfolio`.
+One delete in `ClientCalculatorsTab.calcs[]`.
+
+**Warm cream + amber light palette, app-wide.** `makeLight()` rewritten:
+- bg `#F1F5F9` → `#FAF6EC` (warm linen)
+- cardBorder + inpBorder `#E2E8F0` / `#CBD5E1` → `#E8DFC6` (cream rule)
+- accent default `#2563EB` → `#C9A84C` (gold)
+- pos `#059669` → `#047857` (deeper warm green)
+- neg `#DC2626` → `#B83227` (warm red)
+- warn `#D97706` → `#C9A84C` (collapsed to gold)
+- blue `#2563EB` → `#C9A84C` (collapsed to gold for consistency)
+- DEF_SETTINGS.lightBg / lightAccent updated to match defaults.
+- LIGHT_BG_PRESETS now leads with `#FAF6EC` + `#F7F4EC`. Existing users
+  with stored `#E6EBF0` (slate) need to pick the cream preset in
+  Settings → Appearance to see the new light palette. App-wide
+  components inherit through the theme — every card, button border,
+  table rule, and accent on light mode now reads warm.
+
+**Cash Flow Statement waterfall — chart on top of numbers + too big.**
+Moved the Waterfall BELOW the inflow/outflow tables (was above).
+Shrunk from 160×640 to 110×500. Header above the chart reads
+"Cash flow walk" so the placement is intentional, not random. Same
+treatment applies on the Complete Report since it reuses
+`<CashFlowStatement/>`.
+
+**Asset Map treemap — too big in Financial Statements + Complete
+Report.** Heights `200` → `130` on both the asset map and liability
+map treemaps. Width kept at 420 — only vertical reduction.
+
+**KPI Sparklines slot — rows too short.** Each row gets 52px min-height
+(was 26px sparkline + cramped padding), sparkline width fluid 260px,
+height 48px, stroke 1.5px. Reads as actual trend lines now, not flat
+ribbons.
+
+**Calculators / Resources / About > Services pages — wasteful grid.**
+- Calculators: minmax `180px` → `220px`, card height `136` → `104`,
+  switched from centered-vertical column to horizontal row (icon left
+  + title + desc right). Cards feel like list items, not posters.
+- Resources: similar treatment — minmax `240` → `260`, padding `16`
+  → `12 14`, icon moves inline with title.
+- About > Services: minmax `540` → `320`. 3-4 cards per row on
+  desktop instead of 1-2 with miles of whitespace.
+
+**What's deliberately deferred to v0.56.**
+- **Promotions redesign** — needs design system spec; Mauricio noted
+  it doesn't match the Claude Design pattern. Will revisit with
+  ui-ux-pro-max audit.
+- **3D landing animation** — looking at Three.js, Lottie, or
+  Spline-iframe options. Bundle-size tradeoff matters.
+- **Monthly Report blank space** (Practice Health gauges + Health
+  Score radar showing tons of white) — needs layout rethink, not just
+  shrinks. Worth a deeper UX pass.
+- **Net Income / Bills / Min Pay / Cash Flow KPI strip** spacing —
+  related to the global layout issue; will batch with the monthly
+  report rework.
+
+**Tooling answers (for Mauricio).**
+- "Is there a tool that teaches you to make it look better?" → Yes:
+  the `ui-ux-pro-max` plugin is already installed in this Claude
+  Code instance. I can invoke it via the Skill tool to audit any
+  surface and produce a redesign. Will use it for the v0.56
+  Promotions + Monthly Report passes.
+- "Should I do that with Claude Design?" → Both work. Claude Design
+  generates mockups; ui-ux-pro-max gives me the heuristics + a
+  built-in component library and design principles to apply directly
+  in App.jsx. They're complementary.
+- "Is there a way to add a 3D moving image at the front page?" → Yes,
+  several options. Lightest is a CSS-animated SVG mesh gradient (no
+  JS). Mid: Lottie JSON animation (~20KB). Heaviest but most
+  impressive: Three.js or Spline embed (200KB+). My recommendation:
+  start with a CSS-animated gradient mesh, upgrade only if you want
+  literal 3D depth. Will spec this for v0.56.
+
 ## v0.54.0 — 2026-05-25 — Big batch (PRs 1, 2, 4, 5 partial, 7, 8, 9 + trend tweaks)
 
 Per Mauricio's "finish everything at once and I'll let you know what's wrong"
