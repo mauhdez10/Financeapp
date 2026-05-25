@@ -470,7 +470,13 @@ const removeService=(idx)=>{if(!confirm(t.confirmRemoveSvc||"Remove this service
 const uploadLogo=(mode)=>(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>500*1024){alert((t.logoTooLarge||"Logo image is too large (max 500KB).")+" "+(f.size/1024).toFixed(0)+"KB");return;}const r=new FileReader();r.onload=ev=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:ev.target.result}));};r.readAsDataURL(f);};
 const clearLogo=(mode)=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:""}));};
 const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fontSize:11,color:th.muted,marginBottom:6}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(p=><div key={p.v} onClick={()=>setS(prev=>({...prev,[k]:p.v}))} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}}><div style={{width:26,height:26,borderRadius:"50%",background:p.v,border:s[k]===p.v?"3px solid white":"2px solid transparent",boxShadow:s[k]===p.v?`0 0 0 2px ${p.v}`:"0 0 0 1px #0002"}}/><span style={{fontSize:9,color:th.dim}}>{t["color"+p.l]||p.l}</span></div>)}<input type="color" value={s[k]||presets[0].v} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:26,height:26,cursor:"pointer",border:"none",borderRadius:4}}/><input value={s[k]||''} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:80,fontFamily:"monospace",fontSize:11}} placeholder="#000000"/></div></div>;
-const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:9}}><div style={{fontSize:10,color:th.muted,marginBottom:5}}>{label}</div><div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:24,height:24,borderRadius:6,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 2px ${th.accent}44`:"none"}}/>)}<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:24,height:24,cursor:"pointer",border:"none",borderRadius:4,padding:0}}/><input value={v||""} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:78,fontFamily:"monospace",fontSize:10}} placeholder="#000000"/></div></div>;};
+// v0.56 — BgPicker: dropped the hex text input per Mauricio's feedback
+// ("Appearance should have the box with the colors instead of the weird
+// numbers no one understands"). Now just shows preset swatches (28px,
+// up from 24px so they read as solid color tiles) plus a custom color
+// picker. The hex value still updates from picker selection — just no
+// raw text entry.
+const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:10}}><div style={{fontSize:10,color:th.muted,marginBottom:6,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:32,height:32,borderRadius:8,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 3px ${th.accent}33`:"none",transition:"transform 100ms ease"}}/>)}<label title={t.customColorLbl||"Custom color"} style={{position:"relative",width:32,height:32,borderRadius:8,border:`1px dashed ${th.cardBorder}`,cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:14}}>＋<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/></label></div></div>;};
 // ToggleField extracted to top-level ProfileToggleField — see comment above ProfileModal.
 // Call sites pass {k,label,s,setS,th,INP} directly so the component type stays stable.
 return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBackdropClose={true}>
@@ -1097,35 +1103,61 @@ function Waterfall({segments,height=180,width=600,bg}){
    localStorage[`client.${id}.live-view.${templateId}`] (default "line").
    Adds a 3-cell values row below: debt · savings · crossover/net with delta
    arrows. Spec from preview/28-live-pair.html. ────────────────────────────── */
-function PairedBars({data,debtKey,savingsKey,debtColor,savingsColor,height=130,labelKey="label"}){
+// v0.56 — PairedBars rebuilt as a Google-Sheets-style combo chart per
+// Mauricio's image 4 feedback ("bar version doesn't look good, should be
+// line or combined line with bar"). Bars (income/savings) on the positive
+// side, mirror bars (bills/debt) on the negative side, dashed cumulative
+// net line overlay. Transparent bg, no fill on the line — keeps the chart
+// reading as data, not chartjunk.
+function PairedBars({data,debtKey,savingsKey,debtColor,savingsColor,height=160,labelKey="label"}){
   const th=useTh();
   const pts=Array.isArray(data)?data:[];
   const tw=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),800);
   if(pts.length<1)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
-  const W=600,H=height,padL=46,padR=14,padT=12,padB=24;
+  const W=600,H=height,padL=46,padR=22,padT=14,padB=24;
   const innerW=W-padL-padR,innerH=H-padT-padB;
-  const mx=Math.max(1,...tw.flatMap(p=>[p.d,p.s]));
+  const mxS=Math.max(1,...tw.map(p=>p.s));
+  const mxD=Math.max(1,...tw.map(p=>p.d));
+  // Symmetric scale so positive (savings/income) above zero, negative (debt/bills) below.
+  const mx=Math.max(mxS,mxD);
   const slot=innerW/pts.length;
-  const barW=Math.min(10,(slot-6)/2);
-  const yAt=v=>padT+innerH*(1-v/mx);
+  const barW=Math.min(20,Math.max(8,slot*0.4));
+  const zeroY=padT+innerH/2;
+  const yPos=v=>zeroY-(v/mx)*(innerH/2);
+  const yNeg=v=>zeroY+(v/mx)*(innerH/2);
   const fmtTick=v=>v>=1000?Math.round(v/1000)+"K":Math.round(v);
+  // Net cumulative line (savings - debt)
+  const net=tw.map(p=>p.s-p.d);
+  let cumNet=0;const cum=net.map(v=>{cumNet+=v;return cumNet;});
+  const cumMax=Math.max(1,...cum.map(Math.abs));
+  const yCum=v=>zeroY-(v/cumMax)*(innerH/2);
+  const xCenter=i=>padL+slot*i+slot/2;
+  const cumPath=cum.map((v,i)=>`${i===0?"M":"L"}${xCenter(i)} ${yCum(v)}`).join(" ");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {[0,0.5,1].map((tk,i)=>{const y=yAt(mx*tk);return<g key={i}>
-        <line x1={padL} y1={y} x2={W-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/>
-        <text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtTick(mx*tk)}</text>
+      {/* Zero line, heavier */}
+      <line x1={padL} y1={zeroY} x2={W-padR} y2={zeroY} stroke={th.dim} strokeOpacity="0.4" strokeWidth="0.75"/>
+      {/* gridlines */}
+      {[0.5,1].map((tk,i)=>{const y1=zeroY-(tk)*(innerH/2);const y2=zeroY+(tk)*(innerH/2);return<g key={i}>
+        <line x1={padL} y1={y1} x2={W-padR} y2={y1} stroke={th.dim} strokeOpacity="0.12" strokeDasharray="1.5 4"/>
+        <line x1={padL} y1={y2} x2={W-padR} y2={y2} stroke={th.dim} strokeOpacity="0.12" strokeDasharray="1.5 4"/>
+        <text x={padL-6} y={y1+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtTick(mx*tk)}</text>
+        <text x={padL-6} y={y2+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>-${fmtTick(mx*tk)}</text>
       </g>;})}
+      {/* Bars: savings above zero, debt below */}
       {pts.map((p,i)=>{
-        const cx=padL+slot*i+slot/2;
-        const xs=cx-barW-0.5,xd=cx+0.5;
+        const cx=xCenter(i);
+        const x=cx-barW/2;
         const sv=tw[i]?.s||0,dv=tw[i]?.d||0;
-        const ys=yAt(sv),yd=yAt(dv);
         return<g key={i}>
-          <rect x={xs} y={ys} width={barW} height={Math.max(0,padT+innerH-ys)} fill={savingsColor} opacity="0.92" rx="1.5"/>
-          <rect x={xd} y={yd} width={barW} height={Math.max(0,padT+innerH-yd)} fill={debtColor} opacity="0.92" rx="1.5"/>
+          <rect x={x} y={yPos(sv)} width={barW} height={Math.max(0,zeroY-yPos(sv))} fill={savingsColor} opacity="0.85" rx="2"/>
+          <rect x={x} y={zeroY} width={barW} height={Math.max(0,yNeg(dv)-zeroY)} fill={debtColor} opacity="0.85" rx="2"/>
           <text x={cx} y={H-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{String(p[labelKey]||"").split(/\s|'/)[0].slice(0,3)}</text>
         </g>;
       })}
+      {/* Cumulative net line overlay (dashed gold) */}
+      <path d={cumPath} fill="none" stroke={GOLD} strokeWidth="1.5" strokeDasharray="3 3" strokeLinecap="round" opacity="0.85"/>
+      {cum.map((v,i)=><circle key={i} cx={xCenter(i)} cy={yCum(v)} r="2.5" fill={GOLD}/>)}
     </svg>
   </div>;
 }
@@ -2420,7 +2452,33 @@ function CashFlowStatement({client,t}){const th=useTh();const net=sumN(client.in
   {/* v0.55 — Waterfall moved BELOW the inflow/outflow tables per Mauricio's
      feedback ("graph shouldn't be on top of the numbers"). Shrunk from
      160×640 to 110×500 — was taking half the page. */}
-  <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>📥 {t.inflowsHdr||"INFLOWS"}</div>{client.incomeStreams.map(s=><SRow key={s.id} label={"  "+s.label} value={toM(s.net,s.freq)} indent/>)}<SRow label={t.totalInflowsRow||"Total Inflows"} value={net} color={th.pos} bold/><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6,marginTop:12}}>📤 {t.outflowsHdr||"OUTFLOWS"}</div>{actB(client.bills).slice(0,5).map(b=><SRow key={b.id} label={"  "+b.name} value={toM(b.cost,b.freq)} indent/>)}{actB(client.bills).length>5&&<div style={{fontSize:10,color:th.dim,paddingLeft:12}}>+{actB(client.bills).length-5} more…</div>}<SRow label={t.totalOutflowsRow||"Total Outflows"} value={bills} color={th.neg} bold/><div style={{fontSize:11,fontWeight:700,color:th.warn,marginBottom:6,marginTop:12}}>💳 {t.debtServiceHdr||"DEBT SERVICE"}</div>{client.cards.filter(c=>c.min>0).map(c=><SRow key={c.id} label={"  "+c.name} value={c.min} indent/>)}<SRow label={t.totalDebtServiceRow||"Total Debt Service"} value={minD} color={th.warn} bold/><SRow label={"⚡ "+(t.operatingCashFlow||"OPERATING CASH FLOW")} value={operCF} color={operCF>=0?th.pos:th.neg} bold line/></div><div><div style={{fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>💹 {t.committedContribHdr||"COMMITTED CONTRIBUTIONS"}</div>{totalSav===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"4px 0"}}>{t.noCommittedAlloc||"No committed allocations. Check boxes in Investment Allocation to activate."}</div>:[["  "+(t.allocRetirement||"🎯 Retirement").replace(/^[^\s]+\s/,""),sav.retirement],["  "+(t.allocStocks||"📈 Stocks").replace(/^[^\s]+\s/,""),sav.stocks],["  "+(t.allocSavings||"🏦 Savings").replace(/^[^\s]+\s/,""),sav.savings],["  "+(t.allocVacation||"✈️ Vacation").replace(/^[^\s]+\s/,""),sav.vacation],["  "+(t.allocRealEstate||"🏠 Real Estate").replace(/^[^\s]+\s/,""),sav.realEstate],["  "+(t.allocOther||"💡 Other").replace(/^[^\s]+\s/,""),sav.other],["  "+(t.allocDebtRepayment||"💳 Debt Repayment").replace(/^[^\s]+\s/,""),sav.debtRepayment]].filter(([,v])=>v>0).map(([l,v])=><SRow key={l} label={l} value={v} indent/>)}<SRow label={t.totalCommittedRow||"Total Committed"} value={totalSav} color="#8B5CF6" bold/><div style={{fontSize:11,fontWeight:700,color:th.blue,marginTop:12,marginBottom:6}}>💰 {t.actualLiquidSavings||"ACTUAL LIQUID SAVINGS"}</div><SRow label={t.checkingPlusSavings||"Checking + Savings"} value={actualLiq} color={th.blue} bold/><SRow label={"💎 "+(t.netCashFlowAfterAlloc||"NET CASH FLOW (after allocations)")} value={netCF} color={netCF>=0?th.pos:th.neg} bold line/><div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>{[{l:t.debtServiceRatio||"Debt Service Ratio",v:(dsr*100).toFixed(1)+"%",c:dsr>0.36?th.neg:dsr>0.2?th.warn:th.pos,bm:"< 36%"},{l:t.savingsRate||"Savings Rate",v:(savRate*100).toFixed(1)+"%",c:savRate>=0.2?th.pos:savRate>=0.1?th.warn:th.neg,bm:"> 20%"},{l:t.annualOperatingCashFlow||"Annual Operating Cash Flow",v:fmt(netCF*12),c:netCF>=0?GOLD:th.neg,bm:""}].map(r=><div key={r.l} style={{...mCARD(th),padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:th.muted}}>{r.l}</div>{r.bm&&<div style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.target||"Target"}: {r.bm}</div>}</div><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}</div></div></div>{net>0&&<div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${th.cardBorder}`}}><div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>{t.cashFlowWaterfallLbl||"Cash flow walk"}</div><Waterfall segments={[{label:t.income||"Income",value:net,color:th.pos},{label:t.bills||"Bills",value:-bills,color:th.neg},{label:t.minPay||"Debt Min",value:-minD,color:"#ED7D31"},{label:t.cashFlow||"Net",kind:"total",value:operCF,color:GOLD}]} height={110} width={500}/></div>}</div>;}
+  <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>📥 {t.inflowsHdr||"INFLOWS"}</div>{client.incomeStreams.map(s=><SRow key={s.id} label={"  "+s.label} value={toM(s.net,s.freq)} indent/>)}<SRow label={t.totalInflowsRow||"Total Inflows"} value={net} color={th.pos} bold/><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6,marginTop:12}}>📤 {t.outflowsHdr||"OUTFLOWS"}</div>{actB(client.bills).slice(0,5).map(b=><SRow key={b.id} label={"  "+b.name} value={toM(b.cost,b.freq)} indent/>)}{actB(client.bills).length>5&&<div style={{fontSize:10,color:th.dim,paddingLeft:12}}>+{actB(client.bills).length-5} more…</div>}<SRow label={t.totalOutflowsRow||"Total Outflows"} value={bills} color={th.neg} bold/><div style={{fontSize:11,fontWeight:700,color:th.warn,marginBottom:6,marginTop:12}}>💳 {t.debtServiceHdr||"DEBT SERVICE"}</div>{client.cards.filter(c=>c.min>0).map(c=><SRow key={c.id} label={"  "+c.name} value={c.min} indent/>)}<SRow label={t.totalDebtServiceRow||"Total Debt Service"} value={minD} color={th.warn} bold/><SRow label={"⚡ "+(t.operatingCashFlow||"OPERATING CASH FLOW")} value={operCF} color={operCF>=0?th.pos:th.neg} bold line/></div><div><div style={{fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>💹 {t.committedContribHdr||"COMMITTED CONTRIBUTIONS"}</div>{totalSav===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"4px 0"}}>{t.noCommittedAlloc||"No committed allocations. Check boxes in Investment Allocation to activate."}</div>:[["  "+(t.allocRetirement||"🎯 Retirement").replace(/^[^\s]+\s/,""),sav.retirement],["  "+(t.allocStocks||"📈 Stocks").replace(/^[^\s]+\s/,""),sav.stocks],["  "+(t.allocSavings||"🏦 Savings").replace(/^[^\s]+\s/,""),sav.savings],["  "+(t.allocVacation||"✈️ Vacation").replace(/^[^\s]+\s/,""),sav.vacation],["  "+(t.allocRealEstate||"🏠 Real Estate").replace(/^[^\s]+\s/,""),sav.realEstate],["  "+(t.allocOther||"💡 Other").replace(/^[^\s]+\s/,""),sav.other],["  "+(t.allocDebtRepayment||"💳 Debt Repayment").replace(/^[^\s]+\s/,""),sav.debtRepayment]].filter(([,v])=>v>0).map(([l,v])=><SRow key={l} label={l} value={v} indent/>)}<SRow label={t.totalCommittedRow||"Total Committed"} value={totalSav} color="#8B5CF6" bold/><div style={{fontSize:11,fontWeight:700,color:th.blue,marginTop:12,marginBottom:6}}>💰 {t.actualLiquidSavings||"ACTUAL LIQUID SAVINGS"}</div><SRow label={t.checkingPlusSavings||"Checking + Savings"} value={actualLiq} color={th.blue} bold/><SRow label={"💎 "+(t.netCashFlowAfterAlloc||"NET CASH FLOW (after allocations)")} value={netCF} color={netCF>=0?th.pos:th.neg} bold line/><div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>{[{l:t.debtServiceRatio||"Debt Service Ratio",v:(dsr*100).toFixed(1)+"%",c:dsr>0.36?th.neg:dsr>0.2?th.warn:th.pos,bm:"< 36%"},{l:t.savingsRate||"Savings Rate",v:(savRate*100).toFixed(1)+"%",c:savRate>=0.2?th.pos:savRate>=0.1?th.warn:th.neg,bm:"> 20%"},{l:t.annualOperatingCashFlow||"Annual Operating Cash Flow",v:fmt(netCF*12),c:netCF>=0?GOLD:th.neg,bm:""}].map(r=><div key={r.l} style={{...mCARD(th),padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:th.muted}}>{r.l}</div>{r.bm&&<div style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.target||"Target"}: {r.bm}</div>}</div><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}</div></div></div>{net>0&&<div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${th.cardBorder}`}}>
+  <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>{t.cashFlowWaterfallLbl||"Cash flow walk"}</div>
+  {/* v0.56 — Cash Flow Walk split into 3 compact panels per Mauricio's image 4
+     feedback: small waterfall + breakdown donut + KPI summary. Each fills its
+     third of the row so nothing reads as a giant blank panel. */}
+  <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)",gap:14,alignItems:"center"}}>
+    <div><Waterfall segments={[{label:t.income||"Income",value:net,color:th.pos},{label:t.bills||"Bills",value:-bills,color:th.neg},{label:t.minPay||"Debt Min",value:-minD,color:"#ED7D31"},{label:t.cashFlow||"Net",kind:"total",value:operCF,color:GOLD}]} height={120} width={380}/></div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+      <Donut size={110} innerRatio={0.62} paddingAngle={2} data={[{label:t.bills||"Bills",value:bills,color:th.neg},{label:t.minPay||"Debt Min",value:minD,color:"#ED7D31"},{label:t.cashFlow||"Free",value:Math.max(0,operCF),color:GOLD}]} centerLabel={t.totalOutLbl||"Income"} centerValue={"$"+(net>=1000?Math.round(net/1000)+"K":Math.round(net))} centerColor={th.pos}/>
+      <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:10.5}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:th.neg}}/>{t.bills||"Bills"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:th.neg,fontWeight:700}}>{net>0?Math.round(bills/net*100):0}%</span></span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:"#ED7D31"}}/>{t.minPay||"Debt Min"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:"#ED7D31",fontWeight:700}}>{net>0?Math.round(minD/net*100):0}%</span></span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:GOLD}}/>{t.cashFlow||"Free"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:GOLD,fontWeight:700}}>{net>0?Math.round(Math.max(0,operCF)/net*100):0}%</span></span>
+      </div>
+    </div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{padding:"8px 10px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+        <div style={{fontSize:9,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.operatingCashFlow||"Operating CF"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:15,fontWeight:700,color:operCF>=0?th.pos:th.neg,marginTop:2}}>{fmt(operCF)}</div>
+      </div>
+      <div style={{padding:"8px 10px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+        <div style={{fontSize:9,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.annualOperatingCashFlow||"Annual"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:15,fontWeight:700,color:operCF>=0?GOLD:th.neg,marginTop:2}}>{fmt(operCF*12)}</div>
+      </div>
+    </div>
+  </div>
+</div>}</div>;}
 
 
 /* ── FINANCIAL STATEMENTS (P1/P2 filtering fixed) ────────────────────────── */
@@ -3283,20 +3341,27 @@ function AssetsLiabilitiesTab({client,lang,t}){const th=useTh();const[view,setVi
       ...loans.map(l=>({label:(LOAN_META[l.type]?.icon||"🏦")+" "+l.name,value:+l.balance||0,color:LOAN_META[l.type]?.c||"#F97316"})),
     ].filter(d=>d.value>0);
     if(tmData.length===0&&liabData.length===0)return null;
+    // v0.56 — Asset/Liability "Maps" swapped from Treemap to RankedHBars per
+    // Mauricio's "block thing not looking good, doesn't know what each square
+    // means" feedback. Each account becomes a horizontal bar with name + value,
+    // sorted high→low. Reads as data, not abstract tiles.
+    const stripEmoji=s=>String(s||"").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s*/gu,"").trim();
+    const aRows=tmData.map(d=>({...d,label:stripEmoji(d.label)}));
+    const lRows=liabData.map(d=>({...d,label:stripEmoji(d.label)}));
     return<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:14,marginBottom:14}}>
       <div style={{...mCARD(th),padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:th.pos,letterSpacing:"0.06em",textTransform:"uppercase"}}>🗺️ {t.assetMapHdr||"Asset Map"}</div>
-          <div style={{fontSize:10,color:th.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totA)}</div>
+          <div style={{fontSize:11,fontWeight:700,color:th.pos,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.assetMapHdr||"Asset Breakdown"}</div>
+          <div style={{fontSize:11,color:GOLD,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(totA)}</div>
         </div>
-        <Treemap data={tmData} width={420} height={130} placeholder={t.noAssetsYet||"No assets yet."}/>
+        {aRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noAssetsYet||"No assets yet."}</div>:<RankedHBars data={aRows} maxBars={8} width={460} barH={16} gap={6} labelW={160}/>}
       </div>
       <div style={{...mCARD(th),padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:th.neg,letterSpacing:"0.06em",textTransform:"uppercase"}}>🗺️ {t.liabilityMapHdr||"Liability Map"}</div>
-          <div style={{fontSize:10,color:th.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totL)}</div>
+          <div style={{fontSize:11,fontWeight:700,color:th.neg,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.liabilityMapHdr||"Liability Breakdown"}</div>
+          <div style={{fontSize:11,color:th.neg,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(totL)}</div>
         </div>
-        <Treemap data={liabData} width={420} height={130} placeholder={t.debtFree||"Debt-free."}/>
+        {lRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.debtFree||"Debt-free."}</div>:<RankedHBars data={lRows} maxBars={8} width={460} barH={16} gap={6} labelW={160}/>}
       </div>
     </div>;
   })()}
@@ -3948,7 +4013,19 @@ const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?in
 </div></div></div></div>;}
 
 function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
-if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}return<div style={{padding:"24px 14px"}}>{/* v0.55 — tighter calc grid: minmax 180→220, more cards per row, minHeight 136→104, padding 16→12. */}<p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"12px 14px",cursor:"pointer",minHeight:104,display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:12}} onMouseEnter={e=>e.currentTarget.style.border=`1px solid ${th.accent}`} onMouseLeave={e=>e.currentTarget.style.border=`1px solid ${th.cardBorder}`}><div style={{fontSize:24,lineHeight:1,flexShrink:0,width:38,textAlign:"center"}}>{c.label.split(" ")[0]}</div><div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:th.text,lineHeight:1.3}}>{c.label.substring(c.label.indexOf(" ")+1)}</div><div style={{fontSize:10,color:th.muted,lineHeight:1.45,marginTop:2}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div></div></div>)}</div></div>;}
+if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}
+// v0.56 — calc grid tile size bumped again per Mauricio's "still too small"
+// feedback. Was minmax(220, 1fr) with 104px minHeight reading as a wall of
+// thin cards. Now minmax(300, 1fr) + 130px minHeight + 16/18 padding +
+// 32px icon. Fewer tiles per row, each one feels substantial.
+return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"16px 18px",cursor:"pointer",minHeight:130,display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:14,transition:"transform 150ms ease,border-color 150ms ease"}} onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${th.accent}`;e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.transform="translateY(0)";}}>
+  <div style={{fontSize:32,lineHeight:1,flexShrink:0,width:48,height:48,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"14",borderRadius:10}}>{c.label.split(" ")[0]}</div>
+  <div style={{minWidth:0,flex:1}}>
+    <div style={{fontSize:14,fontWeight:700,color:th.text,lineHeight:1.3}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
+    <div style={{fontSize:11,color:th.muted,lineHeight:1.5,marginTop:4}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
+  </div>
+  <span style={{color:th.accent,fontSize:18,opacity:0.5,flexShrink:0}}>›</span>
+</div>)}</div></div>;}
 
 const expBackup=(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();};
 const validateBackup=json=>{try{const d=JSON.parse(json);return d.__ga_backup__&&Array.isArray(d.clients)?d:null;}catch{return null;}};
@@ -5887,7 +5964,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-r3-pills-spark-promos-table";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-r4-swatches-bars-treemaps-cashflow";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
