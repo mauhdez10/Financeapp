@@ -303,7 +303,12 @@ function useAnimatedDisplay(value){
   },[value]);
   return display;
 }
-function SC({label,value,color,sub}){const th=useTh();const disp=useAnimatedDisplay(value);return<div className="ga-sc" style={{...mCARD(th),padding:14,flex:1,minWidth:0,overflow:"hidden"}}><div style={{fontSize:11,color:th.muted,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</div><div style={{fontSize:18,fontWeight:800,color:color||th.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{disp}</div>{sub&&<div style={{fontSize:10,color:th.dim,marginTop:2}}>{sub}</div>}</div>;}
+// v0.56 — SC (Summary Card) tightened. Was padding:14 with 18px value and
+// extra wasted vertical space. Now 10px/12px padding, JetBrains Mono on the
+// value, uppercase 0.06em label, more compact rhythm — same data, half the
+// blank space. Used everywhere via KPI strips (Monthly Report, Dashboard,
+// ClientDetail header).
+function SC({label,value,color,sub}){const th=useTh();const disp=useAnimatedDisplay(value);return<div className="ga-sc" style={{...mCARD(th),padding:"10px 12px",flex:1,minWidth:0,overflow:"hidden"}}><div style={{fontSize:10,color:th.muted,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:700}}>{label}</div><div style={{fontSize:17,fontWeight:700,color:color||th.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>{disp}</div>{sub&&<div style={{fontSize:9.5,color:th.dim,marginTop:2,letterSpacing:"0.02em"}}>{sub}</div>}</div>;}
 // v0.27.0 — Skeleton primitive: matte shimmer block. width/height accept any CSS length.
 function Skel({w="100%",h=12,style}){return<div className="ga-skel" style={{width:w,height:h,...style}}/>;}
 // v0.27.0 — Bootstrap skeleton: matches the live dashboard's silhouette (sidebar/topbar + 4 KPIs +
@@ -2323,15 +2328,22 @@ return<div>{hasP2&&<div style={{display:"flex",gap:6,marginBottom:14}}>{[["both"
     Math.max(0,Math.min(1,1-dta/0.8)),
     Math.max(0,Math.min(1,inc>0?cash/inc/0.1:0)),
   ];
-  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:12,marginBottom:14}}>
-    <div style={{...mCARD(th),padding:14,display:"flex",alignItems:"center",justifyContent:"space-around",gap:8,flexWrap:"wrap"}}>
-      <RadialGauge value={dsr*100} max={60} target={36} size={108} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
-      <RadialGauge value={sr*100} max={40} target={20} size={108} label={t.savingsRateLbl||"Savings Rate"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
-      <RadialGauge value={ef} max={12} target={3} size={108} label={t.efMonthsLbl||"EF Months"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+  // v0.56 — health row tightened. Was 2-up with gauges at 108 + radar at 200,
+  // both surrounded by huge blank space. Now 4-up: 3 gauges (84) inline + radar
+  // (160) in the rightmost cell. Cards lose the chunky 14px padding.
+  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginBottom:14}}>
+    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={dsr*100} max={60} target={36} size={84} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
     </div>
-    <div style={{...mCARD(th),padding:14,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
-      <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:4}}>🎯 {t.healthScoreHdr||"Health Score"}</div>
-      <Radar5 axes={["DSR",t.srAxisShort||"Savings",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"Cash"]} values={radarVals} target={0.8} size={200}/>
+    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={sr*100} max={40} target={20} size={84} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
+    </div>
+    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={ef} max={12} target={3} size={84} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+    </div>
+    <div style={{...mCARD(th),padding:"8px 10px 4px",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:2}}>
+      <div style={{fontSize:9,fontWeight:700,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.healthScoreHdr||"Health Score"}</div>
+      <Radar5 axes={["DSR",t.srAxisShort||"Sav",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"CF"]} values={radarVals} target={0.8} size={140}/>
     </div>
   </div>;
 })()}
@@ -5172,13 +5184,45 @@ function PromotionsPage({settings,onSettingsChange,t}){
   const describe=p=>{const val=p.type==="percent"?`${p.value}% off`:p.type==="flat"?`$${p.value} off`:`$${p.value} bundle price`;const when=p.startDate&&p.endDate?`${p.startDate} → ${p.endDate}`:p.startDate?`from ${p.startDate}`:p.endDate?`until ${p.endDate}`:"always active";return`${val} · ${when}`;};
   const isActive=p=>{if(!p.active)return false;const today=new Date().toISOString().slice(0,10);if(p.startDate&&today<p.startDate)return false;if(p.endDate&&today>p.endDate)return false;return true;};
   const Label=({children})=><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:4}}>{children}</div>;
+  // v0.56 — stats derived from promo list for the header KPI strip.
+  const _stats=(()=>{
+    const today=new Date().toISOString().slice(0,10);
+    const active=promos.filter(p=>{if(!p.active)return false;if(p.startDate&&today<p.startDate)return false;if(p.endDate&&today>p.endDate)return false;return true;});
+    const expSoon=active.filter(p=>{if(!p.endDate)return false;const dl=Math.ceil((new Date(p.endDate)-new Date())/864e5);return dl>=0&&dl<=30;});
+    const scheduled=promos.filter(p=>p.active&&p.startDate&&today<p.startDate);
+    const expired=promos.filter(p=>p.endDate&&today>p.endDate);
+    return{active:active.length,expSoon:expSoon.length,scheduled:scheduled.length,expired:expired.length,total:promos.length};
+  })();
   return<div style={{padding:24}}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
-      <div>{/* v0.24.0 — page title removed (TopBar shows it). */}<p style={{fontSize:11,color:th.dim,margin:0}}>{t.promotionsDesc}</p></div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+      <div>
+        <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:GOLD,lineHeight:1.1,marginBottom:4}}>{t.promotionsHdr||"Promotions"}</div>
+        <p style={{fontSize:11,color:th.muted,margin:0,maxWidth:560,lineHeight:1.5}}>{t.promotionsDesc}</p>
+      </div>
       <BSolid onClick={startNew}>＋ {t.newPromotion||"New Promotion"}</BSolid>
     </div>
-    <div style={{...mCARD(th),padding:14,marginBottom:20,background:th.accent+"06"}}>
-      <div style={{fontSize:12,color:th.muted,lineHeight:1.7}}>💡 <b>{t.howItWorks||"How promotions work:"}</b> {t.howItWorksDesc||"Active promotions appear on client invoices and on your public flyer/landing page."}</div>
+    {/* v0.56 — stats strip at top so the page feels like an analytics surface,
+       not just a CRUD list. Active / Expiring soon / Scheduled / Total. */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatActive||"Active"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:th.pos,marginTop:2,lineHeight:1.1}}>{_stats.active}</div>
+      </div>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatExpSoon||"Expiring ≤ 30d"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:_stats.expSoon>0?"#C9A84C":th.muted,marginTop:2,lineHeight:1.1}}>{_stats.expSoon}</div>
+      </div>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatScheduled||"Scheduled"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:th.blue,marginTop:2,lineHeight:1.1}}>{_stats.scheduled}</div>
+      </div>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatTotal||"All-time"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:th.text,marginTop:2,lineHeight:1.1}}>{_stats.total}</div>
+      </div>
+    </div>
+    <div style={{...mCARD(th),padding:"10px 14px",marginBottom:16,background:GOLD+"08",borderLeft:`3px solid ${GOLD}`}}>
+      <div style={{fontSize:11,color:th.muted,lineHeight:1.55}}><b style={{color:GOLD}}>{t.howItWorks||"How promotions work"}</b> — {t.howItWorksDesc||"Active promotions appear on client invoices and on your public flyer/landing page."}</div>
     </div>
     {promos.length===0&&!editing&&<div style={{...mCARD(th),padding:40,textAlign:"center"}}>
       <div style={{fontSize:40,marginBottom:8}}>🏷️</div>
@@ -5778,7 +5822,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-lottie-hero-wip";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-lottie-monthly-kpi-promos";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
