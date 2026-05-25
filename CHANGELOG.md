@@ -2,6 +2,50 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.57.0 — 2026-05-25 — Sign-in WCAG fix + email-type + mobile-input hardening
+
+First v0.5x ship out of the post-v0.56 UI/UX audit. Three P0 fixes from the
+sign-in / mobile-input bucket, all contained to the `<Login>` component plus
+one mobile CSS rule. No layout changes on desktop, no new strings.
+
+**Sign-in submit button — WCAG AA→AAA contrast fix (audit finding A1).** The
+button background was a `linear-gradient(135deg, PAL.amber, PAL.amberDeep)`
+with cream text — in light mode the gold (`#C9A84C`) end gave ~2.2:1 cream-on-
+gold (FAIL AA), and in dark mode the cream-gold (`#EDD594`) end gave ~1.4:1
+(cream-on-cream-gold, effectively unreadable). Replaced with a theme-conditional
+solid: in light mode walnut `#755023` background + cream `#FFFEF7` text =
+**~7.7:1 AAA**; in dark mode gold `#C9A84C` background + deep walnut `#1A1208`
+text = **~7.3:1 AAA**. Same shadow + transition, height bumped 48→58px (taller
+primary CTA), `min-height: 48`.
+
+**Email input gains `type="email" inputMode="email"` (A2).** Was bare `<input>`
+defaulting to `type="text"`, so iOS Safari + Android Chrome didn't surface the
+`@` / `.com` shortcut keyboards and browser autofill heuristics misfired.
+
+**Mobile inputs forced to 16px font-size (A3).** Single rule in the mobile
+media block (`@media(max-width:719px)`) sets `input/select/textarea` to
+`font-size:16px !important` (excluding checkbox/radio/range/color). This kills
+the iOS Safari focus-zoom-no-zoom-out trap that was happening on every form
+field at 11-13px. Visual change on mobile is barely perceptible (inputs were
+already touch-target-sized); desktop is untouched.
+
+**Touch-target minimums on three Login surfaces (A5 + C2).** Dark/Light toggle
+26px → 44px (padding 6/14 → 11/18 + minHeight:44). "Forgot password?" and
+"Back to Sign In" 28px → 44px (added 10/14 padding + minHeight:44, bumped
+font 11 → 12). Meets Apple HIG 44pt + Material 48dp minimums.
+
+**Bilingual:** no string changes — translation symmetry preserved.
+
+**Files:** `src/App.jsx` only. +12 / -6 lines.
+
+**Verification:** `npm run build` clean. Dev-server DOM probe confirmed
+button `bgColor: rgb(201,168,76)` / `textColor: rgb(26,18,8)`, email
+`type: email + inputMode: email + fontSize: 16px`, toggle/forgot/back
+buttons at ≥44px height.
+
+**Out of scope** (next audit ships): emoji-icon → Lucide migration (v0.58),
+ClientDetail polish + Settings deep-link + a11y pass (v0.59).
+
 ## v0.55.0 — 2026-05-25 — Bug fixes, warm light palette, layout shrinks
 
 Direct response to Mauricio's v0.54 audit feedback. Critical visibility bugs

@@ -5630,7 +5630,7 @@ function Login({onLogin,t,isDark,onToggle,lang}){
           <div style={{fontSize:9,color:PAL.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>{lang==="es"?"Asesoría Financiera":"Financial Advisory"}</div>
         </div>
       </div>
-      <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:11,padding:"6px 14px",borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
+      <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:12,padding:"11px 18px",minHeight:44,borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600,letterSpacing:"0.04em"}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
     </header>
 
     {/* v0.56 — animated brand visual behind the hero. Z-index 1 so it sits
@@ -5670,7 +5670,7 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         </div>
         {mode!=="setNew"&&<div style={{marginBottom:14}}>
           <label style={{fontSize:10,color:PAL.muted,display:"block",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>{t.email||"Email"}</label>
-          <input value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
+          <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
         </div>}
         {mode!=="forgot"&&<div style={{marginBottom:14}}>
           <label style={{fontSize:10,color:PAL.muted,display:"block",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>{mode==="setNew"?(t.newPassword||"New Password"):t.password||"Password"}</label>
@@ -5678,12 +5678,12 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         </div>}
         {err&&<div role="alert" style={{fontSize:11,color:"#B91C1C",marginBottom:12,padding:"8px 12px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:8,lineHeight:1.5}}>{err}</div>}
         {info&&<div role="status" style={{fontSize:11,color:"#15803D",marginBottom:12,padding:"8px 12px",background:"#DCFCE7",border:"1px solid #86EFAC",borderRadius:8,lineHeight:1.5}}>{info}</div>}
-        <button onClick={go} disabled={busy} style={{width:"100%",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:busy?"wait":"pointer",background:`linear-gradient(135deg,${PAL.amber},${PAL.amberDeep})`,color:"#FFFEF7",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${PAL.amber}44`,opacity:busy?0.7:1,transition:"transform 150ms ease,box-shadow 150ms ease"}}>{busy?"…":btnLabel}</button>
+        <button onClick={go} disabled={busy} style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:busy?"wait":"pointer",background:isDark?PAL.amber:PAL.amberDeep,color:isDark?"#1A1208":"#FFFEF7",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${PAL.amber}44`,opacity:busy?0.7:1,transition:"transform 150ms ease,box-shadow 150ms ease,background 150ms ease"}}>{busy?"…":btnLabel}</button>
         {mode==="signin"&&<div style={{textAlign:"center",marginTop:14}}>
-          <button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:11,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>{t.forgotPassword||"Forgot password?"}</button>
+          <button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit",padding:"10px 14px",minHeight:44}}>{t.forgotPassword||"Forgot password?"}</button>
         </div>}
         {mode==="forgot"&&<div style={{textAlign:"center",marginTop:14}}>
-          <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:11,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>← {t.backToSignIn||"Back to Sign In"}</button>
+          <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit",padding:"10px 14px",minHeight:44}}>← {t.backToSignIn||"Back to Sign In"}</button>
         </div>}
         <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${PAL.cardBorder}`,fontSize:10,color:PAL.muted,textAlign:"center",lineHeight:1.5}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,fontWeight:600,textDecoration:"none"}}>Contact Mauricio</a></>}</div>
       </div>
@@ -5965,7 +5965,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-pills-spark-promos-cashflow-swatches";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0570-signin-contrast-email-type-mobile-inputs";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7665,6 +7665,12 @@ export default function App(){
       @media(max-width:719px){
         table{font-size:11px}
         button{touch-action:manipulation}
+        /* v0.57 — Prevent iOS Safari auto-zoom on input focus by forcing ≥16px
+           font-size on text-entry controls. Visual change is negligible on mobile
+           (text was already 13px → 16px reads as slightly larger), and it ends
+           the focus-zoom-no-zoom-out trap that traps users on form fields. */
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+        select,textarea{font-size:16px!important}
         /* v0.9.3 — Defensive mobile grid collapse. Many surfaces hard-code
            gridTemplateColumns:"1fr 1fr 1fr" or "repeat(4,1fr)" inline,
            which clips KPI cards off the right edge on narrow viewports.
