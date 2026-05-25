@@ -303,6 +303,25 @@ function useAnimatedDisplay(value){
   },[value]);
   return display;
 }
+// v0.56 — KpiTile: Dashboard KPI tile w/ inline sparkline + delta caption.
+// Per Mauricio's image 3 reference (ACTIVE CLIENTS · 14 · ↑2 this month · spark).
+// Layout: label top (small uppercase), value + sparkline as a row, optional
+// delta sub-caption below.
+function KpiTile({label,value,color,sub,delta,spark}){
+  const th=useTh();
+  return<div className="ga-sc" style={{...mCARD(th),padding:"10px 14px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{fontSize:9.5,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>{label}</div>
+    <div style={{display:"flex",alignItems:"center",gap:10,minHeight:30}}>
+      <div style={{fontSize:22,fontWeight:700,color:color||th.accent,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",fontVariantNumeric:"tabular-nums",lineHeight:1,flexShrink:0}}>{value}</div>
+      {spark&&spark.length>=2&&<div style={{flex:1,minWidth:0,opacity:0.85}}><Sparkline data={spark} color={color||GOLD} width={140} height={30} strokeWidth={1.5}/></div>}
+    </div>
+    {(delta||sub)&&<div style={{fontSize:10,color:th.dim,marginTop:5,display:"flex",alignItems:"center",gap:6}}>
+      {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{delta.up?"↑":delta.down?"↓":"→"} {delta.value}</span>}
+      {sub&&<span>{sub}</span>}
+    </div>}
+  </div>;
+}
+
 // v0.56 — SC (Summary Card) tightened. Was padding:14 with 18px value and
 // extra wasted vertical space. Now 10px/12px padding, JetBrains Mono on the
 // value, uppercase 0.06em label, more compact rhythm — same data, half the
@@ -4707,12 +4726,24 @@ function Dashboard({clients,t,settings,setSettings,onSelect,onAdd,onImportNew,on
   const getDebtForMode=sn=>{if(!sn?.data)return sn?.debt||0;const d=sn.data;if(trendMode==="all")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).reduce((a,l)=>a+(+l.balance||0),0);if(trendMode==="revolving")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0);// "current": revolving + short-term loans (personal/student), excludes mortgage/auto
 return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!l.linkedAssetId&&l.type!=="mortgage"&&l.type!=="vehicle").reduce((a,l)=>a+(+l.balance||0),0);};
   const _allLabels=Array.from(new Set(clients.flatMap(c=>(c.monthSnapshots||[]).map(s=>s.label))));const _labelKey=lbl=>{const parts=lbl.split(" ");const yr=parseInt(parts[1])||new Date().getFullYear();const mo=MS.indexOf(parts[0]);return yr*12+(mo>=0?mo:0);};const _sortedLabels=_allLabels.slice().sort((a,b)=>_labelKey(a)-_labelKey(b));const _rangeCount=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:_sortedLabels.length;const _shownLabels=_sortedLabels.slice(-_rangeCount);const trend=(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>({m:m.split(" ")[0]+(m.split(" ")[1]?("’"+m.split(" ")[1].slice(-2)):""),debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+getDebtForMode(sn);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.savings||0);},0)}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
-<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
-  <SC label={"👥 "+(t?.kpiClients||"Clients")} value={clients.length} color={th.accent} sub={`${active.length} ${(t.active||"active")} · ${clients.length-active.length} ${(t.archivedLbl||"archived")}`}/>
-  <SC label={"💼 "+(t.combinedNetMo||"Combined Net / mo")} value={hideNumbers?"●●●":fmt(ti)} color={th.pos}/>
-  <SC label={"🏦 "+(t.combinedDebt||"Combined Debt")} value={hideNumbers?"●●●":fmt(td)} color={th.neg}/>
-  <SC label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmt(active.reduce((s,c)=>s+liquidA(c),0))} color={GOLD} sub={t.checkingSavingsLbl||"checking + savings"}/>
-</div>
+{/* v0.56 — KpiTile with inline sparkline per Mauricio's image 3.
+   Each tile builds its own series from the practice-wide trend data. */}
+{(()=>{
+  const liqNow=active.reduce((s,c)=>s+liquidA(c),0);
+  // Series per metric, oldest→newest, with current live value appended.
+  const clientSeries=(()=>{const out=[];const labels=_shownLabels;labels.forEach(m=>{out.push(active.filter(c=>(c.monthSnapshots||[]).some(sn=>sn.label===m)).length);});out.push(active.length);return out.length<2?[active.length,active.length]:out;})();
+  const incomeSeries=(()=>{const out=_shownLabels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn)v+=sn.income||0;});return v;});out.push(ti);return out.length<2?[ti,ti]:out;})();
+  const debtSeries=trend.map(p=>p.debt).concat([td]);
+  const liqSeries=trend.map(p=>p.savings).concat([liqNow]);
+  // Delta = current vs previous period (last vs second-to-last).
+  const dlt=arr=>{const n=arr.length;if(n<2)return null;const cur=arr[n-1],prev=arr[n-2];const ch=cur-prev;if(ch===0)return null;return{up:ch>0,down:ch<0,value:(ch>0?"+":"")+fmtS(Math.abs(ch))};};
+  return<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
+    <KpiTile label={"👥 "+(t?.kpiClients||"Clients")} value={clients.length} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
+    <KpiTile label={"💼 "+(t.combinedNetMo||"Combined Net / mo")} value={hideNumbers?"●●●":fmtS(ti)} color={th.pos} spark={incomeSeries} delta={dlt(incomeSeries)} sub={t.vsLastMo||"vs last mo"}/>
+    <KpiTile label={"🏦 "+(t.combinedDebt||"Combined Debt")} value={hideNumbers?"●●●":fmtS(td)} color={th.neg} spark={debtSeries} delta={(()=>{const d=dlt(debtSeries);if(!d)return null;return{...d,up:debtSeries[debtSeries.length-1]<debtSeries[debtSeries.length-2],down:debtSeries[debtSeries.length-1]>debtSeries[debtSeries.length-2]};})()}/>
+    <KpiTile label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
+  </div>;
+})()}
 
 {/* v0.39.0 — Slot-driven dashboard row. Each card has a gear icon to swap charts.
     Slot choices persist to settings.dashboardSlots. */}
@@ -5014,13 +5045,18 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       ];
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>✨ {t.kpiSparklinesSlot||"KPI Sparklines"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.kpiSparklinesSub||"At-a-glance trend per KPI."}</div></div>
-        {/* v0.55 — taller per-row sparklines + width fills (was 26px height,
-           180px fixed width — read as flat ribbons. Now 48px tall, fluid). */}
-        <div style={{display:"flex",flexDirection:"column",gap:8,padding:"4px 8px",flex:1,justifyContent:"center"}}>
-          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:14,fontSize:12,minHeight:52}}>
-            <span style={{color:th.muted,flex:"0 0 100px",fontWeight:600}}>{r.l}</span>
-            <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={260} height={48} strokeWidth={1.5}/></div>
-            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:62,textAlign:"right"}}>{r.v}</span>
+        {/* v0.56 — sparklines extend to touch the value at the right edge.
+           Was: label (100px) | sparkline (260px fixed) | value (62px). Big
+           gap between sparkline end and value, made the sparkline look
+           detached. Now: label (90px) | sparkline (flex:1 fills space) |
+           value tight to the curve end. Per Mauricio's image. */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,padding:"4px 6px 0",flex:1,justifyContent:"center"}}>
+          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,minHeight:52}}>
+            <span style={{color:th.muted,flex:"0 0 88px",fontWeight:600}}>{r.l}</span>
+            <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center"}}>
+              <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={500} height={44} strokeWidth={1.5}/></div>
+            </div>
+            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:54,textAlign:"right",paddingLeft:4}}>{r.v}</span>
           </div>)}
         </div>
       </>;
@@ -5229,9 +5265,27 @@ function PromotionsPage({settings,onSettingsChange,t}){
       <div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:4}}>{t.noPromosTitle||"No promotions yet"}</div>
       <div style={{fontSize:12,color:th.dim,marginBottom:14}}>{t.noPromosDesc||'Click "New Promotion" to create your first discount.'}</div>
     </div>}
-    {promos.length>0&&<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-      {promos.map(p=>{const active=isActive(p);return<div key={p.id} style={{...mCARD(th),padding:14,borderLeft:`4px solid ${active?th.pos:th.dim}`}}>
-        {editing===p.id?<>
+    {/* v0.56 — Stripe sync note per Mauricio's promotions ask. */}
+    <div style={{...mCARD(th),padding:"9px 14px",marginBottom:14,background:th.blue+"10",borderLeft:`3px solid ${th.blue}`,fontSize:11,color:th.muted,lineHeight:1.55}}>
+      <b style={{color:th.blue}}>{t.stripeSyncNote||"Stripe sync"}</b> — {t.stripeSyncBody||"Promotions configured here currently appear on client invoices and your public flyer only. Auto-syncing them to Stripe coupon codes is on the roadmap (one-click create + apply to the matching service in your Stripe dashboard)."}
+    </div>
+    {/* v0.56 — promo list rendered as a table per image 2 reference (instead of
+       the vertical card stack). Edit mode still expands inline below the row. */}
+    {promos.length>0&&<div style={{...mCARD(th),padding:0,marginBottom:20,overflow:"hidden"}}>
+      <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr style={{background:th.bg}}>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.promotionName||"Name"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.promoCode||"Code"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.discountLbl||"Discount"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.applyToLbl||"Applies To"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.endDateLbl||"Ends"}</th>
+          <th style={{textAlign:"right",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.daysLeftHdr||"Days Left"}</th>
+          <th style={{textAlign:"right",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}></th>
+        </tr></thead>
+        <tbody>
+        {promos.map(p=>{const active=isActive(p);if(editing===p.id){
+          return<tr key={p.id}><td colSpan={7} style={{padding:14,borderBottom:`1px solid ${th.cardBorder}`,background:th.accent+"06"}}><div style={{borderLeft:`3px solid ${th.accent}`,paddingLeft:12}}>
+            {/* inline edit form (kept original layout) */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
             <div><Label>{(t.promotionName||"Promotion Name")+" *"}</Label><input style={INP} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder='e.g. "New Year Reset 2026"'/></div>
             <div><Label>{(t.promoCode||"Promo Code")+" (optional)"}</Label><input style={INP} value={draft.code} onChange={e=>setDraft(d=>({...d,code:e.target.value.toUpperCase()}))} placeholder="e.g. WELCOME25"/></div>
@@ -5250,26 +5304,35 @@ function PromotionsPage({settings,onSettingsChange,t}){
             <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:th.muted,cursor:"pointer"}}><input type="checkbox" checked={draft.active} onChange={e=>setDraft(d=>({...d,active:e.target.checked}))} style={{accentColor:th.pos}}/> {t.active||"Active"}</label>
           </div>
           <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}><Btn onClick={cancel}>{t.cancel||"Cancel"}</Btn><BSolid onClick={save}>{t.save}</BSolid></div>
-        </>:<>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
-                <span style={{fontSize:14,fontWeight:800,color:th.text}}>{p.name}</span>
-                <Pill color={active?th.pos:th.dim}>{active?("● "+(t.active||"Active")):("○ "+(t.paused||"Inactive"))}</Pill>
-                {p.code&&<Pill color={th.accent}>{(t.promoCode||"CODE").toUpperCase()}: {p.code}</Pill>}
-              </div>
-              <div style={{fontSize:12,color:th.muted}}>{describe(p)}</div>
-              {p.endDate&&(()=>{const dl=Math.ceil((new Date(p.endDate)-new Date())/864e5);const col=dl<0?"#6B7280":dl<30?"#EF4444":dl<60?"#F59E0B":"#6B7280";const lbl=dl<0?(t.promoExpired||"Expired"):`${dl} ${t.daysLeft||"days left"}`;return<span style={{display:"inline-block",marginTop:4,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:col+"22",color:col,border:`1px solid ${col}55`}}>{lbl}</span>;})()}
-              <div style={{fontSize:11,color:th.dim,marginTop:4}}>{t.appliesToColon||"Applies to:"} <b>{p.appliesTo==="all"?"All services":p.appliesTo}</b>{p.clientFilter!=="all"&&<> · Filter: <b>{p.clientFilter}</b></>}</div>
+          </div></td></tr>;
+        }
+        // ── view row ──
+        const dl=p.endDate?Math.ceil((new Date(p.endDate)-new Date())/864e5):null;
+        const dlCol=dl==null?th.muted:dl<0?"#6B7280":dl<30?"#EF4444":dl<90?"#F59E0B":th.pos;
+        const dlLbl=dl==null?"—":dl<0?(t.promoExpired||"Expired"):`${dl}d`;
+        const discount=p.type==="percent"?`${p.value}%`:p.type==="flat"?`$${p.value}`:`$${p.value} bundle`;
+        return<tr key={p.id} style={{borderBottom:`1px solid ${th.cardBorder}`}}>
+          <td style={{padding:"10px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{width:6,height:6,borderRadius:99,background:active?th.pos:th.dim,flexShrink:0}} title={active?(t.active||"Active"):(t.paused||"Inactive")}/>
+              <span style={{fontWeight:700,color:th.text,fontSize:12}}>{p.name}</span>
             </div>
-            <div style={{display:"flex",gap:6}}>
-              <Btn small onClick={()=>toggleActive(p.id)}>{p.active?(t.pause||"Pause"):(t.activate||"Activate")}</Btn>
-              <Btn small onClick={()=>startEdit(p)}>{t.editLabel||"Edit"}</Btn>
-              <Btn small onClick={()=>del(p.id)} color={th.neg}>🗑</Btn>
-            </div>
-          </div>
-        </>}
-      </div>;})}
+          </td>
+          <td style={{padding:"10px 14px"}}>{p.code?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:GOLD,background:GOLD+"14",padding:"2px 8px",borderRadius:4,fontWeight:600}}>{p.code}</span>:<span style={{color:th.dim,fontSize:11}}>—</span>}</td>
+          <td style={{padding:"10px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:th.text,fontWeight:600}}>{discount} {p.type==="percent"||p.type==="flat"?(t.off||"off"):""}</td>
+          <td style={{padding:"10px 14px",fontSize:11,color:th.muted}}>{p.appliesTo==="all"?(t.allServices||"All Services"):p.appliesTo}</td>
+          <td style={{padding:"10px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:th.muted}}>{p.endDate||"—"}</td>
+          <td style={{padding:"10px 14px",textAlign:"right"}}>
+            {dl!=null?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10.5,fontWeight:700,padding:"3px 10px",borderRadius:99,background:dlCol+"22",color:dlCol,border:`1px solid ${dlCol}55`,letterSpacing:"0.02em"}}>{dlLbl}</span>:<span style={{color:th.dim}}>—</span>}
+          </td>
+          <td style={{padding:"6px 14px",textAlign:"right",whiteSpace:"nowrap"}}>
+            <button onClick={()=>toggleActive(p.id)} title={p.active?(t.pause||"Pause"):(t.activate||"Activate")} style={{background:"transparent",border:`1px solid ${th.cardBorder}`,color:th.muted,borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",marginRight:4}}>{p.active?"⏸":"▶"}</button>
+            <button onClick={()=>startEdit(p)} title={t.editLabel||"Edit"} style={{background:"transparent",border:`1px solid ${th.cardBorder}`,color:th.muted,borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",marginRight:4}}>✏</button>
+            <button onClick={()=>del(p.id)} title={t.deleteLbl||"Delete"} style={{background:"transparent",border:`1px solid ${th.neg}55`,color:th.neg,borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer"}}>🗑</button>
+          </td>
+        </tr>;
+        })}
+        </tbody></table></div>
     </div>}
     {editing&&!promos.find(p=>p.id===editing)&&<div style={{...mCARD(th),padding:14,marginBottom:20,borderLeft:`4px solid ${th.accent}`}}>
       <div style={{fontSize:13,fontWeight:800,color:th.accent,marginBottom:10}}>＋ {t.newPromotion||"New Promotion"}</div>
@@ -5510,7 +5573,9 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
         {/* v0.55 — pills + disclaimer use amberDeep on dark mode (gold-cream `#EDD594`)
        so they read on navy; were previously muted grey-on-grey = invisible. */}
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:isDark?PAL.amberDeep:PAL.muted,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
+        {/* v0.56 — pills go pure white on dark (was gold-cream which read as
+           the gold tile bg, making them disappear). Stay muted slate on light. */}
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:isDark?"#F1F5F9":PAL.muted,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
           <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
           <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
           <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
@@ -5565,7 +5630,7 @@ function Login({onLogin,t,isDark,onToggle,lang}){
 
     {/* TRUST / FOOTER */}
     <footer style={{position:"relative",zIndex:2,maxWidth:1200,margin:"40px auto 0",padding:"24px 36px 36px",borderTop:`1px solid ${PAL.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
-      <div style={{fontSize:11,color:isDark?PAL.text:PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640,opacity:0.85}}>
+      <div style={{fontSize:11,color:isDark?"#F1F5F9":PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640,opacity:isDark?0.92:0.85}}>
         {lang==="es"?
           "Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":
           "Educational financial coaching — not investment, tax, or legal advice."}
@@ -5822,7 +5887,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-lottie-monthly-kpi-promos";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-preview-r3-pills-spark-promos-table";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
