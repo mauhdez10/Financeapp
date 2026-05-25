@@ -303,7 +303,31 @@ function useAnimatedDisplay(value){
   },[value]);
   return display;
 }
-function SC({label,value,color,sub}){const th=useTh();const disp=useAnimatedDisplay(value);return<div className="ga-sc" style={{...mCARD(th),padding:14,flex:1,minWidth:0,overflow:"hidden"}}><div style={{fontSize:11,color:th.muted,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</div><div style={{fontSize:18,fontWeight:800,color:color||th.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{disp}</div>{sub&&<div style={{fontSize:10,color:th.dim,marginTop:2}}>{sub}</div>}</div>;}
+// v0.56 — KpiTile: Dashboard KPI tile w/ inline sparkline + delta caption.
+// Per Mauricio's image 3 reference (ACTIVE CLIENTS · 14 · ↑2 this month · spark).
+// Layout: label top (small uppercase), value + sparkline as a row, optional
+// delta sub-caption below.
+function KpiTile({label,value,color,sub,delta,spark}){
+  const th=useTh();
+  return<div className="ga-sc" style={{...mCARD(th),padding:"10px 14px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{fontSize:9.5,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>{label}</div>
+    <div style={{display:"flex",alignItems:"center",gap:10,minHeight:30}}>
+      <div style={{fontSize:22,fontWeight:700,color:color||th.accent,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",fontVariantNumeric:"tabular-nums",lineHeight:1,flexShrink:0}}>{value}</div>
+      {spark&&spark.length>=2&&<div style={{flex:1,minWidth:0,opacity:0.85}}><Sparkline data={spark} color={color||GOLD} width={140} height={30} strokeWidth={1.5}/></div>}
+    </div>
+    {(delta||sub)&&<div style={{fontSize:10,color:th.dim,marginTop:5,display:"flex",alignItems:"center",gap:6}}>
+      {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{delta.up?"↑":delta.down?"↓":"→"} {delta.value}</span>}
+      {sub&&<span>{sub}</span>}
+    </div>}
+  </div>;
+}
+
+// v0.56 — SC (Summary Card) tightened. Was padding:14 with 18px value and
+// extra wasted vertical space. Now 10px/12px padding, JetBrains Mono on the
+// value, uppercase 0.06em label, more compact rhythm — same data, half the
+// blank space. Used everywhere via KPI strips (Monthly Report, Dashboard,
+// ClientDetail header).
+function SC({label,value,color,sub}){const th=useTh();const disp=useAnimatedDisplay(value);return<div className="ga-sc" style={{...mCARD(th),padding:"10px 12px",flex:1,minWidth:0,overflow:"hidden"}}><div style={{fontSize:10,color:th.muted,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:700}}>{label}</div><div style={{fontSize:17,fontWeight:700,color:color||th.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>{disp}</div>{sub&&<div style={{fontSize:9.5,color:th.dim,marginTop:2,letterSpacing:"0.02em"}}>{sub}</div>}</div>;}
 // v0.27.0 — Skeleton primitive: matte shimmer block. width/height accept any CSS length.
 function Skel({w="100%",h=12,style}){return<div className="ga-skel" style={{width:w,height:h,...style}}/>;}
 // v0.27.0 — Bootstrap skeleton: matches the live dashboard's silhouette (sidebar/topbar + 4 KPIs +
@@ -446,7 +470,13 @@ const removeService=(idx)=>{if(!confirm(t.confirmRemoveSvc||"Remove this service
 const uploadLogo=(mode)=>(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>500*1024){alert((t.logoTooLarge||"Logo image is too large (max 500KB).")+" "+(f.size/1024).toFixed(0)+"KB");return;}const r=new FileReader();r.onload=ev=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:ev.target.result}));};r.readAsDataURL(f);};
 const clearLogo=(mode)=>{const key=mode==="light"?"logoLight":"logoDark";setS(p=>({...p,[key]:""}));};
 const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fontSize:11,color:th.muted,marginBottom:6}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(p=><div key={p.v} onClick={()=>setS(prev=>({...prev,[k]:p.v}))} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}}><div style={{width:26,height:26,borderRadius:"50%",background:p.v,border:s[k]===p.v?"3px solid white":"2px solid transparent",boxShadow:s[k]===p.v?`0 0 0 2px ${p.v}`:"0 0 0 1px #0002"}}/><span style={{fontSize:9,color:th.dim}}>{t["color"+p.l]||p.l}</span></div>)}<input type="color" value={s[k]||presets[0].v} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:26,height:26,cursor:"pointer",border:"none",borderRadius:4}}/><input value={s[k]||''} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:80,fontFamily:"monospace",fontSize:11}} placeholder="#000000"/></div></div>;
-const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:9}}><div style={{fontSize:10,color:th.muted,marginBottom:5}}>{label}</div><div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:24,height:24,borderRadius:6,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 2px ${th.accent}44`:"none"}}/>)}<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{width:24,height:24,cursor:"pointer",border:"none",borderRadius:4,padding:0}}/><input value={v||""} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{...mIIN(th),width:78,fontFamily:"monospace",fontSize:10}} placeholder="#000000"/></div></div>;};
+// v0.56 — BgPicker: dropped the hex text input per Mauricio's feedback
+// ("Appearance should have the box with the colors instead of the weird
+// numbers no one understands"). Now just shows preset swatches (28px,
+// up from 24px so they read as solid color tiles) plus a custom color
+// picker. The hex value still updates from picker selection — just no
+// raw text entry.
+const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:10}}><div style={{fontSize:10,color:th.muted,marginBottom:6,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:32,height:32,borderRadius:8,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 3px ${th.accent}33`:"none",transition:"transform 100ms ease"}}/>)}<label title={t.customColorLbl||"Custom color"} style={{position:"relative",width:32,height:32,borderRadius:8,border:`1px dashed ${th.cardBorder}`,cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:14}}>＋<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/></label></div></div>;};
 // ToggleField extracted to top-level ProfileToggleField — see comment above ProfileModal.
 // Call sites pass {k,label,s,setS,th,INP} directly so the component type stays stable.
 return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBackdropClose={true}>
@@ -1073,35 +1103,61 @@ function Waterfall({segments,height=180,width=600,bg}){
    localStorage[`client.${id}.live-view.${templateId}`] (default "line").
    Adds a 3-cell values row below: debt · savings · crossover/net with delta
    arrows. Spec from preview/28-live-pair.html. ────────────────────────────── */
-function PairedBars({data,debtKey,savingsKey,debtColor,savingsColor,height=130,labelKey="label"}){
+// v0.56 — PairedBars rebuilt as a Google-Sheets-style combo chart per
+// Mauricio's image 4 feedback ("bar version doesn't look good, should be
+// line or combined line with bar"). Bars (income/savings) on the positive
+// side, mirror bars (bills/debt) on the negative side, dashed cumulative
+// net line overlay. Transparent bg, no fill on the line — keeps the chart
+// reading as data, not chartjunk.
+function PairedBars({data,debtKey,savingsKey,debtColor,savingsColor,height=160,labelKey="label"}){
   const th=useTh();
   const pts=Array.isArray(data)?data:[];
   const tw=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),800);
   if(pts.length<1)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
-  const W=600,H=height,padL=46,padR=14,padT=12,padB=24;
+  const W=600,H=height,padL=46,padR=22,padT=14,padB=24;
   const innerW=W-padL-padR,innerH=H-padT-padB;
-  const mx=Math.max(1,...tw.flatMap(p=>[p.d,p.s]));
+  const mxS=Math.max(1,...tw.map(p=>p.s));
+  const mxD=Math.max(1,...tw.map(p=>p.d));
+  // Symmetric scale so positive (savings/income) above zero, negative (debt/bills) below.
+  const mx=Math.max(mxS,mxD);
   const slot=innerW/pts.length;
-  const barW=Math.min(10,(slot-6)/2);
-  const yAt=v=>padT+innerH*(1-v/mx);
+  const barW=Math.min(20,Math.max(8,slot*0.4));
+  const zeroY=padT+innerH/2;
+  const yPos=v=>zeroY-(v/mx)*(innerH/2);
+  const yNeg=v=>zeroY+(v/mx)*(innerH/2);
   const fmtTick=v=>v>=1000?Math.round(v/1000)+"K":Math.round(v);
+  // Net cumulative line (savings - debt)
+  const net=tw.map(p=>p.s-p.d);
+  let cumNet=0;const cum=net.map(v=>{cumNet+=v;return cumNet;});
+  const cumMax=Math.max(1,...cum.map(Math.abs));
+  const yCum=v=>zeroY-(v/cumMax)*(innerH/2);
+  const xCenter=i=>padL+slot*i+slot/2;
+  const cumPath=cum.map((v,i)=>`${i===0?"M":"L"}${xCenter(i)} ${yCum(v)}`).join(" ");
   return<div style={{width:"100%",overflow:"hidden"}}>
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
-      {[0,0.5,1].map((tk,i)=>{const y=yAt(mx*tk);return<g key={i}>
-        <line x1={padL} y1={y} x2={W-padR} y2={y} stroke={th.dim} strokeOpacity="0.14" strokeDasharray="1.5 4"/>
-        <text x={padL-6} y={y+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtTick(mx*tk)}</text>
+      {/* Zero line, heavier */}
+      <line x1={padL} y1={zeroY} x2={W-padR} y2={zeroY} stroke={th.dim} strokeOpacity="0.4" strokeWidth="0.75"/>
+      {/* gridlines */}
+      {[0.5,1].map((tk,i)=>{const y1=zeroY-(tk)*(innerH/2);const y2=zeroY+(tk)*(innerH/2);return<g key={i}>
+        <line x1={padL} y1={y1} x2={W-padR} y2={y1} stroke={th.dim} strokeOpacity="0.12" strokeDasharray="1.5 4"/>
+        <line x1={padL} y1={y2} x2={W-padR} y2={y2} stroke={th.dim} strokeOpacity="0.12" strokeDasharray="1.5 4"/>
+        <text x={padL-6} y={y1+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>${fmtTick(mx*tk)}</text>
+        <text x={padL-6} y={y2+3} textAnchor="end" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>-${fmtTick(mx*tk)}</text>
       </g>;})}
+      {/* Bars: savings above zero, debt below */}
       {pts.map((p,i)=>{
-        const cx=padL+slot*i+slot/2;
-        const xs=cx-barW-0.5,xd=cx+0.5;
+        const cx=xCenter(i);
+        const x=cx-barW/2;
         const sv=tw[i]?.s||0,dv=tw[i]?.d||0;
-        const ys=yAt(sv),yd=yAt(dv);
         return<g key={i}>
-          <rect x={xs} y={ys} width={barW} height={Math.max(0,padT+innerH-ys)} fill={savingsColor} opacity="0.92" rx="1.5"/>
-          <rect x={xd} y={yd} width={barW} height={Math.max(0,padT+innerH-yd)} fill={debtColor} opacity="0.92" rx="1.5"/>
+          <rect x={x} y={yPos(sv)} width={barW} height={Math.max(0,zeroY-yPos(sv))} fill={savingsColor} opacity="0.85" rx="2"/>
+          <rect x={x} y={zeroY} width={barW} height={Math.max(0,yNeg(dv)-zeroY)} fill={debtColor} opacity="0.85" rx="2"/>
           <text x={cx} y={H-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{String(p[labelKey]||"").split(/\s|'/)[0].slice(0,3)}</text>
         </g>;
       })}
+      {/* Cumulative net line overlay (dashed gold) */}
+      <path d={cumPath} fill="none" stroke={GOLD} strokeWidth="1.5" strokeDasharray="3 3" strokeLinecap="round" opacity="0.85"/>
+      {cum.map((v,i)=><circle key={i} cx={xCenter(i)} cy={yCum(v)} r="2.5" fill={GOLD}/>)}
     </svg>
   </div>;
 }
@@ -2323,15 +2379,22 @@ return<div>{hasP2&&<div style={{display:"flex",gap:6,marginBottom:14}}>{[["both"
     Math.max(0,Math.min(1,1-dta/0.8)),
     Math.max(0,Math.min(1,inc>0?cash/inc/0.1:0)),
   ];
-  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:12,marginBottom:14}}>
-    <div style={{...mCARD(th),padding:14,display:"flex",alignItems:"center",justifyContent:"space-around",gap:8,flexWrap:"wrap"}}>
-      <RadialGauge value={dsr*100} max={60} target={36} size={108} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
-      <RadialGauge value={sr*100} max={40} target={20} size={108} label={t.savingsRateLbl||"Savings Rate"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
-      <RadialGauge value={ef} max={12} target={3} size={108} label={t.efMonthsLbl||"EF Months"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+  // v0.56 — health row tightened. Was 2-up with gauges at 108 + radar at 200,
+  // both surrounded by huge blank space. Now 4-up: 3 gauges (84) inline + radar
+  // (160) in the rightmost cell. Cards lose the chunky 14px padding.
+  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginBottom:14}}>
+    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={dsr*100} max={60} target={36} size={84} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
     </div>
-    <div style={{...mCARD(th),padding:14,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
-      <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:4}}>🎯 {t.healthScoreHdr||"Health Score"}</div>
-      <Radar5 axes={["DSR",t.srAxisShort||"Savings",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"Cash"]} values={radarVals} target={0.8} size={200}/>
+    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={sr*100} max={40} target={20} size={84} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
+    </div>
+    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={ef} max={12} target={3} size={84} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+    </div>
+    <div style={{...mCARD(th),padding:"8px 10px 4px",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:2}}>
+      <div style={{fontSize:9,fontWeight:700,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.healthScoreHdr||"Health Score"}</div>
+      <Radar5 axes={["DSR",t.srAxisShort||"Sav",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"CF"]} values={radarVals} target={0.8} size={140}/>
     </div>
   </div>;
 })()}
@@ -2389,7 +2452,33 @@ function CashFlowStatement({client,t}){const th=useTh();const net=sumN(client.in
   {/* v0.55 — Waterfall moved BELOW the inflow/outflow tables per Mauricio's
      feedback ("graph shouldn't be on top of the numbers"). Shrunk from
      160×640 to 110×500 — was taking half the page. */}
-  <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>📥 {t.inflowsHdr||"INFLOWS"}</div>{client.incomeStreams.map(s=><SRow key={s.id} label={"  "+s.label} value={toM(s.net,s.freq)} indent/>)}<SRow label={t.totalInflowsRow||"Total Inflows"} value={net} color={th.pos} bold/><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6,marginTop:12}}>📤 {t.outflowsHdr||"OUTFLOWS"}</div>{actB(client.bills).slice(0,5).map(b=><SRow key={b.id} label={"  "+b.name} value={toM(b.cost,b.freq)} indent/>)}{actB(client.bills).length>5&&<div style={{fontSize:10,color:th.dim,paddingLeft:12}}>+{actB(client.bills).length-5} more…</div>}<SRow label={t.totalOutflowsRow||"Total Outflows"} value={bills} color={th.neg} bold/><div style={{fontSize:11,fontWeight:700,color:th.warn,marginBottom:6,marginTop:12}}>💳 {t.debtServiceHdr||"DEBT SERVICE"}</div>{client.cards.filter(c=>c.min>0).map(c=><SRow key={c.id} label={"  "+c.name} value={c.min} indent/>)}<SRow label={t.totalDebtServiceRow||"Total Debt Service"} value={minD} color={th.warn} bold/><SRow label={"⚡ "+(t.operatingCashFlow||"OPERATING CASH FLOW")} value={operCF} color={operCF>=0?th.pos:th.neg} bold line/></div><div><div style={{fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>💹 {t.committedContribHdr||"COMMITTED CONTRIBUTIONS"}</div>{totalSav===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"4px 0"}}>{t.noCommittedAlloc||"No committed allocations. Check boxes in Investment Allocation to activate."}</div>:[["  "+(t.allocRetirement||"🎯 Retirement").replace(/^[^\s]+\s/,""),sav.retirement],["  "+(t.allocStocks||"📈 Stocks").replace(/^[^\s]+\s/,""),sav.stocks],["  "+(t.allocSavings||"🏦 Savings").replace(/^[^\s]+\s/,""),sav.savings],["  "+(t.allocVacation||"✈️ Vacation").replace(/^[^\s]+\s/,""),sav.vacation],["  "+(t.allocRealEstate||"🏠 Real Estate").replace(/^[^\s]+\s/,""),sav.realEstate],["  "+(t.allocOther||"💡 Other").replace(/^[^\s]+\s/,""),sav.other],["  "+(t.allocDebtRepayment||"💳 Debt Repayment").replace(/^[^\s]+\s/,""),sav.debtRepayment]].filter(([,v])=>v>0).map(([l,v])=><SRow key={l} label={l} value={v} indent/>)}<SRow label={t.totalCommittedRow||"Total Committed"} value={totalSav} color="#8B5CF6" bold/><div style={{fontSize:11,fontWeight:700,color:th.blue,marginTop:12,marginBottom:6}}>💰 {t.actualLiquidSavings||"ACTUAL LIQUID SAVINGS"}</div><SRow label={t.checkingPlusSavings||"Checking + Savings"} value={actualLiq} color={th.blue} bold/><SRow label={"💎 "+(t.netCashFlowAfterAlloc||"NET CASH FLOW (after allocations)")} value={netCF} color={netCF>=0?th.pos:th.neg} bold line/><div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>{[{l:t.debtServiceRatio||"Debt Service Ratio",v:(dsr*100).toFixed(1)+"%",c:dsr>0.36?th.neg:dsr>0.2?th.warn:th.pos,bm:"< 36%"},{l:t.savingsRate||"Savings Rate",v:(savRate*100).toFixed(1)+"%",c:savRate>=0.2?th.pos:savRate>=0.1?th.warn:th.neg,bm:"> 20%"},{l:t.annualOperatingCashFlow||"Annual Operating Cash Flow",v:fmt(netCF*12),c:netCF>=0?GOLD:th.neg,bm:""}].map(r=><div key={r.l} style={{...mCARD(th),padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:th.muted}}>{r.l}</div>{r.bm&&<div style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.target||"Target"}: {r.bm}</div>}</div><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}</div></div></div>{net>0&&<div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${th.cardBorder}`}}><div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>{t.cashFlowWaterfallLbl||"Cash flow walk"}</div><Waterfall segments={[{label:t.income||"Income",value:net,color:th.pos},{label:t.bills||"Bills",value:-bills,color:th.neg},{label:t.minPay||"Debt Min",value:-minD,color:"#ED7D31"},{label:t.cashFlow||"Net",kind:"total",value:operCF,color:GOLD}]} height={110} width={500}/></div>}</div>;}
+  <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>📥 {t.inflowsHdr||"INFLOWS"}</div>{client.incomeStreams.map(s=><SRow key={s.id} label={"  "+s.label} value={toM(s.net,s.freq)} indent/>)}<SRow label={t.totalInflowsRow||"Total Inflows"} value={net} color={th.pos} bold/><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6,marginTop:12}}>📤 {t.outflowsHdr||"OUTFLOWS"}</div>{actB(client.bills).slice(0,5).map(b=><SRow key={b.id} label={"  "+b.name} value={toM(b.cost,b.freq)} indent/>)}{actB(client.bills).length>5&&<div style={{fontSize:10,color:th.dim,paddingLeft:12}}>+{actB(client.bills).length-5} more…</div>}<SRow label={t.totalOutflowsRow||"Total Outflows"} value={bills} color={th.neg} bold/><div style={{fontSize:11,fontWeight:700,color:th.warn,marginBottom:6,marginTop:12}}>💳 {t.debtServiceHdr||"DEBT SERVICE"}</div>{client.cards.filter(c=>c.min>0).map(c=><SRow key={c.id} label={"  "+c.name} value={c.min} indent/>)}<SRow label={t.totalDebtServiceRow||"Total Debt Service"} value={minD} color={th.warn} bold/><SRow label={"⚡ "+(t.operatingCashFlow||"OPERATING CASH FLOW")} value={operCF} color={operCF>=0?th.pos:th.neg} bold line/></div><div><div style={{fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>💹 {t.committedContribHdr||"COMMITTED CONTRIBUTIONS"}</div>{totalSav===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"4px 0"}}>{t.noCommittedAlloc||"No committed allocations. Check boxes in Investment Allocation to activate."}</div>:[["  "+(t.allocRetirement||"🎯 Retirement").replace(/^[^\s]+\s/,""),sav.retirement],["  "+(t.allocStocks||"📈 Stocks").replace(/^[^\s]+\s/,""),sav.stocks],["  "+(t.allocSavings||"🏦 Savings").replace(/^[^\s]+\s/,""),sav.savings],["  "+(t.allocVacation||"✈️ Vacation").replace(/^[^\s]+\s/,""),sav.vacation],["  "+(t.allocRealEstate||"🏠 Real Estate").replace(/^[^\s]+\s/,""),sav.realEstate],["  "+(t.allocOther||"💡 Other").replace(/^[^\s]+\s/,""),sav.other],["  "+(t.allocDebtRepayment||"💳 Debt Repayment").replace(/^[^\s]+\s/,""),sav.debtRepayment]].filter(([,v])=>v>0).map(([l,v])=><SRow key={l} label={l} value={v} indent/>)}<SRow label={t.totalCommittedRow||"Total Committed"} value={totalSav} color="#8B5CF6" bold/><div style={{fontSize:11,fontWeight:700,color:th.blue,marginTop:12,marginBottom:6}}>💰 {t.actualLiquidSavings||"ACTUAL LIQUID SAVINGS"}</div><SRow label={t.checkingPlusSavings||"Checking + Savings"} value={actualLiq} color={th.blue} bold/><SRow label={"💎 "+(t.netCashFlowAfterAlloc||"NET CASH FLOW (after allocations)")} value={netCF} color={netCF>=0?th.pos:th.neg} bold line/><div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>{[{l:t.debtServiceRatio||"Debt Service Ratio",v:(dsr*100).toFixed(1)+"%",c:dsr>0.36?th.neg:dsr>0.2?th.warn:th.pos,bm:"< 36%"},{l:t.savingsRate||"Savings Rate",v:(savRate*100).toFixed(1)+"%",c:savRate>=0.2?th.pos:savRate>=0.1?th.warn:th.neg,bm:"> 20%"},{l:t.annualOperatingCashFlow||"Annual Operating Cash Flow",v:fmt(netCF*12),c:netCF>=0?GOLD:th.neg,bm:""}].map(r=><div key={r.l} style={{...mCARD(th),padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:th.muted}}>{r.l}</div>{r.bm&&<div style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.target||"Target"}: {r.bm}</div>}</div><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}</div></div></div>{net>0&&<div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${th.cardBorder}`}}>
+  <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>{t.cashFlowWaterfallLbl||"Cash flow walk"}</div>
+  {/* v0.56 — Cash Flow Walk split into 3 compact panels per Mauricio's image 4
+     feedback: small waterfall + breakdown donut + KPI summary. Each fills its
+     third of the row so nothing reads as a giant blank panel. */}
+  <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)",gap:14,alignItems:"center"}}>
+    <div><Waterfall segments={[{label:t.income||"Income",value:net,color:th.pos},{label:t.bills||"Bills",value:-bills,color:th.neg},{label:t.minPay||"Debt Min",value:-minD,color:"#ED7D31"},{label:t.cashFlow||"Net",kind:"total",value:operCF,color:GOLD}]} height={120} width={380}/></div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+      <Donut size={110} innerRatio={0.62} paddingAngle={2} data={[{label:t.bills||"Bills",value:bills,color:th.neg},{label:t.minPay||"Debt Min",value:minD,color:"#ED7D31"},{label:t.cashFlow||"Free",value:Math.max(0,operCF),color:GOLD}]} centerLabel={t.totalOutLbl||"Income"} centerValue={"$"+(net>=1000?Math.round(net/1000)+"K":Math.round(net))} centerColor={th.pos}/>
+      <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:10.5}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:th.neg}}/>{t.bills||"Bills"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:th.neg,fontWeight:700}}>{net>0?Math.round(bills/net*100):0}%</span></span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:"#ED7D31"}}/>{t.minPay||"Debt Min"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:"#ED7D31",fontWeight:700}}>{net>0?Math.round(minD/net*100):0}%</span></span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:GOLD}}/>{t.cashFlow||"Free"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:GOLD,fontWeight:700}}>{net>0?Math.round(Math.max(0,operCF)/net*100):0}%</span></span>
+      </div>
+    </div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{padding:"8px 10px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+        <div style={{fontSize:9,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.operatingCashFlow||"Operating CF"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:15,fontWeight:700,color:operCF>=0?th.pos:th.neg,marginTop:2}}>{fmt(operCF)}</div>
+      </div>
+      <div style={{padding:"8px 10px",background:th.bg,border:`1px solid ${th.cardBorder}`,borderRadius:6}}>
+        <div style={{fontSize:9,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.annualOperatingCashFlow||"Annual"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:15,fontWeight:700,color:operCF>=0?GOLD:th.neg,marginTop:2}}>{fmt(operCF*12)}</div>
+      </div>
+    </div>
+  </div>
+</div>}</div>;}
 
 
 /* ── FINANCIAL STATEMENTS (P1/P2 filtering fixed) ────────────────────────── */
@@ -3252,20 +3341,27 @@ function AssetsLiabilitiesTab({client,lang,t}){const th=useTh();const[view,setVi
       ...loans.map(l=>({label:(LOAN_META[l.type]?.icon||"🏦")+" "+l.name,value:+l.balance||0,color:LOAN_META[l.type]?.c||"#F97316"})),
     ].filter(d=>d.value>0);
     if(tmData.length===0&&liabData.length===0)return null;
+    // v0.56 — Asset/Liability "Maps" swapped from Treemap to RankedHBars per
+    // Mauricio's "block thing not looking good, doesn't know what each square
+    // means" feedback. Each account becomes a horizontal bar with name + value,
+    // sorted high→low. Reads as data, not abstract tiles.
+    const stripEmoji=s=>String(s||"").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s*/gu,"").trim();
+    const aRows=tmData.map(d=>({...d,label:stripEmoji(d.label)}));
+    const lRows=liabData.map(d=>({...d,label:stripEmoji(d.label)}));
     return<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:14,marginBottom:14}}>
       <div style={{...mCARD(th),padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:th.pos,letterSpacing:"0.06em",textTransform:"uppercase"}}>🗺️ {t.assetMapHdr||"Asset Map"}</div>
-          <div style={{fontSize:10,color:th.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totA)}</div>
+          <div style={{fontSize:11,fontWeight:700,color:th.pos,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.assetMapHdr||"Asset Breakdown"}</div>
+          <div style={{fontSize:11,color:GOLD,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(totA)}</div>
         </div>
-        <Treemap data={tmData} width={420} height={130} placeholder={t.noAssetsYet||"No assets yet."}/>
+        {aRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noAssetsYet||"No assets yet."}</div>:<RankedHBars data={aRows} maxBars={8} width={460} barH={16} gap={6} labelW={160}/>}
       </div>
       <div style={{...mCARD(th),padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:th.neg,letterSpacing:"0.06em",textTransform:"uppercase"}}>🗺️ {t.liabilityMapHdr||"Liability Map"}</div>
-          <div style={{fontSize:10,color:th.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totL)}</div>
+          <div style={{fontSize:11,fontWeight:700,color:th.neg,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.liabilityMapHdr||"Liability Breakdown"}</div>
+          <div style={{fontSize:11,color:th.neg,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(totL)}</div>
         </div>
-        <Treemap data={liabData} width={420} height={130} placeholder={t.debtFree||"Debt-free."}/>
+        {lRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.debtFree||"Debt-free."}</div>:<RankedHBars data={lRows} maxBars={8} width={460} barH={16} gap={6} labelW={160}/>}
       </div>
     </div>;
   })()}
@@ -3917,7 +4013,19 @@ const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?in
 </div></div></div></div>;}
 
 function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
-if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}return<div style={{padding:"24px 14px"}}>{/* v0.55 — tighter calc grid: minmax 180→220, more cards per row, minHeight 136→104, padding 16→12. */}<p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"12px 14px",cursor:"pointer",minHeight:104,display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:12}} onMouseEnter={e=>e.currentTarget.style.border=`1px solid ${th.accent}`} onMouseLeave={e=>e.currentTarget.style.border=`1px solid ${th.cardBorder}`}><div style={{fontSize:24,lineHeight:1,flexShrink:0,width:38,textAlign:"center"}}>{c.label.split(" ")[0]}</div><div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:th.text,lineHeight:1.3}}>{c.label.substring(c.label.indexOf(" ")+1)}</div><div style={{fontSize:10,color:th.muted,lineHeight:1.45,marginTop:2}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div></div></div>)}</div></div>;}
+if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}
+// v0.56 — calc grid tile size bumped again per Mauricio's "still too small"
+// feedback. Was minmax(220, 1fr) with 104px minHeight reading as a wall of
+// thin cards. Now minmax(300, 1fr) + 130px minHeight + 16/18 padding +
+// 32px icon. Fewer tiles per row, each one feels substantial.
+return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"16px 18px",cursor:"pointer",minHeight:130,display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:14,transition:"transform 150ms ease,border-color 150ms ease"}} onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${th.accent}`;e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.transform="translateY(0)";}}>
+  <div style={{fontSize:32,lineHeight:1,flexShrink:0,width:48,height:48,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"14",borderRadius:10}}>{c.label.split(" ")[0]}</div>
+  <div style={{minWidth:0,flex:1}}>
+    <div style={{fontSize:14,fontWeight:700,color:th.text,lineHeight:1.3}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
+    <div style={{fontSize:11,color:th.muted,lineHeight:1.5,marginTop:4}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
+  </div>
+  <span style={{color:th.accent,fontSize:18,opacity:0.5,flexShrink:0}}>›</span>
+</div>)}</div></div>;}
 
 const expBackup=(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();};
 const validateBackup=json=>{try{const d=JSON.parse(json);return d.__ga_backup__&&Array.isArray(d.clients)?d:null;}catch{return null;}};
@@ -4695,12 +4803,24 @@ function Dashboard({clients,t,settings,setSettings,onSelect,onAdd,onImportNew,on
   const getDebtForMode=sn=>{if(!sn?.data)return sn?.debt||0;const d=sn.data;if(trendMode==="all")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).reduce((a,l)=>a+(+l.balance||0),0);if(trendMode==="revolving")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0);// "current": revolving + short-term loans (personal/student), excludes mortgage/auto
 return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!l.linkedAssetId&&l.type!=="mortgage"&&l.type!=="vehicle").reduce((a,l)=>a+(+l.balance||0),0);};
   const _allLabels=Array.from(new Set(clients.flatMap(c=>(c.monthSnapshots||[]).map(s=>s.label))));const _labelKey=lbl=>{const parts=lbl.split(" ");const yr=parseInt(parts[1])||new Date().getFullYear();const mo=MS.indexOf(parts[0]);return yr*12+(mo>=0?mo:0);};const _sortedLabels=_allLabels.slice().sort((a,b)=>_labelKey(a)-_labelKey(b));const _rangeCount=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:_sortedLabels.length;const _shownLabels=_sortedLabels.slice(-_rangeCount);const trend=(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>({m:m.split(" ")[0]+(m.split(" ")[1]?("’"+m.split(" ")[1].slice(-2)):""),debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+getDebtForMode(sn);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.savings||0);},0)}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
-<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
-  <SC label={"👥 "+(t?.kpiClients||"Clients")} value={clients.length} color={th.accent} sub={`${active.length} ${(t.active||"active")} · ${clients.length-active.length} ${(t.archivedLbl||"archived")}`}/>
-  <SC label={"💼 "+(t.combinedNetMo||"Combined Net / mo")} value={hideNumbers?"●●●":fmt(ti)} color={th.pos}/>
-  <SC label={"🏦 "+(t.combinedDebt||"Combined Debt")} value={hideNumbers?"●●●":fmt(td)} color={th.neg}/>
-  <SC label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmt(active.reduce((s,c)=>s+liquidA(c),0))} color={GOLD} sub={t.checkingSavingsLbl||"checking + savings"}/>
-</div>
+{/* v0.56 — KpiTile with inline sparkline per Mauricio's image 3.
+   Each tile builds its own series from the practice-wide trend data. */}
+{(()=>{
+  const liqNow=active.reduce((s,c)=>s+liquidA(c),0);
+  // Series per metric, oldest→newest, with current live value appended.
+  const clientSeries=(()=>{const out=[];const labels=_shownLabels;labels.forEach(m=>{out.push(active.filter(c=>(c.monthSnapshots||[]).some(sn=>sn.label===m)).length);});out.push(active.length);return out.length<2?[active.length,active.length]:out;})();
+  const incomeSeries=(()=>{const out=_shownLabels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn)v+=sn.income||0;});return v;});out.push(ti);return out.length<2?[ti,ti]:out;})();
+  const debtSeries=trend.map(p=>p.debt).concat([td]);
+  const liqSeries=trend.map(p=>p.savings).concat([liqNow]);
+  // Delta = current vs previous period (last vs second-to-last).
+  const dlt=arr=>{const n=arr.length;if(n<2)return null;const cur=arr[n-1],prev=arr[n-2];const ch=cur-prev;if(ch===0)return null;return{up:ch>0,down:ch<0,value:(ch>0?"+":"")+fmtS(Math.abs(ch))};};
+  return<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
+    <KpiTile label={"👥 "+(t?.kpiClients||"Clients")} value={clients.length} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
+    <KpiTile label={"💼 "+(t.combinedNetMo||"Combined Net / mo")} value={hideNumbers?"●●●":fmtS(ti)} color={th.pos} spark={incomeSeries} delta={dlt(incomeSeries)} sub={t.vsLastMo||"vs last mo"}/>
+    <KpiTile label={"🏦 "+(t.combinedDebt||"Combined Debt")} value={hideNumbers?"●●●":fmtS(td)} color={th.neg} spark={debtSeries} delta={(()=>{const d=dlt(debtSeries);if(!d)return null;return{...d,up:debtSeries[debtSeries.length-1]<debtSeries[debtSeries.length-2],down:debtSeries[debtSeries.length-1]>debtSeries[debtSeries.length-2]};})()}/>
+    <KpiTile label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
+  </div>;
+})()}
 
 {/* v0.39.0 — Slot-driven dashboard row. Each card has a gear icon to swap charts.
     Slot choices persist to settings.dashboardSlots. */}
@@ -5002,13 +5122,18 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       ];
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>✨ {t.kpiSparklinesSlot||"KPI Sparklines"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.kpiSparklinesSub||"At-a-glance trend per KPI."}</div></div>
-        {/* v0.55 — taller per-row sparklines + width fills (was 26px height,
-           180px fixed width — read as flat ribbons. Now 48px tall, fluid). */}
-        <div style={{display:"flex",flexDirection:"column",gap:8,padding:"4px 8px",flex:1,justifyContent:"center"}}>
-          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:14,fontSize:12,minHeight:52}}>
-            <span style={{color:th.muted,flex:"0 0 100px",fontWeight:600}}>{r.l}</span>
-            <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={260} height={48} strokeWidth={1.5}/></div>
-            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:62,textAlign:"right"}}>{r.v}</span>
+        {/* v0.56 — sparklines extend to touch the value at the right edge.
+           Was: label (100px) | sparkline (260px fixed) | value (62px). Big
+           gap between sparkline end and value, made the sparkline look
+           detached. Now: label (90px) | sparkline (flex:1 fills space) |
+           value tight to the curve end. Per Mauricio's image. */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,padding:"4px 6px 0",flex:1,justifyContent:"center"}}>
+          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,minHeight:52}}>
+            <span style={{color:th.muted,flex:"0 0 88px",fontWeight:600}}>{r.l}</span>
+            <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center"}}>
+              <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={500} height={44} strokeWidth={1.5}/></div>
+            </div>
+            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:54,textAlign:"right",paddingLeft:4}}>{r.v}</span>
           </div>)}
         </div>
       </>;
@@ -5172,22 +5297,72 @@ function PromotionsPage({settings,onSettingsChange,t}){
   const describe=p=>{const val=p.type==="percent"?`${p.value}% off`:p.type==="flat"?`$${p.value} off`:`$${p.value} bundle price`;const when=p.startDate&&p.endDate?`${p.startDate} → ${p.endDate}`:p.startDate?`from ${p.startDate}`:p.endDate?`until ${p.endDate}`:"always active";return`${val} · ${when}`;};
   const isActive=p=>{if(!p.active)return false;const today=new Date().toISOString().slice(0,10);if(p.startDate&&today<p.startDate)return false;if(p.endDate&&today>p.endDate)return false;return true;};
   const Label=({children})=><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:4}}>{children}</div>;
+  // v0.56 — stats derived from promo list for the header KPI strip.
+  const _stats=(()=>{
+    const today=new Date().toISOString().slice(0,10);
+    const active=promos.filter(p=>{if(!p.active)return false;if(p.startDate&&today<p.startDate)return false;if(p.endDate&&today>p.endDate)return false;return true;});
+    const expSoon=active.filter(p=>{if(!p.endDate)return false;const dl=Math.ceil((new Date(p.endDate)-new Date())/864e5);return dl>=0&&dl<=30;});
+    const scheduled=promos.filter(p=>p.active&&p.startDate&&today<p.startDate);
+    const expired=promos.filter(p=>p.endDate&&today>p.endDate);
+    return{active:active.length,expSoon:expSoon.length,scheduled:scheduled.length,expired:expired.length,total:promos.length};
+  })();
   return<div style={{padding:24}}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
-      <div>{/* v0.24.0 — page title removed (TopBar shows it). */}<p style={{fontSize:11,color:th.dim,margin:0}}>{t.promotionsDesc}</p></div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+      <div>
+        <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:GOLD,lineHeight:1.1,marginBottom:4}}>{t.promotionsHdr||"Promotions"}</div>
+        <p style={{fontSize:11,color:th.muted,margin:0,maxWidth:560,lineHeight:1.5}}>{t.promotionsDesc}</p>
+      </div>
       <BSolid onClick={startNew}>＋ {t.newPromotion||"New Promotion"}</BSolid>
     </div>
-    <div style={{...mCARD(th),padding:14,marginBottom:20,background:th.accent+"06"}}>
-      <div style={{fontSize:12,color:th.muted,lineHeight:1.7}}>💡 <b>{t.howItWorks||"How promotions work:"}</b> {t.howItWorksDesc||"Active promotions appear on client invoices and on your public flyer/landing page."}</div>
+    {/* v0.56 — stats strip at top so the page feels like an analytics surface,
+       not just a CRUD list. Active / Expiring soon / Scheduled / Total. */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatActive||"Active"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:th.pos,marginTop:2,lineHeight:1.1}}>{_stats.active}</div>
+      </div>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatExpSoon||"Expiring ≤ 30d"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:_stats.expSoon>0?"#C9A84C":th.muted,marginTop:2,lineHeight:1.1}}>{_stats.expSoon}</div>
+      </div>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatScheduled||"Scheduled"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:th.blue,marginTop:2,lineHeight:1.1}}>{_stats.scheduled}</div>
+      </div>
+      <div style={{...mCARD(th),padding:"10px 12px"}}>
+        <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t.promoStatTotal||"All-time"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:18,fontWeight:700,color:th.text,marginTop:2,lineHeight:1.1}}>{_stats.total}</div>
+      </div>
+    </div>
+    <div style={{...mCARD(th),padding:"10px 14px",marginBottom:16,background:GOLD+"08",borderLeft:`3px solid ${GOLD}`}}>
+      <div style={{fontSize:11,color:th.muted,lineHeight:1.55}}><b style={{color:GOLD}}>{t.howItWorks||"How promotions work"}</b> — {t.howItWorksDesc||"Active promotions appear on client invoices and on your public flyer/landing page."}</div>
     </div>
     {promos.length===0&&!editing&&<div style={{...mCARD(th),padding:40,textAlign:"center"}}>
       <div style={{fontSize:40,marginBottom:8}}>🏷️</div>
       <div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:4}}>{t.noPromosTitle||"No promotions yet"}</div>
       <div style={{fontSize:12,color:th.dim,marginBottom:14}}>{t.noPromosDesc||'Click "New Promotion" to create your first discount.'}</div>
     </div>}
-    {promos.length>0&&<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-      {promos.map(p=>{const active=isActive(p);return<div key={p.id} style={{...mCARD(th),padding:14,borderLeft:`4px solid ${active?th.pos:th.dim}`}}>
-        {editing===p.id?<>
+    {/* v0.56 — Stripe sync note per Mauricio's promotions ask. */}
+    <div style={{...mCARD(th),padding:"9px 14px",marginBottom:14,background:th.blue+"10",borderLeft:`3px solid ${th.blue}`,fontSize:11,color:th.muted,lineHeight:1.55}}>
+      <b style={{color:th.blue}}>{t.stripeSyncNote||"Stripe sync"}</b> — {t.stripeSyncBody||"Promotions configured here currently appear on client invoices and your public flyer only. Auto-syncing them to Stripe coupon codes is on the roadmap (one-click create + apply to the matching service in your Stripe dashboard)."}
+    </div>
+    {/* v0.56 — promo list rendered as a table per image 2 reference (instead of
+       the vertical card stack). Edit mode still expands inline below the row. */}
+    {promos.length>0&&<div style={{...mCARD(th),padding:0,marginBottom:20,overflow:"hidden"}}>
+      <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr style={{background:th.bg}}>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.promotionName||"Name"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.promoCode||"Code"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.discountLbl||"Discount"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.applyToLbl||"Applies To"}</th>
+          <th style={{textAlign:"left",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.endDateLbl||"Ends"}</th>
+          <th style={{textAlign:"right",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}>{t.daysLeftHdr||"Days Left"}</th>
+          <th style={{textAlign:"right",padding:"10px 14px",color:th.dim,fontWeight:700,fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:`1px solid ${th.cardBorder}`}}></th>
+        </tr></thead>
+        <tbody>
+        {promos.map(p=>{const active=isActive(p);if(editing===p.id){
+          return<tr key={p.id}><td colSpan={7} style={{padding:14,borderBottom:`1px solid ${th.cardBorder}`,background:th.accent+"06"}}><div style={{borderLeft:`3px solid ${th.accent}`,paddingLeft:12}}>
+            {/* inline edit form (kept original layout) */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
             <div><Label>{(t.promotionName||"Promotion Name")+" *"}</Label><input style={INP} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder='e.g. "New Year Reset 2026"'/></div>
             <div><Label>{(t.promoCode||"Promo Code")+" (optional)"}</Label><input style={INP} value={draft.code} onChange={e=>setDraft(d=>({...d,code:e.target.value.toUpperCase()}))} placeholder="e.g. WELCOME25"/></div>
@@ -5206,26 +5381,35 @@ function PromotionsPage({settings,onSettingsChange,t}){
             <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:th.muted,cursor:"pointer"}}><input type="checkbox" checked={draft.active} onChange={e=>setDraft(d=>({...d,active:e.target.checked}))} style={{accentColor:th.pos}}/> {t.active||"Active"}</label>
           </div>
           <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}><Btn onClick={cancel}>{t.cancel||"Cancel"}</Btn><BSolid onClick={save}>{t.save}</BSolid></div>
-        </>:<>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
-                <span style={{fontSize:14,fontWeight:800,color:th.text}}>{p.name}</span>
-                <Pill color={active?th.pos:th.dim}>{active?("● "+(t.active||"Active")):("○ "+(t.paused||"Inactive"))}</Pill>
-                {p.code&&<Pill color={th.accent}>{(t.promoCode||"CODE").toUpperCase()}: {p.code}</Pill>}
-              </div>
-              <div style={{fontSize:12,color:th.muted}}>{describe(p)}</div>
-              {p.endDate&&(()=>{const dl=Math.ceil((new Date(p.endDate)-new Date())/864e5);const col=dl<0?"#6B7280":dl<30?"#EF4444":dl<60?"#F59E0B":"#6B7280";const lbl=dl<0?(t.promoExpired||"Expired"):`${dl} ${t.daysLeft||"days left"}`;return<span style={{display:"inline-block",marginTop:4,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:col+"22",color:col,border:`1px solid ${col}55`}}>{lbl}</span>;})()}
-              <div style={{fontSize:11,color:th.dim,marginTop:4}}>{t.appliesToColon||"Applies to:"} <b>{p.appliesTo==="all"?"All services":p.appliesTo}</b>{p.clientFilter!=="all"&&<> · Filter: <b>{p.clientFilter}</b></>}</div>
+          </div></td></tr>;
+        }
+        // ── view row ──
+        const dl=p.endDate?Math.ceil((new Date(p.endDate)-new Date())/864e5):null;
+        const dlCol=dl==null?th.muted:dl<0?"#6B7280":dl<30?"#EF4444":dl<90?"#F59E0B":th.pos;
+        const dlLbl=dl==null?"—":dl<0?(t.promoExpired||"Expired"):`${dl}d`;
+        const discount=p.type==="percent"?`${p.value}%`:p.type==="flat"?`$${p.value}`:`$${p.value} bundle`;
+        return<tr key={p.id} style={{borderBottom:`1px solid ${th.cardBorder}`}}>
+          <td style={{padding:"10px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{width:6,height:6,borderRadius:99,background:active?th.pos:th.dim,flexShrink:0}} title={active?(t.active||"Active"):(t.paused||"Inactive")}/>
+              <span style={{fontWeight:700,color:th.text,fontSize:12}}>{p.name}</span>
             </div>
-            <div style={{display:"flex",gap:6}}>
-              <Btn small onClick={()=>toggleActive(p.id)}>{p.active?(t.pause||"Pause"):(t.activate||"Activate")}</Btn>
-              <Btn small onClick={()=>startEdit(p)}>{t.editLabel||"Edit"}</Btn>
-              <Btn small onClick={()=>del(p.id)} color={th.neg}>🗑</Btn>
-            </div>
-          </div>
-        </>}
-      </div>;})}
+          </td>
+          <td style={{padding:"10px 14px"}}>{p.code?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:GOLD,background:GOLD+"14",padding:"2px 8px",borderRadius:4,fontWeight:600}}>{p.code}</span>:<span style={{color:th.dim,fontSize:11}}>—</span>}</td>
+          <td style={{padding:"10px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:th.text,fontWeight:600}}>{discount} {p.type==="percent"||p.type==="flat"?(t.off||"off"):""}</td>
+          <td style={{padding:"10px 14px",fontSize:11,color:th.muted}}>{p.appliesTo==="all"?(t.allServices||"All Services"):p.appliesTo}</td>
+          <td style={{padding:"10px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:th.muted}}>{p.endDate||"—"}</td>
+          <td style={{padding:"10px 14px",textAlign:"right"}}>
+            {dl!=null?<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10.5,fontWeight:700,padding:"3px 10px",borderRadius:99,background:dlCol+"22",color:dlCol,border:`1px solid ${dlCol}55`,letterSpacing:"0.02em"}}>{dlLbl}</span>:<span style={{color:th.dim}}>—</span>}
+          </td>
+          <td style={{padding:"6px 14px",textAlign:"right",whiteSpace:"nowrap"}}>
+            <button onClick={()=>toggleActive(p.id)} title={p.active?(t.pause||"Pause"):(t.activate||"Activate")} style={{background:"transparent",border:`1px solid ${th.cardBorder}`,color:th.muted,borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",marginRight:4}}>{p.active?"⏸":"▶"}</button>
+            <button onClick={()=>startEdit(p)} title={t.editLabel||"Edit"} style={{background:"transparent",border:`1px solid ${th.cardBorder}`,color:th.muted,borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",marginRight:4}}>✏</button>
+            <button onClick={()=>del(p.id)} title={t.deleteLbl||"Delete"} style={{background:"transparent",border:`1px solid ${th.neg}55`,color:th.neg,borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer"}}>🗑</button>
+          </td>
+        </tr>;
+        })}
+        </tbody></table></div>
     </div>}
     {editing&&!promos.find(p=>p.id===editing)&&<div style={{...mCARD(th),padding:14,marginBottom:20,borderLeft:`4px solid ${th.accent}`}}>
       <div style={{fontSize:13,fontWeight:800,color:th.accent,marginBottom:10}}>＋ {t.newPromotion||"New Promotion"}</div>
@@ -5298,7 +5482,72 @@ return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{fl
 </div>{tab==="report"&&<ClientReport client={client} onUpdate={onUpdate} lang={lang} t={t} settings={settings}/>}{tab==="monthly"&&<MonthlyTab client={client} onUpdate={onUpdate} lang={lang} t={t} settings={settings}/>}{tab==="financialStatements"&&<FinancialStatementsTab client={client} lang={lang} t={t}/>}{tab==="al"&&<AssetsLiabilitiesTab client={client} lang={lang} t={t}/>}{tab==="investments"&&<InvestmentsTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="plan"&&<FinancialPlanTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="backfill"&&<BackfillTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="calculators"&&<ClientCalculatorsTab client={client} onUpdate={onUpdate} t={t}/>}{tab==="notes"&&<NotesSection client={client} onUpdate={onUpdate} t={t} settings={settings}/>}<div style={{height:40}}/></div></div></HideCtx.Provider>;}
 
 /* ── LOGIN (Supabase Auth) ──────────────────────────────────────────────── */
+// v0.56 — HeroVisual: animated brand element on the landing page.
+//
+// Strategy: ship an animated SVG fallback that looks Lottie-quality with zero
+// external assets, AND wire lottie-react infrastructure to swap in a real
+// Lottie animation when LOTTIE_HERO_URL is set (paste a LottieFiles JSON URL
+// or local /public/*.json path). Mauricio: visit lottiefiles.com, search
+// "anchor" / "finance growth" / "chart drawing", pick one, copy its `.json`
+// URL, drop into LOTTIE_HERO_URL below. Reduced motion suppresses ALL motion.
+const LOTTIE_HERO_URL = ""; // <- paste LottieFiles JSON URL here to enable Lottie hero
+function HeroVisual({palette,reducedMotion}){
+  const [LottieComp,setLottieComp]=useState(null);
+  const [lottieData,setLottieData]=useState(null);
+  useEffect(()=>{
+    if(!LOTTIE_HERO_URL||reducedMotion)return;
+    let cancelled=false;
+    import("lottie-react").then(m=>{if(!cancelled)setLottieComp(()=>m.default);}).catch(()=>{});
+    fetch(LOTTIE_HERO_URL).then(r=>r.ok?r.json():null).then(j=>{if(!cancelled&&j)setLottieData(j);}).catch(()=>{});
+    return()=>{cancelled=true;};
+  },[reducedMotion]);
+  // Pause animations when tab is hidden — saves battery on idle.
+  const[visible,setVisible]=useState(true);
+  useEffect(()=>{const h=()=>setVisible(!document.hidden);document.addEventListener("visibilitychange",h);return()=>document.removeEventListener("visibilitychange",h);},[]);
+  if(LottieComp&&lottieData&&!reducedMotion){
+    return<LottieComp animationData={lottieData} loop autoplay={visible} style={{width:"100%",height:"100%"}}/>;
+  }
+  // SVG fallback — animated gold rings + anchor monogram + drifting particles.
+  const animate=!reducedMotion&&visible;
+  return<svg viewBox="0 0 400 400" style={{width:"100%",height:"100%",overflow:"visible"}} aria-hidden="true">
+    <defs>
+      <radialGradient id="hero-glow-r" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor={palette.amber} stopOpacity="0.35"/>
+        <stop offset="60%" stopColor={palette.gold} stopOpacity="0.10"/>
+        <stop offset="100%" stopColor={palette.gold} stopOpacity="0"/>
+      </radialGradient>
+      <linearGradient id="hero-arc-l" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor={palette.gold}/>
+        <stop offset="50%" stopColor={palette.amber}/>
+        <stop offset="100%" stopColor={palette.gold}/>
+      </linearGradient>
+    </defs>
+    <circle cx="200" cy="200" r="180" fill="url(#hero-glow-r)"/>
+    <circle cx="200" cy="200" r="160" fill="none" stroke="url(#hero-arc-l)" strokeWidth="0.75" strokeOpacity="0.55" strokeDasharray="4 6">
+      {animate&&<animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="60s" repeatCount="indefinite"/>}
+    </circle>
+    <circle cx="200" cy="200" r="128" fill="none" stroke={palette.amber} strokeWidth="0.5" strokeOpacity="0.45" strokeDasharray="2 8">
+      {animate&&<animateTransform attributeName="transform" type="rotate" from="360 200 200" to="0 200 200" dur="45s" repeatCount="indefinite"/>}
+    </circle>
+    <g>
+      <path d="M 200 80 A 120 120 0 0 1 320 200" fill="none" stroke="url(#hero-arc-l)" strokeWidth="2.5" strokeLinecap="round" opacity="0.85"/>
+      {animate&&<animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="18s" repeatCount="indefinite"/>}
+    </g>
+    <image href="/anchor-monogram.svg" x="155" y="155" width="90" height="90" opacity="0.95"/>
+    {animate&&[0,1,2,3,4,5].map(i=>{
+      const angle=(i/6)*Math.PI*2;
+      const cx=200+Math.cos(angle)*145;
+      const cy=200+Math.sin(angle)*145;
+      return<g key={i}><circle cx={cx} cy={cy} r="2.5" fill={palette.gold} opacity="0.7">
+        <animate attributeName="opacity" values="0.7;0.2;0.7" dur="3.5s" begin={`${i*0.5}s`} repeatCount="indefinite"/>
+        <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="30s" repeatCount="indefinite"/>
+      </circle></g>;
+    })}
+  </svg>;
+}
+
 function Login({onLogin,t,isDark,onToggle,lang}){
+  const reducedMotion=useReducedMotion();
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
   useEffect(()=>{if(typeof window==="undefined")return;const h=window.location.hash||"";if(h.includes("type=recovery")){setMode("setNew");setInfo(t.resetSetNewIntro||"Enter your new password below.");}},[]);
@@ -5384,6 +5633,13 @@ function Login({onLogin,t,isDark,onToggle,lang}){
       <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:11,padding:"6px 14px",borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
     </header>
 
+    {/* v0.56 — animated brand visual behind the hero. Z-index 1 so it sits
+       under the hero text + sign-in card (which are z-index 2). Low opacity
+       so it never competes with content. Drops into LOTTIE_HERO_URL slot
+       if Mauricio sets one; otherwise SVG fallback. */}
+    <div aria-hidden style={{position:"absolute",top:60,right:-120,width:560,height:560,zIndex:1,opacity:0.55,pointerEvents:"none"}}>
+      <HeroVisual palette={PAL} reducedMotion={reducedMotion}/>
+    </div>
     {/* HERO — big italic tagline left, sign-in card top-right */}
     <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px 60px",display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr)",gap:48,alignItems:"start"}}>
       <div style={{paddingTop:36}}>
@@ -5394,11 +5650,14 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
         {/* v0.55 — pills + disclaimer use amberDeep on dark mode (gold-cream `#EDD594`)
        so they read on navy; were previously muted grey-on-grey = invisible. */}
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:isDark?PAL.amberDeep:PAL.muted,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
-          <span style={{padding:"5px 12px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
+        {/* v0.56-r5 — pills match the "Sign In" button typography per Mauricio:
+           title case (no uppercase), 13px size, weight 700, gentle tracking.
+           Now read as feature labels, not screaming all-caps tags. */}
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:isDark?"#F1F5F9":PAL.muted,fontWeight:700,letterSpacing:"0.02em"}}>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
         </div>
       </div>
 
@@ -5449,7 +5708,7 @@ function Login({onLogin,t,isDark,onToggle,lang}){
 
     {/* TRUST / FOOTER */}
     <footer style={{position:"relative",zIndex:2,maxWidth:1200,margin:"40px auto 0",padding:"24px 36px 36px",borderTop:`1px solid ${PAL.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
-      <div style={{fontSize:11,color:isDark?PAL.text:PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640,opacity:0.85}}>
+      <div style={{fontSize:11,color:isDark?"#F1F5F9":PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640,opacity:isDark?0.92:0.85}}>
         {lang==="es"?
           "Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":
           "Educational financial coaching — not investment, tax, or legal advice."}
@@ -5706,7 +5965,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0550-bugfixes-warm-light-layout";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0560-pills-spark-promos-cashflow-swatches";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7023,14 +7282,26 @@ function SettingsPage({settings,onEdit,onBackup,onRestoreBackup,t,clients}){
     [t?.instagram||"Instagram", settings.ig||"—"],
     [t?.company||"Company", settings.companyName||"—"],
   ];
+  // v0.56-r5 — Appearance summary shows actual color swatches instead of
+  // hex codes ("color boxes" per Mauricio's persistent ask). Each row's
+  // value is JSX: 16px colored tile + name + small mono hex caption.
   const accent=(settings.darkAccent||GOLD).toString().toUpperCase();
   const bg=((settings.darkBg)||"#111827").toString().toUpperCase();
   const card=((settings.darkCard)||"#1F2937").toString().toUpperCase();
+  const lightAccent=(settings.lightAccent||"#2563EB").toString().toUpperCase();
+  const lightBg=((settings.lightBg)||"#F1F5F9").toString().toUpperCase();
+  const lightCard=((settings.lightCard)||"#FFFFFF").toString().toUpperCase();
+  const isDarkTheme=settings.darkMode!==false;
+  const ColorRow=({color,name,hex})=><span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+    <span style={{width:18,height:18,borderRadius:5,background:color,border:`1px solid ${th.cardBorder}`,boxShadow:"inset 0 0 0 1px rgba(0,0,0,0.05)"}}/>
+    <span style={{color:th.text,fontWeight:600}}>{name}</span>
+    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:th.dim,fontWeight:400}}>{hex}</span>
+  </span>;
   const appearanceRows=[
-    [t?.theme||"Theme", settings.darkMode!==false?(t?.darkMode||"Dark"):(t?.lightMode||"Light")],
-    [t?.accent||"Accent", `Gold ${accent}`],
-    [t?.background||"Background", `Navy ${bg}`],
-    [t?.card||"Card", `Navy 600 ${card}`],
+    [t?.theme||"Theme", settings.darkMode!==false?("🌙 "+(t?.darkMode||"Dark")):("☀️ "+(t?.lightMode||"Light"))],
+    [t?.accent||"Accent", <ColorRow key="acc" color={isDarkTheme?accent:lightAccent} name={isDarkTheme?"Gold":"Blue"} hex={isDarkTheme?accent:lightAccent}/>],
+    [t?.background||"Background", <ColorRow key="bg" color={isDarkTheme?bg:lightBg} name={isDarkTheme?"Navy":"Cream"} hex={isDarkTheme?bg:lightBg}/>],
+    [t?.card||"Card", <ColorRow key="card" color={isDarkTheme?card:lightCard} name={isDarkTheme?"Navy 600":"White"} hex={isDarkTheme?card:lightCard}/>],
     [t?.appZoom||"App zoom", Math.round((settings.appZoom||1)*100)+"%"],
   ];
   const localizationRows=[
