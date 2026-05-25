@@ -5653,11 +5653,15 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         {/* v0.56-r5 — pills match the "Sign In" button typography per Mauricio:
            title case (no uppercase), 13px size, weight 700, gentle tracking.
            Now read as feature labels, not screaming all-caps tags. */}
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:isDark?"#F1F5F9":PAL.muted,fontWeight:700,letterSpacing:"0.02em"}}>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.cardBorder}`,borderRadius:99,background:`${PAL.gold}14`}}>EN · ES</span>
+        {/* v0.57.1 — pills had `${PAL.gold}14` (8% gold) backgrounds + low-contrast text
+           that read as white-on-white in light mode and pale-on-pale in dark. Bumped
+           background opacity, switched text to PAL.amberDeep (walnut in light, cream-gold
+           in dark) for proper readability against both surfaces. */}
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:PAL.amberDeep,fontWeight:700,letterSpacing:"0.02em"}}>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
+          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>EN · ES</span>
         </div>
       </div>
 
@@ -5678,7 +5682,7 @@ function Login({onLogin,t,isDark,onToggle,lang}){
         </div>}
         {err&&<div role="alert" style={{fontSize:11,color:"#B91C1C",marginBottom:12,padding:"8px 12px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:8,lineHeight:1.5}}>{err}</div>}
         {info&&<div role="status" style={{fontSize:11,color:"#15803D",marginBottom:12,padding:"8px 12px",background:"#DCFCE7",border:"1px solid #86EFAC",borderRadius:8,lineHeight:1.5}}>{info}</div>}
-        <button onClick={go} disabled={busy} style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:busy?"wait":"pointer",background:isDark?PAL.amber:PAL.amberDeep,color:isDark?"#1A1208":"#FFFEF7",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${PAL.amber}44`,opacity:busy?0.7:1,transition:"transform 150ms ease,box-shadow 150ms ease,background 150ms ease"}}>{busy?"…":btnLabel}</button>
+        <button onClick={go} disabled={busy} style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:busy?"wait":"pointer",background:`linear-gradient(135deg,${PAL.amber},${PAL.amberDeep})`,color:isDark?"#1A1208":"#FFFEF7",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${PAL.amber}44`,opacity:busy?0.7:1,textShadow:isDark?"none":"0 1px 2px rgba(58,30,8,0.45)",transition:"transform 150ms ease,box-shadow 150ms ease,background 150ms ease"}}>{busy?"…":btnLabel}</button>
         {mode==="signin"&&<div style={{textAlign:"center",marginTop:14}}>
           <button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit",padding:"10px 14px",minHeight:44}}>{t.forgotPassword||"Forgot password?"}</button>
         </div>}
@@ -5965,7 +5969,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0570-signin-contrast-email-type-mobile-inputs";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0571-restore-gradient-fix-pills-remove-hex";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7292,16 +7296,18 @@ function SettingsPage({settings,onEdit,onBackup,onRestoreBackup,t,clients}){
   const lightBg=((settings.lightBg)||"#F1F5F9").toString().toUpperCase();
   const lightCard=((settings.lightCard)||"#FFFFFF").toString().toUpperCase();
   const isDarkTheme=settings.darkMode!==false;
-  const ColorRow=({color,name,hex})=><span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+  // v0.57.1 — hex codes removed from summary per Mauricio ("Appearance still
+  // has the codes next to the colors"). Swatch + friendly name only; hex shows
+  // in the edit modal where it's actually editable.
+  const ColorRow=({color,name})=><span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
     <span style={{width:18,height:18,borderRadius:5,background:color,border:`1px solid ${th.cardBorder}`,boxShadow:"inset 0 0 0 1px rgba(0,0,0,0.05)"}}/>
     <span style={{color:th.text,fontWeight:600}}>{name}</span>
-    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:th.dim,fontWeight:400}}>{hex}</span>
   </span>;
   const appearanceRows=[
     [t?.theme||"Theme", settings.darkMode!==false?("🌙 "+(t?.darkMode||"Dark")):("☀️ "+(t?.lightMode||"Light"))],
-    [t?.accent||"Accent", <ColorRow key="acc" color={isDarkTheme?accent:lightAccent} name={isDarkTheme?"Gold":"Blue"} hex={isDarkTheme?accent:lightAccent}/>],
-    [t?.background||"Background", <ColorRow key="bg" color={isDarkTheme?bg:lightBg} name={isDarkTheme?"Navy":"Cream"} hex={isDarkTheme?bg:lightBg}/>],
-    [t?.card||"Card", <ColorRow key="card" color={isDarkTheme?card:lightCard} name={isDarkTheme?"Navy 600":"White"} hex={isDarkTheme?card:lightCard}/>],
+    [t?.accent||"Accent", <ColorRow key="acc" color={isDarkTheme?accent:lightAccent} name={isDarkTheme?"Gold":"Blue"}/>],
+    [t?.background||"Background", <ColorRow key="bg" color={isDarkTheme?bg:lightBg} name={isDarkTheme?"Navy":"Cream"}/>],
+    [t?.card||"Card", <ColorRow key="card" color={isDarkTheme?card:lightCard} name={isDarkTheme?"Navy 600":"White"}/>],
     [t?.appZoom||"App zoom", Math.round((settings.appZoom||1)*100)+"%"],
   ];
   const localizationRows=[
