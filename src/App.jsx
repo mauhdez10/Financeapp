@@ -1540,16 +1540,17 @@ function Treemap({data,height=260,width=520,placeholder,valuePrefix="$"}){
    270°-arc gauge for ratio/percentage with optional target marker. Used for
    DSR, savings rate, EF months, DTI. Thin stroke (linecap=round), color
    shifts good/warn/bad based on threshold. Value tweens. */
-// v0.58 — per design-system/charts/MASTER.md: default size 140→120, padding
-// from edge 10→16 (arc fully inside card), strokes 4/5→6/8 (thicker so it
-// reads at smaller size), SVG overflow:hidden (was visible → arc bled past
-// card edges in KPI Sparklines slot — Mauricio Image 1).
-function RadialGauge({value,max=100,target,size=120,label,subLabel,color,direction="higher",thresholds,placeholder,fmt:fmtFn}){
+// v0.58 r2 — per real Playwright screenshot of Amanda's Monthly tab.
+// Reverted size default 120→140 (the r1 shrink made gauges look tiny in
+// cards already sized for the radar). Track ring opacity bumped 0.45→0.75
+// so DSR with value≈0 (no fill arc) still has a visibly defined ring on
+// dark navy. Internal padding r=size/2-14 (was -16 in r1, -10 originally).
+function RadialGauge({value,max=100,target,size=140,label,subLabel,color,direction="higher",thresholds,placeholder,fmt:fmtFn}){
   const th=useTh();
   const tw=useTweenedData({v:+value||0,m:+max||100},700);
   const v=tw.v,mx=tw.m||1;
   const pct=Math.max(0,Math.min(1,v/mx));
-  const r=size/2-16,cx=size/2,cy=size/2;
+  const r=size/2-14,cx=size/2,cy=size/2;
   const startA=Math.PI*0.75,endA=Math.PI*2.25;// 270° sweep from 7:30 to 4:30 (clockwise)
   const arcPath=(a0,a1)=>{
     const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0);
@@ -1578,7 +1579,7 @@ function RadialGauge({value,max=100,target,size=120,label,subLabel,color,directi
           <stop offset="100%" stopColor={strokeColor} stopOpacity="1"/>
         </linearGradient>
       </defs>
-      <path d={arcPath(startA,endA)} fill="none" stroke={th.cardBorder} strokeWidth="6" strokeLinecap="round" strokeOpacity="0.45"/>
+      <path d={arcPath(startA,endA)} fill="none" stroke={th.cardBorder} strokeWidth="7" strokeLinecap="round" strokeOpacity="0.75"/>
       <path d={arcPath(startA,fillA)} fill="none" stroke={`url(#${gid})`} strokeWidth="8" strokeLinecap="round"/>
       {tgt!=null&&(()=>{const a=startA+(endA-startA)*tgt;return<line x1={cx+(r-6)*Math.cos(a)} y1={cy+(r-6)*Math.sin(a)} x2={cx+(r+6)*Math.cos(a)} y2={cy+(r+6)*Math.sin(a)} stroke={th.text} strokeWidth="1.25" strokeOpacity="0.5"/>;})()}
     </svg>
@@ -1695,13 +1696,16 @@ function Sparkline({data,width=80,height=24,color,fill=true,strokeWidth=1.25}){
 /* ── v0.38.0 — Phase 5 Charts: Radar5 ───────────────────────────────────────
    5-axis radar polygon. Used for Financial Health Score across DSR, Savings
    Rate, EF Months, Debt-to-Asset, Cash Flow Health. Each value 0-1. */
+// v0.58 r2 — bumped inner padding 30→36 (more room for axis labels) and
+// pushed label position 1.18*r → 1.28*r so labels no longer crowd the
+// polygon edge (Mauricio Image: DSR/SAVINGS/EF/D-A/CASH labels were overlapping the chart at size=140).
 function Radar5({axes,values,target,size=240,color,placeholder}){
   const th=useTh();
   const safeAxes=Array.isArray(axes)?axes.slice(0,5):[];
   const safeValues=Array.isArray(values)?values.slice(0,safeAxes.length).map(v=>Math.max(0,Math.min(1,+v||0))):[];
   const tw=useTweenedData(safeValues,800);
   if(safeAxes.length<3)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"Need at least 3 axes"}</div>;
-  const cx=size/2,cy=size/2,r=size/2-30;
+  const cx=size/2,cy=size/2,r=size/2-36;
   const angleAt=i=>(-Math.PI/2)+(2*Math.PI*i/safeAxes.length);
   const pt=(val,i)=>{const a=angleAt(i);return{x:cx+r*val*Math.cos(a),y:cy+r*val*Math.sin(a)};};
   const ringLvls=[0.25,0.5,0.75,1];
@@ -1709,7 +1713,7 @@ function Radar5({axes,values,target,size=240,color,placeholder}){
   const c=color||GOLD;
   const targetPath=target?safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x} ${p.y}`;}).join(" L"):null;
   const gid=useSvgId("rd");
-  return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+  return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Radar chart">
     <defs>
       {/* v0.42 — radial gradient on polygon fill: dense at center → fading toward edge */}
       <radialGradient id={gid} cx="50%" cy="50%" r="50%">
@@ -1722,7 +1726,7 @@ function Radar5({axes,values,target,size=240,color,placeholder}){
     {targetPath&&<polygon points={safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x},${p.y}`;}).join(" ")} fill="none" stroke={th.text} strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3"/>}
     <polygon points={tw.map((v,i)=>{const p=pt(v,i);return`${p.x},${p.y}`;}).join(" ")} fill={`url(#${gid})`} stroke={c} strokeOpacity="0.85" strokeWidth="1.25" strokeLinejoin="round"/>
     {tw.map((v,i)=>{const p=pt(v,i);return<g key={i}><circle cx={p.x} cy={p.y} r="4" fill={c} opacity="0.25"/><circle cx={p.x} cy={p.y} r="2" fill={c}/></g>;})}
-    {safeAxes.map((ax,i)=>{const p=pt(1.18,i);const isRight=p.x>cx+5,isLeft=p.x<cx-5;const anchor=isRight?"start":isLeft?"end":"middle";return<text key={i} x={p.x} y={p.y+3} textAnchor={anchor} fontSize="10" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{ax}</text>;})}
+    {safeAxes.map((ax,i)=>{const p=pt(1.28,i);const isRight=p.x>cx+5,isLeft=p.x<cx-5;const anchor=isRight?"start":isLeft?"end":"middle";return<text key={i} x={p.x} y={p.y+3} textAnchor={anchor} fontSize="9" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{ax}</text>;})}
   </svg>;
 }
 
@@ -2392,26 +2396,27 @@ return<div>{hasP2&&<div style={{display:"flex",gap:6,marginBottom:14}}>{[["both"
     Math.max(0,Math.min(1,1-dta/0.8)),
     Math.max(0,Math.min(1,inc>0?cash/inc/0.1:0)),
   ];
-  // v0.56 — health row tightened. Was 2-up with gauges at 108 + radar at 200,
-  // both surrounded by huge blank space. Now 4-up: 3 gauges (84) inline + radar
-  // (160) in the rightmost cell. Cards lose the chunky 14px padding.
-  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginBottom:14}}>
-    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <RadialGauge value={dsr*100} max={60} target={36} size={84} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
+  // v0.58 r2 — health row sized from real screenshot. The radar at 140 was
+  // dominating the grid auto-row height (~160px) while gauges at 84 floated
+  // tiny in the middle. Now all 4 charts at 130 — gauges visually equal to
+  // radar, cards wrap content cleanly. Card padding 10/8 → 12/10 for breath.
+  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginBottom:14,alignItems:"stretch"}}>
+    <div style={{...mCARD(th),padding:"12px 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={dsr*100} max={60} target={36} size={130} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
     </div>
-    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <RadialGauge value={sr*100} max={40} target={20} size={84} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
+    <div style={{...mCARD(th),padding:"12px 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={sr*100} max={40} target={20} size={130} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
     </div>
-    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <RadialGauge value={ef} max={12} target={3} size={84} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+    <div style={{...mCARD(th),padding:"12px 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={ef} max={12} target={3} size={130} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
     </div>
-    <div style={{...mCARD(th),padding:"8px 10px 4px",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:2}}>
+    <div style={{...mCARD(th),padding:"10px 10px 8px",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:4}}>
       <div style={{fontSize:9,fontWeight:700,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.healthScoreHdr||"Health Score"}</div>
-      <Radar5 axes={["DSR",t.srAxisShort||"Sav",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"CF"]} values={radarVals} target={0.8} size={140}/>
+      <Radar5 axes={["DSR",t.srAxisShort||"Sav",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"CF"]} values={radarVals} target={0.8} size={130}/>
     </div>
   </div>;
 })()}
-<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}><div style={{...mCARD(th),padding:12}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>📊 WHERE INCOME GOES</div><ResponsiveContainer width="100%" height={130} style={{outline:"none"}}><PieChart><Pie data={pie} cx="50%" cy="50%" innerRadius={36} outerRadius={58} paddingAngle={2} dataKey="value">{pie.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}<ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/></Pie></PieChart></ResponsiveContainer><div style={{display:"flex",justifyContent:"center",gap:8,flexWrap:"wrap"}}>{pie.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{color:th.muted}}>{d.name}: <span style={{color:d.color,fontWeight:700}}>{fmt(d.value)}</span></span></div>)}</div></div><div style={{...mCARD(th),padding:12}}>
+<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16,alignItems:"stretch"}}><div style={{...mCARD(th),padding:12,display:"flex",flexDirection:"column"}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.04em",textTransform:"uppercase"}}>📊 Where Income Goes</div><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}><ResponsiveContainer width="100%" height={170} style={{outline:"none"}}><PieChart><Pie data={pie} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={2} dataKey="value">{pie.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}<ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/></Pie></PieChart></ResponsiveContainer></div><div style={{display:"flex",justifyContent:"center",gap:10,flexWrap:"wrap",marginTop:8}}>{pie.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:5,fontSize:10.5}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{color:th.muted}}>{d.name}: <span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{fmt(d.value)}</span></span></div>)}</div></div><div style={{...mCARD(th),padding:12}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:8,flexWrap:"wrap"}}>
     <div style={{fontSize:11,fontWeight:700,color:th.dim}}>📈 {t.debtTrend}{hasP2&&view!=="both"&&<span style={{fontSize:10,color:th.muted}}> (est.)</span>}</div>
     {/* v0.34.0 — totals moved to a small legend pair next to the title (Phase 5 rule:
@@ -5985,7 +5990,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0580-preview-charts-spec-r1";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0580-preview-charts-spec-r2";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
