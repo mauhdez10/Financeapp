@@ -307,20 +307,16 @@ function useAnimatedDisplay(value){
 // Per Mauricio's image 3 reference (ACTIVE CLIENTS · 14 · ↑2 this month · spark).
 // Layout: label top (small uppercase), value + sparkline as a row, optional
 // delta sub-caption below.
-// v0.59 — KpiTile rebuilt from real screenshot. Was 10/14 padding with
-// 22px value + cramped sparkline alongside, looked squat. Now: 14/18
-// padding, 26px value with sparkline ABOVE on the right (more visible),
-// delta+sub in a clean row below. Sparkline fill dropped for cleaner
-// modern read (matches v0.58.1 KPI Sparklines treatment). Card visual
-// mass matches the gauge cards on Monthly Statement.
+// v0.59.2 — Mauricio: top KPI tile "lines need to be bigger and centered".
+// Sparkline moved out of the top row (was maxWidth:120 squished beside the
+// label) into its own full-width row below the value. Height 28 → 40,
+// stroke 1.25 → 1.5 for a more visible chart. minHeight 104 → 124.
 function KpiTile({label,value,color,sub,delta,spark}){
   const th=useTh();
-  return<div className="ga-sc" style={{...mCARD(th),padding:"14px 18px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",gap:8,minHeight:104}}>
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
-      <div style={{fontSize:10,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{label}</div>
-      {spark&&spark.length>=2&&<div style={{flex:1,minWidth:0,maxWidth:120,opacity:0.9}}><Sparkline data={spark} color={color||GOLD} width={120} height={28} strokeWidth={1.25} fill={false}/></div>}
-    </div>
+  return<div className="ga-sc" style={{...mCARD(th),padding:"14px 18px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",gap:6,minHeight:124}}>
+    <div style={{fontSize:10,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{label}</div>
     <div style={{fontSize:26,fontWeight:600,color:color||th.accent,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.02em"}}>{value}</div>
+    {spark&&spark.length>=2&&<div style={{width:"100%",marginTop:2}}><Sparkline data={spark} color={color||GOLD} width={240} height={40} strokeWidth={1.5} fill={false}/></div>}
     {(delta||sub)&&<div style={{fontSize:10.5,color:th.dim,display:"flex",alignItems:"center",gap:8,marginTop:"auto"}}>
       {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{delta.up?"↑":delta.down?"↓":"→"} {delta.value}</span>}
       {sub&&<span style={{letterSpacing:"0.02em"}}>{sub}</span>}
@@ -4052,18 +4048,17 @@ const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?in
 
 function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
 if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}
-// v0.59.1 — Mauricio: "calculators too" still too big. Final compaction:
-// padding 14/16 → 10/14, icon 40→32, smaller font, tighter line-height,
-// gap 12→8. Goes from "tile that breathes" to "list-style row" per
-// Mauricio's "or just make them like inside clients" feedback. Grid
-// min 260→240 → 5+ cards per row at desktop = no dead space.
-return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:16,marginTop:0,letterSpacing:"0.04em"}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8,gridAutoRows:"auto"}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"10px 14px",cursor:"pointer",display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:10,transition:"transform 150ms ease,border-color 150ms ease,background 150ms ease"}} onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${th.accent}`;e.currentTarget.style.background=th.accent+"08";}} onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.background=th.card;}}>
-  <div style={{fontSize:18,lineHeight:1,flexShrink:0,width:32,height:32,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"14",borderRadius:7}}>{c.label.split(" ")[0]}</div>
+// v0.56 — calc grid tile size bumped again per Mauricio's "still too small"
+// feedback. Was minmax(220, 1fr) with 104px minHeight reading as a wall of
+// thin cards. Now minmax(300, 1fr) + 130px minHeight + 16/18 padding +
+// 32px icon. Fewer tiles per row, each one feels substantial.
+return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"16px 18px",cursor:"pointer",minHeight:130,display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:14,transition:"transform 150ms ease,border-color 150ms ease"}} onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${th.accent}`;e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.transform="translateY(0)";}}>
+  <div style={{fontSize:32,lineHeight:1,flexShrink:0,width:48,height:48,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"14",borderRadius:10}}>{c.label.split(" ")[0]}</div>
   <div style={{minWidth:0,flex:1}}>
-    <div style={{fontSize:12.5,fontWeight:700,color:th.text,lineHeight:1.2,letterSpacing:"-0.005em"}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
-    <div style={{fontSize:10,color:th.muted,lineHeight:1.4,marginTop:1,letterSpacing:"0.01em"}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
+    <div style={{fontSize:14,fontWeight:700,color:th.text,lineHeight:1.3}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
+    <div style={{fontSize:11,color:th.muted,lineHeight:1.5,marginTop:4}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
   </div>
-  <span style={{color:th.accent,fontSize:14,opacity:0.55,flexShrink:0,fontWeight:300}}>›</span>
+  <span style={{color:th.accent,fontSize:18,opacity:0.5,flexShrink:0}}>›</span>
 </div>)}</div></div>;}
 
 const expBackup=(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();};
@@ -5487,46 +5482,7 @@ function PromotionsPage({settings,onSettingsChange,t}){
     </div>
   </div>;
 }
-// v0.59 — Resources rebuilt from Playwright screenshot. Was 6 tiny cards
-// (260px wide, 110px tall, 22px emoji icon) crammed in row 1 with half
-// of row 2 empty + huge dead page below. Now: 3-col grid at 360px min,
-// cards 200px+ tall with proper hierarchy (large icon tile, prominent
-// title, full description, "Open Guide" CTA with arrow). Each card
-// feels like a finished page section, not a thumbnail.
-function ResourcesPage({t}){const th=useTh();const guides=[
-  {title:t.guideCreditTitle||"Understanding Your Credit Score",desc:t.guideCreditDesc||"How credit scores are calculated and actionable strategies to improve yours.",icon:"📊",accent:"#3B82F6",url:"https://www.experian.com/blogs/ask-experian/credit-education/score-basics/understanding-credit-scores/"},
-  {title:t.guideDebtTitle||"Debt Payoff Strategies",desc:t.guideDebtDesc||"Avalanche vs. Snowball — which method is right for your situation.",icon:"📉",accent:"#EF4444",url:"https://www.nerdwallet.com/article/finance/debt-snowball-vs-avalanche"},
-  {title:t.guideEFTitle||"Building an Emergency Fund",desc:t.guideEFDesc||"Why 3-6 months of expenses matters and how to build it fast.",icon:"🛡️",accent:"#10B981",url:"https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"},
-  {title:t.guideRetTitle||"Retirement Savings 101",desc:t.guideRetDesc||"Roth IRA, 401k, contribution strategies, and employer matching.",icon:"🎯",accent:"#8B5CF6",url:"https://www.investor.gov/additional-resources/retirement-toolkit"},
-  {title:t.guideHomeTitle||"First-Time Homebuyer Guide",desc:t.guideHomeDesc||"Pre-approval, down payment, DTI requirements, and timing.",icon:"🏠",accent:"#F59E0B",url:"https://www.consumerfinance.gov/owning-a-home/"},
-  {title:t.guideInvestTitle||"Investment Allocation Basics",desc:t.guideInvestDesc||"Risk tolerance, time horizon, and diversification principles.",icon:"📈",accent:"#06B6D4",url:"https://www.investor.gov/introduction-investing/getting-started/asset-allocation"},
-];
-return<div style={{padding:24,maxWidth:1280,margin:"0 auto"}}>
-  <p style={{fontSize:12,color:th.dim,marginBottom:20,marginTop:0,letterSpacing:"0.02em",lineHeight:1.5}}>{t.resourcesDesc}</p>
-  {/* v0.59.1 — Mauricio: "resources a lot bigger" → reduce. Card padding
-     22→14/16, gap 14→10, icon 52→38, title 15→13, desc 12.5→11.5, divider
-     line removed. Grid min 340→260 so 4-5 per row instead of 3, less air. */}
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
-    {guides.map(g=>
-      <a key={g.title} href={g.url} target="_blank" rel="noopener noreferrer" style={{...mCARD(th),padding:"14px 16px 12px",display:"flex",flexDirection:"column",gap:10,textDecoration:"none",cursor:"pointer",transition:"transform 200ms ease,border-color 200ms ease,box-shadow 200ms ease",color:"inherit"}}
-         onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${g.accent}66`;e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 14px ${g.accent}1A`;}}
-         onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:18,flexShrink:0,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg,${g.accent}22,${g.accent}0A)`,border:`1px solid ${g.accent}33`,borderRadius:8}}>{g.icon}</div>
-          <div style={{minWidth:0,flex:1}}>
-            <div style={{fontWeight:700,fontSize:13,color:th.text,lineHeight:1.25,letterSpacing:"-0.005em"}}>{g.title}</div>
-          </div>
-        </div>
-        <div style={{fontSize:11.5,color:th.muted,lineHeight:1.5,flex:1}}>{g.desc}</div>
-        {/* v0.59.1 — translation t.openGuide already includes "→"; removed
-           the extra arrow span that was producing "OPEN GUIDE → →". */}
-        <div style={{display:"flex",alignItems:"center",gap:5,marginTop:2}}>
-          <span style={{fontSize:10,color:g.accent,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.openGuide||"Open Guide →"}</span>
-        </div>
-      </a>
-    )}
-  </div>
-</div>;}
+function ResourcesPage({t}){const th=useTh();const guides=[{title:t.guideCreditTitle||"Understanding Your Credit Score",desc:t.guideCreditDesc||"How credit scores are calculated and actionable strategies to improve yours.",icon:"📊",url:"https://www.experian.com/blogs/ask-experian/credit-education/score-basics/understanding-credit-scores/"},{title:t.guideDebtTitle||"Debt Payoff Strategies",desc:t.guideDebtDesc||"Avalanche vs. Snowball — which method is right for your situation.",icon:"📉",url:"https://www.nerdwallet.com/article/finance/debt-snowball-vs-avalanche"},{title:t.guideEFTitle||"Building an Emergency Fund",desc:t.guideEFDesc||"Why 3-6 months of expenses matters and how to build it fast.",icon:"🛡️",url:"https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"},{title:t.guideRetTitle||"Retirement Savings 101",desc:t.guideRetDesc||"Roth IRA, 401k, contribution strategies, and employer matching.",icon:"🎯",url:"https://www.investor.gov/additional-resources/retirement-toolkit"},{title:t.guideHomeTitle||"First-Time Homebuyer Guide",desc:t.guideHomeDesc||"Pre-approval, down payment, DTI requirements, and timing.",icon:"🏠",url:"https://www.consumerfinance.gov/owning-a-home/"},{title:t.guideInvestTitle||"Investment Allocation Basics",desc:t.guideInvestDesc||"Risk tolerance, time horizon, and diversification principles.",icon:"📈",url:"https://www.investor.gov/introduction-investing/getting-started/asset-allocation"}];return<div style={{padding:24}}>{/* v0.24.0 — page title removed (TopBar shows it). */}<p style={{fontSize:11,color:th.dim,marginBottom:16,marginTop:0}}>{t.resourcesDesc}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>{guides.map(g=><div key={g.title} style={{...mCARD(th),padding:"12px 14px",display:"flex",flexDirection:"column",gap:6}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:22,flexShrink:0,width:34}}>{g.icon}</div><div style={{fontWeight:700,fontSize:12.5,color:th.text,lineHeight:1.3}}>{g.title}</div></div><div style={{fontSize:11,color:th.muted,lineHeight:1.5}}>{g.desc}</div><a href={g.url} target="_blank" rel="noopener noreferrer" style={{fontSize:10.5,padding:"3px 10px",borderRadius:5,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",textDecoration:"none",fontWeight:600,alignSelf:"flex-start",marginTop:4}}>{t.openGuide}</a></div>)}</div></div>;}
 function ServiceRequestModal({svc,lang,t,onClose}){const th=useTh();const[f,setF]=useState({name:"",email:"",phone:"",message:""});const[sent,setSent]=useState(false);const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));const send=()=>{const sub=encodeURIComponent(`Service Request: ${svc[lang]||svc.en}`);const body=encodeURIComponent(`Name: ${f.name}\nEmail: ${f.email}\nPhone: ${f.phone}\n\n${f.message||"Interested."}`);window.location.href=`mailto:mauricio@goldenanchor.life?subject=${sub}&body=${body}`;setSent(true);setTimeout(onClose,2000);};const INP=mINP(th);return<Modal title={"📋 "+t.requestServiceTitle} onClose={onClose}>{sent?<div style={{textAlign:"center",padding:20,color:th.pos,fontSize:14,fontWeight:700}}>✅ {t.requestSent}</div>:<><div style={{...mCARD(th),padding:12,marginBottom:16,display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:24}}>{svc.icon}</span><div><div style={{fontWeight:700,color:th.text}}>{svc[lang]||svc.en}</div><div style={{fontSize:11,color:th.accent}}>{svc.price}</div></div></div><Field label={t.yourName}><input style={INP} value={f.name} onChange={u("name")}/></Field><Row2><Field label={t.yourEmail}><input style={INP} value={f.email} onChange={u("email")}/></Field><Field label={t.yourPhone}><input style={INP} value={f.phone} onChange={u("phone")}/></Field></Row2><Field label={t.message}><textarea style={{...INP,height:80,resize:"vertical"}} value={f.message} onChange={u("message")} placeholder={t?.tellUsNeedsPh||"Tell us about your needs…"}/></Field><SaveBar onSave={send} onCancel={onClose} t={{...t,save:t.sendRequest}}/></>}</Modal>;}
 // v0.59 — About / Services rebuilt from Playwright screenshot. Services
 // grid had per-card height drift because some cards rendered 1 button
@@ -6057,7 +6013,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0591-sparkline-fix-resources-calcs-shrink";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0592-revert-calcs-resources-bigger-kpi-spark";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
