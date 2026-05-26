@@ -1045,7 +1045,14 @@ function Donut({data,size=150,innerRatio=0.65,paddingAngle=1.5,centerLabel,cente
 /* ── v0.35.0 — Phase 5 Charts: Waterfall (v0.37 tween + drop shadow) ──────
    Pure-SVG cash-flow waterfall — segments stacked Income → −Bills → −Debt →
    +Save → Net. Bar heights tween between states. */
-function Waterfall({segments,height=180,width=600,bg}){
+// v0.58 — per design-system/charts/MASTER.md. Critical bug from Mauricio
+// Image 2: SVG had `preserveAspectRatio="none"` which non-uniformly stretched
+// the text (huge tall+narrow letters in Cash Flow Statement). Removed.
+// Also: default height 180→160 (less air), bar cap 36→28 (less chunky), gap
+// 10→18 (more breathing room between bars). Labels switched from inherited
+// JetBrains Mono to Plus Jakarta Sans uppercase; only the value text stays
+// JetBrains Mono.
+function Waterfall({segments,height=160,width=600,bg}){
   const th=useTh();
   bg=bg||th.card||"transparent";
   const segs=Array.isArray(segments)?segments.filter(s=>s):[];
@@ -1066,16 +1073,16 @@ function Waterfall({segments,height=180,width=600,bg}){
   const minV=Math.min(0,...items.map(it=>Math.min(it.start,it.end)));
   const maxV=Math.max(...items.map(it=>Math.max(it.start,it.end)),0);
   const range=Math.max(1,maxV-minV);
-  const padT=16,padB=36,padL=12,padR=12;
+  const padT=14,padB=34,padL=12,padR=12;
   const innerW=width-padL-padR,innerH=height-padT-padB;
-  const barW=Math.min(36,(innerW-(items.length-1)*10)/items.length);
+  const gap=18;
+  const barW=Math.min(28,(innerW-(items.length-1)*gap)/items.length);
   const yAt=v=>padT+innerH*(1-(v-minV)/range);
-  const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*10)/2+i*(barW+10);
+  const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*gap)/2+i*(barW+gap);
   const barColor=it=>it.isTotal?GOLD:(it.delta>=0?(it.color||GOLD):(it.color||"#ED7D31"));
   return<div style={{width:"100%",overflow:"hidden"}}>
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Cash flow waterfall">
       <defs>
-        {/* v0.42 — vertical gradient per bar (light at top → full at bottom for positives; mirrored for negatives) */}
         {items.map((it,i)=>{const c=barColor(it);const ascending=it.delta>=0||it.isTotal;return<linearGradient key={i} id={`${baseId}-g${i}`} x1="0" y1={ascending?"0":"1"} x2="0" y2={ascending?"1":"0"}>
           <stop offset="0%" stopColor={c} stopOpacity="0.55"/>
           <stop offset="100%" stopColor={c} stopOpacity="0.95"/>
@@ -1088,9 +1095,9 @@ function Waterfall({segments,height=180,width=600,bg}){
         const y=it.isTotal?yAt(Math.max(it.end,0)):Math.min(yAt(it.start),yAt(it.end));
         const h=it.isTotal?Math.abs(yAt(it.end)-yAt(0)):Math.abs(yAt(it.end)-yAt(it.start));
         return<g key={i}>
-          <rect x={xAt(i)} y={y} width={barW} height={Math.max(1,h)} fill={`url(#${baseId}-g${i})`} stroke={c} strokeOpacity="0.25" strokeWidth="0.5" rx="3"/>
-          <text x={xAt(i)+barW/2} y={height-22} textAnchor="middle" fontSize="9" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{it.label||""}</text>
-          <text x={xAt(i)+barW/2} y={height-9} textAnchor="middle" fontSize="9" fill={th.dim} style={{fontVariantNumeric:"tabular-nums"}}>{(it.delta>=0?"+":"")+(it.delta>=1000||it.delta<=-1000?Math.round(it.delta/1000)+"K":Math.round(it.delta))}</text>
+          <rect x={xAt(i)} y={y} width={barW} height={Math.max(1,h)} fill={`url(#${baseId}-g${i})`} stroke={c} strokeOpacity="0.25" strokeWidth="0.5" rx="2"/>
+          <text x={xAt(i)+barW/2} y={height-20} textAnchor="middle" fontSize="9" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{it.label||""}</text>
+          <text x={xAt(i)+barW/2} y={height-8} textAnchor="middle" fontSize="10" fontWeight="500" fill={th.text} style={{fontVariantNumeric:"tabular-nums",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>{(it.delta>=0?"+":"")+(it.delta>=1000||it.delta<=-1000?Math.round(it.delta/1000)+"K":Math.round(it.delta))}</text>
         </g>;
       })}
     </svg>
@@ -1533,12 +1540,17 @@ function Treemap({data,height=260,width=520,placeholder,valuePrefix="$"}){
    270°-arc gauge for ratio/percentage with optional target marker. Used for
    DSR, savings rate, EF months, DTI. Thin stroke (linecap=round), color
    shifts good/warn/bad based on threshold. Value tweens. */
+// v0.58 r2 — per real Playwright screenshot of Amanda's Monthly tab.
+// Reverted size default 120→140 (the r1 shrink made gauges look tiny in
+// cards already sized for the radar). Track ring opacity bumped 0.45→0.75
+// so DSR with value≈0 (no fill arc) still has a visibly defined ring on
+// dark navy. Internal padding r=size/2-14 (was -16 in r1, -10 originally).
 function RadialGauge({value,max=100,target,size=140,label,subLabel,color,direction="higher",thresholds,placeholder,fmt:fmtFn}){
   const th=useTh();
   const tw=useTweenedData({v:+value||0,m:+max||100},700);
   const v=tw.v,mx=tw.m||1;
   const pct=Math.max(0,Math.min(1,v/mx));
-  const r=size/2-10,cx=size/2,cy=size/2;
+  const r=size/2-14,cx=size/2,cy=size/2;
   const startA=Math.PI*0.75,endA=Math.PI*2.25;// 270° sweep from 7:30 to 4:30 (clockwise)
   const arcPath=(a0,a1)=>{
     const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0);
@@ -1558,25 +1570,23 @@ function RadialGauge({value,max=100,target,size=140,label,subLabel,color,directi
   const strokeColor=auto||GOLD;
   if(!value&&value!==0)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"No data"}</div>;
   const gid=useSvgId("rg");
-  // Gradient stop angles for the arc — gradient runs from start of arc (light) toward fill end (full color)
   return<div style={{position:"relative",width:size,height:size}}>
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible"}}>
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"hidden"}} role="img" aria-label={`${label||"Gauge"}: ${fmtFn?fmtFn(v):Math.round(v)}`}>
       <defs>
-        {/* v0.42 — arc gradient: lighter at start, deeper at fill end */}
         <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={strokeColor} stopOpacity="0.55"/>
           <stop offset="55%" stopColor={strokeColor} stopOpacity="0.85"/>
           <stop offset="100%" stopColor={strokeColor} stopOpacity="1"/>
         </linearGradient>
       </defs>
-      <path d={arcPath(startA,endA)} fill="none" stroke={th.cardBorder} strokeWidth="4" strokeLinecap="round" strokeOpacity="0.4"/>
-      <path d={arcPath(startA,fillA)} fill="none" stroke={`url(#${gid})`} strokeWidth="5" strokeLinecap="round"/>
-      {tgt!=null&&(()=>{const a=startA+(endA-startA)*tgt;return<line x1={cx+(r-8)*Math.cos(a)} y1={cy+(r-8)*Math.sin(a)} x2={cx+(r+8)*Math.cos(a)} y2={cy+(r+8)*Math.sin(a)} stroke={th.text} strokeWidth="1.25" strokeOpacity="0.5"/>;})()}
+      <path d={arcPath(startA,endA)} fill="none" stroke={th.cardBorder} strokeWidth="7" strokeLinecap="round" strokeOpacity="0.75"/>
+      <path d={arcPath(startA,fillA)} fill="none" stroke={`url(#${gid})`} strokeWidth="8" strokeLinecap="round"/>
+      {tgt!=null&&(()=>{const a=startA+(endA-startA)*tgt;return<line x1={cx+(r-6)*Math.cos(a)} y1={cy+(r-6)*Math.sin(a)} x2={cx+(r+6)*Math.cos(a)} y2={cy+(r+6)*Math.sin(a)} stroke={th.text} strokeWidth="1.25" strokeOpacity="0.5"/>;})()}
     </svg>
     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",pointerEvents:"none",textAlign:"center"}}>
-      {label&&<div style={{fontSize:9,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600,marginBottom:2}}>{label}</div>}
-      <div style={{fontSize:size<=120?17:20,color:strokeColor,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",lineHeight:1,fontVariantNumeric:"tabular-nums"}}>{fmtFn?fmtFn(v):Math.round(v*10)/10}</div>
-      {subLabel&&<div style={{fontSize:9,color:th.muted,marginTop:3,maxWidth:size-30,lineHeight:1.3}}>{subLabel}</div>}
+      {label&&<div style={{fontSize:8,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600,marginBottom:2,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{label}</div>}
+      <div style={{fontSize:size<=120?16:19,color:strokeColor,fontWeight:600,fontFamily:"'JetBrains Mono',ui-monospace,monospace",lineHeight:1,fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em"}}>{fmtFn?fmtFn(v):Math.round(v*10)/10}</div>
+      {subLabel&&<div style={{fontSize:8,color:th.muted,marginTop:3,maxWidth:size-30,lineHeight:1.3,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{subLabel}</div>}
     </div>
   </div>;
 }
@@ -1584,6 +1594,11 @@ function RadialGauge({value,max=100,target,size=140,label,subLabel,color,directi
 /* ── v0.38.0 — Phase 5 Charts: RankedHBars ──────────────────────────────────
    Horizontal bars sorted high→low. Used for debts, bills, income streams.
    Thin (12-16px) bars, label left, value right, monospace value. */
+// v0.58 — per design-system/charts/MASTER.md. Bug from Mauricio Image 3:
+// SVG's outer font-family was JetBrains Mono → labels (asset names) inherited
+// it and looked too thick + wrong typeface. Fix: outer font = Plus Jakarta
+// Sans (proper for labels); values explicitly override to JetBrains Mono.
+// Also smaller label font (11→10) for a thinner, more modern read.
 function RankedHBars({data,maxBars=10,barH=14,gap=8,width=460,labelW=140,valueW=64,placeholder}){
   const th=useTh();
   const items=(Array.isArray(data)?data:[]).filter(d=>d&&(+d.value||0)>0).slice().sort((a,b)=>(+b.value||0)-(+a.value||0)).slice(0,maxBars);
@@ -1595,9 +1610,8 @@ function RankedHBars({data,maxBars=10,barH=14,gap=8,width=460,labelW=140,valueW=
   const totalH=items.length*(barH+gap)-gap;
   const fmtV=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
   return<div style={{width:"100%",overflow:"hidden"}}>
-    <svg viewBox={`0 0 ${width} ${totalH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+    <svg viewBox={`0 0 ${width} ${totalH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Ranked horizontal bars">
       <defs>
-        {/* v0.42 — horizontal gradient per bar (left light → right vivid) */}
         {items.map((d,i)=>{const color=d.color||GOLD;return<linearGradient key={i} id={`${gid}-${i}`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor={color} stopOpacity="0.55"/>
           <stop offset="100%" stopColor={color} stopOpacity="0.95"/>
@@ -1608,10 +1622,10 @@ function RankedHBars({data,maxBars=10,barH=14,gap=8,width=460,labelW=140,valueW=
         const w=Math.max(2,(twVals[i]||0)/maxV*innerW);
         const color=d.color||GOLD;
         return<g key={i}>
-          <text x={labelW-8} y={y+barH-2} textAnchor="end" fontSize="11" fill={th.text} fontWeight="500" style={{letterSpacing:"0.01em"}}>{(d.label||"").slice(0,18)}</text>
-          <rect x={labelW} y={y+barH*0.18} width={innerW} height={barH*0.64} fill={th.cardBorder} fillOpacity="0.28" rx="3"/>
-          <rect x={labelW} y={y+barH*0.18} width={w} height={barH*0.64} fill={`url(#${gid}-${i})`} rx="3"/>
-          <text x={labelW+innerW+8} y={y+barH-2} fontSize="11" fill={color} fontWeight="700" style={{fontVariantNumeric:"tabular-nums"}}>${fmtV(twVals[i]||0)}</text>
+          <text x={labelW-8} y={y+barH-3} textAnchor="end" fontSize="10" fill={th.text} fontWeight="500" style={{letterSpacing:"0.01em",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{(d.label||"").slice(0,18)}</text>
+          <rect x={labelW} y={y+barH*0.25} width={innerW} height={barH*0.5} fill={th.cardBorder} fillOpacity="0.28" rx="2"/>
+          <rect x={labelW} y={y+barH*0.25} width={w} height={barH*0.5} fill={`url(#${gid}-${i})`} rx="2"/>
+          <text x={labelW+innerW+8} y={y+barH-3} fontSize="10" fill={color} fontWeight="600" style={{fontVariantNumeric:"tabular-nums",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>${fmtV(twVals[i]||0)}</text>
         </g>;
       })}
     </svg>
@@ -1682,13 +1696,16 @@ function Sparkline({data,width=80,height=24,color,fill=true,strokeWidth=1.25}){
 /* ── v0.38.0 — Phase 5 Charts: Radar5 ───────────────────────────────────────
    5-axis radar polygon. Used for Financial Health Score across DSR, Savings
    Rate, EF Months, Debt-to-Asset, Cash Flow Health. Each value 0-1. */
+// v0.58 r2 — bumped inner padding 30→36 (more room for axis labels) and
+// pushed label position 1.18*r → 1.28*r so labels no longer crowd the
+// polygon edge (Mauricio Image: DSR/SAVINGS/EF/D-A/CASH labels were overlapping the chart at size=140).
 function Radar5({axes,values,target,size=240,color,placeholder}){
   const th=useTh();
   const safeAxes=Array.isArray(axes)?axes.slice(0,5):[];
   const safeValues=Array.isArray(values)?values.slice(0,safeAxes.length).map(v=>Math.max(0,Math.min(1,+v||0))):[];
   const tw=useTweenedData(safeValues,800);
   if(safeAxes.length<3)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{placeholder||"Need at least 3 axes"}</div>;
-  const cx=size/2,cy=size/2,r=size/2-30;
+  const cx=size/2,cy=size/2,r=size/2-36;
   const angleAt=i=>(-Math.PI/2)+(2*Math.PI*i/safeAxes.length);
   const pt=(val,i)=>{const a=angleAt(i);return{x:cx+r*val*Math.cos(a),y:cy+r*val*Math.sin(a)};};
   const ringLvls=[0.25,0.5,0.75,1];
@@ -1696,7 +1713,7 @@ function Radar5({axes,values,target,size=240,color,placeholder}){
   const c=color||GOLD;
   const targetPath=target?safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x} ${p.y}`;}).join(" L"):null;
   const gid=useSvgId("rd");
-  return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+  return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Radar chart">
     <defs>
       {/* v0.42 — radial gradient on polygon fill: dense at center → fading toward edge */}
       <radialGradient id={gid} cx="50%" cy="50%" r="50%">
@@ -1709,7 +1726,7 @@ function Radar5({axes,values,target,size=240,color,placeholder}){
     {targetPath&&<polygon points={safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x},${p.y}`;}).join(" ")} fill="none" stroke={th.text} strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3"/>}
     <polygon points={tw.map((v,i)=>{const p=pt(v,i);return`${p.x},${p.y}`;}).join(" ")} fill={`url(#${gid})`} stroke={c} strokeOpacity="0.85" strokeWidth="1.25" strokeLinejoin="round"/>
     {tw.map((v,i)=>{const p=pt(v,i);return<g key={i}><circle cx={p.x} cy={p.y} r="4" fill={c} opacity="0.25"/><circle cx={p.x} cy={p.y} r="2" fill={c}/></g>;})}
-    {safeAxes.map((ax,i)=>{const p=pt(1.18,i);const isRight=p.x>cx+5,isLeft=p.x<cx-5;const anchor=isRight?"start":isLeft?"end":"middle";return<text key={i} x={p.x} y={p.y+3} textAnchor={anchor} fontSize="10" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{ax}</text>;})}
+    {safeAxes.map((ax,i)=>{const p=pt(1.28,i);const isRight=p.x>cx+5,isLeft=p.x<cx-5;const anchor=isRight?"start":isLeft?"end":"middle";return<text key={i} x={p.x} y={p.y+3} textAnchor={anchor} fontSize="9" fontWeight="600" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{ax}</text>;})}
   </svg>;
 }
 
@@ -2379,26 +2396,27 @@ return<div>{hasP2&&<div style={{display:"flex",gap:6,marginBottom:14}}>{[["both"
     Math.max(0,Math.min(1,1-dta/0.8)),
     Math.max(0,Math.min(1,inc>0?cash/inc/0.1:0)),
   ];
-  // v0.56 — health row tightened. Was 2-up with gauges at 108 + radar at 200,
-  // both surrounded by huge blank space. Now 4-up: 3 gauges (84) inline + radar
-  // (160) in the rightmost cell. Cards lose the chunky 14px padding.
-  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginBottom:14}}>
-    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <RadialGauge value={dsr*100} max={60} target={36} size={84} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
+  // v0.58 r2 — health row sized from real screenshot. The radar at 140 was
+  // dominating the grid auto-row height (~160px) while gauges at 84 floated
+  // tiny in the middle. Now all 4 charts at 130 — gauges visually equal to
+  // radar, cards wrap content cleanly. Card padding 10/8 → 12/10 for breath.
+  return<div data-ga-grid="health-row" style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginBottom:14,alignItems:"stretch"}}>
+    <div style={{...mCARD(th),padding:"12px 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={dsr*100} max={60} target={36} size={130} label={"DSR"} subLabel={t.dsrSubLbl||"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
     </div>
-    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <RadialGauge value={sr*100} max={40} target={20} size={84} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
+    <div style={{...mCARD(th),padding:"12px 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={sr*100} max={40} target={20} size={130} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
     </div>
-    <div style={{...mCARD(th),padding:"10px 8px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <RadialGauge value={ef} max={12} target={3} size={84} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
+    <div style={{...mCARD(th),padding:"12px 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <RadialGauge value={ef} max={12} target={3} size={130} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
     </div>
-    <div style={{...mCARD(th),padding:"8px 10px 4px",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:2}}>
+    <div style={{...mCARD(th),padding:"10px 10px 8px",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:4}}>
       <div style={{fontSize:9,fontWeight:700,color:th.dim,letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.healthScoreHdr||"Health Score"}</div>
-      <Radar5 axes={["DSR",t.srAxisShort||"Sav",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"CF"]} values={radarVals} target={0.8} size={140}/>
+      <Radar5 axes={["DSR",t.srAxisShort||"Sav",t.efAxisShort||"EF",t.dtaAxisShort||"D/A",t.cfAxisShort||"CF"]} values={radarVals} target={0.8} size={130}/>
     </div>
   </div>;
 })()}
-<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}><div style={{...mCARD(th),padding:12}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>📊 WHERE INCOME GOES</div><ResponsiveContainer width="100%" height={130} style={{outline:"none"}}><PieChart><Pie data={pie} cx="50%" cy="50%" innerRadius={36} outerRadius={58} paddingAngle={2} dataKey="value">{pie.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}<ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/></Pie></PieChart></ResponsiveContainer><div style={{display:"flex",justifyContent:"center",gap:8,flexWrap:"wrap"}}>{pie.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{color:th.muted}}>{d.name}: <span style={{color:d.color,fontWeight:700}}>{fmt(d.value)}</span></span></div>)}</div></div><div style={{...mCARD(th),padding:12}}>
+<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16,alignItems:"stretch"}}><div style={{...mCARD(th),padding:12,display:"flex",flexDirection:"column"}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.04em",textTransform:"uppercase"}}>📊 Where Income Goes</div><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}><ResponsiveContainer width="100%" height={170} style={{outline:"none"}}><PieChart><Pie data={pie} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={2} dataKey="value">{pie.map((e,i)=><Cell key={i} fill={e.color} stroke="none"/>)}<ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/></Pie></PieChart></ResponsiveContainer></div><div style={{display:"flex",justifyContent:"center",gap:10,flexWrap:"wrap",marginTop:8}}>{pie.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:5,fontSize:10.5}}><div style={{width:8,height:8,borderRadius:99,background:d.color}}/><span style={{color:th.muted}}>{d.name}: <span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{fmt(d.value)}</span></span></div>)}</div></div><div style={{...mCARD(th),padding:12}}>
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:8,flexWrap:"wrap"}}>
     <div style={{fontSize:11,fontWeight:700,color:th.dim}}>📈 {t.debtTrend}{hasP2&&view!=="both"&&<span style={{fontSize:10,color:th.muted}}> (est.)</span>}</div>
     {/* v0.34.0 — totals moved to a small legend pair next to the title (Phase 5 rule:
@@ -2454,13 +2472,16 @@ function CashFlowStatement({client,t}){const th=useTh();const net=sumN(client.in
      160×640 to 110×500 — was taking half the page. */}
   <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div><div style={{fontSize:11,fontWeight:700,color:th.pos,marginBottom:6}}>📥 {t.inflowsHdr||"INFLOWS"}</div>{client.incomeStreams.map(s=><SRow key={s.id} label={"  "+s.label} value={toM(s.net,s.freq)} indent/>)}<SRow label={t.totalInflowsRow||"Total Inflows"} value={net} color={th.pos} bold/><div style={{fontSize:11,fontWeight:700,color:th.neg,marginBottom:6,marginTop:12}}>📤 {t.outflowsHdr||"OUTFLOWS"}</div>{actB(client.bills).slice(0,5).map(b=><SRow key={b.id} label={"  "+b.name} value={toM(b.cost,b.freq)} indent/>)}{actB(client.bills).length>5&&<div style={{fontSize:10,color:th.dim,paddingLeft:12}}>+{actB(client.bills).length-5} more…</div>}<SRow label={t.totalOutflowsRow||"Total Outflows"} value={bills} color={th.neg} bold/><div style={{fontSize:11,fontWeight:700,color:th.warn,marginBottom:6,marginTop:12}}>💳 {t.debtServiceHdr||"DEBT SERVICE"}</div>{client.cards.filter(c=>c.min>0).map(c=><SRow key={c.id} label={"  "+c.name} value={c.min} indent/>)}<SRow label={t.totalDebtServiceRow||"Total Debt Service"} value={minD} color={th.warn} bold/><SRow label={"⚡ "+(t.operatingCashFlow||"OPERATING CASH FLOW")} value={operCF} color={operCF>=0?th.pos:th.neg} bold line/></div><div><div style={{fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>💹 {t.committedContribHdr||"COMMITTED CONTRIBUTIONS"}</div>{totalSav===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"4px 0"}}>{t.noCommittedAlloc||"No committed allocations. Check boxes in Investment Allocation to activate."}</div>:[["  "+(t.allocRetirement||"🎯 Retirement").replace(/^[^\s]+\s/,""),sav.retirement],["  "+(t.allocStocks||"📈 Stocks").replace(/^[^\s]+\s/,""),sav.stocks],["  "+(t.allocSavings||"🏦 Savings").replace(/^[^\s]+\s/,""),sav.savings],["  "+(t.allocVacation||"✈️ Vacation").replace(/^[^\s]+\s/,""),sav.vacation],["  "+(t.allocRealEstate||"🏠 Real Estate").replace(/^[^\s]+\s/,""),sav.realEstate],["  "+(t.allocOther||"💡 Other").replace(/^[^\s]+\s/,""),sav.other],["  "+(t.allocDebtRepayment||"💳 Debt Repayment").replace(/^[^\s]+\s/,""),sav.debtRepayment]].filter(([,v])=>v>0).map(([l,v])=><SRow key={l} label={l} value={v} indent/>)}<SRow label={t.totalCommittedRow||"Total Committed"} value={totalSav} color="#8B5CF6" bold/><div style={{fontSize:11,fontWeight:700,color:th.blue,marginTop:12,marginBottom:6}}>💰 {t.actualLiquidSavings||"ACTUAL LIQUID SAVINGS"}</div><SRow label={t.checkingPlusSavings||"Checking + Savings"} value={actualLiq} color={th.blue} bold/><SRow label={"💎 "+(t.netCashFlowAfterAlloc||"NET CASH FLOW (after allocations)")} value={netCF} color={netCF>=0?th.pos:th.neg} bold line/><div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>{[{l:t.debtServiceRatio||"Debt Service Ratio",v:(dsr*100).toFixed(1)+"%",c:dsr>0.36?th.neg:dsr>0.2?th.warn:th.pos,bm:"< 36%"},{l:t.savingsRate||"Savings Rate",v:(savRate*100).toFixed(1)+"%",c:savRate>=0.2?th.pos:savRate>=0.1?th.warn:th.neg,bm:"> 20%"},{l:t.annualOperatingCashFlow||"Annual Operating Cash Flow",v:fmt(netCF*12),c:netCF>=0?GOLD:th.neg,bm:""}].map(r=><div key={r.l} style={{...mCARD(th),padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:th.muted}}>{r.l}</div>{r.bm&&<div style={{fontSize:10,color:th.muted,fontWeight:600}}>{t.target||"Target"}: {r.bm}</div>}</div><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}</div></div></div>{net>0&&<div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${th.cardBorder}`}}>
   <div style={{fontSize:10,fontWeight:700,color:GOLD,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>{t.cashFlowWaterfallLbl||"Cash flow walk"}</div>
-  {/* v0.56 — Cash Flow Walk split into 3 compact panels per Mauricio's image 4
-     feedback: small waterfall + breakdown donut + KPI summary. Each fills its
-     third of the row so nothing reads as a giant blank panel. */}
-  <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)",gap:14,alignItems:"center"}}>
-    <div><Waterfall segments={[{label:t.income||"Income",value:net,color:th.pos},{label:t.bills||"Bills",value:-bills,color:th.neg},{label:t.minPay||"Debt Min",value:-minD,color:"#ED7D31"},{label:t.cashFlow||"Net",kind:"total",value:operCF,color:GOLD}]} height={120} width={380}/></div>
+  {/* v0.58 — Per Mauricio Image 2: waterfall was too chunky next to a tiny donut
+     and cramped KPI tiles, with inconsistent fonts. Three columns now equalized
+     (1.1fr / 1fr / 1fr), donut size 110→140, waterfall height 120→140 to match
+     donut visual mass, items stretched (was centered, leaving gaps). Waterfall
+     itself fixed in component (no more `preserveAspectRatio="none"` text
+     distortion + Plus Jakarta Sans labels). */}
+  <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr)",gap:14,alignItems:"stretch"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}><Waterfall segments={[{label:t.income||"Income",value:net,color:th.pos},{label:t.bills||"Bills",value:-bills,color:th.neg},{label:t.minPay||"Debt Min",value:-minD,color:"#ED7D31"},{label:t.cashFlow||"Net",kind:"total",value:operCF,color:GOLD}]} height={140} width={420}/></div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-      <Donut size={110} innerRatio={0.62} paddingAngle={2} data={[{label:t.bills||"Bills",value:bills,color:th.neg},{label:t.minPay||"Debt Min",value:minD,color:"#ED7D31"},{label:t.cashFlow||"Free",value:Math.max(0,operCF),color:GOLD}]} centerLabel={t.totalOutLbl||"Income"} centerValue={"$"+(net>=1000?Math.round(net/1000)+"K":Math.round(net))} centerColor={th.pos}/>
+      <Donut size={140} innerRatio={0.62} paddingAngle={2} data={[{label:t.bills||"Bills",value:bills,color:th.neg},{label:t.minPay||"Debt Min",value:minD,color:"#ED7D31"},{label:t.cashFlow||"Free",value:Math.max(0,operCF),color:GOLD}]} centerLabel={t.totalOutLbl||"Income"} centerValue={"$"+(net>=1000?Math.round(net/1000)+"K":Math.round(net))} centerColor={th.pos}/>
       <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:10.5}}>
         <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:th.neg}}/>{t.bills||"Bills"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:th.neg,fontWeight:700}}>{net>0?Math.round(bills/net*100):0}%</span></span>
         <span style={{display:"inline-flex",alignItems:"center",gap:5,color:th.muted}}><span style={{width:8,height:8,borderRadius:2,background:"#ED7D31"}}/>{t.minPay||"Debt Min"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:"#ED7D31",fontWeight:700}}>{net>0?Math.round(minD/net*100):0}%</span></span>
@@ -2964,7 +2985,7 @@ function ClientDebtCalc({client,scope,t}){
   {sel.length>0&&<div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:14,marginTop:14}}>
     <div style={{...mCARD(th),padding:12}}>
       <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:10}}>📊 {t.debtRankHdr||"Debts by Balance"}</div>
-      <RankedHBars data={sel.map(d=>({label:d.name,value:+d.balance||0,color:d.debtType==="card"?(d.apr>=20?th.neg:d.apr>=10?th.warn:GOLD):(LOAN_META[d.type]?.c||th.blue)}))} width={460} barH={16} gap={6}/>
+      <RankedHBars data={sel.map(d=>({label:d.name,value:+d.balance||0,color:d.debtType==="card"?(d.apr>=20?th.neg:d.apr>=10?th.warn:GOLD):(LOAN_META[d.type]?.c||th.blue)}))} width={460}/>
     </div>
     <div style={{...mCARD(th),padding:12}}>
       <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:10}}>📉 {t.payoffTimelineHdr||"Payoff Timeline"}</div>
@@ -3354,14 +3375,14 @@ function AssetsLiabilitiesTab({client,lang,t}){const th=useTh();const[view,setVi
           <div style={{fontSize:11,fontWeight:700,color:th.pos,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.assetMapHdr||"Asset Breakdown"}</div>
           <div style={{fontSize:11,color:GOLD,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(totA)}</div>
         </div>
-        {aRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noAssetsYet||"No assets yet."}</div>:<RankedHBars data={aRows} maxBars={8} width={460} barH={16} gap={6} labelW={160}/>}
+        {aRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noAssetsYet||"No assets yet."}</div>:<RankedHBars data={aRows} maxBars={8} width={460} labelW={160}/>}
       </div>
       <div style={{...mCARD(th),padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
           <div style={{fontSize:11,fontWeight:700,color:th.neg,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.liabilityMapHdr||"Liability Breakdown"}</div>
           <div style={{fontSize:11,color:th.neg,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(totL)}</div>
         </div>
-        {lRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.debtFree||"Debt-free."}</div>:<RankedHBars data={lRows} maxBars={8} width={460} barH={16} gap={6} labelW={160}/>}
+        {lRows.length===0?<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.debtFree||"Debt-free."}</div>:<RankedHBars data={lRows} maxBars={8} width={460} labelW={160}/>}
       </div>
     </div>;
   })()}
@@ -4889,7 +4910,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       const rhData=active.map(c=>{const nw=totalA(c)-totalL(c);return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),value:Math.max(0,nw)};}).filter(d=>d.value>0).sort((a,b)=>b.value-a.value).slice(0,8).map((d,i)=>({...d,color:palette[i]}));
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🏆 {t.clientsRankedSlot||"Clients · Ranked H-Bars"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsRankedSub||"Top 8 active clients by net worth."}</div></div>
-        {rhData.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<RankedHBars data={rhData} maxBars={8} width={460} barH={18} gap={6}/>}
+        {rhData.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<RankedHBars data={rhData} maxBars={8} width={460}/>}
       </>;
     }},
     practiceHealth:{id:"practiceHealth",label:"🎯 "+(t.practiceHealthHdr||"Practice Health"),render:()=>{
@@ -5969,7 +5990,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0571-restore-gradient-fix-pills-remove-hex";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0580-preview-charts-spec-r2";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
