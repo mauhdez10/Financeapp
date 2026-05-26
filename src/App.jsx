@@ -1312,16 +1312,19 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
   const livePt=isLive?savCoords[savCoords.length-1]:null;
   const debtGradId=useSvgId("sal-dgrad");
   return<div style={{width:"100%",overflow:"hidden"}}>
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:"100%",height:"auto",display:"block",fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace"}}>
+    {/* v0.59 — preserveAspectRatio: none → xMidYMid meet (same text-distortion
+       bug v0.58 fixed on Waterfall — labels were stretching vertically when
+       the container was wide). Area gradients pulled in (0.42→0.25 / 0.22→0.15)
+       for thinner, modern line-chart read per Mauricio's reference image. */}
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Trend line chart">
       <defs>
-        {/* v0.42 — dual area gradients, thinner strokes for a modern line-chart feel */}
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.42"/>
-          <stop offset="60%" stopColor={savingsColor} stopOpacity="0.12"/>
+          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.25"/>
+          <stop offset="60%" stopColor={savingsColor} stopOpacity="0.08"/>
           <stop offset="100%" stopColor={savingsColor} stopOpacity="0"/>
         </linearGradient>
         <linearGradient id={debtGradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={debtColor} stopOpacity="0.22"/>
+          <stop offset="0%" stopColor={debtColor} stopOpacity="0.15"/>
           <stop offset="100%" stopColor={debtColor} stopOpacity="0"/>
         </linearGradient>
         <linearGradient id={`${gradId}-stroke`} x1="0" y1="0" x2="1" y2="0">
@@ -6044,7 +6047,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0590-preview-r1-resources-services-calcs";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0590-preview-r2-smoothareaalign";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
