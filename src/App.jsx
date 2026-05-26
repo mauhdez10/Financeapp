@@ -1676,19 +1676,27 @@ function BulletChart({value,target,max,label,sublabel,color,width=320,height=40}
 
 /* ── v0.38.0 — Phase 5 Charts: Sparkline ────────────────────────────────────
    Tiny minimalist trend line, no axes, optional area fill. For KPI tiles. */
+// v0.59.1 — ROOT FIX for Mauricio's "Sparklines still out of box" complaint.
+// The SVG had style={{width:500, height}} which forced CSS width to 500px
+// regardless of the flex container. In narrower wrappers the SVG overflowed
+// and the endpoint dot bled into the value text. Fix: style.width="100%",
+// preserveAspectRatio="none" so the chart stretches to fill its container.
+// Plus 8px right inset on xAt() so the endpoint dot has clear space before
+// the value column.
 function Sparkline({data,width=80,height=24,color,fill=true,strokeWidth=1.25}){
   const th=useTh();
   const pts=(Array.isArray(data)?data:[]).filter(d=>d!=null).map(d=>+d||0);
   const tw=useTweenedData(pts,600);
   const gid=useSvgId("spk");
-  if(tw.length<2)return<div style={{width,height,display:"flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:9}}>—</div>;
+  if(tw.length<2)return<div style={{width:"100%",height,display:"flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:9}}>—</div>;
   const mn=Math.min(...tw),mx=Math.max(...tw);
   const range=Math.max(1,mx-mn);
-  const xAt=i=>4+(width-8)*(i/(tw.length-1));
+  // 8px right inset (was 4) so endpoint dot doesn't crowd the value column
+  const xAt=i=>4+(width-12)*(i/(tw.length-1));
   const yAt=v=>height-3-(height-6)*((v-mn)/range);
   const ptStr=tw.map((v,i)=>`${xAt(i)} ${yAt(v)}`).join(" L");
   const c=color||GOLD;
-  return<svg viewBox={`0 0 ${width} ${height}`} style={{width,height,display:"block"}}>
+  return<svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{width:"100%",height,display:"block"}}>
     <defs>
       {/* v0.42 — sparkline area gradient: vivid at top → transparent at bottom */}
       <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
@@ -4044,20 +4052,18 @@ const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?in
 
 function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
 if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{calc.label}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}
-// v0.59 — calc tile redesign from real Playwright screenshot (Mauricio
-// Image 4). Previous v0.56 minHeight:130 + ~80px of actual content =
-// ~210px+ visual height after grid auto-row stretch. Each tile read as a
-// huge mostly-empty box. Now: minHeight removed, padding tightened to
-// 14/16, icon 48→40 (still substantial), chevron color rule-cleaned.
-// alignItems:stretch on the grid keeps the row equal-height but the
-// content sets the height — no dead space.
-return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0,letterSpacing:"0.04em"}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,gridAutoRows:"auto"}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"14px 16px",cursor:"pointer",display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:12,transition:"transform 150ms ease,border-color 150ms ease,background 150ms ease"}} onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${th.accent}`;e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.background=th.accent+"08";}} onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.background=th.card;}}>
-  <div style={{fontSize:24,lineHeight:1,flexShrink:0,width:40,height:40,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"14",borderRadius:8}}>{c.label.split(" ")[0]}</div>
+// v0.59.1 — Mauricio: "calculators too" still too big. Final compaction:
+// padding 14/16 → 10/14, icon 40→32, smaller font, tighter line-height,
+// gap 12→8. Goes from "tile that breathes" to "list-style row" per
+// Mauricio's "or just make them like inside clients" feedback. Grid
+// min 260→240 → 5+ cards per row at desktop = no dead space.
+return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:16,marginTop:0,letterSpacing:"0.04em"}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8,gridAutoRows:"auto"}}>{calcs.map(c=><div key={c.id} onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"10px 14px",cursor:"pointer",display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:10,transition:"transform 150ms ease,border-color 150ms ease,background 150ms ease"}} onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${th.accent}`;e.currentTarget.style.background=th.accent+"08";}} onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.background=th.card;}}>
+  <div style={{fontSize:18,lineHeight:1,flexShrink:0,width:32,height:32,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"14",borderRadius:7}}>{c.label.split(" ")[0]}</div>
   <div style={{minWidth:0,flex:1}}>
-    <div style={{fontSize:13,fontWeight:700,color:th.text,lineHeight:1.25,letterSpacing:"-0.005em"}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
-    <div style={{fontSize:10.5,color:th.muted,lineHeight:1.45,marginTop:3,letterSpacing:"0.01em"}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
+    <div style={{fontSize:12.5,fontWeight:700,color:th.text,lineHeight:1.2,letterSpacing:"-0.005em"}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
+    <div style={{fontSize:10,color:th.muted,lineHeight:1.4,marginTop:1,letterSpacing:"0.01em"}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
   </div>
-  <span style={{color:th.accent,fontSize:16,opacity:0.55,flexShrink:0,fontWeight:300}}>›</span>
+  <span style={{color:th.accent,fontSize:14,opacity:0.55,flexShrink:0,fontWeight:300}}>›</span>
 </div>)}</div></div>;}
 
 const expBackup=(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();};
@@ -5497,21 +5503,25 @@ function ResourcesPage({t}){const th=useTh();const guides=[
 ];
 return<div style={{padding:24,maxWidth:1280,margin:"0 auto"}}>
   <p style={{fontSize:12,color:th.dim,marginBottom:20,marginTop:0,letterSpacing:"0.02em",lineHeight:1.5}}>{t.resourcesDesc}</p>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:16}}>
+  {/* v0.59.1 — Mauricio: "resources a lot bigger" → reduce. Card padding
+     22→14/16, gap 14→10, icon 52→38, title 15→13, desc 12.5→11.5, divider
+     line removed. Grid min 340→260 so 4-5 per row instead of 3, less air. */}
+  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
     {guides.map(g=>
-      <a key={g.title} href={g.url} target="_blank" rel="noopener noreferrer" style={{...mCARD(th),padding:"22px 22px 20px",display:"flex",flexDirection:"column",gap:14,textDecoration:"none",cursor:"pointer",transition:"transform 200ms ease,border-color 200ms ease,box-shadow 200ms ease",color:"inherit"}}
-         onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${g.accent}66`;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${g.accent}1F`;}}
+      <a key={g.title} href={g.url} target="_blank" rel="noopener noreferrer" style={{...mCARD(th),padding:"14px 16px 12px",display:"flex",flexDirection:"column",gap:10,textDecoration:"none",cursor:"pointer",transition:"transform 200ms ease,border-color 200ms ease,box-shadow 200ms ease",color:"inherit"}}
+         onMouseEnter={e=>{e.currentTarget.style.border=`1px solid ${g.accent}66`;e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 14px ${g.accent}1A`;}}
          onMouseLeave={e=>{e.currentTarget.style.border=`1px solid ${th.cardBorder}`;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
-        <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
-          <div style={{fontSize:28,flexShrink:0,width:52,height:52,display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg,${g.accent}22,${g.accent}0A)`,border:`1px solid ${g.accent}33`,borderRadius:12}}>{g.icon}</div>
-          <div style={{minWidth:0,flex:1,paddingTop:2}}>
-            <div style={{fontWeight:700,fontSize:15,color:th.text,lineHeight:1.3,letterSpacing:"-0.01em"}}>{g.title}</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{fontSize:18,flexShrink:0,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg,${g.accent}22,${g.accent}0A)`,border:`1px solid ${g.accent}33`,borderRadius:8}}>{g.icon}</div>
+          <div style={{minWidth:0,flex:1}}>
+            <div style={{fontWeight:700,fontSize:13,color:th.text,lineHeight:1.25,letterSpacing:"-0.005em"}}>{g.title}</div>
           </div>
         </div>
-        <div style={{fontSize:12.5,color:th.muted,lineHeight:1.6,flex:1}}>{g.desc}</div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:6,borderTop:`1px solid ${th.cardBorder}80`}}>
-          <span style={{fontSize:11,color:g.accent,fontWeight:700,letterSpacing:"0.04em",textTransform:"uppercase"}}>{t.openGuide||"Open guide"}</span>
-          <span style={{color:g.accent,fontSize:14,fontWeight:600}}>→</span>
+        <div style={{fontSize:11.5,color:th.muted,lineHeight:1.5,flex:1}}>{g.desc}</div>
+        {/* v0.59.1 — translation t.openGuide already includes "→"; removed
+           the extra arrow span that was producing "OPEN GUIDE → →". */}
+        <div style={{display:"flex",alignItems:"center",gap:5,marginTop:2}}>
+          <span style={{fontSize:10,color:g.accent,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase"}}>{t.openGuide||"Open Guide →"}</span>
         </div>
       </a>
     )}
@@ -6047,7 +6057,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0590-mega-redesign-pass";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0591-sparkline-fix-resources-calcs-shrink";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
