@@ -5143,18 +5143,21 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       ];
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>✨ {t.kpiSparklinesSlot||"KPI Sparklines"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.kpiSparklinesSub||"At-a-glance trend per KPI."}</div></div>
-        {/* v0.56 — sparklines extend to touch the value at the right edge.
-           Was: label (100px) | sparkline (260px fixed) | value (62px). Big
-           gap between sparkline end and value, made the sparkline look
-           detached. Now: label (90px) | sparkline (flex:1 fills space) |
-           value tight to the curve end. Per Mauricio's image. */}
+        {/* v0.58.1 — KPI Sparklines bug from Mauricio: sparkline curve + area fill
+           collided with the value text on the right ($237K, $12K, etc.) and bled
+           past the card's right padding. v0.56 set the row gap to 4px; the
+           sparkline's area-fill gradient + 1.5px stroke + last data point all
+           landed under the value glyphs. Fix: row gap 4→14, sparkline wrapper
+           gains paddingRight:12 so the curve ends well before the value column,
+           value column minWidth 54→68 for breathing room. Stroke 1.5→1.25 per
+           charts MASTER.md spec (thin lines). */}
         <div style={{display:"flex",flexDirection:"column",gap:10,padding:"4px 6px 0",flex:1,justifyContent:"center"}}>
-          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,minHeight:52}}>
+          {rows.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:14,fontSize:12,minHeight:52}}>
             <span style={{color:th.muted,flex:"0 0 88px",fontWeight:600}}>{r.l}</span>
-            <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center"}}>
-              <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={500} height={44} strokeWidth={1.5}/></div>
+            <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",paddingRight:12}}>
+              <div style={{flex:1,minWidth:0}}><Sparkline data={r.d} color={r.c} width={500} height={44} strokeWidth={1.25} fill={false}/></div>
             </div>
-            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,minWidth:54,textAlign:"right",paddingLeft:4}}>{r.v}</span>
+            <span style={{color:r.c,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontWeight:700,minWidth:68,textAlign:"right"}}>{r.v}</span>
           </div>)}
         </div>
       </>;
@@ -5990,7 +5993,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-25-v0580-preview-charts-spec-r2";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-05-26-v0581-kpi-sparklines-spacing";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
