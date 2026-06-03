@@ -111,8 +111,8 @@ and email-PDF palette parity.
 
 ### First moves in a new session
 
-1. `cd C:\Users\mauhd\financeapp-deploy && git pull origin main && git log --oneline -5`
-2. Open `C:\Users\mauhd\golden-anchor\CLAUDE.md` (this file)
+1. `cd C:\Users\mauhd\Projects\financeapp-deploy && git pull origin main && git log --oneline -5`
+2. Open `C:\Users\mauhd\Projects\golden-anchor\CLAUDE.md` (this file)
 3. Confirm current build marker: `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx`
 4. Ask Mauricio: which pending item to tackle, or wait for new bugs from his testing.
 
@@ -157,14 +157,14 @@ Find it fast: `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx`. As of this writing t
 
 ## The working-copy / deploy-clone split
 
-Mauricio works in **`C:\Users\mauhd\golden-anchor`** — this is NOT a git repo, it's a local working copy with extras (`ui_kits/`, `preview/`, `HANDOFF.md`, etc.) that don't belong in production.
+Mauricio works in **`C:\Users\mauhd\Projects\golden-anchor`** — this is NOT a git repo, it's a local working copy with extras (`ui_kits/`, `preview/`, `HANDOFF.md`, etc.) that don't belong in production.
 
-I push from **`C:\Users\mauhd\financeapp-deploy`** — a real `git clone` of `mauhdez10/Financeapp`. After making edits in `golden-anchor/`:
+I push from **`C:\Users\mauhd\Projects\financeapp-deploy`** — a real `git clone` of `mauhdez10/Financeapp`. After making edits in `golden-anchor/`:
 
 ```bash
-cp /c/Users/mauhd/golden-anchor/src/App.jsx /c/Users/mauhd/financeapp-deploy/src/App.jsx
+cp /c/Users/mauhd/Projects/golden-anchor/src/App.jsx /c/Users/mauhd/Projects/financeapp-deploy/src/App.jsx
 # any other changed files...
-cd /c/Users/mauhd/financeapp-deploy
+cd /c/Users/mauhd/Projects/financeapp-deploy
 git pull origin main  # ALWAYS pull first — Mauricio sometimes works on the side
 git add <files>
 git commit -m "..."
@@ -177,8 +177,8 @@ Vercel auto-deploys on push (~30s).
 
 **Sync working copy after pulling:**
 ```bash
-cp /c/Users/mauhd/financeapp-deploy/src/App.jsx /c/Users/mauhd/golden-anchor/src/App.jsx
-cp /c/Users/mauhd/financeapp-deploy/CHANGELOG.md /c/Users/mauhd/golden-anchor/CHANGELOG.md
+cp /c/Users/mauhd/Projects/financeapp-deploy/src/App.jsx /c/Users/mauhd/Projects/golden-anchor/src/App.jsx
+cp /c/Users/mauhd/Projects/financeapp-deploy/CHANGELOG.md /c/Users/mauhd/Projects/golden-anchor/CHANGELOG.md
 ```
 
 ---

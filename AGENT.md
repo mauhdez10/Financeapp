@@ -778,8 +778,8 @@ Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan
 Cloudflare (not in stack), Windsor.ai (B2B GTM data), `crm-doc-updater` (Velo-only).
 
 ### Two-folder workflow reminder (from CLAUDE.md §"Infrastructure ready")
-- **`C:\Users\mauhd\golden-anchor\`** = working copy. Edit here. Has design-system extras. **Not a git repo.**
-- **`C:\Users\mauhd\financeapp-deploy\`** = the real git clone with the mauhdez10 PAT-in-URL. **Copy changes here and push from here.**
+- **`C:\Users\mauhd\Projects\golden-anchor\`** = working copy. Edit here. Has design-system extras. **Not a git repo.**
+- **`C:\Users\mauhd\Projects\financeapp-deploy\`** = the real git clone with the mauhdez10 PAT-in-URL. **Copy changes here and push from here.**
 - Always `git pull origin main` in `financeapp-deploy/` before editing — parallel chats push too.
 
 ---
