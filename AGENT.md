@@ -746,6 +746,44 @@ Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan
 
 ---
 
+## 10.5. Resources & tooling this project uses
+
+> Every session: prefer these over reinventing. If a task fits one of the **installed** rows, **use it**. If a task clearly needs a row marked _not installed_, surface it before going off-pattern.
+
+### Installed in Claude Code (use freely)
+| Resource | Use for |
+|---|---|
+| **`finance-app-updater` skill** (custom) | **Canonical skill for this project.** Use for every App.jsx / translations.js / engagementLetterTemplate.js change, every version bump, every CHANGELOG/AGENT/WHATS_NEW edit. Same role `crm-doc-updater` plays for Velo. |
+| **Supabase plugin / MCP** | `clients` + `settings` tables, `auth.uid()`-gated RLS, the few `supabase-migrations/` SQLs (e.g. `2026-05-22-intake-status.sql`, `2026-05-23-invite-partner.sql`). Always `list_tables` before schema changes; start debugging from `get_logs`. |
+| **Vercel plugin** | `finance.goldenanchor.life` deploys, build logs, env vars, the `api/*.js` serverless functions (`send-intake-invite`, `resolve-intake-invite`, `send-engagement-copy`, `send-support-email`, `render-report-pdf`). |
+| **GitHub plugin** | Repo is `mauhdez10/Financeapp` (private). PAT is embedded in `origin` URL of `financeapp-deploy/`, so `git push` works silently from that folder — no `gh` flip needed. (Working copy `golden-anchor/` is not a git repo; push from `financeapp-deploy/` per the two-folder workflow in `CLAUDE.md`.) |
+| **Resend plugin** | Already wired (`resend@6.x` in deps). 4 transactional flows live (intake invite, intake-invite resolution, engagement-letter copy, support email, report PDF email). Use the plugin for React Email templates + domain verify + deliverability. |
+| **Playwright plugin** | Project has `tests/`, `playwright.config.ts`, full `test:e2e` / `test:ui` / `test:headed` scripts + screenshots checked in. Use for browser QA instead of manual click-through. |
+| **UI UX Pro Max plugin** | Already used (v0.26.0 was a UI/UX Pro Max audit batch, v0.42-v0.45 chart polish followed its alignment notes, v0.43.0 persisted `design-system/golden-anchor/MASTER.md` via `--persist`). |
+| **Superpowers** | `brainstorming` before any feature; `writing-plans` for multi-step work (chart waves, intake redesign); `verification-before-completion` before bumping the version. |
+| **claude-mem** | Cross-session memory — `mem-search` before re-deriving; `babysit` while waiting on Vercel deploy; `make-plan`/`do` for phased work like the chart-customization MVP. |
+| **`/code-review`** | Quality gate before any push, especially for `api/*` server changes and Supabase migrations. |
+| **`canvas-design` / `brand-guidelines` / `theme-factory`** (custom + Anthropic skills) | Visual artifacts, brand voice, palette/font generation. The app already has a strong gold/amber/cream system (`colors_and_type.css` + `design-system/golden-anchor/MASTER.md`) — use these to extend it, not replace it. |
+
+### Not installed but worth installing when this work lands
+| Resource | Trigger to install | Install |
+|---|---|---|
+| **Sentry plugin** | Now. Real prospects submit through the public intake flow on `finance.goldenanchor.life`; silent errors there are worse than for an internal tool. Production observability is this project's #1 missing piece. | `/plugin install sentry` |
+| **PostHog plugin** | Before the next public-intake design iteration. The 5-stage funnel (Welcome → Service → Engagement → Info → Done) is exactly what PostHog optimizes; you need a drop-off signal before tweaking copy/UX further. Free tier covers a solo-advisor app. | `/plugin install posthog` |
+| **Brand Voice (Tribe AI)** | Whenever you write user-facing copy this project consumes. Already pre-listed in `mauricio-os/INVENTORY.md` as "Golden Anchor brand voice enforcement." | `/plugin install brand-voice` |
+| **Postiz plugin** | Whenever Golden Anchor marketing on `goldenanchor.life` (the parent domain) starts running. Pre-listed in INVENTORY for this exact use. | `/plugin install postiz` |
+| **Stripe plugin** | If you wire Pay-Now / paid services beyond the current static `payUrl`. Already installed in your Code surface for Velo — usable here too. | `/plugin install stripe` (already installed) |
+
+### Probably NOT relevant
+Cloudflare (not in stack), Windsor.ai (B2B GTM data), `crm-doc-updater` (Velo-only).
+
+### Two-folder workflow reminder (from CLAUDE.md §"Infrastructure ready")
+- **`C:\Users\mauhd\golden-anchor\`** = working copy. Edit here. Has design-system extras. **Not a git repo.**
+- **`C:\Users\mauhd\financeapp-deploy\`** = the real git clone with the mauhdez10 PAT-in-URL. **Copy changes here and push from here.**
+- Always `git pull origin main` in `financeapp-deploy/` before editing — parallel chats push too.
+
+---
+
 ## 11. External services baseline (v0.6.0)
 
 Status snapshot of every external service the project depends on. Update when status changes.
