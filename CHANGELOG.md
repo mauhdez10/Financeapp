@@ -2,6 +2,36 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.59.5 — 2026-06-04 (Patch) — Safe dependency bumps (audit §3c)
+
+In-range patch/minor bumps only; no majors. `npm audit` = 0, build green.
+
+- react / react-dom 19.2.5 → **19.2.7**
+- @supabase/supabase-js 2.105.4 → **2.107.0**
+- vite 8.0.8 → **8.0.16**
+- lucide-react 1.16.0 → **1.17.0**
+- resend 6.12.3 → **6.12.4**
+- @vitejs/plugin-react 6.0.1 → **6.0.2**, eslint-plugin-react-hooks 7.0.1 → **7.1.1**,
+  globals 17.4.0 → **17.6.0**, @types/node + @types/react patch bumps.
+
+**`lucide-react` provenance cleared:** the audit flagged `^1.16.0` as a suspicious
+major-line ("real lucide-react is 0.4xx"). Verified it IS the official package
+(`lucide.dev`, `github.com/lucide-icons/lucide`, npm latest 1.17.0) — lucide-react
+moved to a 1.x line. Not a supply-chain issue.
+
+**Deliberately NOT bumped (need PDF-endpoint / config testing first):**
+eslint + @eslint/js 9 → **10** (flat-config breaking risk), puppeteer-core 24 → **25**
+and @sparticuz/chromium-min 140 → **149** (must move in lockstep + re-test the
+`render-report-pdf` serverless function, which can't be exercised here).
+
+**Note on lint count:** the eslint-plugin-react-hooks 7.0→7.1 bump made the linter
+stricter, raising the error count from 219 → 244. These are *more instances of the
+same already-deferred categories* (rules-of-hooks / static-components), not new code
+problems — kept the bump (dev-only, zero runtime/build impact). The 268→219 figure
+from v0.59.4 was measured on the 7.0.1 linter.
+
+Build marker `2026-06-04-v0595-safe-dep-bumps`.
+
 ## v0.59.4 — 2026-06-04 (Patch) — Lint floor: real-bug fixes (audit §3b/§3c Phase 2)
 
 Surgical correctness fixes from the audit. No UI/behavior changes except the
