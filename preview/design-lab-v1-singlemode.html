@@ -1,0 +1,2488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Golden Anchor Design Lab — 2026-06-03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #f5f3ee;
+  color: #1a1f2e;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, h3, h4, p { margin: 0; }
+a { color: inherit; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #ebe7dc; }
+::-webkit-scrollbar-thumb { background: #b8ad94; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: #968a6e; }
+
+/* Page layout */
+.lab-page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.lab-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: #0D1B2A;
+  color: #f1f0ea;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.lab-sidebar-head {
+  padding: 28px 22px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+/* Lab chrome uses system-ui (NOT a candidate in any section) so the owner doesn't get anchor-biased by seeing a candidate font dressed up. */
+.lab-sidebar-wordmark {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #f1f0ea;
+}
+.lab-sidebar-wordmark em {
+  color: #C9A84C;
+  font-style: normal;
+}
+.lab-sidebar-date {
+  margin-top: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(241,240,234,0.55);
+}
+.lab-sidebar-toc {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 14px;
+}
+.lab-sidebar-toc a {
+  display: block;
+  padding: 8px 10px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(241,240,234,0.7);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+.lab-sidebar-toc a:hover {
+  color: #C9A84C;
+  border-left-color: #C9A84C;
+  background: rgba(201,168,76,0.05);
+}
+.lab-sidebar-toc a .toc-letter {
+  display: inline-block;
+  width: 22px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #C9A84C;
+  font-weight: 600;
+}
+.lab-sidebar-picks {
+  padding: 16px 18px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.18);
+}
+.lab-sidebar-picks label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #C9A84C;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.lab-sidebar-picks textarea {
+  width: 100%;
+  min-height: 80px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #f1f0ea;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 8px 10px;
+  resize: vertical;
+  outline: none;
+  border-radius: 2px;
+}
+.lab-sidebar-picks textarea:focus {
+  border-color: #C9A84C;
+}
+.lab-sidebar-note {
+  margin-top: 10px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: rgba(241,240,234,0.5);
+}
+
+/* Main content */
+.lab-main {
+  padding: 64px 56px 80px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Hero */
+.lab-hero {
+  margin-bottom: 64px;
+  max-width: 880px;
+}
+.lab-hero-title {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #0D1B2A;
+  margin-bottom: 20px;
+}
+.lab-hero-body {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #4a5160;
+  max-width: 640px;
+  margin-bottom: 28px;
+}
+.lab-hero-callout {
+  border: 1px solid #c9bfa4;
+  padding: 20px 24px;
+  background: rgba(201,168,76,0.04);
+  max-width: 640px;
+}
+.lab-hero-callout-title {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8a6d2e;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.lab-hero-callout ul {
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #4a5160;
+}
+.lab-hero-callout li { margin-bottom: 4px; }
+.lab-hero-callout li::marker { color: #C9A84C; }
+
+/* Section dividers */
+.lab-section {
+  scroll-margin-top: 24px;
+}
+.lab-section + .lab-section {
+  margin-top: 96px;
+  padding-top: 96px;
+  border-top: 1px solid #d4cbb5;
+}
+.lab-section-header {
+  margin-bottom: 32px;
+  max-width: 880px;
+}
+.lab-section-header h2 {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: #0D1B2A;
+  margin-bottom: 10px;
+}
+.lab-section-tagline {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #5a6478;
+  max-width: 640px;
+}
+
+/* Variant grid — locked to 2 columns so odd-count sections (B=5, E=3) don't have an orphan variant stretch full-width and bias the eye */
+.lab-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+/* Section G sign-ins are designed for desktop split-screen widths — give them full lab width so split layouts don't collapse */
+#section-G .lab-variant-grid {
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+.variant {
+  border: 1px solid #c9bfa4;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.variant-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e0d8c2;
+  background: #faf6ec;
+}
+.variant-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0D1B2A;
+  color: #C9A84C;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.variant-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0D1B2A;
+  letter-spacing: -0.005em;
+}
+.variant-canvas {
+  flex: 1;
+  display: block;
+  overflow: hidden;
+}
+
+/* Footer */
+.lab-footer {
+  margin-top: 96px;
+  padding-top: 24px;
+  border-top: 1px solid #d4cbb5;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #8a8576;
+}
+</style>
+</head>
+<body>
+<div class="lab-page">
+
+<aside class="lab-sidebar">
+  <div class="lab-sidebar-head">
+    <div class="lab-sidebar-wordmark">Golden <em>Anchor</em><br>Design Lab</div>
+    <div class="lab-sidebar-date">2026-06-03</div>
+  </div>
+  <nav class="lab-sidebar-toc">
+    <a href="#section-A"><span class="toc-letter">A</span>Palettes</a>
+    <a href="#section-B"><span class="toc-letter">B</span>Typography</a>
+    <a href="#section-C"><span class="toc-letter">C</span>KPI Hero</a>
+    <a href="#section-D"><span class="toc-letter">D</span>Card vs Section</a>
+    <a href="#section-E"><span class="toc-letter">E</span>Chart Density</a>
+    <a href="#section-F"><span class="toc-letter">F</span>Chart Color</a>
+    <a href="#section-G"><span class="toc-letter">G</span>Sign-In</a>
+    <a href="#section-H"><span class="toc-letter">H</span>Intake Form</a>
+    <a href="#section-I"><span class="toc-letter">I</span>Client Detail</a>
+    <a href="#section-J"><span class="toc-letter">J</span>Report Header</a>
+  </nav>
+  <div class="lab-sidebar-picks">
+    <label for="picks">Your picks</label>
+    <textarea id="picks" placeholder="Write your picks here: A2, B3, C1, D4, ..."></textarea>
+    <div class="lab-sidebar-note">Paste your picks into the next Claude session — or email ap@goldenanchor.life.</div>
+  </div>
+</aside>
+
+<main class="lab-main">
+
+<section class="lab-hero">
+  <h1 class="lab-hero-title">Welcome to your Design Lab.</h1>
+  <p class="lab-hero-body">This is for picking by sight, not committing on faith. Scroll through every section, look at the variants side-by-side, and mark your picks by number (e.g. "A2, B3, C1"). When you're done, report back and we'll lock the system in one pass.</p>
+  <div class="lab-hero-callout">
+    <div class="lab-hero-callout-title">How to read this</div>
+    <ul>
+      <li>Each section is one decision.</li>
+      <li>Look for the variant you'd ship as-is.</li>
+      <li>You can mix freely across sections.</li>
+      <li>If none feel right, write "none" and tell me why.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== SECTION A: PALETTES ===== -->
+<style>
+/* ============================================================
+   SECTION A — PALETTE VARIANTS
+   All scoped under [data-variant="A*"]
+   ============================================================ */
+
+[data-variant^="A"] {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+  letter-spacing: -0.01em;
+}
+
+[data-variant^="A"] * { box-sizing: border-box; }
+
+[data-variant^="A"] .canvas {
+  width: 100%;
+  min-height: 560px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Shared structural rhythm — colors come from each variant */
+[data-variant^="A"] .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+[data-variant^="A"] .wordmark {
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+[data-variant^="A"] .nav { display: flex; gap: 22px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+[data-variant^="A"] .advisor { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; }
+
+[data-variant^="A"] .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+[data-variant^="A"] .kpi {
+  padding: 18px 18px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+[data-variant^="A"] .kpi-label { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.65; }
+[data-variant^="A"] .kpi-value { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 500; letter-spacing: -0.01em; }
+[data-variant^="A"] .kpi-delta { font-size: 11px; letter-spacing: 0.02em; opacity: 0.8; display: inline-flex; align-items: center; gap: 4px; }
+
+[data-variant^="A"] .lower { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; }
+[data-variant^="A"] .panel { padding: 20px; }
+[data-variant^="A"] .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+[data-variant^="A"] .panel-title { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+[data-variant^="A"] .panel-sub { font-size: 10.5px; letter-spacing: 0.08em; opacity: 0.6; }
+
+[data-variant^="A"] .chart { width: 100%; height: 180px; }
+[data-variant^="A"] .legend { display: flex; gap: 16px; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; margin-top: 8px; }
+[data-variant^="A"] .legend span { display: inline-flex; align-items: center; gap: 6px; }
+[data-variant^="A"] .legend i { width: 10px; height: 2px; display: inline-block; }
+
+/* ============================================================
+   A1 — NAVY EDITORIAL
+   ============================================================ */
+[data-variant="A1"] .canvas {
+  background: #0D1B2A;
+  color: #F1F5F9;
+}
+[data-variant="A1"] .topbar { border-bottom: 1px solid rgba(255,255,255,0.08); }
+[data-variant="A1"] .wordmark { color: #C9A84C; }
+[data-variant="A1"] .nav { color: #9CA3AF; }
+[data-variant="A1"] .nav .active { color: #F1F5F9; }
+[data-variant="A1"] .advisor { color: #9CA3AF; }
+[data-variant="A1"] .kpi { background: #122436; border: 1px solid rgba(255,255,255,0.08); }
+[data-variant="A1"] .kpi-label, [data-variant="A1"] .kpi-delta { color: #9CA3AF; }
+[data-variant="A1"] .kpi-value { color: #F1F5F9; }
+[data-variant="A1"] .panel { background: #122436; border: 1px solid rgba(255,255,255,0.08); }
+[data-variant="A1"] .panel-title { color: #F1F5F9; }
+[data-variant="A1"] .panel-sub, [data-variant="A1"] .legend { color: #9CA3AF; }
+[data-variant="A1"] .avatar { background: rgba(255,255,255,0.05); color: #F1F5F9; border: 1px solid rgba(255,255,255,0.08); }
+[data-variant="A1"] .client-row { border-bottom: 1px solid rgba(255,255,255,0.06); }
+[data-variant="A1"] .client-row:last-child { border-bottom: none; }
+[data-variant="A1"] .client-name { color: #F1F5F9; }
+[data-variant="A1"] .client-meta { color: #9CA3AF; }
+[data-variant="A1"] .client-amt { color: #F1F5F9; }
+
+[data-variant="A2"] .canvas { background: #FAF6EC; color: #755023; }
+[data-variant="A2"] .topbar { border-bottom: 1px solid #E8DCC4; }
+[data-variant="A2"] .wordmark { color: #B68B3A; }
+[data-variant="A2"] .nav { color: #A89070; }
+[data-variant="A2"] .nav .active { color: #755023; }
+[data-variant="A2"] .advisor { color: #A89070; }
+[data-variant="A2"] .kpi { background: #FFFFFF; border: 1px solid #E8DCC4; }
+[data-variant="A2"] .kpi-label, [data-variant="A2"] .kpi-delta { color: #A8742C; }
+[data-variant="A2"] .kpi-value { color: #755023; }
+[data-variant="A2"] .panel { background: #FFFFFF; border: 1px solid #E8DCC4; }
+[data-variant="A2"] .panel-title { color: #755023; }
+[data-variant="A2"] .panel-sub, [data-variant="A2"] .legend { color: #A89070; }
+[data-variant="A2"] .avatar { background: #FAF6EC; color: #755023; border: 1px solid #E8DCC4; }
+[data-variant="A2"] .client-row { border-bottom: 1px solid #F0E6D2; }
+[data-variant="A2"] .client-row:last-child { border-bottom: none; }
+[data-variant="A2"] .client-name { color: #755023; }
+[data-variant="A2"] .client-meta { color: #A89070; }
+[data-variant="A2"] .client-amt { color: #755023; }
+
+[data-variant="A3"] .canvas { background: #0F172A; color: #F8FAFC; }
+[data-variant="A3"] .topbar { border-bottom: 1px solid rgba(248,250,252,0.08); }
+[data-variant="A3"] .wordmark { color: #F8FAFC; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 17px; letter-spacing: -0.02em; }
+[data-variant="A3"] .nav { color: #94A3B8; }
+[data-variant="A3"] .nav .active { color: #14B8A6; }
+[data-variant="A3"] .advisor { color: #94A3B8; }
+[data-variant="A3"] .kpi { background: #1E293B; border: 1px solid rgba(248,250,252,0.06); border-radius: 4px; }
+[data-variant="A3"] .kpi-label, [data-variant="A3"] .kpi-delta { color: #94A3B8; }
+[data-variant="A3"] .kpi-value { color: #F8FAFC; }
+[data-variant="A3"] .panel { background: #1E293B; border: 1px solid rgba(248,250,252,0.06); border-radius: 4px; }
+[data-variant="A3"] .panel-title { color: #F8FAFC; }
+[data-variant="A3"] .panel-sub, [data-variant="A3"] .legend { color: #94A3B8; }
+[data-variant="A3"] .avatar { background: rgba(20,184,166,0.08); color: #F8FAFC; border-radius: 4px; }
+[data-variant="A3"] .client-row { border-bottom: 1px solid rgba(248,250,252,0.05); }
+[data-variant="A3"] .client-row:last-child { border-bottom: none; }
+[data-variant="A3"] .client-name { color: #F8FAFC; }
+[data-variant="A3"] .client-meta { color: #94A3B8; }
+[data-variant="A3"] .client-amt { color: #F8FAFC; }
+
+[data-variant="A4"] .canvas { background: #2C0F0F; color: #FAF7F2; }
+[data-variant="A4"] .topbar { border-bottom: 1px solid rgba(182,139,58,0.25); }
+[data-variant="A4"] .wordmark { color: #B68B3A; }
+[data-variant="A4"] .nav { color: rgba(250,247,242,0.55); }
+[data-variant="A4"] .nav .active { color: #FAF7F2; }
+[data-variant="A4"] .advisor { color: rgba(250,247,242,0.55); }
+[data-variant="A4"] .kpi { background: #4B1414; border: 1px solid rgba(182,139,58,0.18); }
+[data-variant="A4"] .kpi-label, [data-variant="A4"] .kpi-delta { color: rgba(250,247,242,0.6); }
+[data-variant="A4"] .kpi-value { color: #FAF7F2; }
+[data-variant="A4"] .panel { background: #4B1414; border: 1px solid rgba(182,139,58,0.18); }
+[data-variant="A4"] .panel-title { color: #FAF7F2; }
+[data-variant="A4"] .panel-sub, [data-variant="A4"] .legend { color: rgba(250,247,242,0.6); }
+[data-variant="A4"] .avatar { background: rgba(250,247,242,0.04); color: #FAF7F2; border: 1px solid rgba(182,139,58,0.2); }
+[data-variant="A4"] .client-row { border-bottom: 1px solid rgba(250,247,242,0.06); }
+[data-variant="A4"] .client-row:last-child { border-bottom: none; }
+[data-variant="A4"] .client-name { color: #FAF7F2; }
+[data-variant="A4"] .client-meta { color: rgba(250,247,242,0.55); }
+[data-variant="A4"] .client-amt { color: #FAF7F2; }
+
+[data-variant="A5"] .canvas { background: #0F2E20; color: #E7DDC4; }
+[data-variant="A5"] .topbar { border-bottom: 1px solid rgba(231,221,196,0.1); }
+[data-variant="A5"] .wordmark { color: #C0A062; }
+[data-variant="A5"] .nav { color: rgba(231,221,196,0.55); }
+[data-variant="A5"] .nav .active { color: #B45309; }
+[data-variant="A5"] .advisor { color: rgba(231,221,196,0.55); }
+[data-variant="A5"] .kpi { background: #14532D; border: 1px solid rgba(231,221,196,0.08); }
+[data-variant="A5"] .kpi-label, [data-variant="A5"] .kpi-delta { color: rgba(231,221,196,0.65); }
+[data-variant="A5"] .kpi-value { color: #E7DDC4; }
+[data-variant="A5"] .panel { background: #14532D; border: 1px solid rgba(231,221,196,0.08); }
+[data-variant="A5"] .panel-title { color: #E7DDC4; }
+[data-variant="A5"] .panel-sub, [data-variant="A5"] .legend { color: rgba(231,221,196,0.6); }
+[data-variant="A5"] .avatar { background: rgba(231,221,196,0.06); color: #E7DDC4; border: 1px solid rgba(231,221,196,0.1); }
+[data-variant="A5"] .client-row { border-bottom: 1px solid rgba(231,221,196,0.06); }
+[data-variant="A5"] .client-row:last-child { border-bottom: none; }
+[data-variant="A5"] .client-name { color: #E7DDC4; }
+[data-variant="A5"] .client-meta { color: rgba(231,221,196,0.55); }
+[data-variant="A5"] .client-amt { color: #E7DDC4; }
+
+[data-variant="A6"] .canvas { background: #000000; color: #FAFAFA; gap: 28px; padding: 32px; }
+[data-variant="A6"] .topbar { border-bottom: 1px solid rgba(250,250,250,0.2); padding-bottom: 20px; }
+[data-variant="A6"] .wordmark { color: #C9A84C; }
+[data-variant="A6"] .nav { color: rgba(250,250,250,0.6); }
+[data-variant="A6"] .nav .active { color: #FAFAFA; }
+[data-variant="A6"] .advisor { color: rgba(250,250,250,0.6); }
+[data-variant="A6"] .kpi-strip { gap: 0; border-top: 1px solid rgba(250,250,250,0.15); border-bottom: 1px solid rgba(250,250,250,0.15); }
+[data-variant="A6"] .kpi { background: #FAFAFA; color: #000; border-right: 1px solid #E5E5E5; padding: 22px; }
+[data-variant="A6"] .kpi:last-child { border-right: none; }
+[data-variant="A6"] .kpi-label { color: #525252; }
+[data-variant="A6"] .kpi-value { color: #000; }
+[data-variant="A6"] .kpi-delta { color: #525252; }
+[data-variant="A6"] .panel { background: #FAFAFA; color: #000; padding: 28px; }
+[data-variant="A6"] .panel-title { color: #000; }
+[data-variant="A6"] .panel-sub, [data-variant="A6"] .legend { color: #525252; }
+[data-variant="A6"] .avatar { background: #000; color: #FAFAFA; }
+[data-variant="A6"] .client-row { border-bottom: 1px solid #E5E5E5; }
+[data-variant="A6"] .client-row:last-child { border-bottom: none; }
+[data-variant="A6"] .client-name { color: #000; }
+[data-variant="A6"] .client-meta { color: #525252; }
+[data-variant="A6"] .client-amt { color: #000; }
+
+[data-variant^="A"] .client-row {
+  display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center;
+  padding: 12px 0;
+}
+[data-variant^="A"] .avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; letter-spacing: 0.04em; font-weight: 500;
+}
+[data-variant^="A"] .client-name { font-size: 13px; font-weight: 500; }
+[data-variant^="A"] .client-meta { font-size: 10.5px; opacity: 0.6; letter-spacing: 0.04em; margin-top: 2px; }
+[data-variant^="A"] .client-amt { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 500; }
+</style>
+
+<section class="lab-section" id="section-A">
+  <header class="lab-section-header">
+    <h2>A. Palette</h2>
+    <p class="lab-section-tagline">The highest-stakes decision — pick the one that feels like the brand you'd hand a client a printed quarterly from.</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="A1">
+      <header class="variant-header"><span class="variant-label">A1</span><span class="variant-name">Navy Editorial</span></header>
+      <div class="variant-canvas">
+        <div class="canvas">
+          <div class="topbar">
+            <div class="wordmark">Golden Anchor</div>
+            <nav class="nav"><span class="active">Dashboard</span><span>Clients</span><span>Plans</span><span>Reports</span></nav>
+            <div class="advisor">Mauricio Hernandez · MBA</div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">12</div><div class="kpi-delta">3 archived</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Net</div><div class="kpi-value">$24,580</div><div class="kpi-delta">▲ $1,420 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Debt</div><div class="kpi-value">$87,420</div><div class="kpi-delta">▼ $1,200 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Liquid Assets</div><div class="kpi-value">$42,150</div><div class="kpi-delta">▲ $3,800 mo</div></div>
+          </div>
+          <div class="lower">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Income vs Spending</div><div class="panel-sub">Last 6 months</div></div>
+              <svg class="chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+                <line x1="0" y1="40" x2="600" y2="40" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                <line x1="0" y1="140" x2="600" y2="140" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                <rect x="20" y="50" width="50" height="120" fill="rgba(241,245,249,0.22)"/>
+                <rect x="120" y="45" width="50" height="125" fill="rgba(241,245,249,0.32)"/>
+                <rect x="220" y="55" width="50" height="115" fill="rgba(241,245,249,0.22)"/>
+                <rect x="320" y="38" width="50" height="132" fill="rgba(241,245,249,0.32)"/>
+                <rect x="420" y="42" width="50" height="128" fill="rgba(241,245,249,0.22)"/>
+                <rect x="520" y="30" width="50" height="140" fill="rgba(241,245,249,0.32)"/>
+                <path d="M 45 130 L 145 120 L 245 135 L 345 110 L 445 118 L 545 105" stroke="#9CA3AF" stroke-width="1.5" fill="none"/>
+                <circle cx="45" cy="130" r="2.5" fill="#9CA3AF"/><circle cx="145" cy="120" r="2.5" fill="#9CA3AF"/><circle cx="245" cy="135" r="2.5" fill="#9CA3AF"/><circle cx="345" cy="110" r="2.5" fill="#9CA3AF"/><circle cx="445" cy="118" r="2.5" fill="#9CA3AF"/><circle cx="545" cy="105" r="2.5" fill="#9CA3AF"/>
+              </svg>
+              <div class="legend"><span><i style="background:#F1F5F9"></i>Income</span><span><i style="background:#9CA3AF"></i>Spending</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent Clients</div><div class="panel-sub">12 active</div></div>
+              <div class="client-row"><div class="avatar">AC</div><div><div class="client-name">Amanda Chen</div><div class="client-meta">Plan · updated 2d</div></div><div class="client-amt">$24.5k</div></div>
+              <div class="client-row"><div class="avatar">RM</div><div><div class="client-name">Roberto Marín</div><div class="client-meta">Plan · updated 4d</div></div><div class="client-amt">$18.2k</div></div>
+              <div class="client-row"><div class="avatar">SP</div><div><div class="client-name">Sofía Patel</div><div class="client-meta">Onboarding · 1w</div></div><div class="client-amt">$31.0k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="variant" data-variant="A2">
+      <header class="variant-header"><span class="variant-label">A2</span><span class="variant-name">Warm Linen</span></header>
+      <div class="variant-canvas">
+        <div class="canvas">
+          <div class="topbar">
+            <div class="wordmark">Golden Anchor</div>
+            <nav class="nav"><span class="active">Dashboard</span><span>Clients</span><span>Plans</span><span>Reports</span></nav>
+            <div class="advisor">Mauricio Hernandez · MBA</div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">12</div><div class="kpi-delta">3 archived</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Net</div><div class="kpi-value">$24,580</div><div class="kpi-delta">▲ $1,420 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Debt</div><div class="kpi-value">$87,420</div><div class="kpi-delta">▼ $1,200 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Liquid Assets</div><div class="kpi-value">$42,150</div><div class="kpi-delta">▲ $3,800 mo</div></div>
+          </div>
+          <div class="lower">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Income vs Spending</div><div class="panel-sub">Last 6 months</div></div>
+              <svg class="chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+                <line x1="0" y1="40" x2="600" y2="40" stroke="#E8DCC4" stroke-width="1"/>
+                <line x1="0" y1="90" x2="600" y2="90" stroke="#E8DCC4" stroke-width="1"/>
+                <line x1="0" y1="140" x2="600" y2="140" stroke="#E8DCC4" stroke-width="1"/>
+                <rect x="20" y="50" width="50" height="120" fill="rgba(117,80,35,0.18)"/>
+                <rect x="120" y="45" width="50" height="125" fill="rgba(117,80,35,0.32)"/>
+                <rect x="220" y="55" width="50" height="115" fill="rgba(117,80,35,0.18)"/>
+                <rect x="320" y="38" width="50" height="132" fill="rgba(117,80,35,0.32)"/>
+                <rect x="420" y="42" width="50" height="128" fill="rgba(117,80,35,0.18)"/>
+                <rect x="520" y="30" width="50" height="140" fill="rgba(117,80,35,0.32)"/>
+                <path d="M 45 130 L 145 120 L 245 135 L 345 110 L 445 118 L 545 105" stroke="#A8742C" stroke-width="1.5" fill="none"/>
+                <circle cx="45" cy="130" r="2.5" fill="#A8742C"/><circle cx="145" cy="120" r="2.5" fill="#A8742C"/><circle cx="245" cy="135" r="2.5" fill="#A8742C"/><circle cx="345" cy="110" r="2.5" fill="#A8742C"/><circle cx="445" cy="118" r="2.5" fill="#A8742C"/><circle cx="545" cy="105" r="2.5" fill="#A8742C"/>
+              </svg>
+              <div class="legend"><span><i style="background:#755023"></i>Income</span><span><i style="background:#A8742C"></i>Spending</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent Clients</div><div class="panel-sub">12 active</div></div>
+              <div class="client-row"><div class="avatar">AC</div><div><div class="client-name">Amanda Chen</div><div class="client-meta">Plan · updated 2d</div></div><div class="client-amt">$24.5k</div></div>
+              <div class="client-row"><div class="avatar">RM</div><div><div class="client-name">Roberto Marín</div><div class="client-meta">Plan · updated 4d</div></div><div class="client-amt">$18.2k</div></div>
+              <div class="client-row"><div class="avatar">SP</div><div><div class="client-name">Sofía Patel</div><div class="client-meta">Onboarding · 1w</div></div><div class="client-amt">$31.0k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="variant" data-variant="A3">
+      <header class="variant-header"><span class="variant-label">A3</span><span class="variant-name">Slate Modern</span></header>
+      <div class="variant-canvas">
+        <div class="canvas">
+          <div class="topbar">
+            <div class="wordmark">Golden Anchor</div>
+            <nav class="nav"><span class="active">Dashboard</span><span>Clients</span><span>Plans</span><span>Reports</span></nav>
+            <div class="advisor">Mauricio Hernandez · MBA</div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">12</div><div class="kpi-delta">3 archived</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Net</div><div class="kpi-value">$24,580</div><div class="kpi-delta">▲ $1,420 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Debt</div><div class="kpi-value">$87,420</div><div class="kpi-delta">▼ $1,200 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Liquid Assets</div><div class="kpi-value">$42,150</div><div class="kpi-delta">▲ $3,800 mo</div></div>
+          </div>
+          <div class="lower">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Income vs Spending</div><div class="panel-sub">Last 6 months</div></div>
+              <svg class="chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+                <line x1="0" y1="40" x2="600" y2="40" stroke="rgba(248,250,252,0.05)" stroke-width="1"/>
+                <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(248,250,252,0.05)" stroke-width="1"/>
+                <line x1="0" y1="140" x2="600" y2="140" stroke="rgba(248,250,252,0.05)" stroke-width="1"/>
+                <rect x="20" y="50" width="50" height="120" fill="rgba(248,250,252,0.18)" rx="2"/>
+                <rect x="120" y="45" width="50" height="125" fill="rgba(248,250,252,0.28)" rx="2"/>
+                <rect x="220" y="55" width="50" height="115" fill="rgba(248,250,252,0.18)" rx="2"/>
+                <rect x="320" y="38" width="50" height="132" fill="rgba(248,250,252,0.28)" rx="2"/>
+                <rect x="420" y="42" width="50" height="128" fill="rgba(248,250,252,0.18)" rx="2"/>
+                <rect x="520" y="30" width="50" height="140" fill="rgba(248,250,252,0.28)" rx="2"/>
+                <path d="M 45 130 L 145 120 L 245 135 L 345 110 L 445 118 L 545 105" stroke="#14B8A6" stroke-width="1.5" fill="none"/>
+                <circle cx="45" cy="130" r="2.5" fill="#14B8A6"/><circle cx="145" cy="120" r="2.5" fill="#14B8A6"/><circle cx="245" cy="135" r="2.5" fill="#14B8A6"/><circle cx="345" cy="110" r="2.5" fill="#14B8A6"/><circle cx="445" cy="118" r="2.5" fill="#14B8A6"/><circle cx="545" cy="105" r="2.5" fill="#14B8A6"/>
+              </svg>
+              <div class="legend"><span><i style="background:#F8FAFC"></i>Income</span><span><i style="background:#14B8A6"></i>Spending</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent Clients</div><div class="panel-sub">12 active</div></div>
+              <div class="client-row"><div class="avatar">AC</div><div><div class="client-name">Amanda Chen</div><div class="client-meta">Plan · updated 2d</div></div><div class="client-amt">$24.5k</div></div>
+              <div class="client-row"><div class="avatar">RM</div><div><div class="client-name">Roberto Marín</div><div class="client-meta">Plan · updated 4d</div></div><div class="client-amt">$18.2k</div></div>
+              <div class="client-row"><div class="avatar">SP</div><div><div class="client-name">Sofía Patel</div><div class="client-meta">Onboarding · 1w</div></div><div class="client-amt">$31.0k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="variant" data-variant="A4">
+      <header class="variant-header"><span class="variant-label">A4</span><span class="variant-name">Burgundy Trust</span></header>
+      <div class="variant-canvas">
+        <div class="canvas">
+          <div class="topbar">
+            <div class="wordmark">Golden Anchor</div>
+            <nav class="nav"><span class="active">Dashboard</span><span>Clients</span><span>Plans</span><span>Reports</span></nav>
+            <div class="advisor">Mauricio Hernandez · MBA</div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">12</div><div class="kpi-delta">3 archived</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Net</div><div class="kpi-value">$24,580</div><div class="kpi-delta">▲ $1,420 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Debt</div><div class="kpi-value">$87,420</div><div class="kpi-delta">▼ $1,200 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Liquid Assets</div><div class="kpi-value">$42,150</div><div class="kpi-delta">▲ $3,800 mo</div></div>
+          </div>
+          <div class="lower">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Income vs Spending</div><div class="panel-sub">Last 6 months</div></div>
+              <svg class="chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+                <line x1="0" y1="40" x2="600" y2="40" stroke="rgba(250,247,242,0.06)" stroke-width="1"/>
+                <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(250,247,242,0.06)" stroke-width="1"/>
+                <line x1="0" y1="140" x2="600" y2="140" stroke="rgba(250,247,242,0.06)" stroke-width="1"/>
+                <rect x="20" y="50" width="50" height="120" fill="rgba(250,247,242,0.16)"/>
+                <rect x="120" y="45" width="50" height="125" fill="rgba(250,247,242,0.28)"/>
+                <rect x="220" y="55" width="50" height="115" fill="rgba(250,247,242,0.16)"/>
+                <rect x="320" y="38" width="50" height="132" fill="rgba(250,247,242,0.28)"/>
+                <rect x="420" y="42" width="50" height="128" fill="rgba(250,247,242,0.16)"/>
+                <rect x="520" y="30" width="50" height="140" fill="rgba(250,247,242,0.28)"/>
+                <path d="M 45 130 L 145 120 L 245 135 L 345 110 L 445 118 L 545 105" stroke="rgba(250,247,242,0.6)" stroke-width="1.5" fill="none"/>
+              </svg>
+              <div class="legend"><span><i style="background:#FAF7F2"></i>Income</span><span><i style="background:rgba(250,247,242,0.6)"></i>Spending</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent Clients</div><div class="panel-sub">12 active</div></div>
+              <div class="client-row"><div class="avatar">AC</div><div><div class="client-name">Amanda Chen</div><div class="client-meta">Plan · updated 2d</div></div><div class="client-amt">$24.5k</div></div>
+              <div class="client-row"><div class="avatar">RM</div><div><div class="client-name">Roberto Marín</div><div class="client-meta">Plan · updated 4d</div></div><div class="client-amt">$18.2k</div></div>
+              <div class="client-row"><div class="avatar">SP</div><div><div class="client-name">Sofía Patel</div><div class="client-meta">Onboarding · 1w</div></div><div class="client-amt">$31.0k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="variant" data-variant="A5">
+      <header class="variant-header"><span class="variant-label">A5</span><span class="variant-name">Forest Money</span></header>
+      <div class="variant-canvas">
+        <div class="canvas">
+          <div class="topbar">
+            <div class="wordmark">Golden Anchor</div>
+            <nav class="nav"><span class="active">Dashboard</span><span>Clients</span><span>Plans</span><span>Reports</span></nav>
+            <div class="advisor">Mauricio Hernandez · MBA</div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">12</div><div class="kpi-delta">3 archived</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Net</div><div class="kpi-value">$24,580</div><div class="kpi-delta">▲ $1,420 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Debt</div><div class="kpi-value">$87,420</div><div class="kpi-delta">▼ $1,200 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Liquid Assets</div><div class="kpi-value">$42,150</div><div class="kpi-delta">▲ $3,800 mo</div></div>
+          </div>
+          <div class="lower">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Income vs Spending</div><div class="panel-sub">Last 6 months</div></div>
+              <svg class="chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+                <rect x="20" y="50" width="50" height="120" fill="rgba(231,221,196,0.18)"/>
+                <rect x="120" y="45" width="50" height="125" fill="rgba(231,221,196,0.32)"/>
+                <rect x="220" y="55" width="50" height="115" fill="rgba(231,221,196,0.18)"/>
+                <rect x="320" y="38" width="50" height="132" fill="rgba(231,221,196,0.32)"/>
+                <rect x="420" y="42" width="50" height="128" fill="rgba(231,221,196,0.18)"/>
+                <rect x="520" y="30" width="50" height="140" fill="rgba(231,221,196,0.32)"/>
+                <path d="M 45 130 L 145 120 L 245 135 L 345 110 L 445 118 L 545 105" stroke="#C0A062" stroke-width="1.5" fill="none"/>
+              </svg>
+              <div class="legend"><span><i style="background:#E7DDC4"></i>Income</span><span><i style="background:#C0A062"></i>Spending</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent Clients</div><div class="panel-sub">12 active</div></div>
+              <div class="client-row"><div class="avatar">AC</div><div><div class="client-name">Amanda Chen</div><div class="client-meta">Plan · updated 2d</div></div><div class="client-amt">$24.5k</div></div>
+              <div class="client-row"><div class="avatar">RM</div><div><div class="client-name">Roberto Marín</div><div class="client-meta">Plan · updated 4d</div></div><div class="client-amt">$18.2k</div></div>
+              <div class="client-row"><div class="avatar">SP</div><div><div class="client-name">Sofía Patel</div><div class="client-meta">Onboarding · 1w</div></div><div class="client-amt">$31.0k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="variant" data-variant="A6">
+      <header class="variant-header"><span class="variant-label">A6</span><span class="variant-name">Pure Mono</span></header>
+      <div class="variant-canvas">
+        <div class="canvas">
+          <div class="topbar">
+            <div class="wordmark">Golden Anchor</div>
+            <nav class="nav"><span class="active">Dashboard</span><span>Clients</span><span>Plans</span><span>Reports</span></nav>
+            <div class="advisor">Mauricio Hernandez · MBA</div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-label">Active Clients</div><div class="kpi-value">12</div><div class="kpi-delta">3 archived</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Net</div><div class="kpi-value">$24,580</div><div class="kpi-delta">▲ $1,420 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Combined Debt</div><div class="kpi-value">$87,420</div><div class="kpi-delta">▼ $1,200 mo</div></div>
+            <div class="kpi"><div class="kpi-label">Liquid Assets</div><div class="kpi-value">$42,150</div><div class="kpi-delta">▲ $3,800 mo</div></div>
+          </div>
+          <div class="lower">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Income vs Spending</div><div class="panel-sub">Last 6 months</div></div>
+              <svg class="chart" viewBox="0 0 600 180" preserveAspectRatio="none">
+                <line x1="0" y1="40" x2="600" y2="40" stroke="#E5E5E5" stroke-width="1"/>
+                <line x1="0" y1="90" x2="600" y2="90" stroke="#E5E5E5" stroke-width="1"/>
+                <line x1="0" y1="140" x2="600" y2="140" stroke="#E5E5E5" stroke-width="1"/>
+                <rect x="20" y="50" width="50" height="120" fill="#000" opacity="0.55"/>
+                <rect x="120" y="45" width="50" height="125" fill="#000" opacity="0.85"/>
+                <rect x="220" y="55" width="50" height="115" fill="#000" opacity="0.55"/>
+                <rect x="320" y="38" width="50" height="132" fill="#000" opacity="0.85"/>
+                <rect x="420" y="42" width="50" height="128" fill="#000" opacity="0.55"/>
+                <rect x="520" y="30" width="50" height="140" fill="#000" opacity="0.85"/>
+                <path d="M 45 130 L 145 120 L 245 135 L 345 110 L 445 118 L 545 105" stroke="#525252" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+              </svg>
+              <div class="legend"><span><i style="background:#000"></i>Income</span><span><i style="background:#525252"></i>Spending</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent Clients</div><div class="panel-sub">12 active</div></div>
+              <div class="client-row"><div class="avatar">AC</div><div><div class="client-name">Amanda Chen</div><div class="client-meta">Plan · updated 2d</div></div><div class="client-amt">$24.5k</div></div>
+              <div class="client-row"><div class="avatar">RM</div><div><div class="client-name">Roberto Marín</div><div class="client-meta">Plan · updated 4d</div></div><div class="client-amt">$18.2k</div></div>
+              <div class="client-row"><div class="avatar">SP</div><div><div class="client-name">Sofía Patel</div><div class="client-meta">Onboarding · 1w</div></div><div class="client-amt">$31.0k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION B: TYPOGRAPHY ===== -->
+<style>
+.lab-section#section-B .lab-variant-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.lab-section#section-B .variant-canvas { background: #fbf8f3; padding: 44px 48px 36px; min-height: 460px; display: flex; flex-direction: column; gap: 22px; }
+.lab-section#section-B .rc-eyebrow, .lab-section#section-B .rc-h1, .lab-section#section-B .rc-h2, .lab-section#section-B .rc-body, .lab-section#section-B .rc-kpis, .lab-section#section-B .rc-kpi-num, .lab-section#section-B .rc-kpi-label, .lab-section#section-B .rc-footer { margin: 0; padding: 0; }
+.lab-section#section-B .rc-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; padding: 22px 0; border-top: 1px solid rgba(11,20,36,0.12); border-bottom: 1px solid rgba(11,20,36,0.12); }
+.lab-section#section-B .rc-kpi { display: flex; flex-direction: column; gap: 6px; }
+.lab-section#section-B .rc-footer { margin-top: auto; padding-top: 18px; display: flex; justify-content: space-between; align-items: center; }
+.lab-section#section-B .rc-footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #c9a14a; display: inline-block; margin-right: 8px; vertical-align: middle; }
+
+[data-variant="B1"] .variant-canvas { background: #faf7f1; color: #1a2436; }
+[data-variant="B1"] .rc-eyebrow { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #8a6d2e; }
+[data-variant="B1"] .rc-h1 { font-family: 'Newsreader', serif; font-style: italic; font-weight: 400; font-size: 52px; line-height: 1.02; letter-spacing: -0.015em; color: #0b1424; }
+[data-variant="B1"] .rc-h2 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 22px; line-height: 1.25; color: #3a4658; }
+[data-variant="B1"] .rc-body { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 1.62; color: #485468; max-width: 52ch; }
+[data-variant="B1"] .rc-kpi-num { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 30px; letter-spacing: -0.02em; color: #0b1424; }
+[data-variant="B1"] .rc-kpi-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #8595aa; }
+[data-variant="B1"] .rc-footer { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6b7a90; }
+
+[data-variant="B2"] .variant-canvas { background: #fdfaf4; color: #14233e; }
+[data-variant="B2"] .rc-eyebrow { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #b08628; }
+[data-variant="B2"] .rc-h1 { font-family: 'Source Serif 4', serif; font-weight: 700; font-size: 50px; line-height: 1.05; letter-spacing: -0.02em; color: #0b1424; }
+[data-variant="B2"] .rc-h2 { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 22px; line-height: 1.3; color: #314060; }
+[data-variant="B2"] .rc-body { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.65; color: #4a5872; max-width: 54ch; }
+[data-variant="B2"] .rc-kpi-num { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 32px; letter-spacing: -0.03em; color: #0b1424; }
+[data-variant="B2"] .rc-kpi-label { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #8190a8; }
+[data-variant="B2"] .rc-footer { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #6a7892; }
+
+[data-variant="B3"] .variant-canvas { background: #fcf9f3; color: #1b1d2c; }
+[data-variant="B3"] .rc-eyebrow { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: #a78536; }
+[data-variant="B3"] .rc-h1 { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 500; font-size: 56px; line-height: 1.0; color: #0a1020; }
+[data-variant="B3"] .rc-h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 23px; line-height: 1.25; color: #2c3450; }
+[data-variant="B3"] .rc-body { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.7; color: #4d566c; max-width: 52ch; }
+[data-variant="B3"] .rc-kpi-num { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 30px; letter-spacing: -0.02em; color: #0a1020; }
+[data-variant="B3"] .rc-kpi-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #7e8aa2; }
+[data-variant="B3"] .rc-footer { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6a7290; }
+
+[data-variant="B4"] .variant-canvas { background: #f6f5f1; color: #15182a; }
+[data-variant="B4"] .rc-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase; color: #9e7822; }
+[data-variant="B4"] .rc-h1 { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 54px; line-height: 1.02; letter-spacing: -0.035em; color: #0a1020; }
+[data-variant="B4"] .rc-h2 { font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 20px; line-height: 1.3; letter-spacing: 0.12em; text-transform: uppercase; color: #2a3148; }
+[data-variant="B4"] .rc-body { font-family: 'DM Sans', sans-serif; font-size: 17px; line-height: 1.6; color: #4a5168; max-width: 54ch; }
+[data-variant="B4"] .rc-kpi-num { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 34px; letter-spacing: -0.04em; color: #0a1020; }
+[data-variant="B4"] .rc-kpi-label { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #7c8499; }
+[data-variant="B4"] .rc-footer { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6a7088; }
+
+[data-variant="B5"] .variant-canvas { background: #f9f5ec; color: #1a1f30; }
+[data-variant="B5"] .rc-eyebrow { font-family: 'Source Sans 3', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: #a37f24; }
+[data-variant="B5"] .rc-h1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 60px; line-height: 1.0; letter-spacing: -0.01em; color: #0a0f1e; }
+[data-variant="B5"] .rc-h2 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 24px; line-height: 1.25; color: #2e3852; }
+[data-variant="B5"] .rc-body { font-family: 'Source Sans 3', sans-serif; font-size: 17px; line-height: 1.62; color: #4a5468; max-width: 54ch; }
+[data-variant="B5"] .rc-kpi-num { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 30px; letter-spacing: -0.02em; color: #0a0f1e; }
+[data-variant="B5"] .rc-kpi-label { font-family: 'Source Sans 3', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #7e8aa0; }
+[data-variant="B5"] .rc-footer { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #6a7488; }
+</style>
+
+<section class="lab-section" id="section-B">
+  <header class="lab-section-header">
+    <h2>B. Typography Pairings</h2>
+    <p class="lab-section-tagline">Same client report card — five typeface families. Pick the voice.</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="B1">
+      <header class="variant-header"><span class="variant-label">B1</span><span class="variant-name">Newsreader Italic + Plus Jakarta Sans</span></header>
+      <div class="variant-canvas">
+        <p class="rc-eyebrow">Monthly Report · May 2026</p>
+        <h1 class="rc-h1">Amanda Chen</h1>
+        <h2 class="rc-h2">Net Worth Snapshot</h2>
+        <p class="rc-body">Cash flow improved meaningfully this period, driven by a $1,420 lift in combined net income and disciplined spending. Liquid reserves grew $3,800.</p>
+        <div class="rc-kpis">
+          <div class="rc-kpi"><span class="rc-kpi-num">$24,580</span><span class="rc-kpi-label">Net Income</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$87,420</span><span class="rc-kpi-label">Total Debt</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$42,150</span><span class="rc-kpi-label">Liquid</span></div>
+        </div>
+        <div class="rc-footer"><span><span class="rc-footer-dot"></span>GENERATED 2026-05-31</span><span>PAGE 01 / 04</span></div>
+      </div>
+    </article>
+    <article class="variant" data-variant="B2">
+      <header class="variant-header"><span class="variant-label">B2</span><span class="variant-name">Source Serif 4 Bold + Inter</span></header>
+      <div class="variant-canvas">
+        <p class="rc-eyebrow">Monthly Report · May 2026</p>
+        <h1 class="rc-h1">Amanda Chen</h1>
+        <h2 class="rc-h2">Net Worth Snapshot</h2>
+        <p class="rc-body">Cash flow improved meaningfully this period, driven by a $1,420 lift in combined net income and disciplined spending. Liquid reserves grew $3,800.</p>
+        <div class="rc-kpis">
+          <div class="rc-kpi"><span class="rc-kpi-num">$24,580</span><span class="rc-kpi-label">Net Income</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$87,420</span><span class="rc-kpi-label">Total Debt</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$42,150</span><span class="rc-kpi-label">Liquid</span></div>
+        </div>
+        <div class="rc-footer"><span><span class="rc-footer-dot"></span>GENERATED 2026-05-31</span><span>PAGE 01 / 04</span></div>
+      </div>
+    </article>
+    <article class="variant" data-variant="B3">
+      <header class="variant-header"><span class="variant-label">B3</span><span class="variant-name">Playfair Italic + Inter</span></header>
+      <div class="variant-canvas">
+        <p class="rc-eyebrow">Monthly Report · May 2026</p>
+        <h1 class="rc-h1">Amanda Chen</h1>
+        <h2 class="rc-h2">Net Worth Snapshot</h2>
+        <p class="rc-body">Cash flow improved meaningfully this period, driven by a $1,420 lift in combined net income and disciplined spending. Liquid reserves grew $3,800.</p>
+        <div class="rc-kpis">
+          <div class="rc-kpi"><span class="rc-kpi-num">$24,580</span><span class="rc-kpi-label">Net Income</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$87,420</span><span class="rc-kpi-label">Total Debt</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$42,150</span><span class="rc-kpi-label">Liquid</span></div>
+        </div>
+        <div class="rc-footer"><span><span class="rc-footer-dot"></span>GENERATED 2026-05-31</span><span>PAGE 01 / 04</span></div>
+      </div>
+    </article>
+    <article class="variant" data-variant="B4">
+      <header class="variant-header"><span class="variant-label">B4</span><span class="variant-name">DM Sans Bold + DM Mono</span></header>
+      <div class="variant-canvas">
+        <p class="rc-eyebrow">Monthly Report · May 2026</p>
+        <h1 class="rc-h1">Amanda Chen</h1>
+        <h2 class="rc-h2">Net Worth Snapshot</h2>
+        <p class="rc-body">Cash flow improved meaningfully this period, driven by a $1,420 lift in combined net income and disciplined spending. Liquid reserves grew $3,800.</p>
+        <div class="rc-kpis">
+          <div class="rc-kpi"><span class="rc-kpi-num">$24,580</span><span class="rc-kpi-label">Net Income</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$87,420</span><span class="rc-kpi-label">Total Debt</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$42,150</span><span class="rc-kpi-label">Liquid</span></div>
+        </div>
+        <div class="rc-footer"><span><span class="rc-footer-dot"></span>GENERATED 2026-05-31</span><span>PAGE 01 / 04</span></div>
+      </div>
+    </article>
+    <article class="variant" data-variant="B5">
+      <header class="variant-header"><span class="variant-label">B5</span><span class="variant-name">Cormorant Italic + Source Sans 3</span></header>
+      <div class="variant-canvas">
+        <p class="rc-eyebrow">Monthly Report · May 2026</p>
+        <h1 class="rc-h1">Amanda Chen</h1>
+        <h2 class="rc-h2">Net Worth Snapshot</h2>
+        <p class="rc-body">Cash flow improved meaningfully this period, driven by a $1,420 lift in combined net income and disciplined spending. Liquid reserves grew $3,800.</p>
+        <div class="rc-kpis">
+          <div class="rc-kpi"><span class="rc-kpi-num">$24,580</span><span class="rc-kpi-label">Net Income</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$87,420</span><span class="rc-kpi-label">Total Debt</span></div>
+          <div class="rc-kpi"><span class="rc-kpi-num">$42,150</span><span class="rc-kpi-label">Liquid</span></div>
+        </div>
+        <div class="rc-footer"><span><span class="rc-footer-dot"></span>GENERATED 2026-05-31</span><span>PAGE 01 / 04</span></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION C: KPI HERO ===== -->
+<style>
+[data-variant^="C"] .variant-canvas { background: #2a3142; padding: 32px; min-height: 320px; display: flex; align-items: center; justify-content: center; }
+[data-variant^="C"] .kpi-card { background: #FAF6EC; color: #0D1B2A; border-radius: 8px; width: 100%; max-width: 440px; padding: 36px 40px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); position: relative; overflow: hidden; }
+
+[data-variant="C1"] .kpi-eyebrow { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #5a6478; margin-bottom: 18px; }
+[data-variant="C1"] .kpi-hero { font-family: 'Newsreader', serif; font-style: italic; font-weight: 400; font-size: 64px; line-height: 1; color: #0D1B2A; letter-spacing: -0.02em; display: flex; align-items: flex-start; gap: 2px; }
+[data-variant="C1"] .kpi-hero .dollar { font-size: 32px; margin-top: 8px; color: #C9A84C; font-style: italic; }
+[data-variant="C1"] .kpi-hairline { height: 1px; background: #C9A84C; width: 56px; margin: 24px 0 14px; }
+[data-variant="C1"] .kpi-caption { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: #4a5568; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+[data-variant="C1"] .kpi-caption .delta { color: #2d7a4a; font-weight: 600; }
+[data-variant="C1"] .spark-c1 { width: 80px; height: 22px; }
+
+[data-variant="C2"] .kpi-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: #5a6478; margin-bottom: 14px; display: flex; justify-content: space-between; }
+[data-variant="C2"] .kpi-eyebrow .tag { color: #C9A84C; }
+[data-variant="C2"] .kpi-hero { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 44px; line-height: 1.05; color: #0D1B2A; letter-spacing: -0.02em; display: flex; align-items: baseline; }
+[data-variant="C2"] .kpi-hero .dollar { color: #C9A84C; }
+[data-variant="C2"] .kpi-row { display: flex; align-items: center; gap: 16px; margin-top: 18px; padding-top: 14px; border-top: 1px dashed #d4cdb8; }
+[data-variant="C2"] .kpi-delta { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 14px; color: #2d7a4a; display: flex; align-items: center; gap: 4px; }
+[data-variant="C2"] .kpi-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #5a6478; margin-left: auto; }
+[data-variant="C2"] .spark-c2 { width: 90px; height: 24px; }
+
+[data-variant="C3"] .kpi-card { position: relative; }
+[data-variant="C3"] .spark-c3-bg { position: absolute; bottom: 0; left: 0; right: 0; width: 100%; height: 90px; opacity: 0.18; pointer-events: none; }
+[data-variant="C3"] .kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; z-index: 2; }
+[data-variant="C3"] .kpi-eyebrow { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: #5a6478; }
+[data-variant="C3"] .kpi-pill { background: #e7f3ec; color: #1e6e3d; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 12px; padding: 5px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+[data-variant="C3"] .kpi-hero { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 56px; line-height: 1; color: #0D1B2A; letter-spacing: -0.035em; position: relative; z-index: 2; }
+[data-variant="C3"] .kpi-hero .dollar { color: #C9A84C; font-weight: 700; }
+[data-variant="C3"] .kpi-sub { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: #5a6478; margin-top: 10px; position: relative; z-index: 2; }
+
+[data-variant="C4"] .kpi-eyebrow { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: #C9A84C; margin-bottom: 22px; }
+[data-variant="C4"] .kpi-hero { font-family: 'Newsreader', serif; font-weight: 400; font-size: 64px; line-height: 1; color: #0D1B2A; letter-spacing: -0.025em; display: flex; align-items: flex-start; gap: 4px; }
+[data-variant="C4"] .kpi-hero .dollar { font-size: 36px; margin-top: 10px; color: #0D1B2A; }
+[data-variant="C4"] .kpi-rule { height: 1px; background: #0D1B2A; width: 100%; margin: 28px 0 14px; opacity: 0.85; }
+[data-variant="C4"] .kpi-footer { display: flex; justify-content: space-between; align-items: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; color: #4a5568; }
+[data-variant="C4"] .kpi-footer .delta { display: inline-flex; align-items: center; gap: 6px; color: #1e6e3d; font-weight: 700; }
+[data-variant="C4"] .kpi-footer .label { letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px; color: #5a6478; }
+</style>
+
+<section class="lab-section" id="section-C">
+  <header class="lab-section-header">
+    <h2>C. KPI Hero Number Typography</h2>
+    <p class="lab-section-tagline">Same data, same palette — only the type style of the most important number changes. Which voice wins?</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="C1">
+      <header class="variant-header"><span class="variant-label">C1</span><span class="variant-name">Editorial Italic</span></header>
+      <div class="variant-canvas">
+        <div class="kpi-card">
+          <div class="kpi-eyebrow">Combined Net Income</div>
+          <div class="kpi-hero"><span class="dollar">$</span><span>24,580</span></div>
+          <div class="kpi-hairline"></div>
+          <div class="kpi-caption">
+            <div><span class="delta">+$1,420</span> vs last month</div>
+            <svg class="spark-c1" viewBox="0 0 80 22"><path d="M0,16 L13,14 L27,15 L40,10 L53,11 L67,6 L80,4" fill="none" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="C2">
+      <header class="variant-header"><span class="variant-label">C2</span><span class="variant-name">Dense Tabular</span></header>
+      <div class="variant-canvas">
+        <div class="kpi-card">
+          <div class="kpi-eyebrow"><span>COMBINED_NET_INCOME</span><span class="tag">MTD</span></div>
+          <div class="kpi-hero"><span class="dollar">$</span><span>24,580.00</span></div>
+          <div class="kpi-row">
+            <div class="kpi-delta">▲ +$1,420.00</div>
+            <svg class="spark-c2" viewBox="0 0 90 24"><rect x="2" y="14" width="8" height="10" fill="#C9A84C"/><rect x="14" y="11" width="8" height="13" fill="#C9A84C"/><rect x="26" y="13" width="8" height="11" fill="#C9A84C"/><rect x="38" y="8" width="8" height="16" fill="#C9A84C"/><rect x="50" y="10" width="8" height="14" fill="#C9A84C"/><rect x="62" y="5" width="8" height="19" fill="#0D1B2A"/><rect x="74" y="3" width="8" height="21" fill="#0D1B2A"/></svg>
+            <div class="kpi-meta">+6.1%</div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="C3">
+      <header class="variant-header"><span class="variant-label">C3</span><span class="variant-name">Sans Modern</span></header>
+      <div class="variant-canvas">
+        <div class="kpi-card">
+          <svg class="spark-c3-bg" viewBox="0 0 440 90" preserveAspectRatio="none">
+            <defs><linearGradient id="c3grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C9A84C" stop-opacity="0.9"/><stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,70 L73,62 L146,66 L220,46 L293,50 L366,28 L440,18 L440,90 L0,90 Z" fill="url(#c3grad)"/>
+            <path d="M0,70 L73,62 L146,66 L220,46 L293,50 L366,28 L440,18" fill="none" stroke="#C9A84C" stroke-width="2.5"/>
+          </svg>
+          <div class="kpi-top"><div class="kpi-eyebrow">Combined Net Income</div><div class="kpi-pill">▲ +$1,420</div></div>
+          <div class="kpi-hero"><span class="dollar">$</span>24,580</div>
+          <div class="kpi-sub">vs last month · 7-day trend</div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="C4">
+      <header class="variant-header"><span class="variant-label">C4</span><span class="variant-name">Small-caps Serif</span></header>
+      <div class="variant-canvas">
+        <div class="kpi-card">
+          <div class="kpi-eyebrow">Combined Net</div>
+          <div class="kpi-hero"><span class="dollar">$</span><span>24,580</span></div>
+          <div class="kpi-rule"></div>
+          <div class="kpi-footer"><span class="label">vs last month</span><span class="delta">↑ +$1,420</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION D: CARD VS SECTION ===== -->
+<style>
+[data-variant="D1"], [data-variant="D2"], [data-variant="D3"], [data-variant="D4"] {
+  --navy: #0D1B2A; --cream: #FAF6EC; --gold: #C9A84C;
+  --gold-soft: rgba(201, 168, 76, 0.4); --cream-dim: rgba(250, 246, 236, 0.62);
+  --cream-faint: rgba(250, 246, 236, 0.12);
+  background: var(--navy); color: var(--cream); font-family: 'Inter', sans-serif; min-height: 560px;
+}
+[data-variant="D1"] .d-eyebrow, [data-variant="D2"] .d-eyebrow, [data-variant="D3"] .d-eyebrow, [data-variant="D4"] .d-eyebrow {
+  font-family: 'Cormorant Garamond', serif; letter-spacing: 0.18em; text-transform: uppercase; font-size: 11px; color: var(--gold); font-weight: 500;
+}
+[data-variant="D1"] .d-amount, [data-variant="D2"] .d-amount, [data-variant="D3"] .d-amount, [data-variant="D4"] .d-amount { font-variant-numeric: tabular-nums; }
+
+[data-variant="D1"] .d1-wrap { padding: 48px 44px; }
+[data-variant="D1"] .d1-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; margin: 0 0 14px 0; }
+[data-variant="D1"] .d1-rule { height: 1px; background: var(--gold); margin-bottom: 44px; }
+[data-variant="D1"] .d1-group { margin-bottom: 44px; }
+[data-variant="D1"] .d1-group-label { font-family: 'Cormorant Garamond', serif; font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 18px; }
+[data-variant="D1"] .d1-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--cream-faint); font-size: 14px; }
+[data-variant="D1"] .d1-row-amount { font-weight: 500; font-size: 15px; }
+[data-variant="D1"] .d1-summary { margin-top: 48px; padding-top: 22px; border-top: 2px solid var(--gold); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+[data-variant="D1"] .d1-summary-cell .label { font-family: 'Cormorant Garamond', serif; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 6px; }
+[data-variant="D1"] .d1-summary-cell .val { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; }
+[data-variant="D1"] .d1-summary-cell.net .val { color: var(--gold); }
+
+[data-variant="D2"] .d2-wrap { padding: 28px; }
+[data-variant="D2"] .d2-title { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 18px 0; }
+[data-variant="D2"] .d2-section { margin-bottom: 22px; }
+[data-variant="D2"] .d2-section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 10px; }
+[data-variant="D2"] .d2-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+[data-variant="D2"] .d2-card { background: #142539; border-radius: 8px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.04); }
+[data-variant="D2"] .d2-card .name { font-size: 11px; color: var(--cream-dim); margin-bottom: 6px; }
+[data-variant="D2"] .d2-card .val { font-size: 17px; font-weight: 600; }
+[data-variant="D2"] .d2-summary { margin-top: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+[data-variant="D2"] .d2-summary-card { background: #142539; border-radius: 8px; padding: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
+[data-variant="D2"] .d2-summary-card .lab { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 6px; }
+[data-variant="D2"] .d2-summary-card .v { font-size: 22px; font-weight: 700; }
+[data-variant="D2"] .d2-summary-card.net .v { color: var(--gold); }
+
+[data-variant="D3"] .d3-wrap { padding: 36px 32px; }
+[data-variant="D3"] .d3-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 28px 0; font-weight: 500; }
+[data-variant="D3"] .d3-section { margin-bottom: 28px; }
+[data-variant="D3"] .d3-section-label { font-family: 'Cormorant Garamond', serif; font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+[data-variant="D3"] .d3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+[data-variant="D3"] .d3-pill { border: 1.5px solid var(--gold-soft); border-radius: 16px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+[data-variant="D3"] .d3-pill .name { font-size: 13px; }
+[data-variant="D3"] .d3-pill .val { font-size: 15px; font-weight: 600; }
+[data-variant="D3"] .d3-summary { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+[data-variant="D3"] .d3-summary-pill { border: 1.5px solid var(--gold-soft); border-radius: 16px; padding: 18px 20px; text-align: center; }
+[data-variant="D3"] .d3-summary-pill.net { border-color: var(--gold); background: rgba(201,168,76,0.06); }
+[data-variant="D3"] .d3-summary-pill .lab { font-family: 'Cormorant Garamond', serif; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 6px; }
+[data-variant="D3"] .d3-summary-pill .v { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; }
+[data-variant="D3"] .d3-summary-pill.net .v { color: var(--gold); }
+
+[data-variant="D4"] .d4-wrap { padding: 32px 28px; }
+[data-variant="D4"] .d4-title { font-size: 13px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 20px 0; }
+[data-variant="D4"] .d4-section { margin-bottom: 18px; }
+[data-variant="D4"] .d4-section-label { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); font-weight: 600; padding: 6px 0; border-bottom: 1px solid var(--cream-faint); }
+[data-variant="D4"] .d4-row { display: flex; justify-content: space-between; padding: 13px 12px; font-size: 13.5px; }
+[data-variant="D4"] .d4-row.alt { background: rgba(201,168,76,0.05); }
+[data-variant="D4"] .d4-row .val { font-weight: 600; }
+[data-variant="D4"] .d4-summary { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--cream-faint); display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+[data-variant="D4"] .d4-summary-cell { padding: 12px; }
+[data-variant="D4"] .d4-summary-cell .lab { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 4px; font-weight: 600; }
+[data-variant="D4"] .d4-summary-cell .v { font-size: 20px; font-weight: 700; }
+[data-variant="D4"] .d4-summary-cell.net .v { color: var(--gold); }
+</style>
+
+<section class="lab-section" id="section-D">
+  <header class="lab-section-header">
+    <h2>D. Card vs Section Layouts</h2>
+    <p class="lab-section-tagline">How much "containment" does each row need? Same data, four densities.</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="D1">
+      <header class="variant-header"><span class="variant-label">D1</span><span class="variant-name">Hairline Sections</span></header>
+      <div class="variant-canvas">
+        <div class="d1-wrap">
+          <h3 class="d1-title">Income & Spending — May 2026</h3>
+          <div class="d1-rule"></div>
+          <div class="d1-group">
+            <div class="d1-group-label">Income</div>
+            <div class="d1-row"><span>Salary</span><span class="d1-row-amount d-amount">$32,500</span></div>
+            <div class="d1-row"><span>Side work</span><span class="d1-row-amount d-amount">$7,500</span></div>
+            <div class="d1-row"><span>Investment</span><span class="d1-row-amount d-amount">$2,500</span></div>
+          </div>
+          <div class="d1-group">
+            <div class="d1-group-label">Spending</div>
+            <div class="d1-row"><span>Rent</span><span class="d1-row-amount d-amount">$4,200</span></div>
+            <div class="d1-row"><span>Groceries</span><span class="d1-row-amount d-amount">$1,820</span></div>
+            <div class="d1-row"><span>Utilities</span><span class="d1-row-amount d-amount">$940</span></div>
+          </div>
+          <div class="d1-summary">
+            <div class="d1-summary-cell"><div class="label">Total Income</div><div class="val d-amount">$42,500</div></div>
+            <div class="d1-summary-cell"><div class="label">Total Spending</div><div class="val d-amount">$17,920</div></div>
+            <div class="d1-summary-cell net"><div class="label">Net</div><div class="val d-amount">$24,580</div></div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="D2">
+      <header class="variant-header"><span class="variant-label">D2</span><span class="variant-name">Shadowed Cards</span></header>
+      <div class="variant-canvas">
+        <div class="d2-wrap">
+          <h3 class="d2-title">Income & Spending — May 2026</h3>
+          <div class="d2-section">
+            <div class="d2-section-label">Income</div>
+            <div class="d2-grid">
+              <div class="d2-card"><div class="name">Salary</div><div class="val d-amount">$32,500</div></div>
+              <div class="d2-card"><div class="name">Side work</div><div class="val d-amount">$7,500</div></div>
+              <div class="d2-card"><div class="name">Investment</div><div class="val d-amount">$2,500</div></div>
+            </div>
+          </div>
+          <div class="d2-section">
+            <div class="d2-section-label">Spending</div>
+            <div class="d2-grid">
+              <div class="d2-card"><div class="name">Rent</div><div class="val d-amount">$4,200</div></div>
+              <div class="d2-card"><div class="name">Groceries</div><div class="val d-amount">$1,820</div></div>
+              <div class="d2-card"><div class="name">Utilities</div><div class="val d-amount">$940</div></div>
+            </div>
+          </div>
+          <div class="d2-summary">
+            <div class="d2-summary-card"><div class="lab">Total Income</div><div class="v d-amount">$42,500</div></div>
+            <div class="d2-summary-card"><div class="lab">Total Spending</div><div class="v d-amount">$17,920</div></div>
+            <div class="d2-summary-card net"><div class="lab">Net</div><div class="v d-amount">$24,580</div></div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="D3">
+      <header class="variant-header"><span class="variant-label">D3</span><span class="variant-name">Outlined Pill Cards</span></header>
+      <div class="variant-canvas">
+        <div class="d3-wrap">
+          <h3 class="d3-title">Income & Spending — May 2026</h3>
+          <div class="d3-section">
+            <div class="d3-section-label">Income</div>
+            <div class="d3-grid">
+              <div class="d3-pill"><span class="name">Salary</span><span class="val d-amount">$32,500</span></div>
+              <div class="d3-pill"><span class="name">Side work</span><span class="val d-amount">$7,500</span></div>
+              <div class="d3-pill"><span class="name">Investment</span><span class="val d-amount">$2,500</span></div>
+            </div>
+          </div>
+          <div class="d3-section">
+            <div class="d3-section-label">Spending</div>
+            <div class="d3-grid">
+              <div class="d3-pill"><span class="name">Rent</span><span class="val d-amount">$4,200</span></div>
+              <div class="d3-pill"><span class="name">Groceries</span><span class="val d-amount">$1,820</span></div>
+              <div class="d3-pill"><span class="name">Utilities</span><span class="val d-amount">$940</span></div>
+            </div>
+          </div>
+          <div class="d3-summary">
+            <div class="d3-summary-pill"><div class="lab">Income</div><div class="v d-amount">$42,500</div></div>
+            <div class="d3-summary-pill"><div class="lab">Spending</div><div class="v d-amount">$17,920</div></div>
+            <div class="d3-summary-pill net"><div class="lab">Net</div><div class="v d-amount">$24,580</div></div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="D4">
+      <header class="variant-header"><span class="variant-label">D4</span><span class="variant-name">Alternating Tinted Rows</span></header>
+      <div class="variant-canvas">
+        <div class="d4-wrap">
+          <h3 class="d4-title">Income & Spending — May 2026</h3>
+          <div class="d4-section">
+            <div class="d4-section-label">Income</div>
+            <div class="d4-row"><span>Salary</span><span class="val d-amount">$32,500</span></div>
+            <div class="d4-row alt"><span>Side work</span><span class="val d-amount">$7,500</span></div>
+            <div class="d4-row"><span>Investment</span><span class="val d-amount">$2,500</span></div>
+          </div>
+          <div class="d4-section">
+            <div class="d4-section-label">Spending</div>
+            <div class="d4-row"><span>Rent</span><span class="val d-amount">$4,200</span></div>
+            <div class="d4-row alt"><span>Groceries</span><span class="val d-amount">$1,820</span></div>
+            <div class="d4-row"><span>Utilities</span><span class="val d-amount">$940</span></div>
+          </div>
+          <div class="d4-summary">
+            <div class="d4-summary-cell"><div class="lab">Total Income</div><div class="v d-amount">$42,500</div></div>
+            <div class="d4-summary-cell"><div class="lab">Total Spending</div><div class="v d-amount">$17,920</div></div>
+            <div class="d4-summary-cell net"><div class="lab">Net</div><div class="v d-amount">$24,580</div></div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION E: CHART DENSITY ===== -->
+<style>
+[data-variant^="E"] {
+  --navy-deep: #0a1628; --navy-line: #1e3052; --gold: #c9a96e;
+  --slate: #6b829e; --terracotta: #c8704a; --ink: #e6e8ec;
+  --ink-soft: rgba(230,232,236,0.65); --ink-faint: rgba(230,232,236,0.4);
+}
+[data-variant="E1"] .canvas-inner { background: var(--navy-deep); padding: 60px; }
+[data-variant="E1"] .e-title { font-family: 'Newsreader', serif; font-style: italic; font-size: 28px; color: var(--ink); margin-bottom: 4px; }
+[data-variant="E1"] .e-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-faint); margin-bottom: 48px; }
+[data-variant="E1"] .e-chart-wrap { height: 260px; }
+[data-variant="E1"] .e-chart-wrap svg { width: 100%; height: 100%; overflow: visible; }
+[data-variant="E1"] .e-tick-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--ink-faint); }
+[data-variant="E1"] .e-legend { display: flex; gap: 56px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--navy-line); }
+[data-variant="E1"] .e-legend-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-faint); display: flex; align-items: center; gap: 8px; }
+[data-variant="E1"] .e-legend-swatch { width: 10px; height: 2px; }
+[data-variant="E1"] .e-legend-value { font-family: 'Newsreader', serif; font-style: italic; font-size: 18px; color: var(--ink); margin-top: 6px; }
+
+[data-variant="E2"] .canvas-inner { background: var(--navy-deep); padding: 24px; border: 1px solid var(--navy-line); }
+[data-variant="E2"] .e2-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+[data-variant="E2"] .e2-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+[data-variant="E2"] .e2-sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+[data-variant="E2"] .e2-legend { display: flex; gap: 16px; }
+[data-variant="E2"] .e2-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-soft); }
+[data-variant="E2"] .e2-legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+[data-variant="E2"] .e2-chart-wrap { height: 200px; }
+[data-variant="E2"] .e2-chart-wrap svg { width: 100%; height: 100%; }
+[data-variant="E2"] .e2-tick-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--ink-faint); }
+[data-variant="E2"] .e2-x-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--ink-soft); }
+
+[data-variant="E3"] .canvas-inner { background: var(--navy-deep); padding: 8px; border: 1px solid var(--navy-line); font-family: 'JetBrains Mono', monospace; }
+[data-variant="E3"] .e3-topbar { display: flex; justify-content: space-between; padding: 0 4px 6px; border-bottom: 1px solid var(--navy-line); margin-bottom: 6px; }
+[data-variant="E3"] .e3-ticker { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; }
+[data-variant="E3"] .e3-ticker strong { color: var(--gold); }
+[data-variant="E3"] .e3-legend { display: flex; gap: 10px; font-size: 9px; color: var(--ink-soft); }
+[data-variant="E3"] .e3-legend-item { display: flex; align-items: center; gap: 4px; }
+[data-variant="E3"] .e3-legend-swatch { width: 8px; height: 8px; }
+[data-variant="E3"] .e3-chart-wrap { height: 140px; }
+[data-variant="E3"] .e3-chart-wrap svg { width: 100%; height: 100%; }
+[data-variant="E3"] .e3-tick-text { font-size: 8px; fill: var(--ink-faint); }
+[data-variant="E3"] .e3-x-text { font-size: 8px; fill: var(--ink-soft); }
+[data-variant="E3"] .e3-footer { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--navy-line); font-size: 8px; color: var(--ink-soft); }
+[data-variant="E3"] .e3-footer span { display: flex; justify-content: space-between; }
+[data-variant="E3"] .e3-footer strong { color: var(--gold); }
+</style>
+
+<section class="lab-section" id="section-E">
+  <header class="lab-section-header">
+    <h2>E. Chart Density</h2>
+    <p class="lab-section-tagline">Same data, same palette, three breathing-room levels — sparse editorial, balanced product, dense terminal.</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="E1">
+      <header class="variant-header"><span class="variant-label">E1</span><span class="variant-name">Sparse Editorial</span></header>
+      <div class="variant-canvas">
+        <div class="canvas-inner">
+          <h3 class="e-title">Income against spending</h3>
+          <p class="e-eyebrow">Six months · January through June 2026</p>
+          <div class="e-chart-wrap">
+            <svg viewBox="0 0 800 260" preserveAspectRatio="none">
+              <text class="e-tick-text" x="0" y="141">$20k</text>
+              <text class="e-tick-text" x="0" y="90">$30k</text>
+              <text class="e-tick-text" x="0" y="39">$40k</text>
+              <rect x="80" y="46" width="50" height="194" fill="#6b829e" opacity="0.55"/>
+              <rect x="208" y="33" width="50" height="207" fill="#6b829e" opacity="0.55"/>
+              <rect x="336" y="40" width="50" height="200" fill="#6b829e" opacity="0.55"/>
+              <rect x="464" y="26" width="50" height="214" fill="#6b829e" opacity="0.55"/>
+              <rect x="592" y="25" width="50" height="215" fill="#6b829e" opacity="0.55"/>
+              <rect x="720" y="23" width="50" height="217" fill="#6b829e" opacity="0.55"/>
+              <polyline points="105,156 233,152 361,154 489,153 617,151 745,148" fill="none" stroke="#c8704a" stroke-width="1.5"/>
+              <polyline points="105,130 233,121 361,126 489,114 617,114 745,114" fill="none" stroke="#c9a96e" stroke-width="2"/>
+              <text class="e-tick-text" x="105" y="258" text-anchor="middle">JAN</text>
+              <text class="e-tick-text" x="489" y="258" text-anchor="middle">APR</text>
+              <text class="e-tick-text" x="745" y="258" text-anchor="middle">JUN</text>
+            </svg>
+          </div>
+          <div class="e-legend">
+            <div><span class="e-legend-eyebrow"><span class="e-legend-swatch" style="background:#6b829e"></span>Income</span><div class="e-legend-value">$42,500</div></div>
+            <div><span class="e-legend-eyebrow"><span class="e-legend-swatch" style="background:#c8704a"></span>Spending</span><div class="e-legend-value">$17,920</div></div>
+            <div><span class="e-legend-eyebrow"><span class="e-legend-swatch" style="background:#c9a96e"></span>Net</span><div class="e-legend-value">$24,580</div></div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="E2">
+      <header class="variant-header"><span class="variant-label">E2</span><span class="variant-name">Medium Balanced</span></header>
+      <div class="variant-canvas">
+        <div class="canvas-inner">
+          <div class="e2-header">
+            <div><h3 class="e2-title">Income vs Spending</h3><p class="e2-sub">Jan – Jun 2026</p></div>
+            <div class="e2-legend">
+              <div class="e2-legend-item"><span class="e2-legend-swatch" style="background:#6b829e"></span>Income</div>
+              <div class="e2-legend-item"><span class="e2-legend-swatch" style="background:#c8704a"></span>Spending</div>
+              <div class="e2-legend-item"><span class="e2-legend-swatch" style="background:#c9a96e"></span>Net</div>
+            </div>
+          </div>
+          <div class="e2-chart-wrap">
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none">
+              <line x1="40" y1="175" x2="590" y2="175" stroke="#e6e8ec" opacity="0.06"/>
+              <line x1="40" y1="92" x2="590" y2="92" stroke="#e6e8ec" opacity="0.06"/>
+              <line x1="40" y1="10" x2="590" y2="10" stroke="#e6e8ec" opacity="0.06"/>
+              <text class="e2-tick-text" x="36" y="178" text-anchor="end">$10k</text>
+              <text class="e2-tick-text" x="36" y="95" text-anchor="end">$30k</text>
+              <text class="e2-tick-text" x="36" y="13" text-anchor="end">$50k</text>
+              <rect x="67" y="60" width="38" height="115" fill="#6b829e" opacity="0.6"/>
+              <rect x="159" y="49" width="38" height="126" fill="#6b829e" opacity="0.6"/>
+              <rect x="250" y="55" width="38" height="120" fill="#6b829e" opacity="0.6"/>
+              <rect x="342" y="44" width="38" height="131" fill="#6b829e" opacity="0.6"/>
+              <rect x="434" y="43" width="38" height="132" fill="#6b829e" opacity="0.6"/>
+              <rect x="525" y="41" width="38" height="134" fill="#6b829e" opacity="0.6"/>
+              <polyline points="85,148 177,145 269,147 360,146 452,144 544,142" fill="none" stroke="#c8704a" stroke-width="1.75"/>
+              <polyline points="85,127 177,120 269,124 360,114 452,114 544,115" fill="none" stroke="#c9a96e" stroke-width="2"/>
+              <text class="e2-x-text" x="85" y="193" text-anchor="middle">Jan</text>
+              <text class="e2-x-text" x="177" y="193" text-anchor="middle">Feb</text>
+              <text class="e2-x-text" x="269" y="193" text-anchor="middle">Mar</text>
+              <text class="e2-x-text" x="360" y="193" text-anchor="middle">Apr</text>
+              <text class="e2-x-text" x="452" y="193" text-anchor="middle">May</text>
+              <text class="e2-x-text" x="544" y="193" text-anchor="middle">Jun</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="E3">
+      <header class="variant-header"><span class="variant-label">E3</span><span class="variant-name">Dense Bloomberg</span></header>
+      <div class="variant-canvas">
+        <div class="canvas-inner">
+          <div class="e3-topbar">
+            <div class="e3-ticker">CHEN.A · CASHFLOW 6M · NET <strong>+$24,580</strong> · Δ +5.8%</div>
+            <div class="e3-legend">
+              <div class="e3-legend-item"><span class="e3-legend-swatch" style="background:#6b829e"></span>INC</div>
+              <div class="e3-legend-item"><span class="e3-legend-swatch" style="background:#c8704a"></span>SPND</div>
+              <div class="e3-legend-item"><span class="e3-legend-swatch" style="background:#c9a96e"></span>NET</div>
+            </div>
+          </div>
+          <div class="e3-chart-wrap">
+            <svg viewBox="0 0 600 140" preserveAspectRatio="none">
+              <g stroke="#1e3052" stroke-width="0.5">
+                <line x1="32" y1="122" x2="595" y2="122"/>
+                <line x1="32" y1="88" x2="595" y2="88"/>
+                <line x1="32" y1="55" x2="595" y2="55"/>
+                <line x1="32" y1="22" x2="595" y2="22"/>
+              </g>
+              <text class="e3-tick-text" x="30" y="124" text-anchor="end">16K</text>
+              <text class="e3-tick-text" x="30" y="90" text-anchor="end">24K</text>
+              <text class="e3-tick-text" x="30" y="57" text-anchor="end">32K</text>
+              <text class="e3-tick-text" x="30" y="24" text-anchor="end">40K</text>
+              <rect x="62" y="31" width="32" height="91" fill="#6b829e" opacity="0.6"/>
+              <rect x="156" y="20" width="32" height="102" fill="#6b829e" opacity="0.6"/>
+              <rect x="250" y="26" width="32" height="96" fill="#6b829e" opacity="0.6"/>
+              <rect x="344" y="15" width="32" height="107" fill="#6b829e" opacity="0.6"/>
+              <rect x="438" y="14" width="32" height="108" fill="#6b829e" opacity="0.6"/>
+              <rect x="532" y="12" width="32" height="110" fill="#6b829e" opacity="0.6"/>
+              <polyline points="78,119 172,117 266,118 360,117 454,116 548,114" fill="none" stroke="#c8704a" stroke-width="1.25"/>
+              <polyline points="78,99 172,91 266,95 360,85 454,85 548,86" fill="none" stroke="#c9a96e" stroke-width="1.5"/>
+              <text class="e3-x-text" x="78" y="133" text-anchor="middle">JAN</text>
+              <text class="e3-x-text" x="172" y="133" text-anchor="middle">FEB</text>
+              <text class="e3-x-text" x="266" y="133" text-anchor="middle">MAR</text>
+              <text class="e3-x-text" x="360" y="133" text-anchor="middle">APR</text>
+              <text class="e3-x-text" x="454" y="133" text-anchor="middle">MAY</text>
+              <text class="e3-x-text" x="548" y="133" text-anchor="middle">JUN</text>
+            </svg>
+          </div>
+          <div class="e3-footer">
+            <span>JAN <strong>+21.5K</strong></span>
+            <span>FEB <strong>+23.3K</strong></span>
+            <span>MAR <strong>+22.4K</strong></span>
+            <span>APR <strong>+24.7K</strong></span>
+            <span>MAY <strong>+24.7K</strong></span>
+            <span>JUN <strong>+24.6K</strong></span>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION F: CHART COLOR ENCODING ===== -->
+<style>
+[data-variant^="F"] .variant-canvas { background: #0B1F3A; padding: 24px; min-height: 380px; font-family: 'Inter', sans-serif; color: #F1F5F9; }
+[data-variant^="F"] .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(241,245,249,0.08); }
+[data-variant^="F"] .chart-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+[data-variant^="F"] .chart-subtitle { font-size: 11px; color: rgba(241,245,249,0.55); letter-spacing: 0.04em; text-transform: uppercase; }
+[data-variant^="F"] .chart-net-summary { text-align: right; }
+[data-variant^="F"] .chart-net-label { font-size: 10px; color: rgba(241,245,249,0.5); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+[data-variant^="F"] .chart-net-value { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; color: #C9A84C; }
+[data-variant^="F"] .chart-svg-wrap { width: 100%; height: 200px; margin-bottom: 16px; }
+[data-variant^="F"] .chart-svg { width: 100%; height: 100%; display: block; }
+[data-variant^="F"] .chart-legend { display: flex; gap: 20px; padding-top: 12px; border-top: 1px solid rgba(241,245,249,0.08); }
+[data-variant^="F"] .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(241,245,249,0.75); }
+[data-variant^="F"] .legend-swatch { width: 14px; height: 3px; }
+[data-variant^="F"] .legend-swatch.bar { height: 10px; width: 10px; }
+[data-variant^="F"] .axis-label { font-size: 9.5px; fill: rgba(241,245,249,0.5); }
+[data-variant^="F"] .grid-line { stroke: rgba(241,245,249,0.06); stroke-width: 1; }
+
+[data-variant="F1"] .income-bar { fill: #F1F5F9; opacity: 0.18; }
+[data-variant="F1"] .spending-line { stroke: #F1F5F9; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; opacity: 0.75; }
+[data-variant="F1"] .net-line { stroke: #C9A84C; stroke-width: 1.5; fill: none; }
+[data-variant="F1"] .net-dot { fill: #C9A84C; }
+[data-variant="F1"] .swatch-income { background: rgba(241,245,249,0.35); }
+[data-variant="F1"] .swatch-spending { background: repeating-linear-gradient(90deg, #F1F5F9 0 3px, transparent 3px 6px); opacity: 0.75; }
+[data-variant="F1"] .swatch-net { background: #C9A84C; }
+
+[data-variant="F2"] .income-bar { fill: #166534; opacity: 0.85; }
+[data-variant="F2"] .spending-line { stroke: #991B1B; stroke-width: 1.75; fill: none; }
+[data-variant="F2"] .spending-dot { fill: #991B1B; }
+[data-variant="F2"] .net-line { stroke: #C9A84C; stroke-width: 1.5; fill: none; }
+[data-variant="F2"] .net-dot { fill: #C9A84C; }
+[data-variant="F2"] .swatch-income { background: #166534; }
+[data-variant="F2"] .swatch-spending { background: #991B1B; }
+[data-variant="F2"] .swatch-net { background: #C9A84C; }
+
+[data-variant="F3"] .income-bar { fill: #1E3A5F; opacity: 0.55; }
+[data-variant="F3"] .spending-line { stroke: #4A6B8A; stroke-width: 1.5; fill: none; stroke-dasharray: 3 3; }
+[data-variant="F3"] .spending-dot { fill: #4A6B8A; }
+[data-variant="F3"] .net-line { stroke: #F1F5F9; stroke-width: 1.5; fill: none; }
+[data-variant="F3"] .net-dot { fill: #F1F5F9; }
+[data-variant="F3"] .swatch-income { background: #1E3A5F; }
+[data-variant="F3"] .swatch-spending { background: #4A6B8A; }
+[data-variant="F3"] .swatch-net { background: #F1F5F9; }
+
+[data-variant="F4"] .income-bar { fill: #C9A84C; opacity: 0.55; }
+[data-variant="F4"] .spending-line { stroke: #8B5A3C; stroke-width: 1.75; fill: none; }
+[data-variant="F4"] .spending-dot { fill: #8B5A3C; }
+[data-variant="F4"] .net-line { stroke: #6B8E5A; stroke-width: 1.75; fill: none; }
+[data-variant="F4"] .net-dot { fill: #6B8E5A; }
+[data-variant="F4"] .swatch-income { background: #C9A84C; }
+[data-variant="F4"] .swatch-spending { background: #8B5A3C; }
+[data-variant="F4"] .swatch-net { background: #6B8E5A; }
+</style>
+
+<section class="lab-section" id="section-F">
+  <header class="lab-section-header">
+    <h2>F. Chart Color Encoding</h2>
+    <p class="lab-section-tagline">Same Income vs Spending chart, four ways of encoding the data. Which reads cleanest in a private-bank context?</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="F1">
+      <header class="variant-header"><span class="variant-label">F1</span><span class="variant-name">Gold-only accent</span></header>
+      <div class="variant-canvas">
+        <div class="chart-header">
+          <div><h3 class="chart-title">Cash Flow · 6 Months</h3><div class="chart-subtitle">Amanda Chen</div></div>
+          <div class="chart-net-summary"><div class="chart-net-label">Net / mo</div><div class="chart-net-value">$24,580</div></div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="none">
+            <line class="grid-line" x1="40" y1="30" x2="560" y2="30"/>
+            <line class="grid-line" x1="40" y1="75" x2="560" y2="75"/>
+            <line class="grid-line" x1="40" y1="120" x2="560" y2="120"/>
+            <line class="grid-line" x1="40" y1="165" x2="560" y2="165"/>
+            <text class="axis-label" x="6" y="34">50k</text>
+            <text class="axis-label" x="6" y="79">35k</text>
+            <text class="axis-label" x="6" y="124">20k</text>
+            <text class="axis-label" x="6" y="169">5k</text>
+            <rect class="income-bar" x="60" y="50" width="40" height="115"/>
+            <rect class="income-bar" x="140" y="44" width="40" height="121"/>
+            <rect class="income-bar" x="220" y="38" width="40" height="127"/>
+            <rect class="income-bar" x="300" y="42" width="40" height="123"/>
+            <rect class="income-bar" x="380" y="35" width="40" height="130"/>
+            <rect class="income-bar" x="460" y="30" width="40" height="135"/>
+            <polyline class="spending-line" points="80,118 160,115 240,112 320,114 400,110 480,108"/>
+            <polyline class="net-line" points="80,98 160,92 240,84 320,88 400,80 480,72"/>
+            <circle class="net-dot" cx="480" cy="72" r="3.5"/>
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-swatch swatch-income"></span>Income</div>
+          <div class="legend-item"><span class="legend-swatch swatch-spending"></span>Spending</div>
+          <div class="legend-item"><span class="legend-swatch swatch-net"></span>Net</div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="F2">
+      <header class="variant-header"><span class="variant-label">F2</span><span class="variant-name">Green/Red Dual</span></header>
+      <div class="variant-canvas">
+        <div class="chart-header">
+          <div><h3 class="chart-title">Cash Flow · 6 Months</h3><div class="chart-subtitle">Amanda Chen</div></div>
+          <div class="chart-net-summary"><div class="chart-net-label">Net / mo</div><div class="chart-net-value">$24,580</div></div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="none">
+            <line class="grid-line" x1="40" y1="30" x2="560" y2="30"/>
+            <line class="grid-line" x1="40" y1="120" x2="560" y2="120"/>
+            <rect class="income-bar" x="60" y="50" width="40" height="115"/>
+            <rect class="income-bar" x="140" y="44" width="40" height="121"/>
+            <rect class="income-bar" x="220" y="38" width="40" height="127"/>
+            <rect class="income-bar" x="300" y="42" width="40" height="123"/>
+            <rect class="income-bar" x="380" y="35" width="40" height="130"/>
+            <rect class="income-bar" x="460" y="30" width="40" height="135"/>
+            <polyline class="spending-line" points="80,118 160,115 240,112 320,114 400,110 480,108"/>
+            <polyline class="net-line" points="80,98 160,92 240,84 320,88 400,80 480,72"/>
+            <circle class="net-dot" cx="480" cy="72" r="3.5"/>
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-swatch bar swatch-income"></span>Income</div>
+          <div class="legend-item"><span class="legend-swatch swatch-spending"></span>Spending</div>
+          <div class="legend-item"><span class="legend-swatch swatch-net"></span>Net</div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="F3">
+      <header class="variant-header"><span class="variant-label">F3</span><span class="variant-name">Monochrome Navy</span></header>
+      <div class="variant-canvas">
+        <div class="chart-header">
+          <div><h3 class="chart-title">Cash Flow · 6 Months</h3><div class="chart-subtitle">Amanda Chen</div></div>
+          <div class="chart-net-summary"><div class="chart-net-label">Net / mo</div><div class="chart-net-value">$24,580</div></div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="none">
+            <line class="grid-line" x1="40" y1="30" x2="560" y2="30"/>
+            <line class="grid-line" x1="40" y1="120" x2="560" y2="120"/>
+            <rect class="income-bar" x="60" y="50" width="40" height="115"/>
+            <rect class="income-bar" x="140" y="44" width="40" height="121"/>
+            <rect class="income-bar" x="220" y="38" width="40" height="127"/>
+            <rect class="income-bar" x="300" y="42" width="40" height="123"/>
+            <rect class="income-bar" x="380" y="35" width="40" height="130"/>
+            <rect class="income-bar" x="460" y="30" width="40" height="135"/>
+            <polyline class="spending-line" points="80,118 160,115 240,112 320,114 400,110 480,108"/>
+            <polyline class="net-line" points="80,98 160,92 240,84 320,88 400,80 480,72"/>
+            <circle class="net-dot" cx="480" cy="72" r="3.5"/>
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-swatch bar swatch-income"></span>Income</div>
+          <div class="legend-item"><span class="legend-swatch swatch-spending"></span>Spending</div>
+          <div class="legend-item"><span class="legend-swatch swatch-net"></span>Net</div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="F4">
+      <header class="variant-header"><span class="variant-label">F4</span><span class="variant-name">Brand Palette Rotating</span></header>
+      <div class="variant-canvas">
+        <div class="chart-header">
+          <div><h3 class="chart-title">Cash Flow · 6 Months</h3><div class="chart-subtitle">Amanda Chen</div></div>
+          <div class="chart-net-summary"><div class="chart-net-label">Net / mo</div><div class="chart-net-value">$24,580</div></div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="none">
+            <line class="grid-line" x1="40" y1="30" x2="560" y2="30"/>
+            <line class="grid-line" x1="40" y1="120" x2="560" y2="120"/>
+            <rect class="income-bar" x="60" y="50" width="40" height="115"/>
+            <rect class="income-bar" x="140" y="44" width="40" height="121"/>
+            <rect class="income-bar" x="220" y="38" width="40" height="127"/>
+            <rect class="income-bar" x="300" y="42" width="40" height="123"/>
+            <rect class="income-bar" x="380" y="35" width="40" height="130"/>
+            <rect class="income-bar" x="460" y="30" width="40" height="135"/>
+            <polyline class="spending-line" points="80,118 160,115 240,112 320,114 400,110 480,108"/>
+            <polyline class="net-line" points="80,98 160,92 240,84 320,88 400,80 480,72"/>
+            <circle class="net-dot" cx="480" cy="72" r="3.5"/>
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-swatch bar swatch-income"></span>Income</div>
+          <div class="legend-item"><span class="legend-swatch swatch-spending"></span>Spending</div>
+          <div class="legend-item"><span class="legend-swatch swatch-net"></span>Net</div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION G: SIGN-IN ===== -->
+<style>
+[data-variant^="G"] {
+  --ink: #0A1628; --ink-2: #0F1E36; --gold: #C9A24B; --gold-2: #E0BC6A;
+  --linen: #FAF6EC; --muted: rgba(245,239,224,0.62); --muted-2: rgba(245,239,224,0.42);
+  --line: rgba(201,162,75,0.22); --line-strong: rgba(201,162,75,0.55);
+}
+[data-variant^="G"] .variant-canvas { padding: 0; background: var(--ink); min-height: 560px; font-family: 'Inter', sans-serif; color: var(--linen); }
+[data-variant^="G"] .gs-input { width: 100%; background: transparent; border: none; color: var(--linen); font: 400 14px/1.4 'Inter', sans-serif; outline: none; }
+[data-variant^="G"] .gs-input::placeholder { color: var(--muted-2); }
+[data-variant^="G"] .gs-label { font: 500 10px/1 'Inter', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+
+[data-variant="G1"] .gs1 { display: grid; grid-template-columns: 1fr 460px; min-height: 640px; background: radial-gradient(ellipse at 20% 30%, rgba(201,162,75,0.10), transparent 50%), #0A1628; position: relative; }
+[data-variant="G1"] .gs1-hero { padding: 56px 64px; display: flex; flex-direction: column; justify-content: center; }
+[data-variant="G1"] .gs1-eyebrow { font: 500 10px/1 'Inter', sans-serif; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin-bottom: 28px; }
+[data-variant="G1"] .gs1-mark { font: italic 400 96px/0.95 'Newsreader', serif; letter-spacing: -0.025em; color: var(--linen); margin: 0 0 24px; }
+[data-variant="G1"] .gs1-mark em { color: var(--gold); }
+[data-variant="G1"] .gs1-tag { font: italic 400 18px/1.5 'Newsreader', serif; color: var(--muted); max-width: 380px; margin: 0 0 56px; }
+[data-variant="G1"] .gs1-pills { display: flex; gap: 10px; margin-top: auto; }
+[data-variant="G1"] .gs1-pill { padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 10px; letter-spacing: 0.2em; color: var(--gold-2); }
+[data-variant="G1"] .gs1-card { align-self: center; margin: 56px 56px 56px 0; background: rgba(255,255,255,0.03); border: 1px solid var(--line); padding: 40px 36px; }
+[data-variant="G1"] .gs1-card h3 { font-size: 18px; margin: 0 0 8px; }
+[data-variant="G1"] .gs1-card p { font-size: 13px; color: var(--muted); margin: 0 0 28px; }
+[data-variant="G1"] .gs1-field { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+[data-variant="G1"] .gs1-field .gs-label { display: block; margin-bottom: 8px; }
+[data-variant="G1"] .gs1-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin: 24px 0; }
+[data-variant="G1"] .gs1-row a { color: var(--gold-2); text-decoration: none; }
+[data-variant="G1"] .gs1-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--ink); border: none; font: 600 13px/1 'Inter', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+
+[data-variant="G2"] .gs2 { min-height: 640px; background: #0A1628; display: flex; align-items: center; justify-content: center; padding: 80px 24px; }
+[data-variant="G2"] .gs2-inner { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+[data-variant="G2"] .gs2-symbol { width: 18px; height: 18px; border: 1px solid var(--gold); transform: rotate(45deg); margin-bottom: 36px; }
+[data-variant="G2"] .gs2-mark { font: italic 400 56px/1 'Newsreader', serif; margin: 0 0 16px; color: var(--linen); }
+[data-variant="G2"] .gs2-tag { font: italic 400 15px/1.4 'Newsreader', serif; color: var(--muted); margin: 0 0 64px; }
+[data-variant="G2"] .gs2-form { width: 100%; text-align: left; }
+[data-variant="G2"] .gs2-field { margin-bottom: 40px; padding-bottom: 10px; border-bottom: 1px solid rgba(245,239,224,0.18); }
+[data-variant="G2"] .gs2-field.focus { border-bottom: 1px solid var(--gold); }
+[data-variant="G2"] .gs2-field .gs-label { display: block; margin-bottom: 12px; font-size: 9px; letter-spacing: 0.25em; }
+[data-variant="G2"] .gs2-btn { width: 100%; padding: 18px; background: transparent; border: 1px solid var(--gold); color: var(--gold); font: 500 12px/1 'Inter', sans-serif; letter-spacing: 0.28em; text-transform: uppercase; margin-top: 16px; }
+[data-variant="G2"] .gs2-forgot { text-align: center; margin-top: 28px; font-size: 12px; color: var(--muted); }
+[data-variant="G2"] .gs2-forgot a { color: var(--gold-2); }
+[data-variant="G2"] .gs2-footer { margin-top: 80px; font-size: 11px; color: var(--muted-2); }
+
+[data-variant="G3"] .gs3 { display: grid; grid-template-columns: 1fr 1fr; min-height: 640px; }
+[data-variant="G3"] .gs3-left { background: var(--linen); padding: 64px 56px; display: flex; flex-direction: column; justify-content: space-between; color: var(--ink); }
+[data-variant="G3"] .gs3-mark { font: italic 400 32px/1 'Newsreader', serif; color: var(--ink); }
+[data-variant="G3"] .gs3-mark span { color: var(--gold); }
+[data-variant="G3"] .gs3-quotemark { font: italic 400 120px/0.8 'Newsreader', serif; color: var(--gold); height: 60px; }
+[data-variant="G3"] .gs3-quote { font: italic 400 32px/1.35 'Newsreader', serif; color: var(--ink); margin: 0 0 32px; max-width: 460px; }
+[data-variant="G3"] .gs3-attrib { font: 500 11px/1 'Inter', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); opacity: 0.6; }
+[data-variant="G3"] .gs3-foot { font-size: 11px; color: var(--ink); opacity: 0.5; }
+[data-variant="G3"] .gs3-right { background: var(--ink); padding: 64px; display: flex; flex-direction: column; justify-content: center; }
+[data-variant="G3"] .gs3-eyebrow { font: 500 10px/1 'Inter', sans-serif; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; }
+[data-variant="G3"] .gs3-h { font-size: 28px; margin: 0 0 8px; color: var(--linen); }
+[data-variant="G3"] .gs3-sub { font-size: 14px; color: var(--muted); margin: 0 0 40px; }
+[data-variant="G3"] .gs3-field { margin-bottom: 20px; }
+[data-variant="G3"] .gs3-field .gs-label { display: block; margin-bottom: 8px; }
+[data-variant="G3"] .gs3-input-wrap { background: rgba(255,255,255,0.04); border: 1px solid var(--line); padding: 14px 16px; border-radius: 4px; margin-top: 8px; }
+[data-variant="G3"] .gs3-btn { width: 100%; padding: 16px; background: linear-gradient(180deg, var(--gold-2), var(--gold)); color: var(--ink); border: none; font: 600 13px/1 'Inter', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 4px; margin-top: 12px; }
+[data-variant="G3"] .gs3-meta { display: flex; justify-content: space-between; margin-top: 20px; font-size: 12px; color: var(--muted); }
+[data-variant="G3"] .gs3-meta a { color: var(--gold-2); }
+
+[data-variant="G4"] .gs4 { min-height: 640px; background: #0A1628; position: relative; padding-top: 4px; }
+[data-variant="G4"] .gs4-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-2), var(--gold)); }
+[data-variant="G4"] .gs4-frame { max-width: 1200px; margin: 0 auto; padding: 80px 64px 40px; display: grid; grid-template-columns: 1fr 420px; gap: 80px; align-items: center; }
+[data-variant="G4"] .gs4-tag-top { font: 500 10px/1 'JetBrains Mono', monospace; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 32px; }
+[data-variant="G4"] .gs4-mark { font: italic 400 72px/0.95 'Newsreader', serif; color: var(--linen); margin: 0 0 28px; }
+[data-variant="G4"] .gs4-mark span { color: var(--gold); }
+[data-variant="G4"] .gs4-tag { font: italic 400 17px/1.5 'Newsreader', serif; color: var(--muted); max-width: 440px; margin: 0 0 32px; }
+[data-variant="G4"] .gs4-stats { display: flex; gap: 32px; padding-top: 24px; border-top: 1px solid var(--line); max-width: 440px; }
+[data-variant="G4"] .gs4-stat-k { font-size: 22px; color: var(--gold); }
+[data-variant="G4"] .gs4-stat-l { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+[data-variant="G4"] .gs4-right { background: #0F1E36; border: 1px solid var(--line); padding: 36px 32px; }
+[data-variant="G4"] .gs4-rh { font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 24px; display: flex; justify-content: space-between; }
+[data-variant="G4"] .gs4-field { margin-bottom: 18px; }
+[data-variant="G4"] .gs4-field .gs-label { display: block; margin-bottom: 8px; font-size: 9px; }
+[data-variant="G4"] .gs4-input-wrap { background: #0A1628; border: 1px solid var(--line); padding: 12px 14px; }
+[data-variant="G4"] .gs4-check { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); margin: 18px 0; }
+[data-variant="G4"] .gs4-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--ink); border: none; font: 600 12px/1 'JetBrains Mono', monospace; letter-spacing: 0.2em; text-transform: uppercase; }
+</style>
+
+<section class="lab-section" id="section-G">
+  <header class="lab-section-header">
+    <h2>G. Sign-In Screen</h2>
+    <p class="lab-section-tagline">First impression of the app. Pick the entrance that feels right.</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="G1">
+      <header class="variant-header"><span class="variant-label">G1</span><span class="variant-name">Editorial Landing</span></header>
+      <div class="variant-canvas">
+        <div class="gs1">
+          <div class="gs1-hero">
+            <div class="gs1-eyebrow">— Private Wealth Studio</div>
+            <h1 class="gs1-mark">Golden <em>Anchor</em></h1>
+            <p class="gs1-tag">Personal finance, refined. A quiet space for the work of building wealth.</p>
+            <div class="gs1-pills"><span class="gs1-pill">MBA</span><span class="gs1-pill">FPWMP</span><span class="gs1-pill">FL · 0215</span></div>
+          </div>
+          <div class="gs1-card">
+            <h3>Welcome back</h3>
+            <p>Sign in to your advisor workspace.</p>
+            <div class="gs1-field"><span class="gs-label">Email</span><input class="gs-input" type="email" value="amanda.chen@goldenanchor.life"/></div>
+            <div class="gs1-field"><span class="gs-label">Password</span><input class="gs-input" type="password" value="••••••••••••"/></div>
+            <div class="gs1-row"><span>Remember me</span><a href="#">Forgot password</a></div>
+            <button class="gs1-btn">Sign in</button>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="G2">
+      <header class="variant-header"><span class="variant-label">G2</span><span class="variant-name">Centered Minimal</span></header>
+      <div class="variant-canvas">
+        <div class="gs2">
+          <div class="gs2-inner">
+            <div class="gs2-symbol"></div>
+            <h1 class="gs2-mark">Golden Anchor</h1>
+            <p class="gs2-tag">Personal finance, refined.</p>
+            <form class="gs2-form">
+              <div class="gs2-field"><span class="gs-label">Email</span><input class="gs-input" type="email" value="amanda.chen@goldenanchor.life"/></div>
+              <div class="gs2-field focus"><span class="gs-label">Password</span><input class="gs-input" type="password" value="••••••••••••"/></div>
+              <button type="button" class="gs2-btn">Sign in</button>
+              <div class="gs2-forgot">Forgot your password? <a href="#">Recover it</a></div>
+            </form>
+            <div class="gs2-footer">© 2026 Golden Anchor</div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="G3">
+      <header class="variant-header"><span class="variant-label">G3</span><span class="variant-name">Split Quote</span></header>
+      <div class="variant-canvas">
+        <div class="gs3">
+          <div class="gs3-left">
+            <div class="gs3-mark">Golden <span>Anchor</span></div>
+            <div>
+              <div class="gs3-quotemark">"</div>
+              <p class="gs3-quote">I finally know where my money goes — and where it's going next.</p>
+              <div class="gs3-attrib">— A.C. · Client since 2024</div>
+            </div>
+            <div class="gs3-foot">Personal finance, refined.</div>
+          </div>
+          <div class="gs3-right">
+            <div class="gs3-eyebrow">Advisor Sign-In</div>
+            <h2 class="gs3-h">Welcome back, Mauricio.</h2>
+            <p class="gs3-sub">12 active clients are expecting you.</p>
+            <div class="gs3-field"><span class="gs-label">Email Address</span><div class="gs3-input-wrap"><input class="gs-input" type="email" value="mauricio@goldenanchor.life"/></div></div>
+            <div class="gs3-field"><span class="gs-label">Password</span><div class="gs3-input-wrap"><input class="gs-input" type="password" value="••••••••••••"/></div></div>
+            <button class="gs3-btn">Sign in to dashboard</button>
+            <div class="gs3-meta"><span>Stay signed in for 14 days</span><a href="#">Forgot?</a></div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="G4">
+      <header class="variant-header"><span class="variant-label">G4</span><span class="variant-name">Compact Gold-Accent</span></header>
+      <div class="variant-canvas">
+        <div class="gs4">
+          <div class="gs4-bar"></div>
+          <div class="gs4-frame">
+            <div>
+              <div class="gs4-tag-top">GOLDEN_ANCHOR / ADVISOR_CONSOLE</div>
+              <h1 class="gs4-mark">Golden <span>Anchor</span></h1>
+              <p class="gs4-tag">Personal finance, refined. Built for advisors who treat every household like the only household.</p>
+              <div class="gs4-stats">
+                <div><div class="gs4-stat-k">12</div><div class="gs4-stat-l">Active Clients</div></div>
+                <div><div class="gs4-stat-k">$24.5k</div><div class="gs4-stat-l">Avg Net / mo</div></div>
+                <div><div class="gs4-stat-k">FPWMP</div><div class="gs4-stat-l">Certified</div></div>
+              </div>
+            </div>
+            <div class="gs4-right">
+              <div class="gs4-rh"><span>// SIGN_IN</span><span style="color:var(--muted-2);">SECURE</span></div>
+              <div class="gs4-field"><span class="gs-label">Email</span><div class="gs4-input-wrap"><input class="gs-input" type="email" value="mauricio@goldenanchor.life"/></div></div>
+              <div class="gs4-field"><span class="gs-label">Password</span><div class="gs4-input-wrap"><input class="gs-input" type="password" value="••••••••••••"/></div></div>
+              <div class="gs4-check">Trust this device for 30 days</div>
+              <button class="gs4-btn">Authenticate &gt;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION H: INTAKE FORM ===== -->
+<style>
+[data-variant="H1"], [data-variant="H2"], [data-variant="H3"], [data-variant="H4"] {
+  --navy-900: #0a1628; --gold-500: #c9a455; --gold-400: #d9b870;
+  --cream-50: #faf6ee; --cream-100: #f3ecdc; --ink-400: #8a8a8a; --line: #e5e1d4;
+}
+
+[data-variant="H1"] .h1-stage { background: linear-gradient(180deg, #0a1628 0%, #122237 100%); padding: 40px 20px; display: flex; justify-content: center; min-height: 720px; }
+[data-variant="H1"] .h1-phone { width: 320px; background: #0a1628; border-radius: 40px; padding: 12px; box-shadow: 0 0 0 3px #2a2a2a; }
+[data-variant="H1"] .h1-screen { background: #0a1628; border-radius: 30px; overflow: hidden; height: 700px; display: flex; flex-direction: column; padding: 30px 0 0; }
+[data-variant="H1"] .h1-brand { font-family: 'Newsreader', serif; color: #c9a455; font-size: 16px; font-style: italic; text-align: center; }
+[data-variant="H1"] .h1-pills { display: flex; gap: 6px; padding: 16px 20px 8px; }
+[data-variant="H1"] .h1-pill { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); }
+[data-variant="H1"] .h1-pill.active { background: #c9a455; }
+[data-variant="H1"] .h1-pill.done { background: rgba(201,164,85,0.5); }
+[data-variant="H1"] .h1-step-label { color: #c9a455; font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-align: center; padding: 4px 20px; }
+[data-variant="H1"] .h1-title { font-family: 'Newsreader', serif; color: #fff; font-size: 24px; padding: 14px 20px 4px; }
+[data-variant="H1"] .h1-sub { color: rgba(255,255,255,0.55); font-size: 12px; padding: 0 20px 16px; }
+[data-variant="H1"] .h1-services { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; flex: 1; }
+[data-variant="H1"] .h1-service { border: 1px solid rgba(201,164,85,0.3); background: rgba(201,164,85,0.04); border-radius: 12px; padding: 14px; }
+[data-variant="H1"] .h1-service.selected { border-color: #c9a455; background: rgba(201,164,85,0.12); }
+[data-variant="H1"] .h1-svc-title { color: #fff; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; }
+[data-variant="H1"] .h1-svc-price { color: #c9a455; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+[data-variant="H1"] .h1-svc-desc { color: rgba(255,255,255,0.55); font-size: 11px; margin-top: 4px; line-height: 1.4; }
+[data-variant="H1"] .h1-continue { margin: 16px 16px 24px; background: #c9a455; color: #0a1628; font-weight: 600; font-size: 14px; padding: 14px; border-radius: 12px; text-align: center; }
+
+[data-variant="H2"] .h2-stage { background: #f3ecdc; padding: 40px 20px; min-height: 720px; }
+[data-variant="H2"] .h2-rail { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: #1c3050; margin-bottom: 20px; text-align: center; }
+[data-variant="H2"] .h2-card { max-width: 560px; margin: 0 auto; background: #fff; padding: 40px 44px; border: 1px solid rgba(28,48,80,0.08); box-shadow: 0 12px 40px rgba(10,22,40,0.08); }
+[data-variant="H2"] .h2-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: #c9a455; margin-bottom: 12px; }
+[data-variant="H2"] .h2-title { font-family: 'Newsreader', serif; font-size: 30px; color: #0a1628; margin-bottom: 8px; }
+[data-variant="H2"] .h2-sub { color: #4a4a4a; font-size: 14px; margin-bottom: 28px; }
+[data-variant="H2"] .h2-service { display: flex; gap: 16px; padding: 18px 0; border-bottom: 1px solid #e8e0cc; }
+[data-variant="H2"] .h2-service.selected { background: rgba(201,164,85,0.06); padding: 18px; margin: 0 -16px; }
+[data-variant="H2"] .h2-radio2 { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #8a8a8a; flex-shrink: 0; margin-top: 3px; }
+[data-variant="H2"] .h2-service.selected .h2-radio2 { border-color: #c9a455; }
+[data-variant="H2"] .h2-svc-head2 { display: flex; justify-content: space-between; margin-bottom: 4px; }
+[data-variant="H2"] .h2-svc-title2 { font-weight: 600; font-size: 15px; color: #0a1628; }
+[data-variant="H2"] .h2-popular { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; color: #0a1628; background: #c9a455; padding: 3px 8px; text-transform: uppercase; margin-left: 8px; }
+[data-variant="H2"] .h2-svc-price2 { font-family: 'JetBrains Mono', monospace; color: #0a1628; font-size: 14px; font-weight: 600; }
+[data-variant="H2"] .h2-svc-desc2 { color: #4a4a4a; font-size: 13px; line-height: 1.5; }
+[data-variant="H2"] .h2-actions { display: flex; justify-content: space-between; margin-top: 28px; }
+[data-variant="H2"] .h2-back { color: #4a4a4a; font-size: 13px; }
+[data-variant="H2"] .h2-continue { background: #0a1628; color: #c9a455; font-weight: 600; font-size: 14px; padding: 12px 24px; }
+
+[data-variant="H3"] .h3-stage { background: #faf6ee; padding: 50px 60px; min-height: 720px; }
+[data-variant="H3"] .h3-top { display: flex; justify-content: space-between; margin-bottom: 50px; }
+[data-variant="H3"] .h3-brand3 { font-family: 'Newsreader', serif; font-style: italic; font-size: 18px; color: #0a1628; }
+[data-variant="H3"] .h3-step3 { font-size: 11px; letter-spacing: 0.24em; color: #8a8a8a; }
+[data-variant="H3"] .h3-step3-num { color: #c9a455; font-weight: 600; }
+[data-variant="H3"] .h3-title3 { font-family: 'Newsreader', serif; font-style: italic; font-size: 64px; color: #0a1628; text-align: center; line-height: 1; margin-bottom: 8px; }
+[data-variant="H3"] .h3-sub3 { font-size: 13px; color: #4a4a4a; text-align: center; margin-bottom: 48px; }
+[data-variant="H3"] .h3-rows { border-top: 1px solid #d4c8a6; }
+[data-variant="H3"] .h3-row { padding: 24px 8px; border-bottom: 1px solid #d4c8a6; display: flex; align-items: center; gap: 24px; }
+[data-variant="H3"] .h3-row.selected { background: rgba(201,164,85,0.1); padding-left: 12px; border-left: 3px solid #c9a455; }
+[data-variant="H3"] .h3-row-num { font-family: 'JetBrains Mono', monospace; color: #c9a455; font-size: 11px; letter-spacing: 0.12em; min-width: 40px; }
+[data-variant="H3"] .h3-row-body { flex: 1; }
+[data-variant="H3"] .h3-row-title { font-family: 'Newsreader', serif; font-size: 24px; color: #0a1628; margin-bottom: 4px; }
+[data-variant="H3"] .h3-row-desc { font-size: 13px; color: #4a4a4a; }
+[data-variant="H3"] .h3-row-price { font-family: 'JetBrains Mono', monospace; font-size: 20px; color: #0a1628; font-weight: 500; text-align: right; }
+[data-variant="H3"] .h3-row-price small { font-size: 11px; color: #8a8a8a; display: block; margin-top: 2px; }
+[data-variant="H3"] .h3-foot { display: flex; justify-content: space-between; margin-top: 32px; }
+[data-variant="H3"] .h3-back3 { font-size: 12px; letter-spacing: 0.14em; color: #4a4a4a; text-transform: uppercase; }
+[data-variant="H3"] .h3-continue3 { font-size: 12px; letter-spacing: 0.18em; color: #c9a455; text-transform: uppercase; font-weight: 600; }
+
+[data-variant="H4"] .h4-stage { background: linear-gradient(180deg, #faf6ee, #f3ecdc); padding: 28px 24px; min-height: 720px; }
+[data-variant="H4"] .h4-rail4 { display: flex; justify-content: space-between; padding: 0 8px 20px; border-bottom: 1px solid rgba(28,48,80,0.1); margin-bottom: 24px; }
+[data-variant="H4"] .h4-step-pill { font-size: 10px; letter-spacing: 0.22em; font-weight: 600; color: #0a1628; }
+[data-variant="H4"] .h4-thread { max-width: 580px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+[data-variant="H4"] .h4-advisor-row { display: flex; gap: 12px; align-items: flex-end; }
+[data-variant="H4"] .h4-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #c9a455, #d9b870); color: #0a1628; font-family: 'Newsreader', serif; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+[data-variant="H4"] .h4-bubble-advisor { background: #fff; border-left: 3px solid #c9a455; padding: 14px 18px; border-radius: 4px 16px 16px 16px; max-width: 420px; }
+[data-variant="H4"] .h4-advisor-name { font-size: 11px; font-weight: 600; color: #c9a455; letter-spacing: 0.06em; margin-bottom: 4px; }
+[data-variant="H4"] .h4-advisor-text { font-family: 'Newsreader', serif; font-size: 16px; color: #0a1628; }
+[data-variant="H4"] .h4-chip-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; padding-left: 48px; }
+[data-variant="H4"] .h4-chip { background: rgba(255,255,255,0.7); border: 1px solid rgba(28,48,80,0.15); padding: 10px 14px; border-radius: 20px; font-size: 12px; color: #0a1628; }
+[data-variant="H4"] .h4-chip-price { color: #8a8a8a; margin-left: 6px; }
+[data-variant="H4"] .h4-user-bubble { align-self: flex-end; background: #0a1628; color: #fff; padding: 12px 16px; border-radius: 16px 16px 4px 16px; max-width: 320px; font-size: 13px; }
+[data-variant="H4"] .h4-detail-bubble { background: #fff; border: 1px solid rgba(201,164,85,0.4); padding: 16px 18px; border-radius: 4px 16px 16px 16px; max-width: 420px; margin-left: 48px; }
+[data-variant="H4"] .h4-detail-title { font-family: 'Newsreader', serif; font-size: 17px; color: #0a1628; display: flex; justify-content: space-between; }
+[data-variant="H4"] .h4-detail-price { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #c9a455; font-weight: 600; }
+[data-variant="H4"] .h4-detail-desc { font-size: 12px; color: #4a4a4a; margin: 8px 0; }
+[data-variant="H4"] .h4-detail-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+[data-variant="H4"] .h4-detail-list li { font-size: 11px; color: #1c3050; }
+[data-variant="H4"] .h4-continue4 { background: #c9a455; color: #0a1628; font-weight: 600; font-size: 13px; padding: 10px 20px; border-radius: 20px; margin: 20px auto 0; display: inline-block; }
+[data-variant="H4"] .h4-bottom-bar { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(28,48,80,0.08); }
+</style>
+
+<section class="lab-section" id="section-H">
+  <header class="lab-section-header">
+    <h2>H. Intake Form — Service Selection</h2>
+    <p class="lab-section-tagline">Step 2 of 4: which form personality wins?</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="H1">
+      <header class="variant-header"><span class="variant-label">H1</span><span class="variant-name">Mobile iOS Frame</span></header>
+      <div class="variant-canvas">
+        <div class="h1-stage">
+          <div class="h1-phone"><div class="h1-screen">
+            <div class="h1-brand">Golden Anchor</div>
+            <div class="h1-pills"><div class="h1-pill done"></div><div class="h1-pill active"></div><div class="h1-pill"></div><div class="h1-pill"></div></div>
+            <div class="h1-step-label">STEP 2 OF 4</div>
+            <div class="h1-title">Choose a service</div>
+            <div class="h1-sub">Pick the engagement that fits.</div>
+            <div class="h1-services">
+              <div class="h1-service">
+                <div class="h1-svc-title">Monthly Coaching <span class="h1-svc-price">$250/mo</span></div>
+                <div class="h1-svc-desc">1:1 check-ins, budget monitoring.</div>
+              </div>
+              <div class="h1-service selected">
+                <div class="h1-svc-title">Annual Plan <span class="h1-svc-price">$1,500</span></div>
+                <div class="h1-svc-desc">Comprehensive financial plan.</div>
+              </div>
+              <div class="h1-service">
+                <div class="h1-svc-title">Couples Discovery <span class="h1-svc-price">$500</span></div>
+                <div class="h1-svc-desc">90-min couples session.</div>
+              </div>
+            </div>
+            <div class="h1-continue">Continue →</div>
+          </div></div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="H2">
+      <header class="variant-header"><span class="variant-label">H2</span><span class="variant-name">Desktop Centered Card</span></header>
+      <div class="variant-canvas">
+        <div class="h2-stage">
+          <div class="h2-rail">STEP 2 OF 4 · CHOOSE A SERVICE</div>
+          <div class="h2-card">
+            <div class="h2-eyebrow">SERVICE</div>
+            <h3 class="h2-title">Which engagement fits?</h3>
+            <p class="h2-sub">You can change this later. Pricing in USD.</p>
+            <div class="h2-service">
+              <div class="h2-radio2"></div>
+              <div style="flex:1;">
+                <div class="h2-svc-head2"><span class="h2-svc-title2">Monthly Coaching</span><span class="h2-svc-price2">$250/mo</span></div>
+                <div class="h2-svc-desc2">1:1 check-ins, budget monitoring. Cancel anytime.</div>
+              </div>
+            </div>
+            <div class="h2-service selected">
+              <div class="h2-radio2"></div>
+              <div style="flex:1;">
+                <div class="h2-svc-head2"><span><span class="h2-svc-title2">Annual Plan</span><span class="h2-popular">Most popular</span></span><span class="h2-svc-price2">$1,500</span></div>
+                <div class="h2-svc-desc2">Comprehensive financial plan with written deliverable.</div>
+              </div>
+            </div>
+            <div class="h2-service">
+              <div class="h2-radio2"></div>
+              <div style="flex:1;">
+                <div class="h2-svc-head2"><span class="h2-svc-title2">Couples Discovery</span><span class="h2-svc-price2">$500</span></div>
+                <div class="h2-svc-desc2">90-minute couples session focused on joint goals.</div>
+              </div>
+            </div>
+            <div class="h2-actions"><div class="h2-back">← Back</div><div class="h2-continue">Continue →</div></div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="H3">
+      <header class="variant-header"><span class="variant-label">H3</span><span class="variant-name">Editorial Fullscreen</span></header>
+      <div class="variant-canvas">
+        <div class="h3-stage">
+          <div class="h3-top">
+            <div class="h3-brand3">Golden Anchor</div>
+            <div class="h3-step3"><span class="h3-step3-num">02</span> / 04 · SERVICE</div>
+          </div>
+          <h2 class="h3-title3"><em>Choose a service</em></h2>
+          <p class="h3-sub3">Three ways to work together — pick what feels right.</p>
+          <div class="h3-rows">
+            <div class="h3-row">
+              <div class="h3-row-num">01</div>
+              <div class="h3-row-body"><div class="h3-row-title">Monthly Coaching</div><div class="h3-row-desc">1:1 check-ins, budget & cash-flow monitoring.</div></div>
+              <div class="h3-row-price">$250<small>PER MONTH</small></div>
+            </div>
+            <div class="h3-row selected">
+              <div class="h3-row-num">02</div>
+              <div class="h3-row-body"><div class="h3-row-title">Annual Plan</div><div class="h3-row-desc">Comprehensive financial plan, written deliverable.</div></div>
+              <div class="h3-row-price">$1,500<small>ONE-TIME</small></div>
+            </div>
+            <div class="h3-row">
+              <div class="h3-row-num">03</div>
+              <div class="h3-row-body"><div class="h3-row-title">Couples Discovery</div><div class="h3-row-desc">90-minute couples session for joint goals.</div></div>
+              <div class="h3-row-price">$500<small>90 MINUTES</small></div>
+            </div>
+          </div>
+          <div class="h3-foot"><div class="h3-back3">← Back to contact</div><div class="h3-continue3">Continue →</div></div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="H4">
+      <header class="variant-header"><span class="variant-label">H4</span><span class="variant-name">Conversational</span></header>
+      <div class="variant-canvas">
+        <div class="h4-stage">
+          <div class="h4-rail4">
+            <div class="h4-step-pill">02 / 04 · CHOOSE A SERVICE</div>
+            <div></div>
+          </div>
+          <div class="h4-thread">
+            <div class="h4-advisor-row">
+              <div class="h4-avatar">M</div>
+              <div class="h4-bubble-advisor">
+                <div class="h4-advisor-name">MAURICIO HERNANDEZ, MBA</div>
+                <div class="h4-advisor-text">Hi — Mauricio here. Which service feels right?</div>
+              </div>
+            </div>
+            <div class="h4-chip-row">
+              <div class="h4-chip">Monthly Coaching<span class="h4-chip-price">$250/mo</span></div>
+              <div class="h4-chip">Annual Plan<span class="h4-chip-price">$1,500</span></div>
+              <div class="h4-chip">Couples Discovery<span class="h4-chip-price">$500</span></div>
+            </div>
+            <div class="h4-user-bubble">✓ Annual Plan — tell me more</div>
+            <div class="h4-advisor-row">
+              <div class="h4-avatar">M</div>
+              <div class="h4-bubble-advisor"><div class="h4-advisor-text">Great pick. Here's what's included —</div></div>
+            </div>
+            <div class="h4-detail-bubble">
+              <div class="h4-detail-title">Annual Plan<span class="h4-detail-price">$1,500</span></div>
+              <div class="h4-detail-desc">Comprehensive financial plan with written deliverable.</div>
+              <ul class="h4-detail-list">
+                <li>✓ Two 90-minute working sessions</li>
+                <li>✓ Cash-flow, debt, retirement & insurance review</li>
+                <li>✓ Written 12-month action plan (PDF)</li>
+                <li>✓ 30-day email follow-up</li>
+              </ul>
+            </div>
+          </div>
+          <div class="h4-bottom-bar">
+            <div style="font-size:12px;color:#8a8a8a;font-style:italic;">Mauricio is typing…</div>
+            <div class="h4-continue4">Continue with Annual Plan →</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION I: CLIENT DETAIL ===== -->
+<style>
+[data-variant^="I"] {
+  --navy-900: #0a1628; --navy-800: #0f1e36; --navy-700: #15263f; --navy-600: #1e3050;
+  --gold-500: #c9a449; --gold-400: #d9b766; --ink-700: #2c3e5a; --ink-500: #5a6b85;
+  --ink-400: #8a99b3; --ink-300: #b8c3d6; --paper: #fafaf7; --line: #e5e1d4;
+  --pos: #2d7a4a; --neg: #b03a3a;
+  font-family: 'Inter', sans-serif; color: var(--navy-900);
+}
+[data-variant^="I"] .i-canvas { background: var(--paper); border: 1px solid var(--line); overflow: hidden; }
+
+[data-variant="I1"] .i-canvas { padding: 48px 56px; }
+[data-variant="I1"] .i1-head { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+[data-variant="I1"] .i1-name { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 500; color: var(--navy-900); }
+[data-variant="I1"] .i1-subname { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-500); margin-top: 8px; }
+[data-variant="I1"] .i1-pills { display: flex; gap: 10px; }
+[data-variant="I1"] .i1-pill { padding: 6px 12px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 100px; color: var(--ink-700); background: white; }
+[data-variant="I1"] .i1-pill.active { border-color: var(--gold-500); color: var(--gold-500); }
+[data-variant="I1"] .i1-kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; margin-bottom: 48px; }
+[data-variant="I1"] .i1-kpi { padding-left: 16px; border-left: 2px solid var(--gold-500); }
+[data-variant="I1"] .i1-kpi-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-500); margin-bottom: 12px; }
+[data-variant="I1"] .i1-kpi-val { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 500; color: var(--navy-900); }
+[data-variant="I1"] .i1-kpi-delta { margin-top: 10px; font-size: 12px; color: var(--pos); }
+[data-variant="I1"] .i1-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; }
+[data-variant="I1"] .i1-section-head { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 20px; color: var(--navy-900); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+[data-variant="I1"] .i1-chart-wrap { background: white; padding: 24px; border: 1px solid var(--line); }
+[data-variant="I1"] .i1-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+[data-variant="I1"] .i1-table th { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-500); font-weight: 500; text-align: left; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+[data-variant="I1"] .i1-table th.r, [data-variant="I1"] .i1-table td.r { text-align: right; }
+[data-variant="I1"] .i1-table td { padding: 12px 0; border-bottom: 1px dashed var(--line); }
+[data-variant="I1"] .i1-table td.name { font-weight: 500; }
+[data-variant="I1"] .i1-table td.rate { color: var(--gold-500); }
+
+[data-variant="I2"] .i-canvas { padding: 12px; background: var(--navy-900); color: var(--ink-300); }
+[data-variant="I2"] .i2-head { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--navy-800); border: 1px solid var(--navy-600); margin-bottom: 6px; }
+[data-variant="I2"] .i2-name { font-size: 16px; font-weight: 600; color: white; }
+[data-variant="I2"] .i2-ticker { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--gold-400); margin-left: 12px; }
+[data-variant="I2"] .i2-pills { display: flex; gap: 6px; font-family: 'JetBrains Mono', monospace; }
+[data-variant="I2"] .i2-pill { font-size: 9px; padding: 3px 8px; border: 1px solid var(--navy-600); color: var(--ink-300); }
+[data-variant="I2"] .i2-pill.live { color: var(--pos); border-color: var(--pos); }
+[data-variant="I2"] .i2-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px; }
+[data-variant="I2"] .i2-kpi { background: var(--navy-800); border: 1px solid var(--navy-600); padding: 8px; }
+[data-variant="I2"] .i2-kpi-label { font-size: 9px; letter-spacing: 0.1em; color: var(--ink-400); margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+[data-variant="I2"] .i2-kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: white; }
+[data-variant="I2"] .i2-kpi-delta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--pos); margin-top: 2px; }
+[data-variant="I2"] .i2-kpi-delta.neg { color: var(--neg); }
+[data-variant="I2"] .i2-row { display: grid; grid-template-columns: 2fr 1fr; gap: 4px; margin-bottom: 6px; }
+[data-variant="I2"] .i2-panel { background: var(--navy-800); border: 1px solid var(--navy-600); padding: 10px; }
+[data-variant="I2"] .i2-panel-head { font-size: 9px; letter-spacing: 0.15em; color: var(--gold-400); padding-bottom: 6px; border-bottom: 1px solid var(--navy-600); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
+[data-variant="I2"] .i2-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+[data-variant="I2"] .i2-table { width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+[data-variant="I2"] .i2-table th { font-size: 9px; color: var(--ink-400); font-weight: 500; text-align: left; padding: 4px; background: var(--navy-700); }
+[data-variant="I2"] .i2-table th.r, [data-variant="I2"] .i2-table td.r { text-align: right; }
+[data-variant="I2"] .i2-table td { padding: 4px; border-bottom: 1px solid var(--navy-700); color: var(--ink-300); }
+[data-variant="I2"] .i2-table td.name { color: white; }
+[data-variant="I2"] .i2-table td.amt { color: var(--gold-400); }
+[data-variant="I2"] .i2-table td.neg-amt { color: #ff6b6b; }
+
+[data-variant="I3"] .i-canvas { padding: 60px 72px; }
+[data-variant="I3"] .i3-eyebrow { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-500); margin-bottom: 14px; }
+[data-variant="I3"] .i3-name { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 400; color: var(--navy-900); }
+[data-variant="I3"] .i3-pills { display: flex; gap: 18px; margin-top: 16px; font-size: 12px; color: var(--ink-500); font-style: italic; }
+[data-variant="I3"] .i3-rule { height: 1px; background: linear-gradient(to right, var(--gold-500) 0%, var(--gold-500) 80px, var(--line) 80px); margin: 48px 0; }
+[data-variant="I3"] .i3-section-head { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 24px; color: var(--navy-900); margin-bottom: 24px; }
+[data-variant="I3"] .i3-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; }
+[data-variant="I3"] .i3-kpi-label { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-500); margin-bottom: 12px; }
+[data-variant="I3"] .i3-kpi-val { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 500; color: var(--navy-900); }
+[data-variant="I3"] .i3-kpi-delta { margin-top: 10px; font-size: 13px; color: var(--pos); font-style: italic; }
+[data-variant="I3"] .i3-chart-frame { background: white; border: 1px solid var(--line); padding: 28px; }
+[data-variant="I3"] .i3-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+[data-variant="I3"] .i3-table th { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-500); font-weight: 500; text-align: left; padding-bottom: 14px; border-bottom: 1px solid var(--gold-500); }
+[data-variant="I3"] .i3-table th.r, [data-variant="I3"] .i3-table td.r { text-align: right; }
+[data-variant="I3"] .i3-table td { padding: 18px 0; border-bottom: 1px solid var(--line); }
+[data-variant="I3"] .i3-table td.name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; }
+[data-variant="I3"] .i3-table td.meta { color: var(--ink-500); font-size: 11px; font-style: italic; }
+[data-variant="I3"] .i3-table td.amt { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 500; }
+[data-variant="I3"] .i3-table td.rate { color: var(--gold-500); font-style: italic; }
+
+[data-variant="I4"] .i-canvas { padding: 0; display: grid; grid-template-columns: 220px 1fr; min-height: 720px; }
+[data-variant="I4"] .i4-side { background: var(--navy-900); color: white; padding: 28px 22px; }
+[data-variant="I4"] .i4-side-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: white; }
+[data-variant="I4"] .i4-side-sub { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-400); margin-top: 6px; }
+[data-variant="I4"] .i4-side-status { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 10px; background: var(--navy-800); border-left: 2px solid var(--pos); font-size: 11px; color: var(--ink-300); }
+[data-variant="I4"] .i4-side-status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pos); }
+[data-variant="I4"] .i4-side-sep { height: 1px; background: var(--navy-700); margin: 24px 0; }
+[data-variant="I4"] .i4-mini-kpi { padding: 12px 0; border-bottom: 1px solid var(--navy-800); }
+[data-variant="I4"] .i4-mini-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-400); margin-bottom: 4px; }
+[data-variant="I4"] .i4-mini-val { font-size: 17px; font-weight: 600; color: white; }
+[data-variant="I4"] .i4-mini-delta { font-size: 10px; color: var(--gold-400); margin-top: 2px; }
+[data-variant="I4"] .i4-main { padding: 36px 40px; }
+[data-variant="I4"] .i4-main-head { display: flex; justify-content: space-between; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+[data-variant="I4"] .i4-h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: var(--navy-900); }
+[data-variant="I4"] .i4-breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-500); }
+[data-variant="I4"] .i4-breadcrumb b { color: var(--gold-500); }
+[data-variant="I4"] .i4-section { margin-bottom: 28px; }
+[data-variant="I4"] .i4-section-title { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-700); font-weight: 600; margin-bottom: 14px; }
+[data-variant="I4"] .i4-chart-wrap { background: white; border: 1px solid var(--line); border-radius: 6px; padding: 20px; }
+[data-variant="I4"] .i4-tables-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+[data-variant="I4"] .i4-table-wrap { background: white; border: 1px solid var(--line); border-radius: 6px; padding: 16px 20px; }
+[data-variant="I4"] .i4-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+[data-variant="I4"] .i4-table th { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-500); text-align: left; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+[data-variant="I4"] .i4-table th.r, [data-variant="I4"] .i4-table td.r { text-align: right; }
+[data-variant="I4"] .i4-table td { padding: 10px 0; border-bottom: 1px solid var(--line); }
+[data-variant="I4"] .i4-table td.name { font-weight: 500; }
+[data-variant="I4"] .i4-table td .meta { font-size: 10px; color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.08em; }
+</style>
+
+<section class="lab-section" id="section-I">
+  <header class="lab-section-header">
+    <h2>I. Client Detail — Summary Tab</h2>
+    <p class="lab-section-tagline">Same content, different proportions. Which density and rhythm fits the boutique private-bank voice?</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="I1">
+      <header class="variant-header"><span class="variant-label">I1</span><span class="variant-name">Editorial 3-Column</span></header>
+      <div class="variant-canvas">
+        <div class="i-canvas">
+          <div class="i1-head">
+            <div><div class="i1-name">Amanda Chen</div><div class="i1-subname">Client · Advisor: Mauricio Hernandez, MBA · FPWMP</div></div>
+            <div class="i1-pills"><span class="i1-pill active">● Active</span><span class="i1-pill">Last Review · May 22</span></div>
+          </div>
+          <div class="i1-kpi-strip">
+            <div class="i1-kpi"><div class="i1-kpi-label">Net Income / mo</div><div class="i1-kpi-val">$24,580</div><div class="i1-kpi-delta">▲ $1,420</div></div>
+            <div class="i1-kpi"><div class="i1-kpi-label">Combined Debt</div><div class="i1-kpi-val">$87,420</div><div class="i1-kpi-delta">▼ $1,200</div></div>
+            <div class="i1-kpi"><div class="i1-kpi-label">Liquid Assets</div><div class="i1-kpi-val">$42,150</div><div class="i1-kpi-delta">▲ $3,800</div></div>
+            <div class="i1-kpi"><div class="i1-kpi-label">Net Worth</div><div class="i1-kpi-val">$285,730</div><div class="i1-kpi-delta">▲ 1.6%</div></div>
+          </div>
+          <div class="i1-grid">
+            <div>
+              <h3 class="i1-section-head">Income vs. Spending — 6mo</h3>
+              <div class="i1-chart-wrap">
+                <svg viewBox="0 0 600 240" style="width:100%;height:200px;">
+                  <g fill="#c9a449">
+                    <rect x="20" y="80" width="32" height="140"/><rect x="120" y="68" width="32" height="152"/><rect x="220" y="58" width="32" height="162"/><rect x="320" y="50" width="32" height="170"/><rect x="420" y="46" width="32" height="174"/><rect x="520" y="38" width="32" height="182"/>
+                  </g>
+                  <g fill="#15263f">
+                    <rect x="56" y="148" width="32" height="72"/><rect x="156" y="142" width="32" height="78"/><rect x="256" y="138" width="32" height="82"/><rect x="356" y="134" width="32" height="86"/><rect x="456" y="138" width="32" height="82"/><rect x="556" y="142" width="32" height="78"/>
+                  </g>
+                </svg>
+              </div>
+            </div>
+            <div>
+              <h3 class="i1-section-head">Top Debts</h3>
+              <table class="i1-table">
+                <tbody>
+                  <tr><td class="name">Mortgage</td><td class="r">$312,000</td></tr>
+                  <tr><td class="rate">4.2%</td><td></td></tr>
+                  <tr><td class="name">Auto Honda</td><td class="r">$18,400</td></tr>
+                  <tr><td class="rate">6.9%</td><td></td></tr>
+                  <tr><td class="name">CC Chase</td><td class="r">$4,200</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="i1-section-head">Top Assets</h3>
+              <table class="i1-table">
+                <tbody>
+                  <tr><td class="name">401(k)</td><td class="r">$234,000</td></tr>
+                  <tr><td class="name">Brokerage</td><td class="r">$89,000</td></tr>
+                  <tr><td class="name">Savings</td><td class="r">$42,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="I2">
+      <header class="variant-header"><span class="variant-label">I2</span><span class="variant-name">Dense Bloomberg</span></header>
+      <div class="variant-canvas">
+        <div class="i-canvas">
+          <div class="i2-head">
+            <div><span class="i2-name">CHEN, AMANDA</span><span class="i2-ticker">CL.0042 · USD · TX</span></div>
+            <div class="i2-pills"><span class="i2-pill live">● ACTIVE</span><span class="i2-pill">LAST REV 05/22</span><span class="i2-pill">ADV: M.HERNANDEZ</span></div>
+          </div>
+          <div class="i2-kpi-grid">
+            <div class="i2-kpi"><div class="i2-kpi-label">NET INC / MO</div><div class="i2-kpi-val">$24,580</div><div class="i2-kpi-delta">+1,420 (+6.1%)</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">COMB DEBT</div><div class="i2-kpi-val">$87,420</div><div class="i2-kpi-delta">-1,200</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">LIQ ASSETS</div><div class="i2-kpi-val">$42,150</div><div class="i2-kpi-delta">+3,800</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">NET WORTH</div><div class="i2-kpi-val">$285,730</div><div class="i2-kpi-delta">+4,610</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">GROSS INC</div><div class="i2-kpi-val">$42,500</div><div class="i2-kpi-delta">+820</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">SPEND / MO</div><div class="i2-kpi-val">$17,920</div><div class="i2-kpi-delta neg">+340</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">SAVE RATE</div><div class="i2-kpi-val">57.8%</div><div class="i2-kpi-delta">+1.2pp</div></div>
+            <div class="i2-kpi"><div class="i2-kpi-label">DTI</div><div class="i2-kpi-val">0.205</div><div class="i2-kpi-delta">-0.008</div></div>
+          </div>
+          <div class="i2-row">
+            <div class="i2-panel">
+              <div class="i2-panel-head">INC vs SPD · 6M</div>
+              <svg viewBox="0 0 600 160" style="width:100%;height:150px;">
+                <g fill="#c9a449">
+                  <rect x="20" y="50" width="20" height="100"/><rect x="120" y="42" width="20" height="108"/><rect x="220" y="34" width="20" height="116"/><rect x="320" y="26" width="20" height="124"/><rect x="420" y="22" width="20" height="128"/><rect x="520" y="16" width="20" height="134"/>
+                </g>
+                <g fill="#3a5a8c">
+                  <rect x="44" y="98" width="20" height="52"/><rect x="144" y="94" width="20" height="56"/><rect x="244" y="92" width="20" height="58"/><rect x="344" y="88" width="20" height="62"/><rect x="444" y="92" width="20" height="58"/><rect x="544" y="94" width="20" height="56"/>
+                </g>
+              </svg>
+            </div>
+            <div class="i2-panel">
+              <div class="i2-panel-head">CASH FLOW · MTD</div>
+              <table class="i2-table">
+                <tr><td>INCOME</td><td class="r amt">42,500</td></tr>
+                <tr><td>SPENDING</td><td class="r neg-amt">17,920</td></tr>
+                <tr><td>SAVED</td><td class="r amt">24,580</td></tr>
+                <tr><td>DEBT PAY</td><td class="r neg-amt">3,840</td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="i2-tables">
+            <div class="i2-panel">
+              <div class="i2-panel-head">TOP DEBTS</div>
+              <table class="i2-table">
+                <thead><tr><th>ACCT</th><th class="r">BAL</th><th class="r">RATE</th></tr></thead>
+                <tbody>
+                  <tr><td class="name">MORTGAGE</td><td class="r neg-amt">312,000</td><td class="r">4.20%</td></tr>
+                  <tr><td class="name">AUTO HONDA</td><td class="r neg-amt">18,400</td><td class="r">6.90%</td></tr>
+                  <tr><td class="name">CC CHASE</td><td class="r neg-amt">4,200</td><td class="r">24.90%</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="i2-panel">
+              <div class="i2-panel-head">TOP ASSETS</div>
+              <table class="i2-table">
+                <thead><tr><th>ACCT</th><th class="r">VAL</th><th class="r">%</th></tr></thead>
+                <tbody>
+                  <tr><td class="name">401K FIDELITY</td><td class="r amt">234,000</td><td class="r">63%</td></tr>
+                  <tr><td class="name">BRK SCHWAB</td><td class="r amt">89,000</td><td class="r">24%</td></tr>
+                  <tr><td class="name">SAV ALLY</td><td class="r amt">42,000</td><td class="r">11%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="I3">
+      <header class="variant-header"><span class="variant-label">I3</span><span class="variant-name">Hairline Sections</span></header>
+      <div class="variant-canvas">
+        <div class="i-canvas">
+          <div class="i3-eyebrow">Client · Summary</div>
+          <div class="i3-name">Amanda Chen</div>
+          <div class="i3-pills"><span>● Active</span><span><em>Last review · May 22</em></span><span>M. Hernandez · MBA · FPWMP</span></div>
+          <h3 class="i3-section-head" style="margin-top:48px;">At a glance</h3>
+          <div class="i3-kpi-row">
+            <div><div class="i3-kpi-label">Net Income</div><div class="i3-kpi-val">$24,580</div><div class="i3-kpi-delta">+$1,420</div></div>
+            <div><div class="i3-kpi-label">Combined Debt</div><div class="i3-kpi-val">$87,420</div><div class="i3-kpi-delta">−$1,200</div></div>
+            <div><div class="i3-kpi-label">Liquid</div><div class="i3-kpi-val">$42,150</div><div class="i3-kpi-delta">+$3,800</div></div>
+            <div><div class="i3-kpi-label">Net Worth</div><div class="i3-kpi-val">$285,730</div><div class="i3-kpi-delta">+1.6%</div></div>
+          </div>
+          <div class="i3-rule"></div>
+          <h3 class="i3-section-head">Income vs. spending</h3>
+          <div class="i3-chart-frame">
+            <svg viewBox="0 0 800 220" style="width:100%;height:220px;">
+              <g fill="#c9a449">
+                <rect x="30" y="70" width="40" height="150"/><rect x="160" y="58" width="40" height="162"/><rect x="290" y="48" width="40" height="172"/><rect x="420" y="38" width="40" height="182"/><rect x="550" y="30" width="40" height="190"/><rect x="680" y="22" width="40" height="198"/>
+              </g>
+              <g fill="#15263f">
+                <rect x="76" y="140" width="40" height="80"/><rect x="206" y="134" width="40" height="86"/><rect x="336" y="130" width="40" height="90"/><rect x="466" y="126" width="40" height="94"/><rect x="596" y="130" width="40" height="90"/><rect x="726" y="134" width="40" height="86"/>
+              </g>
+            </svg>
+          </div>
+          <div class="i3-rule"></div>
+          <h3 class="i3-section-head">Largest debts</h3>
+          <table class="i3-table">
+            <thead><tr><th>Account</th><th>Type</th><th class="r">Rate</th><th class="r">Balance</th></tr></thead>
+            <tbody>
+              <tr><td class="name">Mortgage</td><td class="meta">30y fixed</td><td class="r rate">4.2%</td><td class="r amt">$312,000</td></tr>
+              <tr><td class="name">Auto Loan</td><td class="meta">Honda · 60mo</td><td class="r rate">6.9%</td><td class="r amt">$18,400</td></tr>
+              <tr><td class="name">CC · Chase</td><td class="meta">Sapphire</td><td class="r rate">24.9%</td><td class="r amt">$4,200</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="I4">
+      <header class="variant-header"><span class="variant-label">I4</span><span class="variant-name">Sticky-Sidebar</span></header>
+      <div class="variant-canvas">
+        <div class="i-canvas">
+          <aside class="i4-side">
+            <div class="i4-side-name">Amanda<br/>Chen</div>
+            <div class="i4-side-sub">Client · TX</div>
+            <div class="i4-side-status"><span class="dot"></span> Active · May 22</div>
+            <div class="i4-side-sep"></div>
+            <div class="i4-mini-kpi"><div class="i4-mini-label">Net Income / mo</div><div class="i4-mini-val">$24,580</div><div class="i4-mini-delta">▲ $1,420</div></div>
+            <div class="i4-mini-kpi"><div class="i4-mini-label">Combined Debt</div><div class="i4-mini-val">$87,420</div><div class="i4-mini-delta">▼ $1,200</div></div>
+            <div class="i4-mini-kpi"><div class="i4-mini-label">Liquid Assets</div><div class="i4-mini-val">$42,150</div><div class="i4-mini-delta">▲ $3,800</div></div>
+            <div class="i4-mini-kpi"><div class="i4-mini-label">Net Worth</div><div class="i4-mini-val">$285,730</div><div class="i4-mini-delta">▲ 1.6%</div></div>
+          </aside>
+          <div class="i4-main">
+            <div class="i4-main-head">
+              <div class="i4-h1">Summary</div>
+              <div class="i4-breadcrumb">Clients › Chen, Amanda › <b>Summary</b></div>
+            </div>
+            <div class="i4-section">
+              <div class="i4-section-title">Income vs. Spending · 6 months</div>
+              <div class="i4-chart-wrap">
+                <svg viewBox="0 0 700 200" style="width:100%;height:180px;">
+                  <g fill="#c9a449">
+                    <rect x="30" y="60" width="36" height="130" rx="2"/><rect x="142" y="50" width="36" height="140" rx="2"/><rect x="254" y="40" width="36" height="150" rx="2"/><rect x="366" y="32" width="36" height="158" rx="2"/><rect x="478" y="26" width="36" height="164" rx="2"/><rect x="590" y="18" width="36" height="172" rx="2"/>
+                  </g>
+                  <g fill="#15263f">
+                    <rect x="72" y="120" width="36" height="70" rx="2"/><rect x="184" y="114" width="36" height="76" rx="2"/><rect x="296" y="110" width="36" height="80" rx="2"/><rect x="408" y="106" width="36" height="84" rx="2"/><rect x="520" y="110" width="36" height="80" rx="2"/><rect x="632" y="114" width="36" height="76" rx="2"/>
+                  </g>
+                </svg>
+              </div>
+            </div>
+            <div class="i4-tables-row">
+              <div>
+                <div class="i4-section-title">Top Debts</div>
+                <div class="i4-table-wrap">
+                  <table class="i4-table">
+                    <thead><tr><th>Account</th><th class="r">Balance</th></tr></thead>
+                    <tbody>
+                      <tr><td class="name">Mortgage<div class="meta">4.2%</div></td><td class="r">$312,000</td></tr>
+                      <tr><td class="name">Auto Loan<div class="meta">6.9%</div></td><td class="r">$18,400</td></tr>
+                      <tr><td class="name">CC Chase<div class="meta">24.9%</div></td><td class="r">$4,200</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div class="i4-section-title">Top Assets</div>
+                <div class="i4-table-wrap">
+                  <table class="i4-table">
+                    <thead><tr><th>Account</th><th class="r">Value</th></tr></thead>
+                    <tbody>
+                      <tr><td class="name">401(k)<div class="meta">Fidelity · 63%</div></td><td class="r">$234,000</td></tr>
+                      <tr><td class="name">Brokerage<div class="meta">Schwab · 24%</div></td><td class="r">$89,000</td></tr>
+                      <tr><td class="name">Savings<div class="meta">Ally · 11%</div></td><td class="r">$42,000</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== SECTION J: REPORT HEADER ===== -->
+<style>
+[data-variant^="J"] .variant-canvas { background: #FAF6EC; padding: 0; min-height: 380px; font-family: 'Plus Jakarta Sans', sans-serif; color: #4B2E14; overflow: hidden; }
+
+[data-variant="J1"] .report-header { padding: 48px 56px 28px; text-align: center; }
+[data-variant="J1"] .j1-title { font-family: 'Newsreader', serif; font-style: italic; font-size: 36px; color: #4B2E14; margin-bottom: 16px; }
+[data-variant="J1"] .j1-subtitle { font-size: 11px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: #4B2E14; margin-bottom: 24px; }
+[data-variant="J1"] .j1-rule { height: 1px; background: #B68B3A; margin-bottom: 18px; }
+[data-variant="J1"] .j1-footer { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4B2E14; }
+[data-variant="J1"] .j1-wordmark { display: flex; align-items: center; gap: 8px; font-family: 'Newsreader', serif; font-style: italic; font-size: 14px; }
+[data-variant="J1"] .j1-advisor { text-align: center; letter-spacing: 0.08em; }
+[data-variant="J1"] .j1-stamp { text-align: right; letter-spacing: 0.08em; opacity: 0.7; }
+
+[data-variant="J2"] .report-header { padding: 36px 56px 32px; text-align: center; position: relative; }
+[data-variant="J2"] .j2-anchor { position: absolute; top: 24px; left: 28px; color: #B68B3A; }
+[data-variant="J2"] .j2-stamp { position: absolute; top: 28px; right: 28px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; color: #4B2E14; opacity: 0.6; text-align: right; line-height: 1.5; }
+[data-variant="J2"] .j2-kicker-wrap { margin-top: 12px; display: flex; align-items: center; gap: 16px; }
+[data-variant="J2"] .j2-rule { flex: 1; height: 1px; background: #4B2E14; }
+[data-variant="J2"] .j2-kicker { font-size: 13px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
+[data-variant="J2"] .j2-name { font-family: 'Newsreader', serif; font-style: italic; font-size: 52px; color: #4B2E14; margin: 24px 0 8px; line-height: 1; }
+[data-variant="J2"] .j2-subtitle { font-family: 'Newsreader', serif; font-style: italic; font-size: 17px; color: #4B2E14; margin-bottom: 28px; }
+[data-variant="J2"] .j2-advisor { font-size: 10px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; }
+
+[data-variant="J3"] .report-header { padding: 36px 44px 0; }
+[data-variant="J3"] .j3-top { display: flex; justify-content: space-between; margin-bottom: 28px; }
+[data-variant="J3"] .j3-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 28px; color: #4B2E14; margin-bottom: 6px; }
+[data-variant="J3"] .j3-client { font-family: 'Newsreader', serif; font-style: italic; font-size: 18px; color: #4B2E14; margin-bottom: 10px; }
+[data-variant="J3"] .j3-stamp { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; opacity: 0.7; }
+[data-variant="J3"] .j3-wordmark { display: flex; align-items: center; gap: 10px; }
+[data-variant="J3"] .j3-wordmark-text { font-weight: 700; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; line-height: 1.3; }
+[data-variant="J3"] .j3-wordmark-text small { display: block; font-weight: 500; font-size: 9px; opacity: 0.7; margin-top: 2px; }
+[data-variant="J3"] .j3-bar { height: 4px; background: #B68B3A; margin: 0 -44px; }
+[data-variant="J3"] .j3-advisor-row { padding: 14px 0 28px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+[data-variant="J3"] .j3-version { font-family: 'JetBrains Mono', monospace; font-weight: 400; text-transform: none; opacity: 0.65; }
+
+[data-variant="J4"] .report-header { padding: 28px 48px 22px; }
+[data-variant="J4"] .j4-rule-top { height: 2px; background: #4B2E14; margin-bottom: 10px; }
+[data-variant="J4"] .j4-banner { font-weight: 700; font-size: 12px; letter-spacing: 0.42em; text-align: center; padding: 6px 0 14px; }
+[data-variant="J4"] .j4-title-row { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 16px; }
+[data-variant="J4"] .j4-title { font-family: 'Newsreader', serif; font-style: italic; font-size: 30px; color: #4B2E14; }
+[data-variant="J4"] .j4-title small { font-family: 'Plus Jakarta Sans', sans-serif; font-style: normal; font-weight: 600; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; display: block; margin-top: 4px; opacity: 0.65; }
+[data-variant="J4"] .j4-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-align: right; line-height: 1.6; }
+[data-variant="J4"] .j4-rule-bottom { height: 1px; background: #4B2E14; margin-bottom: 12px; }
+[data-variant="J4"] .j4-credentials { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 24px; font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; padding-bottom: 14px; }
+[data-variant="J4"] .j4-credentials .label { display: block; font-weight: 500; opacity: 0.55; margin-bottom: 3px; }
+[data-variant="J4"] .j4-issue { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: none; font-weight: 400; opacity: 0.7; text-align: right; }
+</style>
+
+<section class="lab-section" id="section-J">
+  <header class="lab-section-header">
+    <h2>J. Report Header (Print)</h2>
+    <p class="lab-section-tagline">Pick the masthead style for the printable monthly PDF — same content, same palette, only layout varies.</p>
+  </header>
+  <div class="lab-variant-grid">
+    <article class="variant" data-variant="J1">
+      <header class="variant-header"><span class="variant-label">J1</span><span class="variant-name">Italic Editorial</span></header>
+      <div class="variant-canvas">
+        <div class="report-header">
+          <h1 class="j1-title">Monthly Report</h1>
+          <div class="j1-subtitle">Amanda Chen · May 2026</div>
+          <div class="j1-rule"></div>
+          <div class="j1-footer">
+            <div class="j1-wordmark">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B68B3A" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
+              Golden Anchor
+            </div>
+            <div class="j1-advisor">M. HERNANDEZ · MBA · FPWMP · FL0215</div>
+            <div class="j1-stamp">v1.0 · GEN 2026-06-03</div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="J2">
+      <header class="variant-header"><span class="variant-label">J2</span><span class="variant-name">Centered NYT Magazine</span></header>
+      <div class="variant-canvas">
+        <div class="report-header">
+          <div class="j2-anchor"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B68B3A" stroke-width="1.6"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg></div>
+          <div class="j2-stamp">v1.0<br/>2026-06-03</div>
+          <div class="j2-kicker-wrap">
+            <div class="j2-rule"></div>
+            <div class="j2-kicker">Monthly Report</div>
+            <div class="j2-rule"></div>
+          </div>
+          <h1 class="j2-name">Amanda Chen</h1>
+          <div class="j2-subtitle">Cash Flow & Net Worth · May 2026</div>
+          <div class="j2-advisor">Mauricio Hernandez · MBA · FPWMP · FL0215</div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="J3">
+      <header class="variant-header"><span class="variant-label">J3</span><span class="variant-name">Sans Bold + Color Bar</span></header>
+      <div class="variant-canvas">
+        <div class="report-header">
+          <div class="j3-top">
+            <div>
+              <h1 class="j3-title">Monthly Report</h1>
+              <div class="j3-client">Amanda Chen · May 1–31, 2026</div>
+              <div class="j3-stamp">v1.0 · GENERATED 2026-06-03</div>
+            </div>
+            <div class="j3-wordmark">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B68B3A" stroke-width="1.6"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
+              <div class="j3-wordmark-text">Golden Anchor<small>Wealth & Advisory</small></div>
+            </div>
+          </div>
+          <div class="j3-bar"></div>
+          <div class="j3-advisor-row">
+            <div>Mauricio Hernandez · MBA · FPWMP · FL0215</div>
+            <div class="j3-version">page 1 / 8</div>
+          </div>
+        </div>
+      </div>
+    </article>
+    <article class="variant" data-variant="J4">
+      <header class="variant-header"><span class="variant-label">J4</span><span class="variant-name">Newspaper Masthead</span></header>
+      <div class="variant-canvas">
+        <div class="report-header">
+          <div class="j4-rule-top"></div>
+          <div class="j4-banner">G O L D E N &nbsp;&nbsp; A N C H O R</div>
+          <div class="j4-title-row">
+            <h1 class="j4-title">
+              Monthly Report — Amanda Chen
+              <small>Cash Flow & Net Worth Summary</small>
+            </h1>
+            <div class="j4-date">MAY 2026<br/>GEN 2026-06-03</div>
+          </div>
+          <div class="j4-rule-bottom"></div>
+          <div class="j4-credentials">
+            <div><span class="label">Advisor</span>Mauricio Hernandez</div>
+            <div><span class="label">Credentials</span>MBA · FPWMP</div>
+            <div><span class="label">License</span>FL0215</div>
+            <div class="j4-issue">Vol. 1 · Issue 5</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<footer class="lab-footer">
+  Generated 2026-06-03 by golden-anchor-audit workflow. C:\Users\mauhd\Projects\golden-anchor\preview\design-lab.html
+</footer>
+
+</main>
+</div>
+</body>
+</html>
