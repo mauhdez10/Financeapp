@@ -2,6 +2,48 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.59.4 — 2026-06-04 (Patch) — Lint floor: real-bug fixes (audit §3b/§3c Phase 2)
+
+Surgical correctness fixes from the audit. No UI/behavior changes except the
+SlopeGraph filter (which fixes a dead condition). ESLint errors 268 → 219.
+
+**FIX — duplicate object keys silently dropping translations (9 → 0).** Three
+i18n keys were defined twice in **both** EN and ES dictionaries
+(`loans`, `cashFlowMapHdr`, `interestLbl` in `translations.js`; `fieldType` in
+App.jsx) plus a duplicate `color` in one inline style. JS object literals keep
+the **last** value, so the first was dead. Removed the dead duplicates; the
+effective (second) value is unchanged, so zero runtime change. The dup `color`
+(`color:th.muted` then `color:GOLD`) kept the intended GOLD.
+
+**FIX — `Math.random()` called during render (react-hooks/purity).** `useSvgId`
+generated SVG ids with `Math.random()` inside `useMemo` — impure during render
+(and SSR-unsafe). Replaced with React 19's `useId()` (stable, pure, unique per
+call site). Colons stripped for valid SVG/CSS ids.
+
+**FIX — SlopeGraph empty-row filter was a no-op (no-constant-binary-expression).**
+`filter(d => d && (+d.a != null || +d.b != null))` — the unary `+` coerces to a
+number, and a number is never `== null`, so the condition was **always true** and
+categories with no data slipped through as flat zero-lines. Dropped the stray
+`+` so the `!= null` check works: `(d.a != null || d.b != null)`. The explicit
+`!= null` confirms the intent was a null check, not a truthiness check.
+
+**FIX — ESLint flagged Node globals in serverless functions (no-undef, 37 → 0).**
+`api/**/*.js` run in Node (Vercel functions) but the flat config only applied
+browser globals, so `Buffer`/`process`/etc. were reported as undefined. Added an
+`api/**` config block with `globals.node`. Config-only; no code change.
+
+**Deferred (documented, NOT fixed this pass):** 23 `react-hooks/rules-of-hooks`,
+81 `react-hooks/static-components`, 89 `no-unused-vars`, 13 `exhaustive-deps`.
+These share one root cause — components/hooks defined inline during render — and
+resolve naturally when App.jsx is split into modules (audit §6 Phases 3–6).
+They are lint-true but runtime-benign in current shipping code; surgically
+reordering them in the monolith now is high-risk with no test safety net.
+`PrintBtn` and `LOTTIE_HERO_URL` were flagged "dead" by the audit but are
+intentionally retained (PrintBtn per its own code comment; LOTTIE_HERO_URL is an
+active feature-flag slot) — left as-is.
+
+Build green; build marker `2026-06-04-v0594-lint-real-bugs-dupkeys-purity-slopegraph`.
+
 ## v0.59.3 — 2026-06-04 (Patch) — Security: xlsx CVE + engagement-copy advisor guard
 
 Two security fixes from the 2026-06-03 audit (`docs/AUDIT-2026-06-03.md` §3c). No UI changes.
