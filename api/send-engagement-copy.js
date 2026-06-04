@@ -125,12 +125,15 @@ export default async function handler(req, res) {
   }
   body = body || {};
 
-  const advisorId = String(body.advisorId || "").trim();
   const submissionId = body.submissionId ? String(body.submissionId).trim() : null;
   const inviteToken = body.inviteToken ? String(body.inviteToken).trim() : null;
   const lang = body.lang === "es" ? "es" : "en";
 
-  if (!advisorId) return res.status(400).json({ ok: false, error: "advisorId required" });
+  // SECURITY: advisorId is intentionally NOT taken from the request body. A
+  // caller who knows a submissionId could otherwise pass a *different*
+  // advisor's id and cause that advisor to be CC'd + used for branding/reply-to
+  // on a submission they don't own (cross-tenant PII leak). The authoritative
+  // advisor is the submission row's own advisor_id, resolved after we load it.
   if (!submissionId && !inviteToken) return res.status(400).json({ ok: false, error: "submissionId or inviteToken required" });
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
@@ -148,6 +151,12 @@ export default async function handler(req, res) {
     }
     if (!submission) {
       return res.status(404).json({ ok: false, error: "Submission not found" });
+    }
+    // Authoritative advisor = the submission's owner, never a caller-supplied
+    // value. This is the cross-tenant guard (see note above).
+    const advisorId = submission.advisor_id ? String(submission.advisor_id) : null;
+    if (!advisorId) {
+      return res.status(422).json({ ok: false, error: "Submission has no owning advisor" });
     }
     // Idempotency — don't send twice.
     if (submission.engagement_emailed_at) {

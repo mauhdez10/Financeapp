@@ -2,6 +2,38 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.59.3 — 2026-06-04 (Patch) — Security: xlsx CVE + engagement-copy advisor guard
+
+Two security fixes from the 2026-06-03 audit (`docs/AUDIT-2026-06-03.md` §3c). No UI changes.
+
+**FIX — `xlsx` high CVE (prototype pollution + ReDoS).** The npm `xlsx@^0.18.5`
+has a known high-severity advisory with **no fix published on npm**. Per locked
+decision **D-9 (SheetJS is the Excel I/O)**, we did NOT swap libraries — instead
+pinned the official patched SheetJS build from their CDN:
+`"xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"`. The
+`import * as XLSX from "xlsx"` import is unchanged (same package name). After
+`npm install`, `npm audit` reports **0 vulnerabilities** (was 1 high). Build
+verified green; xlsx chunk 363 KB (unchanged); `XLSX.version` = 0.20.3.
+
+**FIX — `api/send-engagement-copy.js` trusted a caller-supplied `advisorId`.**
+This un-authenticated endpoint read `advisorId` from the request body and used
+it for the email's branding, CC, and reply-to. A caller who knew a `submissionId`
+could pass a *different* advisor's id and cause that advisor to be CC'd on a
+prospect's signed engagement letter (cross-tenant PII leak) + send under the
+wrong branding.
+**WHY:** the owning advisor was taken from untrusted input, not from the record.
+**CHANGED:** the endpoint no longer reads `body.advisorId`. After loading the
+submission (by `submissionId` or `inviteToken`), it derives the authoritative
+advisor from `submission.advisor_id` (the column set at insert by `gaSubmitIntake`
+and used as the owner key everywhere). If a submission has no `advisor_id`, it
+returns 422 instead of sending. `submissionId`/`inviteToken` is still required.
+
+> **Doc note:** the CHANGELOG had drifted (top entry was v0.57.0 while the live
+> build marker was v0.59.2 — per AGENT.md "trust the build marker, not the docs").
+> v0.58–v0.59.2 entries were not backfilled here; this v0.59.3 patch resumes the
+> log at the true current version. Build marker now
+> `2026-06-04-v0593-security-xlsx-cve-and-advisorid-guard`.
+
 ## v0.57.0 — 2026-05-25 — Sign-in WCAG fix + email-type + mobile-input hardening
 
 First v0.5x ship out of the post-v0.56 UI/UX audit. Three P0 fixes from the
