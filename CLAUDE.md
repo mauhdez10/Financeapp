@@ -19,6 +19,16 @@
 > 2026-06-05, scoped to project `ukqqcrupyooqyksotieu` only — separate from Velo's
 > Supabase MCP). Use `mcp__supabase-finance__*` tools for finance DB work.
 
+> ## 📁 SINGLE FOLDER NOW — two-folder workflow RETIRED (2026-06-05)
+> **There is ONE folder: `C:\Users\mauhd\Projects\financeapp-deploy`** — it is the
+> git repo, the working copy, and where the dev server runs. **Edit, `npm run dev`,
+> `npm run build`, commit, and push all from here.** Its `.env.local` is in place.
+> **Ignore every "edit in `golden-anchor/`, copy to `financeapp-deploy/`"
+> instruction below** — that drift-prone two-folder dance is gone. No more `cp`
+> between folders. The old working copy is archived at
+> `C:\Users\mauhd\Projects\golden-anchor-ARCHIVE` (reference only — safe to delete
+> once confirmed unneeded; it holds old screenshots + `ui_kits/` design reference).
+
 ---
 
 ## 🗓 Session handoff — last update 2026-05-25

@@ -756,7 +756,7 @@ Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan
 | **`finance-app-updater` skill** (custom) | **Canonical skill for this project.** Use for every App.jsx / translations.js / engagementLetterTemplate.js change, every version bump, every CHANGELOG/AGENT/WHATS_NEW edit. Same role `crm-doc-updater` plays for Velo. |
 | **Supabase plugin / MCP** | `clients` + `settings` tables, `auth.uid()`-gated RLS, the few `supabase-migrations/` SQLs (e.g. `2026-05-22-intake-status.sql`, `2026-05-23-invite-partner.sql`). Always `list_tables` before schema changes; start debugging from `get_logs`. |
 | **Vercel plugin** | `finance.goldenanchor.life` deploys, build logs, env vars, the `api/*.js` serverless functions (`send-intake-invite`, `resolve-intake-invite`, `send-engagement-copy`, `send-support-email`, `render-report-pdf`). |
-| **GitHub plugin** | Repo is `mauhdez10/Financeapp` (private). PAT is embedded in `origin` URL of `financeapp-deploy/`, so `git push` works silently from that folder — no `gh` flip needed. (Working copy `golden-anchor/` is not a git repo; push from `financeapp-deploy/` per the two-folder workflow in `CLAUDE.md`.) |
+| **GitHub plugin** | Repo is `mauhdez10/Financeapp` (private). PAT is embedded in `origin` URL of `financeapp-deploy/` (the single canonical folder as of 2026-06-05), so `git push` works silently — no `gh` flip needed. |
 | **Resend plugin** | Already wired (`resend@6.x` in deps). 4 transactional flows live (intake invite, intake-invite resolution, engagement-letter copy, support email, report PDF email). Use the plugin for React Email templates + domain verify + deliverability. |
 | **Playwright plugin** | Project has `tests/`, `playwright.config.ts`, full `test:e2e` / `test:ui` / `test:headed` scripts + screenshots checked in. Use for browser QA instead of manual click-through. |
 | **UI UX Pro Max plugin** | Already used (v0.26.0 was a UI/UX Pro Max audit batch, v0.42-v0.45 chart polish followed its alignment notes, v0.43.0 persisted `design-system/golden-anchor/MASTER.md` via `--persist`). |
@@ -777,10 +777,13 @@ Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan
 ### Probably NOT relevant
 Cloudflare (not in stack), Windsor.ai (B2B GTM data), `crm-doc-updater` (Velo-only).
 
-### Two-folder workflow reminder (from CLAUDE.md §"Infrastructure ready")
-- **`C:\Users\mauhd\Projects\golden-anchor\`** = working copy. Edit here. Has design-system extras. **Not a git repo.**
-- **`C:\Users\mauhd\Projects\financeapp-deploy\`** = the real git clone with the mauhdez10 PAT-in-URL. **Copy changes here and push from here.**
-- Always `git pull origin main` in `financeapp-deploy/` before editing — parallel chats push too.
+### Single-folder workflow (two-folder workflow RETIRED 2026-06-05)
+- **`C:\Users\mauhd\Projects\financeapp-deploy\`** is the ONE folder: git repo +
+  working copy + dev server. Edit, `npm run dev`, build, commit, and push all from
+  here. PAT-in-URL `origin` → `git push` is silent. `.env.local` is in place.
+- No more copying between folders. `git pull origin main` before editing.
+- Old working copy archived at `C:\Users\mauhd\Projects\golden-anchor-ARCHIVE`
+  (reference only; safe to delete once confirmed unneeded).
 
 ---
 
