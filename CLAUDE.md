@@ -4,6 +4,21 @@
 > Pair with `claude-mem` plugin (installed) — between the two, you should not
 > need to re-upload AGENT/SKILL/WORKPLAN files at the start of new sessions.
 
+> ## 🔑 CREDENTIALS — check here first (until launch)
+> **The canonical file for every password, token, key, login, project ref, and
+> setup detail is `C:\Users\mauhd\finance-credentials.md`** (in the home folder,
+> outside all git repos so it's never committed). **Before asking the user for any
+> credential, env var, account login, Supabase/Stripe/Resend/GitHub key, or "where
+> do I find X" — READ THAT FILE.** It has the Supabase management token (`sbp_…`),
+> the active GitHub PAT, project refs, dashboard links, and the env-var map.
+> This is a temporary pre-launch convenience; the file says to move everything to
+> 1Password before launch and rotate the pasted secrets. Treat it as sensitive —
+> never print full secret values back, never commit it.
+>
+> Finance Supabase is also reachable via the **`supabase-finance` MCP** (added
+> 2026-06-05, scoped to project `ukqqcrupyooqyksotieu` only — separate from Velo's
+> Supabase MCP). Use `mcp__supabase-finance__*` tools for finance DB work.
+
 ---
 
 ## 🗓 Session handoff — last update 2026-05-25
