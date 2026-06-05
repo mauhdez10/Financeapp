@@ -4,10 +4,19 @@
 > Pair with `claude-mem` plugin (installed) — between the two, you should not
 > need to re-upload AGENT/SKILL/WORKPLAN files at the start of new sessions.
 
+> ## 🎨 DESIGN MODE — read `docs/DESIGN-MODE.md` before any visual/UI work
+> Owner's standing rule (2026-06-05): in design mode, **quality is the only
+> objective — credit cost and time are not constraints.** Use the FULL tool
+> pipeline (design-principles → Impeccable → ui-ux-pro-max → 21st.dev Magic →
+> Emil), explore every option in each tool, compare overlapping tools and pick
+> deliberately, dual-mode always. Full roster + overlap map in `docs/DESIGN-MODE.md`.
+
 > ## 🔑 CREDENTIALS — check here first (until launch)
 > **The canonical file for every password, token, key, login, project ref, and
-> setup detail is `C:\Users\mauhd\finance-credentials.md`** (in the home folder,
-> outside all git repos so it's never committed). **Before asking the user for any
+> setup detail is `C:\Users\mauhd\Projects\financeapp-deploy\finance-credentials.md`**
+> (moved into this folder 2026-06-05; gitignored via `finance-credentials.md` so it
+> is never committed — confirm with `git check-ignore finance-credentials.md`).
+> **Before asking the user for any
 > credential, env var, account login, Supabase/Stripe/Resend/GitHub key, or "where
 > do I find X" — READ THAT FILE.** It has the Supabase management token (`sbp_…`),
 > the active GitHub PAT, project refs, dashboard links, and the env-var map.
