@@ -16,6 +16,8 @@
   "dependencies": {
     "@sparticuz/chromium-min": "^140.0.0",
     "@supabase/supabase-js": "^2.107.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "lottie-react": "^2.4.1",
     "lucide-react": "^1.17.0",
     "puppeteer-core": "^24.43.1",

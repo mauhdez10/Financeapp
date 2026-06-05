@@ -2,6 +2,33 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.59.6 — 2026-06-04 (Patch) — Rate-limit the public intake endpoints (audit §3c)
+
+The two un-authenticated public endpoints (`resolve-intake-invite`,
+`send-engagement-copy`) had no abuse throttle. Added per-IP rate limiting via
+Upstash, built **fail-open**.
+
+- New `api/_ratelimit.js` — shared `checkRateLimit(req, bucket, {max, window})`
+  helper. Per-IP sliding window via `@upstash/ratelimit` + `@upstash/redis`.
+- `resolve-intake-invite` → 30 req / 10 min per IP; `send-engagement-copy` →
+  5 req / 10 min per IP. Over-limit returns HTTP 429.
+- **Fail-open by design:** if `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
+  are not set (or the package/limit call errors), every request is allowed — a
+  missing/broken limiter can never take the public intake flow offline. Same
+  dry-run philosophy as the email layer. Verified: unconfigured → `{ok:true}`.
+- **To activate** (no code change): create a free Redis DB at
+  console.upstash.com, set the two env vars in Vercel, redeploy. Setup notes in
+  `api/_ratelimit.js` header + AGENT.md §11 env-vars list.
+- Drive-by: cleaned one unused `catch (e)` → `catch` in resolve-intake-invite.js
+  (the file I was editing). The 5 remaining api unused-vars are in untouched
+  files (`render-report-pdf`, `send-intake-invite`) — left out of scope.
+
+`npm audit` = 0 (4 packages added). Build green. The actual throttling can only
+be exercised with real Upstash creds (not available in this environment); the
+fail-open path and build are verified here.
+
+Build marker `2026-06-04-v0596-intake-rate-limit`.
+
 ## v0.59.5 — 2026-06-04 (Patch) — Safe dependency bumps (audit §3c)
 
 In-range patch/minor bumps only; no majors. `npm audit` = 0, build green.

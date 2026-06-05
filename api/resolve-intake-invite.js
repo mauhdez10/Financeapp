@@ -14,6 +14,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
+import { checkRateLimit } from "./_ratelimit.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,6 +40,12 @@ export default async function handler(req, res) {
   const token = String(body.token || "").trim();
   if (!token || token.length > 64) {
     return res.status(400).json({ ok: false, error: "Invalid token" });
+  }
+
+  // Rate-limit this public endpoint per IP (fail-open if Upstash unconfigured).
+  const rl = await checkRateLimit(req, "resolve-invite", { max: 30, window: "10 m" });
+  if (!rl.ok) {
+    return res.status(429).json({ ok: false, error: "Too many requests — please try again shortly." });
   }
 
   // Hash the requester IP for opened_ip_hash. Vercel sets x-forwarded-for.
@@ -91,7 +98,7 @@ export default async function handler(req, res) {
         ongoingFeeAmount:        sd.ongoingFeeAmount        || "",
         ongoingFeeMonthlyLite:   sd.ongoingFeeMonthlyLite   || ""
       };
-    } catch (e) {
+    } catch {
       // Non-fatal — fall back to defaults baked into the EngagementLetter component.
       advisorProfile = null;
     }

@@ -17,6 +17,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { checkRateLimit } from "./_ratelimit.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -135,6 +136,12 @@ export default async function handler(req, res) {
   // on a submission they don't own (cross-tenant PII leak). The authoritative
   // advisor is the submission row's own advisor_id, resolved after we load it.
   if (!submissionId && !inviteToken) return res.status(400).json({ ok: false, error: "submissionId or inviteToken required" });
+
+  // Rate-limit this public endpoint per IP (fail-open if Upstash unconfigured).
+  const rl = await checkRateLimit(req, "engagement-copy", { max: 5, window: "10 m" });
+  if (!rl.ok) {
+    return res.status(429).json({ ok: false, error: "Too many requests — please try again shortly." });
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 

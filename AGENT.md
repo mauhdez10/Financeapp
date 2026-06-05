@@ -822,6 +822,7 @@ After Porkbun nameservers point at Cloudflare (1–24h propagation), add in the 
 - `VITE_SUPABASE_URL` (from Supabase Settings → API)
 - `VITE_SUPABASE_ANON_KEY` (anon public key, NOT service_role)
 - `RESEND_API_KEY` (only when email reports are wired in App.jsx)
+- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (v0.59.6) — **optional, activates rate-limiting** on the public intake endpoints (`resolve-intake-invite`, `send-engagement-copy`). Create a free Redis DB at console.upstash.com → copy REST URL+token. Until set, the limiter **fails open** (allows all requests), so the app works without it. Full setup notes in `api/_ratelimit.js`.
 
 ### Backup procedure (v0.5.2b)
 
