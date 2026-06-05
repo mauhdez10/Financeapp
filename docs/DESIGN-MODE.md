@@ -25,6 +25,13 @@ built by people who do. Therefore, in design mode:
 
 This is deliberate over-investment. Default to MORE exploration, not less.
 
+## The design-agent manual
+
+`.claude/skills/golden-anchor-design-surface/SKILL.md` is the **how-we-design** operating
+manual (the Claude design-surface playbook adapted to this repo: build self-contained HTML
+labs in `preview/`, then port winners to `App.jsx`). It auto-loads on visual/UI work and
+covers the workflow, React+Babel lab patterns, Tweaks panel, AI-slop bans, and verification.
+
 ## The pipeline (each layer, in order)
 
 | Layer | Tool | Owns | How to invoke |
