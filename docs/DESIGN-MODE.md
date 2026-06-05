@@ -34,8 +34,17 @@ This is deliberate over-investment. Default to MORE exploration, not less.
 | **2. Palettes / fonts / styles** | **ui-ux-pro-max** | 161 color palettes, 57 font pairings, 50+ styles, 161 product types, chart types | Plugin/skill `ui-ux-pro-max` |
 | **3. Component sourcing** | **21st.dev Magic** | Generating real component code from a prompt + inspiration browsing + logo/refine | MCP `magic` — `/ui`, `/21` slash cmds; tools `21st_magic_component_builder`, `_inspiration`, `_refiner`, `logo_search` |
 | **4. Motion / micro-interactions** | **Emil (emil-design-eng)** | Animation timing (<300ms, custom easing), micro-interactions, component feel, loading states; "review this animation" | Skill `emil-design-eng` |
-| **Brand / palette generation** | `brand-guidelines`, `theme-factory`, `canvas-design` | Brand voice, on-the-fly themes, static visual artifacts | Anthropic skills |
-| **Audit / handoff / a11y** | `design:*` suite | `design-critique`, `accessibility-review`, `design-handoff`, `design-system`, `ux-copy` | Skills |
+| **Backgrounds / hero** | **`algorithmic-art`** | Seeded p5.js flow-fields / particle / harmonic backgrounds. Export **PNG** (fits single-file + `useReducedMotion`) or hand-wrap a canvas. Fills the empty `LOTTIE_HERO_URL` slot. | Anthropic skill |
+| **Standalone mockup sandbox** | **`web-artifacts-builder`** | React+Tailwind+shadcn concept app → `bundle.html`. **NOT App.jsx drop-in** — prototype, screenshot, hand-port the ideas. | Anthropic skill |
+| **Static poster / PDF art** | **`canvas-design`** | Marketing one-pagers, report cover art (40-font kit incl. our Lora + JetBrains Mono). | Anthropic skill |
+| **Brand / palette generation** | `theme-factory` (preset **"Golden Hour"** ≈ our brand), `brand-guidelines` (Anthropic-brand only — low value) | On-the-fly themes for decks/docs, NOT app code | Anthropic skills |
+| **Review + gates** | `design:*` suite | `design-critique` (early/often), **`accessibility-review` (the hard gate)**, `design-handoff`, `design-system` (token audit), `ux-copy` (**EN+ES**) | Skills |
+
+> **Full deep study + overlap rulings + constraints:** `docs/DESIGN-TOOLKIT-STUDY.md`.
+> **Stack reality:** App is single-file `App.jsx` + Recharts + plain CSS (no Tailwind/shadcn/TS),
+> so shadcn/React outputs from ui-ux-pro-max & web-artifacts-builder must be TRANSLATED, not pasted.
+> **Brand default trap:** the Anthropic skills default to orange/Poppins/Lora — always pass
+> gold `#D97706` / amber / cream + Newsreader + JetBrains Mono explicitly.
 
 ## Overlap map — when two tools could do the job
 
