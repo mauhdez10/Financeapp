@@ -18,7 +18,9 @@
   .ga-btn { transition:transform 150ms cubic-bezier(0.23,1,0.32,1), filter 150ms ease; }
   .ga-btn:hover { filter:brightness(1.05); }
   .ga-btn:active { transform:scale(0.97); }
-  @media (prefers-reduced-motion: reduce){ .ga-rise{animation:none!important;} .ga-card,.ga-btn{transition:none!important;} }
+  .ga-toggle { transition:transform 150ms cubic-bezier(0.23,1,0.32,1), border-color 150ms ease; }
+  .ga-toggle:active { transform:scale(0.96); }
+  @media (prefers-reduced-motion: reduce){ .ga-rise{animation:none!important;} .ga-card,.ga-btn,.ga-toggle{transition:none!important;} }
   @media (max-width:880px){
     .ga-hero{ grid-template-columns:1fr !important; gap:28px !important; }
     .ga-anno{ display:none !important; }
@@ -44,9 +46,44 @@ const THEME = {
 };
 const BTN_INK = "#1A1208";
 
-/* ── Reactive gold line-field — adapted from 21st.dev "Hero Designali" canvas.
-   Springy quadratic-curve trails that follow the cursor; idle Lissajous drift
-   before first interaction; mode-aware blend; reduced-motion → static settle. ── */
+// Bilingual copy — toggled by the EN/ES control (mirrors the real app's T.en / T.es).
+const T = {
+  en: {
+    advisory:"Financial Advisory", eyebrow:"Financial coaching platform",
+    h1a:"The dashboard your ", h1accent:"advisor", h1b:" brings to every meeting.",
+    sub:"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report.",
+    pills:["Monthly snapshot","Debt & cash-flow models","Public intake form"],
+    anno:"Miami · Bilingual · Educational",
+    signIn:"Sign In", securePortal:"Secure portal", email:"Email", password:"Password",
+    forgot:"Forgot password?", noAccount:"No account yet?", contact:"Contact Mauricio",
+    light:"Light", dark:"Dark",
+    features:[
+      {icon:"flow",  title:"Where every dollar goes", body:"A live Sankey diagram shows how income flows into bills, debt, and savings — at a glance."},
+      {icon:"gauge", title:"Health, scored at a glance", body:"DSR, savings rate, and emergency-fund months as live gauges. Clear targets, no jargon."},
+      {icon:"report",title:"Reports that look like reports", body:"Designer-grade PDF — every section on its own page. Ready to review or share with confidence."},
+    ],
+    disclaimer:"Educational financial coaching — not investment, tax, or legal advice.",
+  },
+  es: {
+    advisory:"Asesoría Financiera", eyebrow:"Plataforma de asesoría financiera",
+    h1a:"El tablero que tu ", h1accent:"asesor", h1b:" lleva a cada reunión.",
+    sub:"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.",
+    pills:["Resumen mensual","Modelos de deuda y flujo","Formulario de admisión"],
+    anno:"Miami · Bilingüe · Educativo",
+    signIn:"Iniciar sesión", securePortal:"Portal seguro", email:"Correo", password:"Contraseña",
+    forgot:"¿Olvidaste tu contraseña?", noAccount:"¿Sin cuenta?", contact:"Contacta a Mauricio",
+    light:"Claro", dark:"Oscuro",
+    features:[
+      {icon:"flow",  title:"A dónde va cada dólar", body:"Un diagrama Sankey muestra cómo fluye tu ingreso hacia gastos, deuda y ahorros — al instante."},
+      {icon:"gauge", title:"Salud financiera al instante", body:"Razón de deuda, tasa de ahorro y meses de fondo de emergencia como indicadores. Metas claras, sin jerga."},
+      {icon:"report",title:"Reportes que parecen reportes", body:"PDF de calidad profesional — cada sección en su propia página. Listo para revisar o compartir."},
+    ],
+    disclaimer:"Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.",
+  },
+};
+
+/* Reactive gold line-field — adapted from 21st.dev "Hero Designali". Follows the
+   cursor while moving; resumes ambient drift when idle; mode-aware; reduced-motion safe. */
 function LineField({ pal, dark }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -66,8 +103,6 @@ function LineField({ pal, dark }) {
       for(i=1;i<l.nodes.length-2;i++){ const a=l.nodes[i], b=l.nodes[i+1]; ctx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);} const a=l.nodes[i], b=l.nodes[i+1]; ctx.quadraticCurveTo(a.x,a.y,b.x,b.y); ctx.stroke(); };
     const render = () => {
       if(!running) return;
-      // Resume ambient drift whenever the pointer has been idle >1.2s (and on load),
-      // so the field is never blank — it only "follows the cursor" while actively moving.
       if(performance.now()-lastMoveT > 1200){ drift+=0.01; pos.x=c.width*(0.6+0.26*Math.sin(drift*0.7)); pos.y=c.height*(0.42+0.22*Math.cos(drift*0.9)); }
       ctx.globalCompositeOperation="source-over"; ctx.clearRect(0,0,c.width,c.height);
       phase += 0.0016; const shimmer = 0.5+Math.sin(phase)*0.5;
@@ -82,7 +117,7 @@ function LineField({ pal, dark }) {
     const onResize = () => { resize(); build(); };
     resize(); build();
     window.addEventListener("resize", onResize);
-    if(reduce){ for(let k=0;k<70;k++) for(const l of lines) update(l); ctx.globalCompositeOperation=dark?"lighter":"source-over"; ctx.strokeStyle=`rgba(${pal.line[0]},${pal.line[1]},${pal.line[2]},${dark?0.03:0.06})`; ctx.lineWidth=DPR*8; for(const l of lines) draw(l); }
+    if(reduce){ for(let k=0;k<70;k++) for(const l of lines) update(l); ctx.globalCompositeOperation=dark?"lighter":"source-over"; ctx.strokeStyle=`rgba(${pal.line[0]},${pal.line[1]},${pal.line[2]},${dark?0.05:0.10})`; ctx.lineWidth=DPR*9; for(const l of lines) draw(l); }
     else { window.addEventListener("mousemove", move); window.addEventListener("touchmove", move, {passive:true}); render(); }
     return () => { running=false; cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); window.removeEventListener("mousemove", move); window.removeEventListener("touchmove", move); };
   }, [pal, dark]);
@@ -101,41 +136,38 @@ const AnchorMark = ({ c }) => (
     <circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/></svg>
 );
 
-function SignInCard({ p }) {
+function SignInCard({ p, t }) {
   const inp = { background:p.inp, border:`1px solid ${p.border}`, color:p.text, borderRadius:10, padding:"11px 12px", fontSize:13, outline:"none", width:"100%", boxSizing:"border-box", fontFamily:"inherit" };
   const lbl = { fontSize:10, color:p.muted, display:"block", marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase", fontWeight:600 };
   return (
     <div className="ga-card ga-rise" style={{ background:p.card, border:`1px solid ${p.border}`, borderRadius:16, padding:26, boxShadow:`0 24px 60px ${p.gold}1f, 0 4px 12px ${p.gold}14`, position:"relative", maxWidth:380, width:"100%", animationDelay:"140ms" }}>
       <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${p.gold},${p.goldText})`,borderTopLeftRadius:16,borderTopRightRadius:16}}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:18}}>
-        <h2 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:p.textHi,margin:0}}>Sign In</h2>
-        <span style={{fontSize:9,color:p.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>Secure portal</span>
+        <h2 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:p.textHi,margin:0}}>{t.signIn}</h2>
+        <span style={{fontSize:9,color:p.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>{t.securePortal}</span>
       </div>
-      <div style={{marginBottom:14}}><label style={lbl}>Email</label><input style={inp} placeholder="you@email.com"/></div>
-      <div style={{marginBottom:16}}><label style={lbl}>Password</label><input type="password" style={inp} placeholder="••••••••"/></div>
-      <button className="ga-btn" style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:p.gold,color:BTN_INK,border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${p.gold}44`}}>Sign In</button>
-      <div style={{textAlign:"center",marginTop:14}}><a style={{color:p.muted,fontSize:12,textDecoration:"underline",cursor:"pointer"}}>Forgot password?</a></div>
-      <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${p.border}`,fontSize:10,color:p.muted,textAlign:"center"}}>No account yet? <a style={{color:p.goldText,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>Contact Mauricio</a></div>
+      <div style={{marginBottom:14}}><label style={lbl}>{t.email}</label><input style={inp} placeholder="you@email.com"/></div>
+      <div style={{marginBottom:16}}><label style={lbl}>{t.password}</label><input type="password" style={inp} placeholder="••••••••"/></div>
+      <button className="ga-btn" style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:p.gold,color:BTN_INK,border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${p.gold}44`}}>{t.signIn}</button>
+      <div style={{textAlign:"center",marginTop:14}}><a style={{color:p.muted,fontSize:12,textDecoration:"underline",cursor:"pointer"}}>{t.forgot}</a></div>
+      <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${p.border}`,fontSize:10,color:p.muted,textAlign:"center"}}>{t.noAccount} <a style={{color:p.goldText,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{t.contact}</a></div>
     </div>
   );
 }
 
-const FEATURES = [
-  { icon:"flow",   title:"Where every dollar goes", body:"A live Sankey diagram shows how income flows into bills, debt, and savings — at a glance." },
-  { icon:"gauge",  title:"Health, scored at a glance", body:"DSR, savings rate, and emergency-fund months as live gauges. Clear targets, no jargon." },
-  { icon:"report", title:"Reports that look like reports", body:"Designer-grade PDF — every section on its own page. Ready to review or share with confidence." },
-];
+function Pill({ p, children, onClick, ariaLabel }) {
+  return <button className="ga-toggle" onClick={onClick} aria-label={ariaLabel}
+    style={{fontSize:12,padding:"11px 16px",minHeight:44,minWidth:54,borderRadius:99,background:"transparent",color:p.muted,border:`1px solid ${p.border}`,cursor:"pointer",fontWeight:600,letterSpacing:"0.04em"}}>{children}</button>;
+}
 
-function Landing({ mode, setMode }) {
+function Landing({ mode, setMode, lang, setLang }) {
   const p = THEME[mode];
-  const frameInset = 18;
+  const t = T[lang];
   return (
     <div style={{minHeight:"100vh",background:p.bg,color:p.text,position:"relative",overflowX:"hidden",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
       <div aria-hidden style={{position:"absolute",inset:0,zIndex:0,pointerEvents:"none"}}>
         <LineField pal={p} dark={mode==="dark"}/>
       </div>
-      {/* editorial hairline frame */}
-      <div aria-hidden style={{position:"fixed",inset:frameInset,border:`1px solid ${p.gold}33`,borderRadius:4,pointerEvents:"none",zIndex:1}}/>
 
       <div style={{position:"relative",zIndex:2}}>
         <header style={{padding:"26px 40px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -143,10 +175,13 @@ function Landing({ mode, setMode }) {
             <AnchorMark c={p.goldText}/>
             <div>
               <div style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:p.goldText,letterSpacing:"0.12em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
-              <div style={{fontSize:9,color:p.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>Financial Advisory</div>
+              <div style={{fontSize:9,color:p.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>{t.advisory}</div>
             </div>
           </div>
-          <button onClick={()=>setMode(mode==="dark"?"light":"dark")} aria-label="Toggle theme" style={{fontSize:12,padding:"11px 18px",minHeight:44,borderRadius:99,background:"transparent",color:p.muted,border:`1px solid ${p.border}`,cursor:"pointer",fontWeight:600,letterSpacing:"0.04em"}}>{mode==="dark"?"Light":"Dark"}</button>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <Pill p={p} onClick={()=>setLang(lang==="en"?"es":"en")} ariaLabel="Toggle language">{lang==="en"?"ES":"EN"}</Pill>
+            <Pill p={p} onClick={()=>setMode(mode==="dark"?"light":"dark")} ariaLabel="Toggle theme">{mode==="dark"?t.light:t.dark}</Pill>
+          </div>
         </header>
 
         <section className="ga-hero" style={{maxWidth:1240,margin:"0 auto",padding:"54px 40px 64px",display:"grid",gridTemplateColumns:"minmax(0,1.5fr) minmax(0,1fr)",gap:56,alignItems:"start"}}>
@@ -156,30 +191,22 @@ function Landing({ mode, setMode }) {
                 <span style={{position:"absolute",inset:0,borderRadius:99,background:p.gold,opacity:0.5}}/>
                 <span style={{position:"relative",margin:"auto",width:5,height:5,borderRadius:99,background:p.gold}}/>
               </span>
-              Financial coaching platform
+              {t.eyebrow}
             </div>
-            {/* editorial display headline — larger, tighter, confident */}
             <h1 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(2.8rem,6.2vw,5.2rem)",color:p.textHi,lineHeight:1.0,letterSpacing:"-0.018em",margin:"0 0 24px"}}>
-              The dashboard your <span style={{color:p.goldText}}>advisor</span> brings to every meeting.
+              {t.h1a}<span style={{color:p.goldText}}>{t.h1accent}</span>{t.h1b}
             </h1>
-            <p style={{fontFamily:"'Source Serif 4',serif",fontSize:18,lineHeight:1.6,color:p.text,maxWidth:540,margin:"0 0 30px"}}>
-              A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report.
-            </p>
+            <p style={{fontFamily:"'Source Serif 4',serif",fontSize:18,lineHeight:1.6,color:p.text,maxWidth:540,margin:"0 0 30px"}}>{t.sub}</p>
             <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:p.goldText,fontWeight:700}}>
-              {["Monthly snapshot","Debt & cash-flow models","Public intake form","EN · ES"].map((s,i)=>(
-                <span key={i} style={{padding:"6px 14px",border:`1px solid ${p.gold}55`,borderRadius:99,background:`${p.gold}1A`}}>{s}</span>
-              ))}
+              {t.pills.map((s,i)=>(<span key={i} style={{padding:"6px 14px",border:`1px solid ${p.gold}55`,borderRadius:99,background:`${p.gold}1A`}}>{s}</span>))}
             </div>
-            {/* offset editorial annotation (Hero 03 idea) */}
-            <div className="ga-anno" style={{position:"absolute",right:-28,top:8,writingMode:"vertical-rl",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.28em",textTransform:"uppercase",color:p.muted,opacity:0.7}}>
-              Miami · Bilingual · Educational
-            </div>
+            <div className="ga-anno" style={{position:"absolute",right:-28,top:8,writingMode:"vertical-rl",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.28em",textTransform:"uppercase",color:p.muted,opacity:0.7}}>{t.anno}</div>
           </div>
-          <div style={{display:"flex",justifyContent:"flex-end"}}><SignInCard p={p}/></div>
+          <div style={{display:"flex",justifyContent:"flex-end"}}><SignInCard p={p} t={t}/></div>
         </section>
 
         <section style={{maxWidth:1240,margin:"0 auto",padding:"36px 40px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:18}}>
-          {FEATURES.map((f,i)=>(
+          {t.features.map((f,i)=>(
             <div key={i} className="ga-card" style={{background:p.card,border:`1px solid ${p.border}`,borderRadius:14,padding:24,boxShadow:`0 2px 6px ${p.gold}14`}}>
               <div style={{width:44,height:44,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",background:`${p.gold}1A`,border:`1px solid ${p.gold}33`,marginBottom:14}}><Icon name={f.icon} c={p.gold}/></div>
               <h3 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:19,color:p.textHi,margin:"0 0 8px"}}>{f.title}</h3>
@@ -189,7 +216,7 @@ function Landing({ mode, setMode }) {
         </section>
 
         <footer style={{maxWidth:1240,margin:"36px auto 0",padding:"24px 40px 40px",borderTop:`1px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
-          <div style={{fontSize:11,color:p.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',serif",maxWidth:640}}>Educational financial coaching — not investment, tax, or legal advice.</div>
+          <div style={{fontSize:11,color:p.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',serif",maxWidth:640}}>{t.disclaimer}</div>
           <div style={{display:"flex",gap:14,fontSize:11,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
             <a href="#" style={{color:p.goldText,textDecoration:"none"}}>Email</a>
             <a href="#" style={{color:p.goldText,textDecoration:"none"}}>Site</a>
@@ -201,9 +228,11 @@ function Landing({ mode, setMode }) {
 }
 
 function App() {
-  const [mode, setMode] = useState(() => localStorage.getItem("ga-landing-mode") || "dark");
-  useEffect(() => { localStorage.setItem("ga-landing-mode", mode); }, [mode]);
-  return <Landing mode={mode} setMode={setMode}/>;
+  const [mode, setMode] = useState(() => localStorage.getItem("ga-v2-mode") || "light"); // default LIGHT
+  const [lang, setLang] = useState(() => localStorage.getItem("ga-v2-lang") || "en");
+  useEffect(() => { localStorage.setItem("ga-v2-mode", mode); }, [mode]);
+  useEffect(() => { localStorage.setItem("ga-v2-lang", lang); }, [lang]);
+  return <Landing mode={mode} setMode={setMode} lang={lang} setLang={setLang}/>;
 }
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
