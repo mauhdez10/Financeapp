@@ -17,7 +17,7 @@
   .ga-card:hover { transform:translateY(-3px); }
   .ga-btn { transition:transform 150ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 150ms ease, filter 150ms ease; }
   .ga-btn:hover { transform:translateY(-1px); filter:brightness(1.04); }
-  .ga-btn:active { transform:translateY(0); }
+  .ga-btn:active { transform:scale(0.97); } /* Emil: pressable elements need scale-on-press feedback */
   @media (prefers-reduced-motion: reduce) { .ga-rise{animation:none!important;} .ga-card,.ga-btn{transition:none!important;} }
   @media (max-width:860px) {
     .ga-hero { grid-template-columns:1fr !important; gap:28px !important; }
@@ -63,7 +63,7 @@ const AnchorMark = ({ c }) => (
   </svg>
 );
 
-function FlowField({ pal }) {
+function FlowField({ pal, dark }) {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current; if (!c) return;
@@ -75,17 +75,23 @@ function FlowField({ pal }) {
     resize(); window.addEventListener("resize", resize);
     const N = 560;
     const pts = Array.from({length:N}, () => ({ x:Math.random(), y:Math.random() }));
+    // Mode-aware: dark = additive gold glow on navy; light = walnut-gold particles
+    // that DARKEN the ivory (additive is invisible on a light surface — the bug).
+    const COMP = dark ? "lighter" : "source-over";
+    const COL  = dark ? [201,168,76] : [117,80,35];
+    const A0   = dark ? 0.05 : 0.14, AG = dark ? 0.11 : 0.20;
+    const SZ   = DPR * (dark ? 1.4 : 1.7);
     const render = () => {
       const W=c.width, H=c.height;
       ctx.fillStyle = pal.bg; ctx.fillRect(0,0,W,H);
-      ctx.globalCompositeOperation = "lighter";
+      ctx.globalCompositeOperation = COMP;
       for (const p of pts) {
         const a = (Math.sin((p.x*3.1+t*0.0006))*Math.cos((p.y*2.7-t*0.0005)))*Math.PI*2;
         p.x += Math.cos(a)*0.0011; p.y += Math.sin(a)*0.0011;
         if (p.x<0)p.x+=1; if(p.x>1)p.x-=1; if(p.y<0)p.y+=1; if(p.y>1)p.y-=1;
         const g = Math.abs(Math.sin(a));
-        ctx.fillStyle = `rgba(201,168,76,${0.05+g*0.11})`;
-        ctx.fillRect(p.x*W, p.y*H, DPR*1.4, DPR*1.4);
+        ctx.fillStyle = `rgba(${COL[0]},${COL[1]},${COL[2]},${A0+g*AG})`;
+        ctx.fillRect(p.x*W, p.y*H, SZ, SZ);
       }
       ctx.globalCompositeOperation = "source-over";
       // draw once if reduced motion, else animate
@@ -133,7 +139,7 @@ function Landing({ mode, setMode }) {
   return (
     <div style={{minHeight:"100vh",background:p.bg,color:p.text,position:"relative",overflowX:"hidden",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
       <div aria-hidden style={{position:"absolute",inset:0,zIndex:0,pointerEvents:"none"}}>
-        <FlowField pal={p}/>
+        <FlowField pal={p} dark={mode==="dark"}/>
         <div style={{position:"absolute",top:-200,right:-150,width:500,height:500,borderRadius:"50%",background:`radial-gradient(circle,${p.glowA},transparent 70%)`,filter:"blur(40px)"}}/>
         <div style={{position:"absolute",top:300,left:-200,width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${p.glowB},transparent 70%)`,filter:"blur(50px)"}}/>
       </div>
