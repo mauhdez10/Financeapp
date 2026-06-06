@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Dashboard Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Source+Serif+4:ital,wght@0,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;} body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;}
+  .num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+  .ga-card{transition:transform 200ms cubic-bezier(0.23,1,0.32,1),box-shadow 200ms ease;}
+  .row:hover{transform:translateX(2px);}
+  .row{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),background 160ms ease;cursor:pointer;}
+  .nav:hover{filter:brightness(1.08);}
+  .nav{transition:background 150ms ease;}
+  .tog{transition:transform 150ms cubic-bezier(0.23,1,0.32,1);} .tog:active{transform:scale(0.96);}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const THEME = {
+  dark:  { bg:"#0B1623", panel:"#0D1B2A", text:"#F1F5F9", textHi:"#EDD594", muted:"#9FB0C3", dim:"#6F8095",
+           card:"#131F31", border:"#22324A", gold:"#C9A84C", goldText:"#EDD594", pos:"#34D399", neg:"#F87171",
+           navActive:"#1B2A40", inp:"#0D1B2A" },
+  light: { bg:"#F4F1E9", panel:"#EFEADC", text:"#10233A", textHi:"#10233A", muted:"#54606E", dim:"#8A93A0",
+           card:"#FFFFFF", border:"#E2DAC8", gold:"#B8901E", goldText:"#7A5A12", pos:"#0E9F6E", neg:"#D64545",
+           navActive:"#E7DEC8", inp:"#FFFFFF" },
+};
+
+const T = {
+  en:{ nav:["Dashboard","Clients","Calculators","Resources","Reports"], advisory:"Financial Advisory",
+       page:"Dashboard", greeting:"Practice overview", search:"Search clients…",
+       kpis:[["Clients","24","+3"],["Practice net worth","$4.82M","+6.1%"],["Avg. debt ratio","31%","-2pts"],["Active plans","11","+1"]],
+       c_income:"Income vs Spending", c_flow:"Cash-flow", c_nw:"Net worth split",
+       light:"Light", dark:"Dark", clients:"clients", netMo:"Net / mo", debt:"Debt", nw:"Net worth", improving:"Improving",
+       legendIncome:"Income", legendSpend:"Spending", assets:"Assets", liab:"Liabilities" },
+  es:{ nav:["Tablero","Clientes","Calculadoras","Recursos","Reportes"], advisory:"Asesoría Financiera",
+       page:"Tablero", greeting:"Resumen de la práctica", search:"Buscar clientes…",
+       kpis:[["Clientes","24","+3"],["Patrimonio total","$4.82M","+6.1%"],["Razón de deuda prom.","31%","-2pts"],["Planes activos","11","+1"]],
+       c_income:"Ingresos vs Gastos", c_flow:"Flujo de efectivo", c_nw:"Composición patrimonial",
+       light:"Claro", dark:"Oscuro", clients:"clientes", netMo:"Neto / mes", debt:"Deuda", nw:"Patrimonio", improving:"Mejorando",
+       legendIncome:"Ingresos", legendSpend:"Gastos", assets:"Activos", liab:"Pasivos" },
+};
+
+const NAV_ICONS = ["grid","users","calc","book","file"];
+const Icon = ({ name, c, s=18 }) => {
+  const P = { width:s, height:s, viewBox:"0 0 24 24", fill:"none", stroke:c, strokeWidth:1.7, strokeLinecap:"round", strokeLinejoin:"round" };
+  switch(name){
+    case "grid":  return <svg {...P}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>;
+    case "users": return <svg {...P}><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 6a3 3 0 0 1 0 6M21 20a6 6 0 0 0-4-5.7"/></svg>;
+    case "calc":  return <svg {...P}><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15v3"/></svg>;
+    case "book":  return <svg {...P}><path d="M4 19V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M8 7h7"/></svg>;
+    case "file":  return <svg {...P}><path d="M14 3v5h5"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg>;
+    case "anchor":return <svg {...P}><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/></svg>;
+    default: return null;
+  }
+};
+
+function Spark({ data, c, w=96, h=30 }) {
+  const max=Math.max(...data), min=Math.min(...data), rng=max-min||1;
+  const pts=data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-min)/rng)*(h-4)-2}`).join(" ");
+  const id="sg"+c.replace(/[^a-z0-9]/gi,"");
+  return <svg width={w} height={h} style={{display:"block"}}>
+    <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={c} stopOpacity="0.28"/><stop offset="1" stopColor={c} stopOpacity="0"/></linearGradient></defs>
+    <polyline points={`0,${h} ${pts} ${w},${h}`} fill={`url(#${id})`} stroke="none"/>
+    <polyline points={pts} fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>;
+}
+
+function GroupBars({ p }) {
+  const months=["Jan","Feb","Mar","Apr","May","Jun"];
+  const inc=[62,64,61,68,70,72], spd=[48,52,49,51,55,53];
+  const W=300,H=150,bw=14,gap=6,grp=W/months.length;
+  const max=80;
+  return <svg viewBox={`0 0 ${W} ${H+20}`} style={{width:"100%",height:"auto"}}>
+    {[0,.5,1].map((g,i)=><line key={i} x1="0" x2={W} y1={H-g*H} y2={H-g*H} stroke={p.border} strokeWidth="1"/>)}
+    {months.map((m,i)=>{const x=i*grp+grp/2;
+      return <g key={i}>
+        <rect x={x-bw-gap/2} y={H-(inc[i]/max)*H} width={bw} height={(inc[i]/max)*H} rx="2" fill={p.gold}/>
+        <rect x={x+gap/2} y={H-(spd[i]/max)*H} width={bw} height={(spd[i]/max)*H} rx="2" fill={p.muted} opacity="0.55"/>
+        <text x={x} y={H+14} textAnchor="middle" fontSize="9" fontFamily="JetBrains Mono" fill={p.dim}>{m}</text>
+      </g>;})}
+  </svg>;
+}
+
+function Donut({ p }) {
+  const segs=[["Cash",28,p.gold],["Investments",42,p.pos],["Property",22,p.goldText],["Other",8,p.muted]];
+  let acc=0, R=52, r=34, cx=70, cy=70, C=2*Math.PI*((R+r)/2), sw=R-r;
+  return <div style={{display:"flex",alignItems:"center",gap:16}}>
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      {segs.map((s,i)=>{const frac=s[1]/100,len=frac*C,off=acc*C;acc+=frac;
+        return <circle key={i} cx={cx} cy={cy} r={(R+r)/2} fill="none" stroke={s[2]} strokeWidth={sw}
+          strokeDasharray={`${len} ${C-len}`} strokeDashoffset={-off} transform={`rotate(-90 ${cx} ${cy})`} strokeLinecap="butt"/>;})}
+      <text x={cx} y={cy-2} textAnchor="middle" className="num" fontSize="17" fontWeight="700" fill={p.text}>$4.82M</text>
+      <text x={cx} y={cy+13} textAnchor="middle" fontSize="8" fill={p.dim} letterSpacing="0.1em">NET WORTH</text>
+    </svg>
+    <div style={{display:"flex",flexDirection:"column",gap:7}}>
+      {segs.map((s,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:p.muted}}>
+        <span style={{width:9,height:9,borderRadius:2,background:s[2]}}/>{s[0]}<span className="num" style={{marginLeft:"auto",color:p.text,fontWeight:600}}>{s[1]}%</span></div>)}
+    </div>
+  </div>;
+}
+
+function FlowMini({ p }) {
+  // simplified cash-flow ribbon: income → (savings / bills / debt)
+  return <svg viewBox="0 0 300 150" style={{width:"100%",height:"auto"}}>
+    <rect x="6" y="50" width="14" height="50" rx="3" fill={p.gold}/>
+    <text x="13" y="115" textAnchor="middle" fontSize="8" fill={p.dim} fontFamily="JetBrains Mono">IN</text>
+    {[["Savings",30,p.pos],["Bills",78,p.muted],["Debt",118,p.neg]].map((s,i)=>{
+      const y2=s[1];
+      return <g key={i}>
+        <path d={`M20 ${75} C 130 75, 150 ${y2+12}, 280 ${y2+12}`} fill="none" stroke={s[2]} strokeWidth={[14,22,12][i]} opacity="0.35" strokeLinecap="round"/>
+        <text x="288" y={y2+16} fontSize="8" fill={p.dim} fontFamily="JetBrains Mono" textAnchor="end">{s[0].toUpperCase()}</text>
+      </g>;})}
+  </svg>;
+}
+
+function Kpi({ p, label, value, delta }) {
+  const up=delta.trim().startsWith("+"); const col=up?p.pos:(delta.includes("-pts")||delta.startsWith("-")?p.pos:p.neg);
+  const good = up || delta.includes("-2pts"); const dc = good?p.pos:p.neg;
+  const spark=[5,6,5,7,8,7,9,10].map(v=>v+Math.random()*1.5);
+  return <div className="ga-card" style={{background:p.card,border:`1px solid ${p.border}`,borderRadius:14,padding:"16px 18px"}}>
+    <div style={{fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",color:p.dim,fontWeight:600,marginBottom:8}}>{label}</div>
+    <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:10}}>
+      <div>
+        <div className="num" style={{fontSize:26,fontWeight:700,color:p.text,lineHeight:1}}>{value}</div>
+        <div className="num" style={{fontSize:11,fontWeight:600,color:dc,marginTop:6}}>{good?"▲":"▼"} {delta}</div>
+      </div>
+      <Spark data={spark} c={p.gold}/>
+    </div>
+  </div>;
+}
+
+const CLIENTS = [
+  {n:"Amanda Chen",p:"",init:"AC",col:"#4472C4",net:"$5,240",debt:"$182K",nw:"$612K",imp:true},
+  {n:"Marcus Webb",p:"& Lia",init:"MW",col:"#ED7D31",net:"$3,910",debt:"$240K",nw:"$388K",imp:false},
+  {n:"Sofia Reyes",p:"",init:"SR",col:"#10B981",net:"$6,720",debt:"$96K",nw:"$845K",imp:true},
+  {n:"David Okafor",p:"& Nia",init:"DO",col:"#9B59B6",net:"$2,480",debt:"$310K",nw:"$210K",imp:false},
+];
+
+function Card({ p, title, sub, children }) {
+  return <div className="ga-card" style={{background:p.card,border:`1px solid ${p.border}`,borderRadius:14,padding:18,display:"flex",flexDirection:"column"}}>
+    <div style={{marginBottom:14}}>
+      <div style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:p.textHi,lineHeight:1}}>{title}</div>
+      {sub&&<div style={{fontSize:9.5,letterSpacing:"0.1em",textTransform:"uppercase",color:p.dim,fontWeight:600,marginTop:6}}>{sub}</div>}
+    </div>
+    {children}
+  </div>;
+}
+
+function Dashboard({ mode, setMode, lang, setLang }) {
+  const p = THEME[mode]; const t = T[lang];
+  return <div style={{minHeight:"100vh",background:p.bg,color:p.text,display:"flex",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+    {/* SIDEBAR */}
+    <aside style={{width:236,flexShrink:0,background:p.panel,borderRight:`1px solid ${p.border}`,padding:"24px 16px",display:"flex",flexDirection:"column",minHeight:"100vh"}}>
+      <div style={{display:"flex",alignItems:"center",gap:11,padding:"0 8px 22px"}}>
+        <Icon name="anchor" c={p.goldText} s={26}/>
+        <div>
+          <div style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:16,color:p.goldText,letterSpacing:"0.1em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
+          <div style={{fontSize:8,color:p.dim,letterSpacing:"0.2em",marginTop:3,textTransform:"uppercase",fontWeight:600}}>{t.advisory}</div>
+        </div>
+      </div>
+      <nav style={{display:"flex",flexDirection:"column",gap:3}}>
+        {t.nav.map((label,i)=>{const active=i===0;
+          return <div key={i} className="nav" style={{display:"flex",alignItems:"center",gap:11,padding:"10px 12px",borderRadius:10,cursor:"pointer",
+            background:active?p.navActive:"transparent",color:active?p.textHi:p.muted,fontWeight:active?700:500,fontSize:13}}>
+            <Icon name={NAV_ICONS[i]} c={active?p.gold:p.dim} s={17}/>{label}
+          </div>;})}
+      </nav>
+      <div style={{marginTop:"auto",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderTop:`1px solid ${p.border}`}}>
+        <div style={{width:32,height:32,borderRadius:99,background:p.gold+"22",border:`2px solid ${p.gold}55`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:12,color:p.goldText}}>MH</div>
+        <div style={{fontSize:12}}><div style={{fontWeight:600,color:p.text}}>Mauricio H.</div><div style={{fontSize:10,color:p.dim}}>Advisor</div></div>
+      </div>
+    </aside>
+
+    {/* MAIN */}
+    <main style={{flex:1,minWidth:0,padding:"24px 32px 40px"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontSize:9.5,letterSpacing:"0.12em",textTransform:"uppercase",color:p.goldText,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",marginBottom:6}}>{t.greeting}</div>
+          <h1 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:34,color:p.textHi,margin:0,lineHeight:1}}>{t.page}</h1>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <input placeholder={t.search} style={{background:p.inp,border:`1px solid ${p.border}`,color:p.text,borderRadius:99,padding:"10px 16px",fontSize:12,width:220,outline:"none",fontFamily:"inherit"}}/>
+          <button className="tog" onClick={()=>setLang(lang==="en"?"es":"en")} style={{fontSize:12,padding:"10px 14px",minHeight:42,borderRadius:99,background:"transparent",color:p.muted,border:`1px solid ${p.border}`,cursor:"pointer",fontWeight:600}}>{lang==="en"?"ES":"EN"}</button>
+          <button className="tog" onClick={()=>setMode(mode==="dark"?"light":"dark")} style={{fontSize:12,padding:"10px 14px",minHeight:42,borderRadius:99,background:"transparent",color:p.muted,border:`1px solid ${p.border}`,cursor:"pointer",fontWeight:600}}>{mode==="dark"?t.light:t.dark}</button>
+        </div>
+      </div>
+
+      {/* KPI strip */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:14,marginBottom:18}}>
+        {t.kpis.map((k,i)=><Kpi key={i} p={p} label={k[0]} value={k[1]} delta={k[2]}/>)}
+      </div>
+
+      {/* chart row */}
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,4fr) minmax(0,4fr) minmax(0,3fr)",gap:14,marginBottom:18}}>
+        <Card p={p} title={t.c_income} sub="last 6 months">
+          <GroupBars p={p}/>
+          <div style={{display:"flex",gap:16,marginTop:10,fontSize:11,color:p.muted}}>
+            <span style={{display:"flex",alignItems:"center",gap:6}}><span style={{width:9,height:9,borderRadius:2,background:p.gold}}/>{t.legendIncome}</span>
+            <span style={{display:"flex",alignItems:"center",gap:6}}><span style={{width:9,height:9,borderRadius:2,background:p.muted,opacity:0.55}}/>{t.legendSpend}</span>
+          </div>
+        </Card>
+        <Card p={p} title={t.c_flow} sub="practice aggregate"><FlowMini p={p}/></Card>
+        <Card p={p} title={t.c_nw} sub="by asset class"><Donut p={p}/></Card>
+      </div>
+
+      {/* client list */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{fontSize:12,fontWeight:700,color:p.muted}}>24 {t.clients}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {CLIENTS.map((c,i)=><div key={i} className="row" style={{background:p.card,border:`1px solid ${p.border}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:16}}>
+          <div style={{width:42,height:42,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,background:c.col+"22",color:c.col,border:`2px solid ${c.col}44`,flexShrink:0}}>{c.init}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14,fontWeight:700,color:p.text}}>{c.n}</span>{c.p&&<span style={{fontSize:12,color:p.dim}}>{c.p}</span>}
+              {c.imp&&<span style={{fontSize:9.5,fontWeight:700,letterSpacing:"0.04em",textTransform:"uppercase",color:p.pos,background:p.pos+"1A",border:`1px solid ${p.pos}44`,padding:"2px 8px",borderRadius:99}}>{t.improving}</span>}
+            </div>
+            <div style={{fontSize:11,color:p.dim,marginTop:2}}>{c.n.toLowerCase().replace(" ",".")}@email.com</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:24,textAlign:"right"}}>
+            <div><div style={{fontSize:9.5,color:p.dim,marginBottom:3,letterSpacing:"0.04em"}}>{t.netMo}</div><div className="num" style={{fontSize:13,fontWeight:700,color:p.pos}}>{c.net}</div></div>
+            <div><div style={{fontSize:9.5,color:p.dim,marginBottom:3,letterSpacing:"0.04em"}}>{t.debt}</div><div className="num" style={{fontSize:13,fontWeight:700,color:p.neg}}>{c.debt}</div></div>
+            <div><div style={{fontSize:9.5,color:p.dim,marginBottom:3,letterSpacing:"0.04em"}}>{t.nw}</div><div className="num" style={{fontSize:13,fontWeight:700,color:p.goldText}}>{c.nw}</div></div>
+          </div>
+          <span style={{color:p.gold,fontSize:18}}>›</span>
+        </div>)}
+      </div>
+    </main>
+  </div>;
+}
+
+function App(){
+  const [mode,setMode]=useState(()=>localStorage.getItem("ga-dash-mode")||"light");
+  const [lang,setLang]=useState(()=>localStorage.getItem("ga-dash-lang")||"en");
+  useEffect(()=>{localStorage.setItem("ga-dash-mode",mode);},[mode]);
+  useEffect(()=>{localStorage.setItem("ga-dash-lang",lang);},[lang]);
+  return <Dashboard mode={mode} setMode={setMode} lang={lang} setLang={setLang}/>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
