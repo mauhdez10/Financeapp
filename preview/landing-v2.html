@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Landing v2 (editorial + reactive)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Source+Serif+4:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; }
+  body { font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+  @keyframes ga-rise { from { opacity:0; transform:translateY(16px);} to { opacity:1; transform:translateY(0);} }
+  .ga-rise { animation:ga-rise 600ms cubic-bezier(0.23,1,0.32,1) both; }
+  .ga-card { transition:transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms ease; }
+  .ga-card:hover { transform:translateY(-3px); }
+  .ga-btn { transition:transform 150ms cubic-bezier(0.23,1,0.32,1), filter 150ms ease; }
+  .ga-btn:hover { filter:brightness(1.05); }
+  .ga-btn:active { transform:scale(0.97); }
+  @media (prefers-reduced-motion: reduce){ .ga-rise{animation:none!important;} .ga-card,.ga-btn{transition:none!important;} }
+  @media (max-width:880px){
+    .ga-hero{ grid-template-columns:1fr !important; gap:28px !important; }
+    .ga-anno{ display:none !important; }
+    .ga-hero h1{ font-size:clamp(2.4rem,11vw,3.4rem) !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const THEME = {
+  dark:  { bg:"#0D1B2A", bg2:"#142235", text:"#F1F5F9", textHi:"#EDD594", muted:"#CBD5E1",
+           card:"#131F31", border:"#1F2937", gold:"#C9A84C", goldText:"#EDD594", inp:"#0D1B2A", line:[201,168,76] },
+  light: { bg:"#F4F1E9", bg2:"#ECE6D6", text:"#10233A", textHi:"#10233A", muted:"#54606E",
+           card:"#FFFFFF", border:"#DED6C4", gold:"#B8901E", goldText:"#7A5A12", inp:"#FFFFFF", line:[117,80,35] },
+};
+const BTN_INK = "#1A1208";
+
+/* ── Reactive gold line-field — adapted from 21st.dev "Hero Designali" canvas.
+   Springy quadratic-curve trails that follow the cursor; idle Lissajous drift
+   before first interaction; mode-aware blend; reduced-motion → static settle. ── */
+function LineField({ pal, dark }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    const E = { friction:0.5, trails:55, size:40, dampening:0.025, tension:0.99 };
+    const pos = { x:0, y:0 };
+    let lines = [], raf, running = true, interacted = false, phase = 1.3, drift = 0;
+    const resize = () => { c.width=c.clientWidth*DPR; c.height=c.clientHeight*DPR; if(!interacted){pos.x=c.width*0.62; pos.y=c.height*0.42;} };
+    const Node = function(){ this.x=pos.x; this.y=pos.y; this.vx=0; this.vy=0; };
+    const build = () => { lines=[]; for(let i=0;i<E.trails;i++){ const l={spring:0.4+(i/E.trails)*0.025, friction:E.friction+(Math.random()*0.01-0.005), nodes:[]}; for(let j=0;j<E.size;j++) l.nodes.push(new Node()); lines.push(l);} };
+    const update = (l) => { let e=l.spring, t=l.nodes[0]; t.vx+=(pos.x-t.x)*e; t.vy+=(pos.y-t.y)*e;
+      for(let i=0;i<l.nodes.length;i++){ t=l.nodes[i]; if(i>0){ const n=l.nodes[i-1]; t.vx+=(n.x-t.x)*e; t.vy+=(n.y-t.y)*e; t.vx+=n.vx*E.dampening; t.vy+=n.vy*E.dampening; } t.vx*=l.friction; t.vy*=l.friction; t.x+=t.vx; t.y+=t.vy; e*=E.tension; } };
+    const draw = (l) => { ctx.beginPath(); ctx.moveTo(l.nodes[0].x,l.nodes[0].y); let i;
+      for(i=1;i<l.nodes.length-2;i++){ const a=l.nodes[i], b=l.nodes[i+1]; ctx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);} const a=l.nodes[i], b=l.nodes[i+1]; ctx.quadraticCurveTo(a.x,a.y,b.x,b.y); ctx.stroke(); };
+    const render = () => {
+      if(!running) return;
+      if(!interacted){ drift+=0.01; pos.x=c.width*(0.6+0.26*Math.sin(drift*0.7)); pos.y=c.height*(0.42+0.22*Math.cos(drift*0.9)); }
+      ctx.globalCompositeOperation="source-over"; ctx.clearRect(0,0,c.width,c.height);
+      phase += 0.0016; const shimmer = 0.5+Math.sin(phase)*0.5;
+      ctx.globalCompositeOperation = dark ? "lighter" : "source-over";
+      const a = dark ? (0.016+shimmer*0.020) : (0.05+shimmer*0.05);
+      ctx.strokeStyle = `rgba(${pal.line[0]},${pal.line[1]},${pal.line[2]},${a})`;
+      ctx.lineWidth = DPR*(dark?9:7);
+      for(const l of lines){ update(l); draw(l); }
+      raf = requestAnimationFrame(render);
+    };
+    const move = (e) => { interacted=true; const r=c.getBoundingClientRect(); const cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY; pos.x=(cx-r.left)*DPR; pos.y=(cy-r.top)*DPR; };
+    const onResize = () => { resize(); build(); };
+    resize(); build();
+    window.addEventListener("resize", onResize);
+    if(reduce){ for(let k=0;k<70;k++) for(const l of lines) update(l); ctx.globalCompositeOperation=dark?"lighter":"source-over"; ctx.strokeStyle=`rgba(${pal.line[0]},${pal.line[1]},${pal.line[2]},${dark?0.03:0.06})`; ctx.lineWidth=DPR*8; for(const l of lines) draw(l); }
+    else { window.addEventListener("mousemove", move); window.addEventListener("touchmove", move, {passive:true}); render(); }
+    return () => { running=false; cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); window.removeEventListener("mousemove", move); window.removeEventListener("touchmove", move); };
+  }, [pal, dark]);
+  return <canvas ref={ref} style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.85,pointerEvents:"none"}}/>;
+}
+
+const Icon = ({ name, c }) => {
+  const C = { width:24, height:24, viewBox:"0 0 24 24", fill:"none", stroke:c, strokeWidth:1.6, strokeLinecap:"round", strokeLinejoin:"round" };
+  if (name==="flow")   return <svg {...C}><path d="M3 7h4c4 0 4 10 8 10h6"/><path d="M3 17h4c4 0 4-10 8-10h6"/></svg>;
+  if (name==="gauge")  return <svg {...C}><path d="M12 14l4-4"/><path d="M3.3 17a9 9 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1.2" fill={c} stroke="none"/></svg>;
+  if (name==="report") return <svg {...C}><path d="M14 3v5h5"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg>;
+  return null;
+};
+const AnchorMark = ({ c }) => (
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/></svg>
+);
+
+function SignInCard({ p }) {
+  const inp = { background:p.inp, border:`1px solid ${p.border}`, color:p.text, borderRadius:10, padding:"11px 12px", fontSize:13, outline:"none", width:"100%", boxSizing:"border-box", fontFamily:"inherit" };
+  const lbl = { fontSize:10, color:p.muted, display:"block", marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase", fontWeight:600 };
+  return (
+    <div className="ga-card ga-rise" style={{ background:p.card, border:`1px solid ${p.border}`, borderRadius:16, padding:26, boxShadow:`0 24px 60px ${p.gold}1f, 0 4px 12px ${p.gold}14`, position:"relative", maxWidth:380, width:"100%", animationDelay:"140ms" }}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${p.gold},${p.goldText})`,borderTopLeftRadius:16,borderTopRightRadius:16}}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:18}}>
+        <h2 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:p.textHi,margin:0}}>Sign In</h2>
+        <span style={{fontSize:9,color:p.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>Secure portal</span>
+      </div>
+      <div style={{marginBottom:14}}><label style={lbl}>Email</label><input style={inp} placeholder="you@email.com"/></div>
+      <div style={{marginBottom:16}}><label style={lbl}>Password</label><input type="password" style={inp} placeholder="••••••••"/></div>
+      <button className="ga-btn" style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:p.gold,color:BTN_INK,border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${p.gold}44`}}>Sign In</button>
+      <div style={{textAlign:"center",marginTop:14}}><a style={{color:p.muted,fontSize:12,textDecoration:"underline",cursor:"pointer"}}>Forgot password?</a></div>
+      <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${p.border}`,fontSize:10,color:p.muted,textAlign:"center"}}>No account yet? <a style={{color:p.goldText,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>Contact Mauricio</a></div>
+    </div>
+  );
+}
+
+const FEATURES = [
+  { icon:"flow",   title:"Where every dollar goes", body:"A live Sankey diagram shows how income flows into bills, debt, and savings — at a glance." },
+  { icon:"gauge",  title:"Health, scored at a glance", body:"DSR, savings rate, and emergency-fund months as live gauges. Clear targets, no jargon." },
+  { icon:"report", title:"Reports that look like reports", body:"Designer-grade PDF — every section on its own page. Ready to review or share with confidence." },
+];
+
+function Landing({ mode, setMode }) {
+  const p = THEME[mode];
+  const frameInset = 18;
+  return (
+    <div style={{minHeight:"100vh",background:p.bg,color:p.text,position:"relative",overflowX:"hidden",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+      <div aria-hidden style={{position:"absolute",inset:0,zIndex:0,pointerEvents:"none"}}>
+        <LineField pal={p} dark={mode==="dark"}/>
+      </div>
+      {/* editorial hairline frame */}
+      <div aria-hidden style={{position:"fixed",inset:frameInset,border:`1px solid ${p.gold}33`,borderRadius:4,pointerEvents:"none",zIndex:1}}/>
+
+      <div style={{position:"relative",zIndex:2}}>
+        <header style={{padding:"26px 40px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <AnchorMark c={p.goldText}/>
+            <div>
+              <div style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:p.goldText,letterSpacing:"0.12em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
+              <div style={{fontSize:9,color:p.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>Financial Advisory</div>
+            </div>
+          </div>
+          <button onClick={()=>setMode(mode==="dark"?"light":"dark")} aria-label="Toggle theme" style={{fontSize:12,padding:"11px 18px",minHeight:44,borderRadius:99,background:"transparent",color:p.muted,border:`1px solid ${p.border}`,cursor:"pointer",fontWeight:600,letterSpacing:"0.04em"}}>{mode==="dark"?"Light":"Dark"}</button>
+        </header>
+
+        <section className="ga-hero" style={{maxWidth:1240,margin:"0 auto",padding:"54px 40px 64px",display:"grid",gridTemplateColumns:"minmax(0,1.5fr) minmax(0,1fr)",gap:56,alignItems:"start"}}>
+          <div className="ga-rise" style={{paddingTop:20,position:"relative"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:p.goldText,letterSpacing:"0.22em",textTransform:"uppercase",marginBottom:22,fontWeight:600}}>
+              <span style={{position:"relative",display:"inline-flex",width:7,height:7}}>
+                <span style={{position:"absolute",inset:0,borderRadius:99,background:p.gold,opacity:0.5}}/>
+                <span style={{position:"relative",margin:"auto",width:5,height:5,borderRadius:99,background:p.gold}}/>
+              </span>
+              Financial coaching platform
+            </div>
+            {/* editorial display headline — larger, tighter, confident */}
+            <h1 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(2.8rem,6.2vw,5.2rem)",color:p.textHi,lineHeight:1.0,letterSpacing:"-0.018em",margin:"0 0 24px"}}>
+              The dashboard your <span style={{color:p.goldText}}>advisor</span> brings to every meeting.
+            </h1>
+            <p style={{fontFamily:"'Source Serif 4',serif",fontSize:18,lineHeight:1.6,color:p.text,maxWidth:540,margin:"0 0 30px"}}>
+              A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report.
+            </p>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:p.goldText,fontWeight:700}}>
+              {["Monthly snapshot","Debt & cash-flow models","Public intake form","EN · ES"].map((s,i)=>(
+                <span key={i} style={{padding:"6px 14px",border:`1px solid ${p.gold}55`,borderRadius:99,background:`${p.gold}1A`}}>{s}</span>
+              ))}
+            </div>
+            {/* offset editorial annotation (Hero 03 idea) */}
+            <div className="ga-anno" style={{position:"absolute",right:-28,top:8,writingMode:"vertical-rl",fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.28em",textTransform:"uppercase",color:p.muted,opacity:0.7}}>
+              Miami · Bilingual · Educational
+            </div>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end"}}><SignInCard p={p}/></div>
+        </section>
+
+        <section style={{maxWidth:1240,margin:"0 auto",padding:"36px 40px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:18}}>
+          {FEATURES.map((f,i)=>(
+            <div key={i} className="ga-card" style={{background:p.card,border:`1px solid ${p.border}`,borderRadius:14,padding:24,boxShadow:`0 2px 6px ${p.gold}14`}}>
+              <div style={{width:44,height:44,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",background:`${p.gold}1A`,border:`1px solid ${p.gold}33`,marginBottom:14}}><Icon name={f.icon} c={p.gold}/></div>
+              <h3 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:19,color:p.textHi,margin:"0 0 8px"}}>{f.title}</h3>
+              <p style={{fontFamily:"'Source Serif 4',serif",fontSize:14,lineHeight:1.6,color:p.text,margin:0}}>{f.body}</p>
+            </div>
+          ))}
+        </section>
+
+        <footer style={{maxWidth:1240,margin:"36px auto 0",padding:"24px 40px 40px",borderTop:`1px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+          <div style={{fontSize:11,color:p.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',serif",maxWidth:640}}>Educational financial coaching — not investment, tax, or legal advice.</div>
+          <div style={{display:"flex",gap:14,fontSize:11,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
+            <a href="#" style={{color:p.goldText,textDecoration:"none"}}>Email</a>
+            <a href="#" style={{color:p.goldText,textDecoration:"none"}}>Site</a>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [mode, setMode] = useState(() => localStorage.getItem("ga-landing-mode") || "dark");
+  useEffect(() => { localStorage.setItem("ga-landing-mode", mode); }, [mode]);
+  return <Landing mode={mode} setMode={setMode}/>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
