@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Landing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Source+Serif+4:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; }
+  body { font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+  /* ── Lab control bar (NOT part of the design — it's the picker) ── */
+  #labbar {
+    position:fixed; top:0; left:0; right:0; z-index:9999;
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+    padding:10px 16px; font-size:12px;
+    background:#11161d; color:#e7e3d8; border-bottom:1px solid #2a313c;
+    font-family:'JetBrains Mono',monospace;
+  }
+  #labbar .grp { display:flex; gap:6px; align-items:center; }
+  #labbar .grp b { color:#c9a84c; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; font-size:10px; }
+  #labbar button {
+    background:#1b222c; color:#cdd3dc; border:1px solid #333c48; border-radius:6px;
+    padding:5px 9px; cursor:pointer; font-family:inherit; font-size:11px;
+  }
+  #labbar button.on { background:#c9a84c; color:#1a1208; border-color:#c9a84c; font-weight:600; }
+  #labbar .pick { margin-left:auto; color:#8c93a0; }
+  #stage { padding-top:46px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ──────────────────────────────────────────────────────────────────────────
+   PALETTES (A) — three palette stories, each with light + dark.
+   A1 = current (warm-cream light / navy-gold dark, as shipped)
+   A2 = Premium dark-first (navy+gold both modes; light is "warm ivory", not cream)
+   A3 = Editorial ink (near-monochrome ink + a single gold accent; quietest)
+   ────────────────────────────────────────────────────────────────────────── */
+const PALETTES = {
+  A1: {
+    label: "A1 · Warm cream (current)",
+    light: { bg:"#FAF6EC", bg2:"#F7EFC1", text:"#0D1B2A", textHi:"#0D1B2A", muted:"#475569",
+             card:"#FFFFFF", border:"#E8DFC6", gold:"#C9A84C", goldText:"#755023", inp:"#FFFEFA",
+             glowA:"rgba(201,168,76,0.20)", glowB:"rgba(201,168,76,0.08)" },
+    dark:  { bg:"#0D1B2A", bg2:"#142235", text:"#F1F5F9", textHi:"#EDD594", muted:"#CBD5E1",
+             card:"#131F31", border:"#1F2937", gold:"#C9A84C", goldText:"#EDD594", inp:"#0D1B2A",
+             glowA:"rgba(201,168,76,0.18)", glowB:"rgba(45,80,140,0.22)" },
+  },
+  A2: {
+    label: "A2 · Navy + gold premium",
+    light: { bg:"#F4F1E9", bg2:"#ECE6D6", text:"#10233A", textHi:"#10233A", muted:"#54606E",
+             card:"#FFFFFF", border:"#DED6C4", gold:"#B8901E", goldText:"#7A5A12", inp:"#FFFFFF",
+             glowA:"rgba(184,144,30,0.16)", glowB:"rgba(16,35,58,0.06)" },
+    dark:  { bg:"#091422", bg2:"#0F2034", text:"#EDF1F6", textHi:"#E7C766", muted:"#A9B4C2",
+             card:"#0E1C2E", border:"#1C2E44", gold:"#D4AF45", goldText:"#E7C766", inp:"#0A1626",
+             glowA:"rgba(212,175,69,0.22)", glowB:"rgba(30,64,110,0.28)" },
+  },
+  A3: {
+    label: "A3 · Editorial ink",
+    light: { bg:"#FBFAF7", bg2:"#F3F1EA", text:"#1A1A18", textHi:"#1A1A18", muted:"#5C5A52",
+             card:"#FFFFFF", border:"#E5E2D8", gold:"#A8842B", goldText:"#8A6B1E", inp:"#FFFFFF",
+             glowA:"rgba(168,132,43,0.12)", glowB:"rgba(26,26,24,0.04)" },
+    dark:  { bg:"#14140F", bg2:"#1C1B14", text:"#F3F1E8", textHi:"#E8D9A8", muted:"#B6B2A0",
+             card:"#1A1A12", border:"#2A2920", gold:"#C7A24E", goldText:"#E8D9A8", inp:"#141410",
+             glowA:"rgba(199,162,78,0.16)", glowB:"rgba(60,56,40,0.30)" },
+  },
+};
+
+/* ── Real inline icons (Lucide-style, stroke) — replaces the 🌊🎯📄 emoji ── */
+const Icon = ({ name, c }) => {
+  const common = { width:24, height:24, viewBox:"0 0 24 24", fill:"none",
+    stroke:c, strokeWidth:1.6, strokeLinecap:"round", strokeLinejoin:"round" };
+  if (name==="flow") return <svg {...common}><path d="M3 7h4c4 0 4 10 8 10h6"/><path d="M3 17h4c4 0 4-10 8-10h6"/></svg>;
+  if (name==="gauge") return <svg {...common}><path d="M12 14l4-4"/><path d="M3.3 17a9 9 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1.2" fill={c} stroke="none"/></svg>;
+  if (name==="report") return <svg {...common}><path d="M14 3v5h5"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg>;
+  return null;
+};
+const AnchorMark = ({ c }) => (
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/>
+  </svg>
+);
+
+/* ── Background (B) — B1 quiet glow · B2 generative gold flow-field · B3 none ── */
+function FlowField({ pal }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d");
+    let raf, t = 0, alive = true;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    const resize = () => { c.width = c.clientWidth*DPR; c.height = c.clientHeight*DPR; };
+    resize(); window.addEventListener("resize", resize);
+    const N = 520;
+    const pts = Array.from({length:N}, () => ({ x:Math.random(), y:Math.random() }));
+    const draw = () => {
+      const W=c.width, H=c.height;
+      ctx.fillStyle = pal.bg; ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation = "lighter";
+      for (const p of pts) {
+        const a = (Math.sin((p.x*3.1+t*0.0006))*Math.cos((p.y*2.7-t*0.0005)))*Math.PI*2;
+        p.x += Math.cos(a)*0.0011; p.y += Math.sin(a)*0.0011;
+        if (p.x<0)p.x+=1; if(p.x>1)p.x-=1; if(p.y<0)p.y+=1; if(p.y>1)p.y-=1;
+        const g = Math.abs(Math.sin(a));
+        ctx.fillStyle = `rgba(201,168,76,${0.05+g*0.10})`;
+        ctx.fillRect(p.x*W, p.y*H, DPR*1.4, DPR*1.4);
+      }
+      ctx.globalCompositeOperation = "source-over";
+      if (!reduce && alive) { t+=16; raf=requestAnimationFrame(draw); }
+    };
+    draw();
+    return () => { alive=false; cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, [pal]);
+  return <canvas ref={ref} style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.6,pointerEvents:"none"}}/>;
+}
+
+/* ── The sign-in card (shared across layouts) ── */
+function SignInCard({ p, lang }) {
+  const inp = { background:p.inp, border:`1px solid ${p.border}`, color:p.text, borderRadius:10,
+    padding:"10px 12px", fontSize:13, outline:"none", width:"100%", boxSizing:"border-box", fontFamily:"inherit" };
+  const lbl = { fontSize:10, color:p.muted, display:"block", marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase", fontWeight:600 };
+  return (
+    <div style={{ background:p.card, border:`1px solid ${p.border}`, borderRadius:18, padding:24,
+      boxShadow:`0 24px 60px ${p.gold}22, 0 4px 12px ${p.gold}18`, position:"relative", maxWidth:380, width:"100%" }}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${p.gold},${p.goldText})`,borderTopLeftRadius:18,borderTopRightRadius:18}}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:18}}>
+        <h2 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:p.textHi,margin:0}}>Sign In</h2>
+        <span style={{fontSize:9,color:p.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>Secure portal</span>
+      </div>
+      <div style={{marginBottom:14}}><label style={lbl}>Email</label><input style={inp} placeholder="you@email.com"/></div>
+      <div style={{marginBottom:14}}><label style={lbl}>Password</label><input type="password" style={inp} placeholder="••••••••"/></div>
+      {/* a11y: dark ink on SOLID gold (white-on-gold fails AA at 2-3.5:1; the old gradient also
+         ran into dark walnut in light mode). Solid gold keeps dark ink safe across the surface. */}
+      <button style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",
+        background:p.gold,color:"#1A1208",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",
+        boxShadow:`0 6px 18px ${p.gold}44`}}>Sign In</button>
+      <div style={{textAlign:"center",marginTop:14}}><a style={{color:p.muted,fontSize:12,textDecoration:"underline",cursor:"pointer"}}>Forgot password?</a></div>
+      <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${p.border}`,fontSize:10,color:p.muted,textAlign:"center"}}>
+        No account yet? <a style={{color:p.goldText,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>Contact Mauricio</a>
+      </div>
+    </div>
+  );
+}
+
+const FEATURES = [
+  { icon:"flow",   title:"Where every dollar goes", body:"A live Sankey diagram shows how income flows into bills, debt, and savings — at a glance." },
+  { icon:"gauge",  title:"Health, scored at a glance", body:"DSR, savings rate, and emergency-fund months as live gauges. Clear targets, no jargon." },
+  { icon:"report", title:"Reports that look like reports", body:"Designer-grade PDF — every section on its own page. Ready to review or share with confidence." },
+];
+
+function Hero({ p, layout, lang }) {
+  const eyebrow = (
+    <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:p.goldText,letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:18,fontWeight:600}}>
+      ● Financial coaching platform
+    </div>
+  );
+  const h1 = (
+    <h1 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,
+      fontSize: layout==="C2" ? "clamp(2.6rem,6vw,5rem)" : "clamp(2.4rem,5.5vw,4.2rem)",
+      color:p.textHi,lineHeight:1.05,letterSpacing:"-0.01em",margin:"0 0 22px",
+      textAlign: layout==="C2" ? "center" : "left", maxWidth: layout==="C2" ? 900 : "none" }}>
+      The dashboard your <span style={{color:p.goldText}}>advisor</span> brings to every meeting.
+    </h1>
+  );
+  const sub = (
+    <p style={{fontFamily:"'Source Serif 4',serif",fontSize:17,lineHeight:1.6,color:p.text,
+      maxWidth:520,margin: layout==="C2" ? "0 auto 28px" : "0 0 28px", textAlign: layout==="C2" ? "center":"left"}}>
+      A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report.
+    </p>
+  );
+  const pills = (
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:p.goldText,fontWeight:700,
+      justifyContent: layout==="C2" ? "center":"flex-start"}}>
+      {["Monthly snapshot","Debt & cash-flow models","Public intake form","EN · ES"].map((s,i)=>(
+        <span key={i} style={{padding:"6px 14px",border:`1px solid ${p.gold}55`,borderRadius:99,background:`${p.gold}1A`}}>{s}</span>
+      ))}
+    </div>
+  );
+  return <>{eyebrow}{h1}{sub}{pills}</>;
+}
+
+function Landing({ paletteKey, mode, layout, bg }) {
+  const p = PALETTES[paletteKey][mode];
+  const wrap = { minHeight:"100vh", background:p.bg, color:p.text, position:"relative", overflowX:"hidden",
+    fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif" };
+  const header = (
+    <header style={{position:"relative",zIndex:3,padding:"22px 36px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <AnchorMark c={p.goldText}/>
+        <div>
+          <div style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:p.goldText,letterSpacing:"0.12em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
+          <div style={{fontSize:9,color:p.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>Financial Advisory</div>
+        </div>
+      </div>
+    </header>
+  );
+  const feats = (
+    <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:18}}>
+      {FEATURES.map((f,i)=>(
+        <div key={i} style={{background:p.card,border:`1px solid ${p.border}`,borderRadius:14,padding:24,boxShadow:`0 2px 6px ${p.gold}14`}}>
+          <div style={{width:44,height:44,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",background:`${p.gold}1A`,border:`1px solid ${p.gold}33`,marginBottom:14}}>
+            <Icon name={f.icon} c={p.gold}/>
+          </div>
+          <h3 style={{fontFamily:"'Newsreader',serif",fontStyle:"italic",fontWeight:500,fontSize:19,color:p.textHi,margin:"0 0 8px"}}>{f.title}</h3>
+          <p style={{fontFamily:"'Source Serif 4',serif",fontSize:14,lineHeight:1.6,color:p.text,margin:0}}>{f.body}</p>
+        </div>
+      ))}
+    </section>
+  );
+  const bgLayer = (
+    <div aria-hidden style={{position:"absolute",inset:0,zIndex:0,pointerEvents:"none"}}>
+      {bg==="B2" && <FlowField pal={p}/>}
+      {bg!=="B3" && <>
+        <div style={{position:"absolute",top:-200,right:-150,width:500,height:500,borderRadius:"50%",background:`radial-gradient(circle,${p.glowA},transparent 70%)`,filter:"blur(40px)"}}/>
+        <div style={{position:"absolute",top:300,left:-200,width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${p.glowB},transparent 70%)`,filter:"blur(50px)"}}/>
+      </>}
+    </div>
+  );
+
+  // ── Layout C3: split full-height (brand panel | sign-in panel) ──
+  if (layout==="C3") {
+    return (
+      <div style={wrap}>
+        <div style={{display:"grid",gridTemplateColumns:"1.25fr 1fr",minHeight:"100vh"}}>
+          <div style={{position:"relative",padding:"0",overflow:"hidden",borderRight:`1px solid ${p.border}`}}>
+            {bgLayer}
+            <div style={{position:"relative",zIndex:2}}>{header}
+              <div style={{padding:"60px 56px"}}><Hero p={p} layout="C1"/></div>
+            </div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 36px",background:p.bg2}}>
+            <SignInCard p={p}/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Layout C2: centered editorial, sign-in below ──
+  if (layout==="C2") {
+    return (
+      <div style={wrap}>{bgLayer}
+        <div style={{position:"relative",zIndex:2}}>{header}
+          <section style={{maxWidth:1000,margin:"0 auto",padding:"48px 36px 40px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+            <Hero p={p} layout="C2"/>
+            <div style={{marginTop:40,width:"100%",display:"flex",justifyContent:"center"}}><SignInCard p={p}/></div>
+          </section>
+          {feats}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Layout C1: hero-left + corner sign-in (current shape) ──
+  return (
+    <div style={wrap}>{bgLayer}
+      <div style={{position:"relative",zIndex:2}}>{header}
+        <section style={{maxWidth:1200,margin:"0 auto",padding:"40px 36px 60px",display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr)",gap:48,alignItems:"start"}}>
+          <div style={{paddingTop:36}}><Hero p={p} layout="C1"/></div>
+          <div style={{display:"flex",justifyContent:"flex-end"}}><SignInCard p={p}/></div>
+        </section>
+        {feats}
+      </div>
+    </div>
+  );
+}
+
+/* ── Lab shell: control bar + the design ── */
+function Lab() {
+  const [paletteKey, setPaletteKey] = useState("A1");
+  const [mode, setMode] = useState("light");
+  const [layout, setLayout] = useState("C1");
+  const [bg, setBg] = useState("B1");
+  const Btn = ({val,cur,set,children}) => <button className={cur===val?"on":""} onClick={()=>set(val)}>{children}</button>;
+  return (
+    <div>
+      <div id="labbar">
+        <div className="grp"><b>Palette</b>
+          <Btn val="A1" cur={paletteKey} set={setPaletteKey}>A1 cream</Btn>
+          <Btn val="A2" cur={paletteKey} set={setPaletteKey}>A2 navy·gold</Btn>
+          <Btn val="A3" cur={paletteKey} set={setPaletteKey}>A3 ink</Btn>
+        </div>
+        <div className="grp"><b>Mode</b>
+          <Btn val="light" cur={mode} set={setMode}>Light</Btn>
+          <Btn val="dark" cur={mode} set={setMode}>Dark</Btn>
+        </div>
+        <div className="grp"><b>Layout</b>
+          <Btn val="C1" cur={layout} set={setLayout}>C1 corner</Btn>
+          <Btn val="C2" cur={layout} set={setLayout}>C2 centered</Btn>
+          <Btn val="C3" cur={layout} set={setLayout}>C3 split</Btn>
+        </div>
+        <div className="grp"><b>Hero BG</b>
+          <Btn val="B1" cur={bg} set={setBg}>B1 glow</Btn>
+          <Btn val="B2" cur={bg} set={setBg}>B2 flow-field</Btn>
+          <Btn val="B3" cur={bg} set={setBg}>B3 none</Btn>
+        </div>
+        <div className="pick">pick e.g. “A2 · dark · C3 · B2”</div>
+      </div>
+      <div id="stage"><Landing paletteKey={paletteKey} mode={mode} layout={layout} bg={bg}/></div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Lab/>);
+</script>
+</body>
+</html>
