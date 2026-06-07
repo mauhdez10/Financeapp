@@ -63,7 +63,7 @@ const T = {
 
 const NAV_ICONS = ["spark","users","calc","book","file"];
 const Icon = ({ name, c, s=18 }) => {
-  const P = { width:s, height:s, viewBox:"0 0 24 24", fill:"none", stroke:c, strokeWidth:1.6, strokeLinecap:"round", strokeLinejoin:"round" };
+  const P = { width:s, height:s, viewBox:"0 0 24 24", fill:"none", stroke:c, strokeWidth:1.4, strokeLinecap:"round", strokeLinejoin:"round" };
   switch(name){
     case "spark": return <svg {...P}><path d="M3 14l5-5 4 3 6-7"/><path d="M3 20h18"/></svg>;
     case "users": return <svg {...P}><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 6a3 3 0 0 1 0 6M21 20a6 6 0 0 0-4-5.7"/></svg>;
@@ -82,8 +82,8 @@ function Spark({ data, c, w=92, h=30 }) {
   const max=Math.max(...data), min=Math.min(...data), rng=max-min||1;
   const pts=data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-min)/rng)*(h-5)-3}`).join(" ");
   return <svg width={w} height={h} style={{display:"block",overflow:"visible"}}>
-    <polyline points={pts} fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" opacity="0.85"/>
-    <circle cx={w} cy={h-((data[data.length-1]-min)/rng)*(h-5)-3} r="2" fill={c}/>
+    <polyline points={pts} fill="none" stroke={c} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.8"/>
+    <circle cx={w} cy={h-((data[data.length-1]-min)/rng)*(h-5)-3} r="1.5" fill={c}/>
   </svg>;
 }
 
@@ -92,17 +92,17 @@ function AreaPair({ p }) {
   const W=320,H=130, max=80;
   const path=(arr)=>arr.map((v,i)=>`${(i/(arr.length-1))*W},${H-(v/max)*H}`).join(" ");
   return <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",overflow:"visible"}}>
-    <defs><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={p.gold} stopOpacity="0.22"/><stop offset="1" stopColor={p.gold} stopOpacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={p.gold} stopOpacity="0.07"/><stop offset="1" stopColor={p.gold} stopOpacity="0"/></linearGradient></defs>
     <polyline points={`0,${H} ${path(inc)} ${W},${H}`} fill="url(#ig)" stroke="none"/>
-    <polyline points={path(inc)} fill="none" stroke={p.gold} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-    <polyline points={path(spd)} fill="none" stroke={p.muted} strokeWidth="1.5" strokeDasharray="3 3" strokeLinecap="round" opacity="0.7"/>
+    <polyline points={path(inc)} fill="none" stroke={p.gold} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points={path(spd)} fill="none" stroke={p.muted} strokeWidth="1.1" strokeDasharray="3 4" strokeLinecap="round" opacity="0.65"/>
   </svg>;
 }
 
 function SegBar({ p, t }) {
   const segs=[[t.savings,34,p.pos],[t.bills,46,p.muted],[t.debt,20,p.gold]];
   return <div style={{display:"flex",flexDirection:"column",gap:14,paddingTop:6}}>
-    <div style={{display:"flex",height:12,borderRadius:99,overflow:"hidden",gap:2}}>
+    <div style={{display:"flex",height:5,borderRadius:99,overflow:"hidden",gap:2}}>
       {segs.map((s,i)=><div key={i} style={{width:s[1]+"%",background:s[2],opacity:i===1?0.45:0.9}}/>)}
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -115,7 +115,7 @@ function SegBar({ p, t }) {
 
 function Ring({ p }) {
   const segs=[[28,p.gold],[42,p.pos],[22,"#7FA8C9"],[8,p.dim]];
-  let acc=0, cx=58, cy=58, R=46, C=2*Math.PI*R, sw=9;
+  let acc=0, cx=58, cy=58, R=48, C=2*Math.PI*R, sw=5;
   return <div style={{display:"flex",alignItems:"center",gap:18}}>
     <svg width="116" height="116" viewBox="0 0 116 116">
       <circle cx={cx} cy={cy} r={R} fill="none" stroke={p.border} strokeWidth={sw}/>
@@ -244,9 +244,9 @@ function Dashboard({ mode, setMode, lang, setLang }) {
             <div style={{fontSize:11,color:p.dim,marginTop:3}}>{c.n.toLowerCase().replace(" ",".")}@email.com</div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:26,textAlign:"right"}}>
-            <div><div className="lbl" style={{fontSize:8.5,color:p.dim,marginBottom:4}}>{t.netMo}</div><div className="num" style={{fontSize:13.5,fontWeight:600,color:p.pos}}>${c.net}</div></div>
-            <div><div className="lbl" style={{fontSize:8.5,color:p.dim,marginBottom:4}}>{t.debt}</div><div className="num" style={{fontSize:13.5,fontWeight:600,color:p.neg}}>${c.debt}</div></div>
-            <div><div className="lbl" style={{fontSize:8.5,color:p.dim,marginBottom:4}}>{t.nw}</div><div className="num" style={{fontSize:13.5,fontWeight:600,color:p.gold}}>${c.nw}</div></div>
+            <div><div className="lbl" style={{fontSize:8.5,color:p.dim,marginBottom:4}}>{t.netMo}</div><div className="num" style={{fontSize:13.5,fontWeight:500,color:p.pos}}>${c.net}</div></div>
+            <div><div className="lbl" style={{fontSize:8.5,color:p.dim,marginBottom:4}}>{t.debt}</div><div className="num" style={{fontSize:13.5,fontWeight:500,color:p.neg}}>${c.debt}</div></div>
+            <div><div className="lbl" style={{fontSize:8.5,color:p.dim,marginBottom:4}}>{t.nw}</div><div className="num" style={{fontSize:13.5,fontWeight:500,color:p.gold}}>${c.nw}</div></div>
           </div>
           <Icon name="arrow" c={p.dim} s={16}/>
         </div>)}
