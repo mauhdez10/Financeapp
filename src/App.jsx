@@ -5590,7 +5590,7 @@ function HeroVisual({palette,reducedMotion}){
   </svg>;
 }
 
-function Login({onLogin,t,isDark,onToggle,lang}){
+function Login({onLogin,t,isDark,onToggle,lang,onLangToggle}){
   const reducedMotion=useReducedMotion();
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
@@ -5630,142 +5630,131 @@ function Login({onLogin,t,isDark,onToggle,lang}){
   //   - Theme toggle actually toggles the landing now (PAL is theme-aware).
   //   - Hero headline replaced with the spec line + amber "advisor" accent.
   //   - Footer disclaimer reworded to product-only, no personal name.
-  const PAL = isDark ? {
-    bg: "#0D1B2A",
-    bgAccent: "#142235",
-    text: "#F1F5F9",
-    textHi: "#EDD594",          // gold-cream for hero
-    muted: "#CBD5E1",           // v0.55 — bumped from #94A3B8; was invisible on navy
-    card: "#131F31",
-    cardBorder: "#1F2937",
-    amber: "#C9A84C",           // gold accent
-    amberDeep: "#EDD594",
-    gold: GOLD,
-    inpBg: "#0D1B2A",
-    ambientA: "rgba(201,168,76,0.18)",
-    ambientB: "rgba(45,80,140,0.25)",
+  // v0.60 — MODERN redesign (Origin-inspired): near-black/off-white glass, clean
+  // sans + mono micro-labels, thin reactive line-field, restrained gold. Auth
+  // handlers (go/mode/em/pw/recovery) are unchanged above — only palette + render.
+  const P = isDark ? {
+    bg:"#0A0C10", glowA:"rgba(203,168,90,0.12)", card:"rgba(255,255,255,0.045)", border:"rgba(255,255,255,0.09)",
+    text:"#EDEFF2", muted:"#9AA3AF", dim:"#626B78", gold:"#CBA85A", accent:"#E2C375", inp:"rgba(255,255,255,0.05)",
+    blur:"blur(16px)", shadow:"none", line:[203,168,90],
   } : {
-    bg: "#FAF6EC",              // warm cream (spec value, was #FFFBEB)
-    bgAccent: "#F7EFC1",        // soft gold cream
-    text: "#0D1B2A",
-    textHi: "#0D1B2A",
-    muted: "#475569",
-    card: "#FFFFFF",
-    cardBorder: "#E8DFC6",      // cream rule (was pale gold)
-    amber: "#C9A84C",           // gold (was #D97706)
-    amberDeep: "#755023",       // deep walnut gold
-    gold: GOLD,
-    inpBg: "#FFFEFA",
-    ambientA: "#F7EFC1",        // upper-right glow
-    ambientB: "rgba(201,168,76,0.10)",
+    bg:"#FAFAF7", glowA:"rgba(184,144,30,0.08)", card:"#FFFFFF", border:"#ECEAE3",
+    text:"#16181C", muted:"#5A6270", dim:"#9AA0A8", gold:"#B8901E", accent:"#8A6B1E", inp:"#FFFFFF",
+    blur:"blur(0px)", shadow:"0 1px 2px rgba(20,20,16,0.04), 0 12px 34px rgba(20,20,16,0.04)", line:[150,116,40],
   };
-  const INP_L = {background:PAL.inpBg,border:`1px solid ${PAL.cardBorder}`,color:PAL.text,borderRadius:10,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
-  return<div style={{minHeight:"100vh",background:`linear-gradient(180deg,${PAL.bg} 0%,#FFFDF6 60%,${PAL.bg} 100%)`,color:PAL.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
-    {/* Decorative warm-gradient blobs — theme-aware per spec. */}
-    <div aria-hidden style={{position:"absolute",top:-200,right:-150,width:500,height:500,borderRadius:"50%",background:`radial-gradient(circle,${PAL.ambientA},transparent 70%)`,pointerEvents:"none",filter:"blur(40px)"}}/>
-    <div aria-hidden style={{position:"absolute",top:300,left:-200,width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${PAL.ambientB},transparent 70%)`,pointerEvents:"none",filter:"blur(50px)"}}/>
+  const glass = {background:P.card,border:`1px solid ${P.border}`,backdropFilter:P.blur,WebkitBackdropFilter:P.blur,boxShadow:P.shadow};
+  const MONO = "'JetBrains Mono',monospace";
+  const INP_L = {background:P.inp,border:`1px solid ${P.border}`,color:P.text,borderRadius:11,padding:"11px 13px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
+  const LBL = {fontSize:9.5,color:P.dim,display:"block",marginBottom:7,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"};
+  const pillTog = {fontSize:12,padding:"10px 15px",minHeight:42,minWidth:52,borderRadius:99,...glass,color:P.muted,cursor:"pointer",fontWeight:600};
+  // thin reactive gold line-field (follows cursor, drifts when idle, reduced-motion-safe)
+  const fieldRef = useRef(null);
+  useEffect(()=>{
+    const c=fieldRef.current; if(!c) return; const ctx=c.getContext("2d");
+    const DPR=Math.min(2,window.devicePixelRatio||1); const dark=isDark;
+    const E={friction:0.5,trails:48,size:38,dampening:0.025,tension:0.99}; const pos={x:0,y:0};
+    let lines=[],raf,running=true,phase=1.3,drift=0,lastMoveT=-1e9;
+    const resize=()=>{c.width=c.clientWidth*DPR;c.height=c.clientHeight*DPR;pos.x=c.width*0.64;pos.y=c.height*0.42;};
+    const Node=function(){this.x=pos.x;this.y=pos.y;this.vx=0;this.vy=0;};
+    const build=()=>{lines=[];for(let i=0;i<E.trails;i++){const l={spring:0.4+(i/E.trails)*0.025,friction:E.friction+(Math.random()*0.01-0.005),nodes:[]};for(let j=0;j<E.size;j++)l.nodes.push(new Node());lines.push(l);}};
+    const upd=(l)=>{let e=l.spring,t=l.nodes[0];t.vx+=(pos.x-t.x)*e;t.vy+=(pos.y-t.y)*e;for(let i=0;i<l.nodes.length;i++){t=l.nodes[i];if(i>0){const n=l.nodes[i-1];t.vx+=(n.x-t.x)*e;t.vy+=(n.y-t.y)*e;t.vx+=n.vx*E.dampening;t.vy+=n.vy*E.dampening;}t.vx*=l.friction;t.vy*=l.friction;t.x+=t.vx;t.y+=t.vy;e*=E.tension;}};
+    const draw=(l)=>{ctx.beginPath();ctx.moveTo(l.nodes[0].x,l.nodes[0].y);let i;for(i=1;i<l.nodes.length-2;i++){const a=l.nodes[i],b=l.nodes[i+1];ctx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);}const a=l.nodes[i],b=l.nodes[i+1];ctx.quadraticCurveTo(a.x,a.y,b.x,b.y);ctx.stroke();};
+    const render=()=>{if(!running)return;if(performance.now()-lastMoveT>1200){drift+=0.01;pos.x=c.width*(0.62+0.26*Math.sin(drift*0.7));pos.y=c.height*(0.42+0.22*Math.cos(drift*0.9));}ctx.globalCompositeOperation="source-over";ctx.clearRect(0,0,c.width,c.height);phase+=0.0016;const sh=0.5+Math.sin(phase)*0.5;ctx.globalCompositeOperation=dark?"lighter":"source-over";const a=dark?(0.05+sh*0.06):(0.09+sh*0.09);ctx.strokeStyle=`rgba(${P.line[0]},${P.line[1]},${P.line[2]},${a})`;ctx.lineWidth=DPR*(dark?6:4.5);for(const l of lines){upd(l);draw(l);}raf=requestAnimationFrame(render);};
+    const move=(e)=>{lastMoveT=performance.now();const r=c.getBoundingClientRect();const cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY;pos.x=(cx-r.left)*DPR;pos.y=(cy-r.top)*DPR;};
+    const onR=()=>{resize();build();};
+    resize();build();window.addEventListener("resize",onR);
+    if(reducedMotion){for(let k=0;k<70;k++)for(const l of lines)upd(l);ctx.globalCompositeOperation=dark?"lighter":"source-over";ctx.strokeStyle=`rgba(${P.line[0]},${P.line[1]},${P.line[2]},${dark?0.06:0.09})`;ctx.lineWidth=DPR*5;for(const l of lines)draw(l);}
+    else{window.addEventListener("mousemove",move);window.addEventListener("touchmove",move,{passive:true});render();}
+    return ()=>{running=false;cancelAnimationFrame(raf);window.removeEventListener("resize",onR);window.removeEventListener("mousemove",move);window.removeEventListener("touchmove",move);};
+  },[isDark]);
+  const fIcon=(name)=>{const C={width:19,height:19,viewBox:"0 0 24 24",fill:"none",stroke:P.gold,strokeWidth:1.4,strokeLinecap:"round",strokeLinejoin:"round"};
+    if(name==="flow")return <svg {...C}><path d="M3 7h4c4 0 4 10 8 10h6"/><path d="M3 17h4c4 0 4-10 8-10h6"/></svg>;
+    if(name==="gauge")return <svg {...C}><path d="M12 14l4-4"/><path d="M3.3 17a9 9 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1" fill={P.gold} stroke="none"/></svg>;
+    return <svg {...C}><path d="M14 3v5h5"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg>;};
+  const FEATS = lang==="es"?[
+    {icon:"flow",t:"A dónde va cada dólar",b:"Un flujo en vivo muestra el ingreso moviéndose hacia gastos, deuda y ahorro — al instante."},
+    {icon:"gauge",t:"Salud, medida",b:"Razón de deuda, tasa de ahorro y meses de fondo de emergencia como metas claras — sin jerga."},
+    {icon:"report",t:"Reportes que parecen reportes",b:"Un PDF de calidad profesional, cada sección en su página. Listo para revisar o compartir."},
+  ]:[
+    {icon:"flow",t:"Where every dollar goes",b:"A live flow shows income moving into bills, debt, and savings — at a glance."},
+    {icon:"gauge",t:"Health, scored",b:"Debt ratio, savings rate, and emergency-fund months as clear targets — no jargon."},
+    {icon:"report",t:"Reports that look like reports",b:"A designer-grade PDF, each section on its own page. Ready to review or share."},
+  ];
+  return<div style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
+    <div aria-hidden style={{position:"absolute",inset:0,zIndex:0,pointerEvents:"none"}}><canvas ref={fieldRef} style={{position:"absolute",inset:0,width:"100%",height:"100%"}}/></div>
+    <div aria-hidden style={{position:"fixed",top:-180,right:80,width:560,height:560,borderRadius:"50%",background:`radial-gradient(circle,${P.glowA},transparent 70%)`,filter:"blur(50px)",pointerEvents:"none",zIndex:0}}/>
 
-    {/* TOP BAR — brand left, theme toggle right */}
-    <header style={{position:"relative",zIndex:2,padding:"22px 36px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <img src="/anchor-monogram.svg" alt="" style={{width:34,height:34}}/>
-        <div>
-          <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:18,color:PAL.amberDeep,letterSpacing:"0.12em",textTransform:"uppercase",lineHeight:1}}>Golden Anchor</div>
-          <div style={{fontSize:9,color:PAL.muted,letterSpacing:"0.22em",marginTop:3,textTransform:"uppercase",fontWeight:500}}>{lang==="es"?"Asesoría Financiera":"Financial Advisory"}</div>
+    <div style={{position:"relative",zIndex:2}}>
+      <header style={{padding:"24px 40px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:11}}>
+          <div style={{width:34,height:34,borderRadius:10,...glass,display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/anchor-monogram.svg" alt="" style={{width:20,height:20}}/></div>
+          <div>
+            <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.01em",color:P.text,lineHeight:1}}>Golden Anchor</div>
+            <div style={{fontSize:8,color:P.dim,marginTop:3,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>{lang==="es"?"Asesoría Financiera":"Financial Advisory"}</div>
+          </div>
         </div>
-      </div>
-      <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={{fontSize:12,padding:"11px 18px",minHeight:44,borderRadius:99,background:"transparent",color:PAL.muted,border:`1px solid ${PAL.cardBorder}`,cursor:"pointer",fontWeight:600,letterSpacing:"0.04em"}}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
-    </header>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {onLangToggle&&<button onClick={onLangToggle} aria-label="Toggle language" style={pillTog}>{lang==="es"?"EN":"ES"}</button>}
+          <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={pillTog}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
+        </div>
+      </header>
 
-    {/* v0.56 — animated brand visual behind the hero. Z-index 1 so it sits
-       under the hero text + sign-in card (which are z-index 2). Low opacity
-       so it never competes with content. Drops into LOTTIE_HERO_URL slot
-       if Mauricio sets one; otherwise SVG fallback. */}
-    <div aria-hidden style={{position:"absolute",top:60,right:-120,width:560,height:560,zIndex:1,opacity:0.55,pointerEvents:"none"}}>
-      <HeroVisual palette={PAL} reducedMotion={reducedMotion}/>
+      <section style={{maxWidth:1240,margin:"0 auto",padding:"58px 40px 70px",display:"grid",gridTemplateColumns:"minmax(0,1.5fr) minmax(0,1fr)",gap:60,alignItems:"center"}} className="ga-login-hero">
+        <div style={{position:"relative"}}>
+          <div style={{display:"flex",alignItems:"center",gap:9,fontSize:9.5,color:P.gold,marginBottom:22,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>
+            <span style={{width:6,height:6,borderRadius:99,background:P.gold}}/>{lang==="es"?"Plataforma de asesoría financiera":"Financial coaching platform"}
+          </div>
+          <h1 style={{fontWeight:500,fontSize:"clamp(2.6rem,5.6vw,4.6rem)",color:P.text,lineHeight:1.04,letterSpacing:"-0.032em",margin:"0 0 26px"}}>{lang==="es"?<>El tablero que tu <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>asesor</span> lleva a cada reunión.</>:<>The dashboard your <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>advisor</span> brings to every meeting.</>}</h1>
+          <p style={{fontSize:17,lineHeight:1.62,color:P.muted,maxWidth:520,margin:"0 0 30px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {(lang==="es"?["Resumen mensual","Modelos de deuda y flujo","Admisión","EN · ES"]:["Monthly snapshot","Debt & cash-flow models","Public intake","EN · ES"]).map((s,i)=><span key={i} style={{fontSize:9.5,padding:"7px 13px",borderRadius:99,...glass,color:P.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{s}</span>)}
+          </div>
+        </div>
+
+        <div style={{display:"flex",justifyContent:"flex-end"}}>
+          <div style={{...glass,borderRadius:18,padding:26,position:"relative",maxWidth:380,width:"100%"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <h2 style={{fontWeight:600,fontSize:19,color:P.text,margin:0,letterSpacing:"-0.01em"}}>{title}</h2>
+              {mode==="signin"&&<span style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
+            </div>
+            {mode!=="setNew"&&<div style={{marginBottom:14}}>
+              <label style={LBL}>{t.email||"Email"}</label>
+              <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
+            </div>}
+            {mode!=="forgot"&&<div style={{marginBottom:18}}>
+              <label style={LBL}>{mode==="setNew"?(t.newPassword||"New Password"):t.password||"Password"}</label>
+              <input type="password" value={pw} onChange={ev=>setPw(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={mode==="setNew"?"new-password":"current-password"} placeholder="••••••••"/>
+            </div>}
+            {err&&<div role="alert" style={{fontSize:11,color:"#F2766B",marginBottom:12,padding:"9px 12px",background:"#F2766B18",border:"1px solid #F2766B44",borderRadius:9,lineHeight:1.5}}>{err}</div>}
+            {info&&<div role="status" style={{fontSize:11,color:P.gold,marginBottom:12,padding:"9px 12px",background:`${P.gold}18`,border:`1px solid ${P.gold}44`,borderRadius:9,lineHeight:1.5}}>{info}</div>}
+            <button onClick={go} disabled={busy} style={{width:"100%",padding:"13px 16px",minHeight:46,borderRadius:11,fontWeight:600,fontSize:13,cursor:busy?"wait":"pointer",background:P.gold,color:"#1A1208",border:"none",letterSpacing:"0.01em",opacity:busy?0.7:1,transition:"transform 150ms ease,filter 150ms ease"}}>{busy?"…":btnLabel}</button>
+            {mode==="signin"&&<div style={{textAlign:"center",marginTop:15}}>
+              <button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:P.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"8px 12px",minHeight:40,borderBottom:`1px solid ${P.border}`}}>{t.forgotPassword||"Forgot password?"}</button>
+            </div>}
+            {mode==="forgot"&&<div style={{textAlign:"center",marginTop:15}}>
+              <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:P.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"8px 12px",minHeight:40}}>← {t.backToSignIn||"Back to Sign In"}</button>
+            </div>}
+            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contact Mauricio</a></>}</div>
+          </div>
+        </div>
+      </section>
+
+      <section style={{maxWidth:1240,margin:"0 auto",padding:"30px 40px 50px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
+        {FEATS.map((f,i)=><div key={i} style={{...glass,borderRadius:16,padding:22}}>
+          <div style={{width:40,height:40,borderRadius:11,...glass,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>{fIcon(f.icon)}</div>
+          <h3 style={{fontWeight:600,fontSize:15.5,color:P.text,margin:"0 0 8px",letterSpacing:"-0.01em"}}>{f.t}</h3>
+          <p style={{fontSize:13,lineHeight:1.6,color:P.muted,margin:0}}>{f.b}</p>
+        </div>)}
+      </section>
+
+      <footer style={{maxWidth:1240,margin:"30px auto 0",padding:"22px 40px 40px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+        <div style={{fontSize:11.5,color:P.dim,lineHeight:1.6,maxWidth:640}}>{lang==="es"?"Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":"Educational financial coaching — not investment, tax, or legal advice."}</div>
+        <div style={{display:"flex",gap:16,fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>
+          <a href="mailto:mauricio@goldenanchor.life" style={{color:P.muted,textDecoration:"none"}}>Email</a>
+          <a href="https://goldenanchor.life" target="_blank" rel="noreferrer" style={{color:P.muted,textDecoration:"none"}}>Site</a>
+        </div>
+      </footer>
     </div>
-    {/* HERO — big italic tagline left, sign-in card top-right */}
-    <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px 60px",display:"grid",gridTemplateColumns:"minmax(0,1.4fr) minmax(0,1fr)",gap:48,alignItems:"start"}}>
-      <div style={{paddingTop:36}}>
-        <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:PAL.amberDeep,letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:18,fontWeight:600}}>● {lang==="es"?"Plataforma de asesoría financiera":"Financial coaching platform"}</div>
-        {/* v0.54 — spec hero line: "The dashboard your advisor brings to every
-           meeting." with "advisor" in gold. Product-first, not advisor-bio. */}
-        <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(2.4rem,5.5vw,4.2rem)",color:PAL.textHi,lineHeight:1.05,letterSpacing:"-0.01em",margin:"0 0 22px"}}>{lang==="es"?<>El tablero que tu <span style={{color:PAL.amber}}>asesor</span> lleva a cada reunión.</>:<>The dashboard your <span style={{color:PAL.amber}}>advisor</span> brings to every meeting.</>}</h1>
-        <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:17,lineHeight:1.6,color:PAL.text,maxWidth:520,margin:"0 0 28px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
-        {/* v0.55 — pills + disclaimer use amberDeep on dark mode (gold-cream `#EDD594`)
-       so they read on navy; were previously muted grey-on-grey = invisible. */}
-        {/* v0.56-r5 — pills match the "Sign In" button typography per Mauricio:
-           title case (no uppercase), 13px size, weight 700, gentle tracking.
-           Now read as feature labels, not screaming all-caps tags. */}
-        {/* v0.57.1 — pills had `${PAL.gold}14` (8% gold) backgrounds + low-contrast text
-           that read as white-on-white in light mode and pale-on-pale in dark. Bumped
-           background opacity, switched text to PAL.amberDeep (walnut in light, cream-gold
-           in dark) for proper readability against both surfaces. */}
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:13,color:PAL.amberDeep,fontWeight:700,letterSpacing:"0.02em"}}>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>{lang==="es"?"Resumen mensual":"Monthly snapshot"}</span>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>{lang==="es"?"Modelos de deuda y flujo":"Debt & cash-flow models"}</span>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>{lang==="es"?"Formulario de admisión":"Public intake form"}</span>
-          <span style={{padding:"6px 14px",border:`1px solid ${PAL.amber}55`,borderRadius:99,background:isDark?`${PAL.amber}22`:`${PAL.amber}1A`}}>EN · ES</span>
-        </div>
-      </div>
-
-      {/* Corner sign-in card */}
-      <div style={{background:PAL.card,border:`1px solid ${PAL.cardBorder}`,borderRadius:18,padding:24,boxShadow:`0 24px 60px ${PAL.amber}22, 0 4px 12px ${PAL.gold}18`,position:"relative",backdropFilter:"blur(6px)"}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${PAL.amber},${PAL.gold})`,borderTopLeftRadius:18,borderTopRightRadius:18}}/>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:18}}>
-          <h2 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:22,color:PAL.textHi,margin:0,letterSpacing:"-0.005em"}}>{title}</h2>
-          {mode==="signin"&&<span style={{fontSize:9,color:PAL.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
-        </div>
-        {mode!=="setNew"&&<div style={{marginBottom:14}}>
-          <label style={{fontSize:10,color:PAL.muted,display:"block",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>{t.email||"Email"}</label>
-          <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
-        </div>}
-        {mode!=="forgot"&&<div style={{marginBottom:14}}>
-          <label style={{fontSize:10,color:PAL.muted,display:"block",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>{mode==="setNew"?(t.newPassword||"New Password"):t.password||"Password"}</label>
-          <input type="password" value={pw} onChange={ev=>setPw(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={mode==="setNew"?"new-password":"current-password"} placeholder="••••••••"/>
-        </div>}
-        {err&&<div role="alert" style={{fontSize:11,color:"#B91C1C",marginBottom:12,padding:"8px 12px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:8,lineHeight:1.5}}>{err}</div>}
-        {info&&<div role="status" style={{fontSize:11,color:"#15803D",marginBottom:12,padding:"8px 12px",background:"#DCFCE7",border:"1px solid #86EFAC",borderRadius:8,lineHeight:1.5}}>{info}</div>}
-        <button onClick={go} disabled={busy} style={{width:"100%",padding:"14px 16px",minHeight:48,borderRadius:10,fontWeight:700,fontSize:13,cursor:busy?"wait":"pointer",background:`linear-gradient(135deg,${PAL.amber},${PAL.amberDeep})`,color:isDark?"#1A1208":"#FFFEF7",border:"none",letterSpacing:"0.04em",textTransform:"uppercase",boxShadow:`0 6px 18px ${PAL.amber}44`,opacity:busy?0.7:1,textShadow:isDark?"none":"0 1px 2px rgba(58,30,8,0.45)",transition:"transform 150ms ease,box-shadow 150ms ease,background 150ms ease"}}>{busy?"…":btnLabel}</button>
-        {mode==="signin"&&<div style={{textAlign:"center",marginTop:14}}>
-          <button onClick={()=>switchMode("forgot")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit",padding:"10px 14px",minHeight:44}}>{t.forgotPassword||"Forgot password?"}</button>
-        </div>}
-        {mode==="forgot"&&<div style={{textAlign:"center",marginTop:14}}>
-          <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:PAL.muted,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit",padding:"10px 14px",minHeight:44}}>← {t.backToSignIn||"Back to Sign In"}</button>
-        </div>}
-        <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${PAL.cardBorder}`,fontSize:10,color:PAL.muted,textAlign:"center",lineHeight:1.5}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,fontWeight:600,textDecoration:"none"}}>Contact Mauricio</a></>}</div>
-      </div>
-    </section>
-
-    {/* FEATURE STRIP — 3 cards explaining what you get */}
-    <section style={{position:"relative",zIndex:2,maxWidth:1200,margin:"0 auto",padding:"40px 36px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:18}}>
-      {(lang==="es"?[
-        {icon:"🌊",title:"A dónde va cada dólar",body:"Un diagrama Sankey muestra cómo tu ingreso fluye hacia gastos, deuda y ahorros — al instante."},
-        {icon:"🎯",title:"Salud financiera al instante",body:"Indicadores de razón deuda, tasa de ahorro y meses de fondo de emergencia. Con metas claras."},
-        {icon:"📄",title:"Reportes que parecen reportes",body:"Informe profesional en PDF con cada sección en su propia página. Listo para revisar o compartir."},
-      ]:[
-        {icon:"🌊",title:"Where every dollar goes",body:"A live Sankey diagram shows how income flows into bills, debt payments, and savings — at a glance."},
-        {icon:"🎯",title:"Health, scored at a glance",body:"DSR, savings rate, and emergency-fund months as live gauges. Clear targets, no jargon."},
-        {icon:"📄",title:"Reports that look like reports",body:"Designer-grade PDF report — every section on its own page. Ready to review or share with confidence."},
-      ]).map((f,i)=><div key={i} style={{background:PAL.card,border:`1px solid ${PAL.cardBorder}`,borderRadius:14,padding:24,boxShadow:`0 2px 6px ${PAL.gold}14`,transition:"transform 200ms ease,box-shadow 200ms ease"}}>
-        <div style={{fontSize:28,marginBottom:12,filter:"saturate(0.85)"}}>{f.icon}</div>
-        <h3 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:19,color:PAL.textHi,margin:"0 0 8px",letterSpacing:"-0.005em"}}>{f.title}</h3>
-        <p style={{fontFamily:"'Source Serif 4',Georgia,serif",fontSize:14,lineHeight:1.6,color:PAL.text,margin:0}}>{f.body}</p>
-      </div>)}
-    </section>
-
-    {/* TRUST / FOOTER */}
-    <footer style={{position:"relative",zIndex:2,maxWidth:1200,margin:"40px auto 0",padding:"24px 36px 36px",borderTop:`1px solid ${PAL.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
-      <div style={{fontSize:11,color:isDark?"#F1F5F9":PAL.muted,lineHeight:1.6,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif",maxWidth:640,opacity:isDark?0.92:0.85}}>
-        {lang==="es"?
-          "Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":
-          "Educational financial coaching — not investment, tax, or legal advice."}
-      </div>
-      <div style={{display:"flex",gap:14,fontSize:11,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>
-        <a href="mailto:mauricio@goldenanchor.life" style={{color:PAL.amberDeep,textDecoration:"none"}}>Email</a>
-        <a href="https://goldenanchor.life" target="_blank" rel="noreferrer" style={{color:PAL.amberDeep,textDecoration:"none"}}>Site</a>
-      </div>
-    </footer>
   </div>;
 }
 
@@ -7828,7 +7817,7 @@ export default function App(){
   const NAV=[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
-  if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang}/></ThemeCtx.Provider>;
+  if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")}/></ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
