@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Client Detail (modern)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;} body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+  .lbl{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.12em;}
+  .card{transition:transform 220ms cubic-bezier(0.23,1,0.32,1),border-color 220ms ease;}
+  .card:hover{transform:translateY(-2px);}
+  .tab{transition:background 150ms ease,color 150ms ease;cursor:pointer;}
+  .tog{transition:transform 150ms;}.tog:active{transform:scale(0.96);}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+  ::placeholder{opacity:0.7;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const THEME = {
+  dark:{ bg:"#0A0C10", glowA:"rgba(203,168,90,0.10)", glowB:"rgba(60,110,120,0.08)", card:"rgba(255,255,255,0.045)", border:"rgba(255,255,255,0.09)",
+         text:"#EDEFF2", muted:"#9AA3AF", dim:"#626B78", gold:"#CBA85A", accent:"#E2C375", pos:"#3DD68C", neg:"#F2766B", inp:"rgba(255,255,255,0.05)", track:"rgba(255,255,255,0.10)", blur:"blur(16px)", shadow:"none" },
+  light:{ bg:"#FAFAF7", glowA:"rgba(184,144,30,0.07)", glowB:"rgba(60,110,120,0.04)", card:"#FFFFFF", border:"#ECEAE3",
+         text:"#16181C", muted:"#5A6270", dim:"#9AA0A8", gold:"#B8901E", accent:"#8A6B1E", pos:"#0E9F6E", neg:"#D64545", inp:"#FFFFFF", track:"#ECEAE3", blur:"blur(0px)", shadow:"0 1px 2px rgba(20,20,16,0.04), 0 10px 30px rgba(20,20,16,0.03)" },
+};
+const T = {
+  en:{ back:"Clients", tabs:["Summary","Income","Bills","Debt","Assets","Plan"], improving:"Improving", pdf:"Download PDF",
+       kpis:[["Net worth","$612K","+4.2%","pos"],["Net / mo","$5,240","+$310","pos"],["Total debt","$182K","-$8K","pos"],["Savings rate","23%","+2 pts","pos"]],
+       trend:"Debt vs Savings", trendSub:"Last 12 months", debt:"Debt", savings:"Savings",
+       health:"Financial health", healthSub:"Scored vs targets", gauges:[["Debt ratio","31%",0.31],["Savings rate","23%",0.23],["Emergency fund","4.2 mo",0.55]],
+       flow:"Cash-flow", flowSub:"This month", income:"Income", bills:"Bills", debtP:"Debt", save:"Savings",
+       light:"Light", dark:"Dark" },
+  es:{ back:"Clientes", tabs:["Resumen","Ingresos","Gastos","Deuda","Activos","Plan"], improving:"Mejorando", pdf:"Descargar PDF",
+       kpis:[["Patrimonio","$612K","+4.2%","pos"],["Neto / mes","$5,240","+$310","pos"],["Deuda total","$182K","-$8K","pos"],["Tasa de ahorro","23%","+2 pts","pos"]],
+       trend:"Deuda vs Ahorro", trendSub:"Últimos 12 meses", debt:"Deuda", savings:"Ahorro",
+       health:"Salud financiera", healthSub:"Medida vs metas", gauges:[["Razón de deuda","31%",0.31],["Tasa de ahorro","23%",0.23],["Fondo emergencia","4.2 me",0.55]],
+       flow:"Flujo de efectivo", flowSub:"Este mes", income:"Ingreso", bills:"Gastos", debtP:"Deuda", save:"Ahorro",
+       light:"Claro", dark:"Oscuro" },
+};
+const glass = p => ({ background:p.card, border:`1px solid ${p.border}`, backdropFilter:p.blur, WebkitBackdropFilter:p.blur, boxShadow:p.shadow });
+const Icon = ({ name, c, s=18 }) => { const P={width:s,height:s,viewBox:"0 0 24 24",fill:"none",stroke:c,strokeWidth:1.4,strokeLinecap:"round",strokeLinejoin:"round"};
+  if(name==="back")return <svg {...P}><path d="M15 6l-6 6 6 6"/></svg>;
+  if(name==="pdf")return <svg {...P}><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>;
+  return null; };
+
+function TrendLines({ p }) {
+  const debt=[100,97,95,96,92,90,88,85,84,82,80,78], save=[40,42,41,44,46,48,47,50,52,54,55,58];
+  const W=560,H=170,max=110,min=20,rng=max-min;
+  const path=a=>a.map((v,i)=>`${(i/(a.length-1))*W},${H-((v-min)/rng)*H}`).join(" ");
+  return <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",overflow:"visible"}}>
+    {[0,.5,1].map((g,i)=><line key={i} x1="0" x2={W} y1={H-g*H} y2={H-g*H} stroke={p.border} strokeWidth="1"/>)}
+    <polyline points={path(debt)} fill="none" stroke={p.neg} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points={path(save)} fill="none" stroke={p.pos} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx={W} cy={H-((debt[11]-min)/rng)*H} r="2" fill={p.neg}/><circle cx={W} cy={H-((save[11]-min)/rng)*H} r="2" fill={p.pos}/>
+  </svg>;
+}
+function Gauge({ p, label, val, frac }) {
+  const R=30, C=Math.PI*R, len=frac*C; const col = frac>0.5?p.pos:(frac>0.35?p.gold:p.neg);
+  return <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,flex:1}}>
+    <svg width="84" height="50" viewBox="0 0 84 50">
+      <path d="M12 44 A30 30 0 0 1 72 44" fill="none" stroke={p.track} strokeWidth="5" strokeLinecap="round"/>
+      <path d="M12 44 A30 30 0 0 1 72 44" fill="none" stroke={col} strokeWidth="5" strokeLinecap="round" strokeDasharray={`${len} ${C}`}/>
+      <text x="42" y="42" textAnchor="middle" className="num" fontSize="15" fontWeight="600" fill={p.text}>{val}</text>
+    </svg>
+    <div className="lbl" style={{fontSize:8.5,color:p.dim,fontWeight:500,textAlign:"center"}}>{label}</div>
+  </div>;
+}
+function Kpi({ p, k }) { const dc = k[3]==="pos"?p.pos:p.neg;
+  return <div className="card" style={{...glass(p),borderRadius:16,padding:"16px 18px"}}>
+    <div className="lbl" style={{fontSize:9,color:p.dim,fontWeight:500,marginBottom:12}}>{k[0]}</div>
+    <div className="num" style={{fontSize:25,fontWeight:500,color:p.text,lineHeight:1,letterSpacing:"-0.01em"}}>{k[1]}</div>
+    <div className="num" style={{fontSize:11,fontWeight:600,color:dc,marginTop:8}}>▲ {k[2]}</div>
+  </div>; }
+
+function Card({ p, title, sub, children }) {
+  return <div className="card" style={{...glass(p),borderRadius:16,padding:20,display:"flex",flexDirection:"column"}}>
+    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:16}}>
+      <div className="lbl" style={{fontSize:10,color:p.muted,fontWeight:500}}>{title}</div>{sub&&<div style={{fontSize:10,color:p.dim}}>{sub}</div>}
+    </div>{children}
+  </div>;
+}
+
+function ClientDetail({ mode, setMode, lang, setLang }) {
+  const p=THEME[mode]; const t=T[lang]; const dark=mode==="dark";
+  const [tab,setTab]=useState(0);
+  const pill={fontSize:12,padding:"9px 14px",minHeight:40,borderRadius:99,...glass(p),color:p.muted,cursor:"pointer",fontWeight:600};
+  return <div style={{minHeight:"100vh",background:p.bg,color:p.text,position:"relative",overflow:"hidden",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+    <div aria-hidden style={{position:"fixed",top:-160,right:120,width:520,height:520,borderRadius:"50%",background:`radial-gradient(circle,${p.glowA},transparent 70%)`,filter:"blur(45px)",pointerEvents:"none"}}/>
+    <div style={{maxWidth:1180,margin:"0 auto",padding:"26px 34px 50px",position:"relative",zIndex:2}}>
+      {/* topbar */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,color:p.muted,cursor:"pointer",fontSize:13}}><Icon name="back" c={p.muted} s={18}/><span className="lbl" style={{fontSize:10,fontWeight:500}}>{t.back}</span></div>
+        <div style={{display:"flex",gap:10}}>
+          <button className="tog" onClick={()=>setLang(lang==="en"?"es":"en")} style={pill}>{lang==="en"?"ES":"EN"}</button>
+          <button className="tog" onClick={()=>setMode(dark?"light":"dark")} style={pill}>{dark?t.light:t.dark}</button>
+        </div>
+      </div>
+      {/* client header */}
+      <div style={{display:"flex",alignItems:"center",gap:18,marginBottom:24,flexWrap:"wrap"}}>
+        <div className="num" style={{width:58,height:58,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:18,background:"#6E8BD626",color:"#6E8BD6",border:"1px solid #6E8BD644"}}>AC</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <h1 style={{fontSize:27,fontWeight:600,letterSpacing:"-0.02em",color:p.text,margin:0}}>Amanda Chen</h1>
+            <span className="lbl" style={{fontSize:8.5,fontWeight:600,color:p.pos,background:p.pos+"18",border:`1px solid ${p.pos}40`,padding:"3px 9px",borderRadius:99}}>{t.improving}</span>
+          </div>
+          <div style={{fontSize:12.5,color:p.dim,marginTop:4}}>amanda.chen@email.com · Miami, FL</div>
+        </div>
+        <button className="tog" style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5,fontWeight:600,padding:"11px 18px",borderRadius:12,background:p.gold,color:"#1A1208",border:"none",cursor:"pointer"}}><Icon name="pdf" c="#1A1208" s={16}/>{t.pdf}</button>
+      </div>
+      {/* tabs */}
+      <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+        {t.tabs.map((tb,i)=><div key={i} className="tab lbl" onClick={()=>setTab(i)} style={{fontSize:10,fontWeight:500,padding:"9px 15px",borderRadius:99,
+          background:tab===i?p.gold+"1F":"transparent",color:tab===i?p.accent:p.muted,border:`1px solid ${tab===i?p.gold+"55":p.border}`}}>{tb}</div>)}
+      </div>
+      {/* KPI row */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:14,marginBottom:16}}>
+        {t.kpis.map((k,i)=><Kpi key={i} p={p} k={k}/>)}
+      </div>
+      {/* charts row */}
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.7fr) minmax(0,1fr)",gap:14,marginBottom:16}}>
+        <Card p={p} title={t.trend} sub={t.trendSub}>
+          <TrendLines p={p}/>
+          <div style={{display:"flex",gap:18,marginTop:12,fontSize:11.5,color:p.muted}}>
+            <span style={{display:"flex",alignItems:"center",gap:7}}><span style={{width:14,height:2,borderRadius:2,background:p.neg}}/>{t.debt}</span>
+            <span style={{display:"flex",alignItems:"center",gap:7}}><span style={{width:14,height:2,borderRadius:2,background:p.pos}}/>{t.savings}</span>
+          </div>
+        </Card>
+        <Card p={p} title={t.health} sub={t.healthSub}>
+          <div style={{display:"flex",gap:8,paddingTop:6}}>{t.gauges.map((g,i)=><Gauge key={i} p={p} label={g[0]} val={g[1]} frac={g[2]}/>)}</div>
+        </Card>
+      </div>
+      {/* cash flow split */}
+      <Card p={p} title={t.flow} sub={t.flowSub}>
+        <div style={{display:"flex",gap:30,flexWrap:"wrap",paddingTop:4}}>
+          {[[t.income,"$8,200",p.pos],[t.bills,"$2,160",p.muted],[t.debtP,"$800",p.neg],[t.save,"$1,240",p.gold]].map((r,i)=>
+            <div key={i}><div className="lbl" style={{fontSize:9,color:p.dim,marginBottom:6,fontWeight:500}}>{r[0]}</div><div className="num" style={{fontSize:19,fontWeight:500,color:r[2]}}>{r[1]}</div></div>)}
+        </div>
+      </Card>
+    </div>
+  </div>;
+}
+function App(){
+  const [mode,setMode]=useState(()=>localStorage.getItem("ga-cd-mode")||"light");
+  const [lang,setLang]=useState(()=>localStorage.getItem("ga-cd-lang")||"en");
+  useEffect(()=>{localStorage.setItem("ga-cd-mode",mode);},[mode]);
+  useEffect(()=>{localStorage.setItem("ga-cd-lang",lang);},[lang]);
+  return <ClientDetail mode={mode} setMode={setMode} lang={lang} setLang={setLang}/>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

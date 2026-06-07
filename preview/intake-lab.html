@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Intake (modern)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;} body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  .lbl{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.13em;}
+  .btn{transition:transform 150ms cubic-bezier(0.23,1,0.32,1),filter 150ms ease;}
+  .btn:hover{filter:brightness(1.05);} .btn:active{transform:scale(0.98);}
+  .tog{transition:transform 150ms;}.tog:active{transform:scale(0.96);}
+  input:focus,select:focus{border-color:var(--gold)!important;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+  ::placeholder{opacity:0.7;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const THEME = {
+  dark:{ bg:"#0A0C10", glowA:"rgba(203,168,90,0.12)", card:"rgba(255,255,255,0.05)", border:"rgba(255,255,255,0.10)", text:"#EDEFF2", muted:"#9AA3AF", dim:"#626B78", gold:"#CBA85A", accent:"#E2C375", inp:"rgba(255,255,255,0.05)", track:"rgba(255,255,255,0.12)", blur:"blur(18px)", shadow:"none" },
+  light:{ bg:"#FAFAF7", glowA:"rgba(184,144,30,0.08)", card:"#FFFFFF", border:"#ECEAE3", text:"#16181C", muted:"#5A6270", dim:"#9AA0A8", gold:"#B8901E", accent:"#8A6B1E", inp:"#FFFFFF", track:"#ECEAE3", blur:"blur(0px)", shadow:"0 1px 2px rgba(20,20,16,0.04), 0 18px 50px rgba(20,20,16,0.06)" },
+};
+const T = {
+  en:{ steps:["Welcome","Service","Engagement","Your info","Done"], stepN:"Step", of:"of",
+       title:"Tell us about you", sub:"This goes straight to your advisor — it stays private and secure.",
+       first:"First name", last:"Last name", email:"Email", phone:"Phone", goal:"Primary goal",
+       goals:["Reduce debt","Build savings","Plan retirement","Buy a home","Just get organized"],
+       back:"Back", next:"Continue", secure:"Encrypted · Private", light:"Light", dark:"Dark" },
+  es:{ steps:["Bienvenida","Servicio","Acuerdo","Tu información","Listo"], stepN:"Paso", of:"de",
+       title:"Cuéntanos sobre ti", sub:"Esto va directo a tu asesor — se mantiene privado y seguro.",
+       first:"Nombre", last:"Apellido", email:"Correo", phone:"Teléfono", goal:"Objetivo principal",
+       goals:["Reducir deuda","Crear ahorro","Planear retiro","Comprar casa","Solo organizarme"],
+       back:"Atrás", next:"Continuar", secure:"Cifrado · Privado", light:"Claro", dark:"Oscuro" },
+};
+const glass = p => ({ background:p.card, border:`1px solid ${p.border}`, backdropFilter:p.blur, WebkitBackdropFilter:p.blur, boxShadow:p.shadow });
+const Icon = ({ name, c, s=18 }) => { const P={width:s,height:s,viewBox:"0 0 24 24",fill:"none",stroke:c,strokeWidth:1.4,strokeLinecap:"round",strokeLinejoin:"round"};
+  if(name==="anchor")return <svg {...P}><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/></svg>;
+  if(name==="lock")return <svg {...P}><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>;
+  if(name==="check")return <svg {...P}><path d="M5 12l5 5L20 6"/></svg>;
+  return null; };
+
+function Intake({ mode, setMode, lang, setLang }) {
+  const p=THEME[mode]; const t=T[lang]; const dark=mode==="dark";
+  const cur=3, total=t.steps.length;
+  const [goal,setGoal]=useState(0);
+  const inp={"--gold":p.gold, background:p.inp, border:`1px solid ${p.border}`, color:p.text, borderRadius:11, padding:"12px 14px", fontSize:14, outline:"none", width:"100%", boxSizing:"border-box", fontFamily:"inherit", transition:"border-color 150ms ease"};
+  const lbl={fontSize:9.5,color:p.dim,display:"block",marginBottom:8,fontWeight:500};
+  const pill={fontSize:12,padding:"9px 14px",minHeight:40,borderRadius:99,...glass(p),color:p.muted,cursor:"pointer",fontWeight:600};
+  return <div style={{minHeight:"100vh",background:p.bg,color:p.text,position:"relative",overflow:"hidden",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
+    <div aria-hidden style={{position:"fixed",top:-180,right:60,width:560,height:560,borderRadius:"50%",background:`radial-gradient(circle,${p.glowA},transparent 70%)`,filter:"blur(50px)",pointerEvents:"none"}}/>
+    {/* header */}
+    <header style={{padding:"22px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",zIndex:2}}>
+      <div style={{display:"flex",alignItems:"center",gap:11}}>
+        <div style={{width:32,height:32,borderRadius:10,...glass(p),display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="anchor" c={p.gold} s={18}/></div>
+        <div style={{fontWeight:700,fontSize:14.5,letterSpacing:"-0.01em"}}>Golden Anchor</div>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <button className="tog" onClick={()=>setLang(lang==="en"?"es":"en")} style={pill}>{lang==="en"?"ES":"EN"}</button>
+        <button className="tog" onClick={()=>setMode(dark?"light":"dark")} style={pill}>{dark?t.light:t.dark}</button>
+      </div>
+    </header>
+    {/* centered card */}
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",position:"relative",zIndex:2}}>
+      <div style={{...glass(p),borderRadius:22,padding:"32px 34px",maxWidth:520,width:"100%"}}>
+        {/* progress */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+          <span className="lbl" style={{fontSize:9,color:p.gold,fontWeight:500}}>{t.stepN} {cur+1} {t.of} {total}</span>
+          <span style={{flex:1,height:3,borderRadius:99,background:p.track,overflow:"hidden"}}><span style={{display:"block",height:"100%",width:`${((cur+1)/total)*100}%`,background:p.gold,borderRadius:99}}/></span>
+        </div>
+        <div className="lbl" style={{fontSize:9,color:p.dim,marginBottom:18,fontWeight:500}}>{t.steps[cur]}</div>
+        <h1 style={{fontSize:26,fontWeight:600,letterSpacing:"-0.02em",margin:"0 0 8px"}}>{t.title}</h1>
+        <p style={{fontSize:13.5,color:p.muted,lineHeight:1.55,margin:"0 0 24px"}}>{t.sub}</p>
+        {/* fields */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+          <div><label className="lbl" style={lbl}>{t.first}</label><input style={inp} placeholder="Amanda"/></div>
+          <div><label className="lbl" style={lbl}>{t.last}</label><input style={inp} placeholder="Chen"/></div>
+        </div>
+        <div style={{marginBottom:14}}><label className="lbl" style={lbl}>{t.email}</label><input style={inp} placeholder="you@email.com"/></div>
+        <div style={{marginBottom:14}}><label className="lbl" style={lbl}>{t.phone}</label><input style={inp} placeholder="(305) 555‑0142"/></div>
+        <div style={{marginBottom:24}}>
+          <label className="lbl" style={lbl}>{t.goal}</label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {t.goals.map((g,i)=><div key={i} onClick={()=>setGoal(i)} className="btn" style={{cursor:"pointer",fontSize:12.5,padding:"9px 14px",borderRadius:99,
+              background:goal===i?p.gold+"1F":p.inp,color:goal===i?p.accent:p.muted,border:`1px solid ${goal===i?p.gold+"66":p.border}`,fontWeight:goal===i?600:500}}>{g}</div>)}
+          </div>
+        </div>
+        {/* actions */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+          <button className="btn" style={{fontSize:13,fontWeight:600,padding:"12px 20px",borderRadius:12,...glass(p),color:p.muted,cursor:"pointer"}}>{t.back}</button>
+          <button className="btn" style={{fontSize:13,fontWeight:600,padding:"12px 26px",borderRadius:12,background:p.gold,color:"#1A1208",border:"none",cursor:"pointer"}}>{t.next} →</button>
+        </div>
+      </div>
+    </div>
+    {/* secure footer */}
+    <div style={{padding:"18px",textAlign:"center",position:"relative",zIndex:2}}>
+      <span className="lbl" style={{display:"inline-flex",alignItems:"center",gap:7,fontSize:9,color:p.dim,fontWeight:500}}><Icon name="lock" c={p.dim} s={13}/>{t.secure}</span>
+    </div>
+  </div>;
+}
+function App(){
+  const [mode,setMode]=useState(()=>localStorage.getItem("ga-in-mode")||"light");
+  const [lang,setLang]=useState(()=>localStorage.getItem("ga-in-lang")||"en");
+  useEffect(()=>{localStorage.setItem("ga-in-mode",mode);},[mode]);
+  useEffect(()=>{localStorage.setItem("ga-in-lang",lang);},[lang]);
+  return <Intake mode={mode} setMode={setMode} lang={lang} setLang={setLang}/>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
