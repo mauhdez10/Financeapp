@@ -489,7 +489,7 @@ function ProfileToggleField({k,label,s,setS,th,INP}){
   </div>;
 }
 
-function ProfileModal({settings,onSave,onClose,t}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
+function ProfileModal({settings,onSave,onClose,t,section}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
 const services = s.services && s.services.length ? s.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:(v.en||""),price:(v.price||""),stripeUrl:(s.stripeLinks||{})[v.id]||""}));
 const updateService=(idx,field,val)=>{const next=services.map((sv,i)=>i===idx?{...sv,[field]:val}:sv);setS(p=>({...p,services:next}));};
 const addService=()=>{const next=[...services,{id:"svc-"+Date.now(),icon:"💼",name:"",price:"",stripeUrl:""}];setS(p=>({...p,services:next}));};
@@ -506,6 +506,23 @@ const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fo
 const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:10}}><div style={{fontSize:10,color:th.muted,marginBottom:6,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:32,height:32,borderRadius:8,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 3px ${th.accent}33`:"none",transition:"transform 100ms ease"}}/>)}<label title={t.customColorLbl||"Custom color"} style={{position:"relative",width:32,height:32,borderRadius:8,border:`1px dashed ${th.cardBorder}`,cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:14}}>＋<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/></label></div></div>;};
 // ToggleField extracted to top-level ProfileToggleField — see comment above ProfileModal.
 // Call sites pass {k,label,s,setS,th,INP} directly so the component type stays stable.
+if(section==="services"){return<Modal title={t.servicesAndStripeLinks||"Services & Stripe Links"} onClose={onClose} width={520} disableBackdropClose={true}>
+<div style={{fontSize:10,color:th.dim,marginBottom:12,lineHeight:1.5,fontStyle:"italic"}}>{t.ourServicesHelp||"Edit the name, price, and Stripe Payment Link for each service. These appear on the public intake form for clients to choose from."}</div>
+{services.map((svc,idx)=><div key={svc.id||idx} style={{padding:"10px 12px",background:th.bg,borderRadius:8,marginBottom:8,border:`1px solid ${th.cardBorder}`}}>
+  <Row2><Field label={t.svcIcon||"Icon"}><input style={INP} value={svc.icon||""} onChange={e=>updateService(idx,"icon",e.target.value)} maxLength={3}/></Field><Field label={t.svcPrice||"Price"}><input style={INP} value={svc.price||""} onChange={e=>updateService(idx,"price",e.target.value)} placeholder="$149"/></Field></Row2>
+  <Field label={t.svcName||"Service name"}><input style={INP} value={svc.name||""} onChange={e=>updateService(idx,"name",e.target.value)}/></Field>
+  <Field label={t.svcStripeUrl||"Stripe Payment Link"}><input style={{...INP,fontFamily:"monospace",fontSize:11}} placeholder="https://buy.stripe.com/..." value={svc.stripeUrl||""} onChange={e=>updateService(idx,"stripeUrl",e.target.value)}/></Field>
+  <button type="button" onClick={()=>removeService(idx)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>\U0001F5D1 {t.removeSvc||"Remove"}</button>
+</div>)}
+<button type="button" onClick={addService} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}55`,cursor:"pointer",fontWeight:600}}>+ {t.addService||"Add service"}</button>
+<SaveBar onSave={()=>onSave(s)} onCancel={onClose} t={t}/>
+</Modal>;}
+if(section==="backup"){return<Modal title={t.backupAndData||"Backup & Data"} onClose={onClose} width={520} disableBackdropClose={true}>
+<div style={{fontSize:11,color:th.dim,marginBottom:12,lineHeight:1.6,fontStyle:"italic"}}>{t.settingsBackupHelp||"Export a full backup monthly via Dashboard → ⋯ → Backup All (JSON). Save the file to your password-manager vault or encrypted drive."}</div>
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:th.bg,borderRadius:8,marginBottom:12,border:`1px solid ${th.cardBorder}`}}><span style={{fontSize:11,color:th.muted}}>{t.lastBackupLbl||"Last verified backup"}</span><span style={{fontSize:11,fontWeight:700,color:th.text,fontFamily:"'JetBrains Mono',monospace"}}>{s.lastBackupVerified?fmtDate(s.lastBackupVerified):(t.settingsBackupNever||"never")}</span></div>
+<button onClick={()=>setS(p=>({...p,lastBackupVerified:new Date().toISOString().slice(0,10)}))} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>✓ {t.settingsBackupMarkVerified||"Mark Verified Today"}</button>
+<SaveBar onSave={()=>onSave(s)} onCancel={onClose} t={t}/>
+</Modal>;}
 return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBackdropClose={true}>
 
 <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8,letterSpacing:"0.07em"}}>{t.appZoom||"APP ZOOM"}</div>
@@ -5536,8 +5553,8 @@ function ResourcesPage({t}){
       </div>
       {!isMobile&&<div style={{display:"flex",gap:8}}><button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label="Previous">‹</button><button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label="Next">›</button></div>}
     </div>
-    <div ref={ref} onScroll={sync} style={{display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"82%":"330px",gap:18,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",padding:"4px 2px 14px"}}>
-      {guides.map(g=>{const Ic=g.Icon;return<a key={g.key} data-rc href={g.url} target="_blank" rel="noopener noreferrer" className="ga-lift" style={{scrollSnapAlign:"start",textDecoration:"none",position:"relative",height:isMobile?320:380,borderRadius:16,overflow:"hidden",border:"1px solid "+th.cardBorder,display:"block",background:"linear-gradient(150deg, "+g.c+"2E 0%, "+th.glassBg+" 58%)"}}>
+    <div ref={ref} onScroll={sync} style={{display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"84%":"400px",gap:20,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",padding:"4px 2px 14px"}}>
+      {guides.map(g=>{const Ic=g.Icon;return<a key={g.key} data-rc href={g.url} target="_blank" rel="noopener noreferrer" className="ga-lift" style={{scrollSnapAlign:"start",textDecoration:"none",position:"relative",height:isMobile?340:460,borderRadius:18,overflow:"hidden",border:"1px solid "+th.cardBorder,display:"block",background:"linear-gradient(150deg, "+g.c+"2E 0%, "+th.glassBg+" 58%)"}}>
         <div style={{position:"absolute",inset:0,background:"radial-gradient(120% 80% at 82% 0%, "+g.c+"33, transparent 55%)",pointerEvents:"none"}}/>
         <div style={{position:"absolute",top:22,left:22,width:52,height:52,borderRadius:14,background:g.c+"22",border:"1px solid "+g.c+"55",display:"flex",alignItems:"center",justifyContent:"center"}}><Ic size={26} strokeWidth={1.5} color={g.c}/></div>
         <div style={{position:"absolute",left:0,right:0,bottom:0,padding:"22px 22px 24px",background:"linear-gradient(0deg, "+th.bg+"F2 0%, "+th.bg+"D0 52%, transparent 100%)"}}>
@@ -6238,7 +6255,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0651-settings-inline-edit";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0652-advisor-branding-sig-scoped-popups-bigger-resources";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7530,7 +7547,7 @@ function HelpSupportPage({t,settings,authUser}){
 function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th}){
   const[editing,setEditing]=useState(false);const[draft,setDraft]=useState({});
   const set=(k,v)=>setDraft(p=>({...p,[k]:v}));
-  const begin=()=>{if(!fields){onEdit&&onEdit();return;}const d={};fields.forEach(f=>{let v=settings?settings[f.k]:undefined;if(f.type==="toggle")v=(v===undefined?(f.def||false):!!v);else v=(v??f.def??"");d[f.k]=v;});setDraft(d);setEditing(true);};
+  const begin=()=>{if(!fields){onEdit&&onEdit();return;}const d={};fields.forEach(f=>{if(f.type==="logos"){d.logoLight=(settings&&settings.logoLight)||"";d.logoDark=(settings&&settings.logoDark)||"";return;}if(f.type==="signature"){d.advisorSignature=(settings&&settings.advisorSignature)||"";return;}let v=settings?settings[f.k]:undefined;if(f.type==="toggle")v=(v===undefined?(f.def||false):!!v);else v=(v??f.def??"");d[f.k]=v;});setDraft(d);setEditing(true);};
   const save=()=>{const patch={...draft};fields.forEach(f=>{if(f.type==="number")patch[f.k]=(patch[f.k]===""||patch[f.k]==null)?undefined:+patch[f.k];});onSave&&onSave(patch);setEditing(false);};
   const canEdit=!!fields||!!onEdit;
   return <div className="ga-lift ga-spot" style={{...mCARD(th),padding:16,minHeight:0}}>
@@ -7540,13 +7557,16 @@ function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th})
     </div>
     {editing?
       <div style={{display:"flex",flexDirection:"column",gap:11}}>
-        {fields.map(f=><div key={f.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,minHeight:30}}>
+        {fields.map(f=>{const onLogo=(mode)=>(e)=>{const fl=e.target.files&&e.target.files[0];if(!fl)return;if(fl.size>500*1024){alert((t?.logoTooLarge||"Logo image is too large (max 500KB).")+" "+Math.round(fl.size/1024)+"KB");return;}const r=new FileReader();r.onload=ev=>set(mode==="light"?"logoLight":"logoDark",ev.target.result);r.readAsDataURL(fl);};
+        if(f.type==="logos")return <div key={f.k} style={{display:"flex",flexDirection:"column",gap:7,paddingTop:4}}><span style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{f.l}</span><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[["light","#FFFFFF","logoLight"],["dark","#0D1B2A","logoDark"]].map(([m,bgc,k])=><div key={m}><div style={{padding:8,background:bgc,border:"1px solid "+th.cardBorder,borderRadius:9,minHeight:54,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:5}}>{draft[k]?<img src={draft[k]} alt={m} style={{maxHeight:42,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:10,color:"#9AA0A8",fontStyle:"italic"}}>{t?.logoNone||"No logo"}</span>}</div><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={onLogo(m)} style={{fontSize:10,width:"100%",color:th.muted}}/>{draft[k]&&<button type="button" onClick={()=>set(k,"")} style={{fontSize:9,marginTop:3,padding:"2px 8px",borderRadius:5,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.clearLogo||"Clear"}</button>}</div>)}</div></div>;
+        if(f.type==="signature")return <div key={f.k} style={{display:"flex",flexDirection:"column",gap:7,paddingTop:4}}><span style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{f.l}</span><SignaturePad value={draft.advisorSignature} onChange={v=>set("advisorSignature",v||"")} defaultName={draft.advisorName} t={t} theme={th} typedOnly/></div>;
+        return <div key={f.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,minHeight:30}}>
           <span style={{fontSize:11.5,color:th.muted,flexShrink:0}}>{f.l}</span>
           {f.type==="toggle"?<div onClick={()=>set(f.k,!draft[f.k])} style={{width:38,height:22,borderRadius:99,background:draft[f.k]?th.accent:th.cardBorder,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:draft[f.k]?18:2,width:18,height:18,borderRadius:99,background:"#fff",transition:"left .2s"}}/></div>
           :f.type==="select"?<select value={draft[f.k]} onChange={e=>set(f.k,e.target.value)} style={{...mINP(th),width:170,padding:"7px 10px",fontSize:12}}>{f.options.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
           :f.type==="color"?<span style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:10.5,fontFamily:"'JetBrains Mono',monospace",color:th.dim}}>{(draft[f.k]||"").toString().toUpperCase()}</span><input type="color" value={draft[f.k]||"#000000"} onChange={e=>set(f.k,e.target.value)} style={{width:34,height:28,border:"1px solid "+th.cardBorder,borderRadius:7,background:"transparent",cursor:"pointer",padding:2}}/></span>
           :<input type={f.type==="number"?"number":"text"} value={draft[f.k]} step={f.step} min={f.min} max={f.max} onChange={e=>set(f.k,e.target.value)} style={{...mINP(th),width:180,padding:"7px 10px",fontSize:12}}/>}
-        </div>)}
+        </div>;})}
         <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:6}}>
           <button onClick={()=>setEditing(false)} style={{fontSize:11,padding:"6px 14px",borderRadius:8,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.cancel||"Cancel"}</button>
           <button className="ga-press" onClick={save} style={{fontSize:11,padding:"6px 16px",borderRadius:8,background:GOLD,color:"#16120A",border:"none",cursor:"pointer",fontWeight:700}}>{t?.save||"Save"}</button>
@@ -7626,7 +7646,7 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
     [t?.autoBackup||"Auto-backup", t?.weeklyLbl||"Weekly"],
     [t?.exportFormat||"Export format", "JSON + CSV"],
   ];
-  const advisorFields=[{k:"advisorName",l:t?.nameLbl||"Name",type:"text"},{k:"advisorEmail",l:t?.emailLbl||"Email",type:"text"},{k:"advisorPhone",l:t?.phoneLbl||"Phone",type:"text"},{k:"ig",l:t?.instagram||"Instagram",type:"text"},{k:"companyName",l:t?.company||"Company",type:"text"}];
+  const advisorFields=[{k:"advisorName",l:t?.nameLbl||"Name",type:"text"},{k:"advisorEmail",l:t?.emailLbl||"Email",type:"text"},{k:"advisorPhone",l:t?.phoneLbl||"Phone",type:"text"},{k:"ig",l:t?.instagram||"Instagram",type:"text"},{k:"companyName",l:t?.company||"Company",type:"text"},{k:"branding",l:t?.brandingHdr||"Logos (light & dark)",type:"logos"},{k:"advisorSignature",l:t?.advisorSigHdr||"Signature",type:"signature"}];
   const appearanceFields=[{k:"darkAccent",l:(t?.darkMode||"Dark")+" "+(t?.accent||"accent"),type:"color",def:GOLD},{k:"lightAccent",l:(t?.lightMode||"Light")+" "+(t?.accent||"accent"),type:"color",def:"#C9A84C"},{k:"appZoom",l:t?.appZoom||"App zoom",type:"number",step:0.05,min:0.8,max:1.5,def:1}];
   const remindersFields=[{k:"noContactDays",l:t?.noContactThresh||"No-contact days",type:"number",def:30},{k:"dsrAlert",l:t?.highDsrAlert||"High DSR alert",type:"toggle",def:true},{k:"promoLeadDays",l:t?.promoExpiringAlert||"Promo lead days",type:"number",def:60},{k:"debtRisingAlert",l:t?.debtRisingAlert||"Debt-rising alert",type:"toggle",def:false}];
   return <div className="ga-np" style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
@@ -7748,7 +7768,7 @@ const _cardOv=isDark?settings.darkCard:settings.lightCard;
 // stored darkBg (#111827 navy) was overriding the redesign and making the page read blue.
 const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh.glassBg};const t=T[lang]||T.en; // EN/ES toggle wired in v0.2.0
   const[nav,setNav]=useState("dashboard");const[showPricing,setShowPricing]=useState(false);const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState("report");const[selectedCalc,setSelectedCalc]=useState(null);// v0.13.1 — which calculator is open inside the /calculators page
-  const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
+  const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[profileSection,setProfileSection]=useState(null);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
   const[clients,setClients]=useState(()=>{try{const s=localStorage.getItem("ga_v3");return s?JSON.parse(s).map(mig):SEED.map(mig);}catch{return SEED.map(mig);}});
@@ -8119,7 +8139,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     {/* v0.5.2a — Toast (save failures / info) */}
     {toast&&<div role="status" aria-live="polite" style={{position:"fixed",bottom:24,right:24,maxWidth:380,zIndex:120,background:toast.kind==="error"?"#EF4444":toast.kind==="success"?"#10B981":theme.accent,color:"#fff",padding:"12px 16px",borderRadius:10,boxShadow:"0 12px 40px #0008",fontSize:12,fontWeight:600,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:10}}><span style={{fontSize:16}}>{toast.kind==="error"?"⚠️":toast.kind==="success"?"✓":"ℹ️"}</span><span style={{flex:1}}>{toast.msg}</span><button onClick={()=>setToast(null)} aria-label={t.close||"Close"} style={{background:"transparent",border:"none",color:"#fff",cursor:"pointer",fontSize:14,padding:0,opacity:0.8}}>✕</button></div>}
     {importDupResolver&&<DuplicateResolverModal incoming={importDupResolver.incoming} existing={clients} onResolve={importDupResolver.resolver} onClose={()=>setImportDupResolver(null)} t={t}/>}{addOpen&&<NewClientModal onSave={addClient} onClose={()=>setAddOpen(false)} t={t}/>}
-    {profileOpen&&<ProfileModal settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);}} onClose={()=>setProfileOpen(false)} t={t}/>}
+    {profileOpen&&<ProfileModal section={profileSection} settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);setProfileSection(null);}} onClose={()=>{setProfileOpen(false);setProfileSection(null);}} t={t}/>}
     <AvatarPickerModal open={avatarPickerOpen} current={settings.avatarId||"mh-gold"} onPick={id=>{setSettings(s=>({...s,avatarId:id}));setAvatarPickerOpen(false);}} onClose={()=>setAvatarPickerOpen(false)} t={t} theme={theme}/>
     {chartSettingsOpen&&<ChartSettingsModal settings={settings} onSave={setSettings} onClose={()=>setChartSettingsOpen(false)} t={t}/>}
     {sidebarImportOpen&&<ImportWizard onClose={()=>setSidebarImportOpen(false)} onImport={cs=>{importMultiple(cs);setSidebarImportOpen(false);}} existingClients={clients} t={t}/>}
@@ -8216,7 +8236,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
           nav==="pricing"?<PricingPage variant="app" t={t} lang={lang} settings={settings} onRequest={null}/>:nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="resources"?<ResourcesPage t={t}/>:
-          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={()=>setProfileOpen(true)} onSave={patch=>setSettings(s=>({...s,...patch}))} t={t}/>:
+          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={(sec)=>{setProfileSection(sec||null);setProfileOpen(true);}} onSave={patch=>setSettings(s=>({...s,...patch}))} t={t}/>:
           nav==="security"?<SecurityPage t={t}/>:
           nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
