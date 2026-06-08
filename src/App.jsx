@@ -107,7 +107,7 @@ const GOLD="#C9A84C";
 // Lift card surfaces (#16181C) clearly above the near-black bg (#0A0B0D) + more
 // visible hairline borders (#2A2E35), brighter muted/dim text. Linear-style: panels
 // read as distinct on a near-black ground.
-const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.11)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
+const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(198,216,242,0.06)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
@@ -5566,47 +5566,122 @@ function PricingPlans({t,lang,settings,variant="app",onRequest}){
     </div>
   </div>;
 }
-/* v0.63 PlanComparison: membership feature matrix (check/X). */
+/* v0.63.2 LineField: ambient auto-drifting line-field (echoes the landing, no mouse). */
+function LineField({color="150,180,220",dark=true}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const c=ref.current;if(!c)return;const ctx=c.getContext("2d");const DPR=Math.min(2,window.devicePixelRatio||1);
+    const reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+    const E={friction:0.5,trails:40,size:32,dampening:0.025,tension:0.99};const pos={x:0,y:0};
+    let lines=[],raf,phase=1.3,drift=0,running=true;
+    const resize=()=>{c.width=c.clientWidth*DPR;c.height=c.clientHeight*DPR;pos.x=c.width*0.5;pos.y=c.height*0.34;};
+    const Node=function(){this.x=pos.x;this.y=pos.y;this.vx=0;this.vy=0;};
+    const build=()=>{lines=[];for(let i=0;i<E.trails;i++){const l={spring:0.4+(i/E.trails)*0.025,friction:E.friction+(Math.random()*0.01-0.005),nodes:[]};for(let j=0;j<E.size;j++)l.nodes.push(new Node());lines.push(l);}};
+    const upd=(l)=>{let e=l.spring,t=l.nodes[0];t.vx+=(pos.x-t.x)*e;t.vy+=(pos.y-t.y)*e;for(let i=0;i<l.nodes.length;i++){t=l.nodes[i];if(i>0){const n=l.nodes[i-1];t.vx+=(n.x-t.x)*e;t.vy+=(n.y-t.y)*e;t.vx+=n.vx*E.dampening;t.vy+=n.vy*E.dampening;}t.vx*=l.friction;t.vy*=l.friction;t.x+=t.vx;t.y+=t.vy;e*=E.tension;}};
+    const draw=(l)=>{ctx.beginPath();ctx.moveTo(l.nodes[0].x,l.nodes[0].y);let i;for(i=1;i<l.nodes.length-2;i++){const a=l.nodes[i],b=l.nodes[i+1];ctx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);}const a=l.nodes[i],b=l.nodes[i+1];ctx.quadraticCurveTo(a.x,a.y,b.x,b.y);ctx.stroke();};
+    const render=()=>{if(!running)return;drift+=0.006;pos.x=c.width*(0.5+0.34*Math.sin(drift*0.7));pos.y=c.height*(0.36+0.26*Math.cos(drift*0.9));ctx.clearRect(0,0,c.width,c.height);phase+=0.0016;const sh=0.5+Math.sin(phase)*0.5;ctx.globalCompositeOperation=dark?"lighter":"source-over";const a=dark?(0.04+sh*0.05):(0.06+sh*0.06);ctx.strokeStyle="rgba("+color+","+a+")";ctx.lineWidth=DPR*(dark?5:4);for(const l of lines){upd(l);draw(l);}raf=requestAnimationFrame(render);};
+    resize();build();const onR=()=>{resize();build();};window.addEventListener("resize",onR);
+    if(reduced){for(let k=0;k<60;k++)for(const l of lines)upd(l);ctx.strokeStyle="rgba("+color+",0.06)";ctx.lineWidth=DPR*5;for(const l of lines)draw(l);}else render();
+    return ()=>{running=false;cancelAnimationFrame(raf);window.removeEventListener("resize",onR);};
+  },[dark,color]);
+  return <canvas ref={ref} aria-hidden="true" style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
+}
+/* v0.63.2 PricingCarousel: long cards, 3 visible, prev/next arrows (Mauricio's ask). */
+function PricingCarousel({lang,settings,onRequest,ctaLabel}){
+  const th=useTh();const L=lang==="es"?"es":"en";const{isMobile}=useViewport();
+  const ref=useRef(null);const[stt,setStt]=useState({s:true,e:false});
+  const links=(settings&&settings.stripeLinks)||DEF_SETTINGS.stripeLinks||{};
+  const sync=()=>{const el=ref.current;if(!el)return;setStt({s:el.scrollLeft<6,e:el.scrollLeft+el.clientWidth>=el.scrollWidth-6});};
+  useEffect(()=>{sync();},[lang]);
+  const scroll=d=>{const el=ref.current;if(!el)return;const cw=(el.querySelector("[data-card]")?.offsetWidth||300)+18;el.scrollBy({left:d*cw,behavior:"smooth"});};
+  const Ck=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={th.pos} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><path d="M20 6 9 17l-5-5"/></svg>;
+  const arr=on=>({flexShrink:0,width:42,height:42,borderRadius:99,border:"1px solid "+th.cardBorder,background:th.glassBg,color:th.text,cursor:on?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",opacity:on?1:0.3,fontSize:20,lineHeight:1});
+  const cta=(svc)=>{const url=links[svc.id]||svc.payUrl||"";const free=svc.price==="Free"||svc.price==="Any amount";const lbl=free?(L==="es"?"Solicitar":"Request"):ctaLabel;
+    const base={marginTop:"auto",display:"block",width:"100%",boxSizing:"border-box",textAlign:"center",fontSize:12.5,fontWeight:600,padding:"11px 16px",borderRadius:9,fontFamily:"inherit",textDecoration:"none"};
+    if(free)return<button className="ga-press" onClick={()=>{if(onRequest)onRequest(svc);else window.location.href="mailto:"+((settings&&settings.advisorEmail)||"mauricio@goldenanchor.life");}} style={{...base,background:"transparent",color:th.text,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{lbl}</button>;
+    return<a className="ga-press" href={url||undefined} target={url?"_blank":undefined} rel="noreferrer" onClick={e=>{if(!url)e.preventDefault();}} style={{...base,background:url?GOLD:th.inp,color:url?"#0B0C0E":th.dim,border:"none",cursor:url?"pointer":"not-allowed",opacity:url?1:0.6}}>{lbl}</a>;};
+  return<div><div style={{display:"flex",alignItems:"center",gap:isMobile?8:14}}>
+    {!isMobile&&<button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label="Previous">‹</button>}
+    <div ref={ref} onScroll={sync} style={{flex:1,display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"86%":"calc((100% - 36px)/3)",gap:18,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",padding:"14px 2px"}}>
+      {["monthly-lite","monthly-lite-plus","annual-bundle","initial-checkup","client-checkup","quarterly-review","strategy-session","insurance-consult"].map(_id=>SVCS.find(s=>s.id===_id)).filter(Boolean).map(svc=>{const feats=(PLAN_FEATURES[svc.id]||{})[L];const pop=svc.id==="monthly-lite-plus";return<div key={svc.id} data-card className="ga-lift" style={{scrollSnapAlign:"start",...mCARD(th),padding:"22px 20px",display:"flex",flexDirection:"column",minHeight:isMobile?350:430,border:pop?("1px solid "+th.glassBorder):undefined}}>
+        {pop&&<span style={{alignSelf:"flex-start",fontSize:8.5,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",background:"rgba(198,216,242,0.16)",color:th.text,padding:"4px 10px",borderRadius:99,marginBottom:14,border:"1px solid rgba(198,216,242,0.4)"}}>{L==="es"?"Más popular":"Most popular"}</span>}
+        <div style={{fontSize:17,fontWeight:600,color:th.text,letterSpacing:"-0.01em"}}>{svc[L]||svc.en}</div>
+        <div style={{fontSize:12,color:th.dim,lineHeight:1.5,margin:"5px 0 16px",minHeight:32}}>{(L==="es"&&svc.descEs)||svc.desc}</div>
+        <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:18}}><span style={{fontSize:36,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"-0.02em",lineHeight:1,color:th.text}}>{svc.price.replace(/\/(mo|yr)$/,"")}</span>{/\/(mo|yr)/.test(svc.price)&&<span style={{fontSize:13,color:th.dim,fontFamily:"'JetBrains Mono',monospace"}}>{svc.price.indexOf("/mo")>=0?"/mo":"/yr"}</span>}</div>
+        {feats?<div style={{display:"flex",flexDirection:"column",gap:11,flex:1,marginBottom:20}}>{feats.map((f,i)=><div key={i} style={{display:"flex",gap:10,fontSize:12.5,color:th.muted,lineHeight:1.4}}><Ck/>{f}</div>)}</div>:<div style={{flex:1}}/>}
+        {cta(svc)}
+      </div>;})}
+    </div>
+    {!isMobile&&<button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label="Next">›</button>}
+  </div></div>;
+}
+/* v0.63.2 PlanComparison: grouped feature matrix (everything the app does, by plan). */
 function PlanComparison({lang}){
-  const th=useTh();const L=lang==="es"?"es":"en";
-  const cols=[["monthly-lite","Lite"],["monthly-lite-plus","Lite+"],["annual-bundle","Annual"]];
-  const rows=[
-    {en:"Client dashboard access",es:"Acceso al panel de cliente",inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
-    {en:"Monthly check-ins",es:"Chequeos mensuales",inc:["monthly-lite","monthly-lite-plus"]},
-    {en:"Message-based Q&A",es:"Preguntas por mensaje",inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
-    {en:"1 Strategy Session / month",es:"1 Sesión Estratégica / mes",inc:["monthly-lite-plus"]},
-    {en:"Priority responses",es:"Respuestas prioritarias",inc:["monthly-lite-plus","annual-bundle"]},
-    {en:"4 Quarterly Reviews",es:"4 Revisiones Trimestrales",inc:["annual-bundle"]},
-    {en:"Priority Strategy Sessions",es:"Sesiones Estratégicas prioritarias",inc:["annual-bundle"]},
-    {en:"Year-end report",es:"Informe de fin de año",inc:["annual-bundle"]},
+  const th=useTh();const L=lang==="es"?"es":"en";const HL="rgba(198,216,242,0.06)";
+  const cols=[["monthly-lite","Lite"],["monthly-lite-plus","Lite +"],["annual-bundle","Annual"]];
+  const groups=[
+    {g:{en:"Coaching & support",es:"Asesoría y soporte"},rows:[
+      {f:{en:"Client dashboard access",es:"Acceso al panel de cliente"},inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+      {f:{en:"Monthly check-ins",es:"Chequeos mensuales"},inc:["monthly-lite","monthly-lite-plus"]},
+      {f:{en:"Message-based Q&A",es:"Preguntas por mensaje"},inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+      {f:{en:"Priority responses",es:"Respuestas prioritarias"},inc:["monthly-lite-plus","annual-bundle"]},
+    ]},
+    {g:{en:"Strategy & reviews",es:"Estrategia y revisiones"},rows:[
+      {f:{en:"Strategy Session / month",es:"Sesión Estratégica / mes"},inc:["monthly-lite-plus"]},
+      {f:{en:"4 Quarterly Reviews",es:"4 Revisiones Trimestrales"},inc:["annual-bundle"]},
+      {f:{en:"Priority Strategy Sessions",es:"Sesiones Estratégicas prioritarias"},inc:["annual-bundle"]},
+      {f:{en:"Year-end report",es:"Informe de fin de año"},inc:["annual-bundle"]},
+    ]},
+    {g:{en:"Tools in the app",es:"Herramientas en la app"},rows:[
+      {f:{en:"Income, bills, debt & savings tracking",es:"Seguimiento de ingresos, gastos, deuda y ahorro"},inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+      {f:{en:"Debt payoff calculators",es:"Calculadoras de pago de deuda"},inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+      {f:{en:"Retirement & investment projections",es:"Proyecciones de retiro e inversión"},inc:["monthly-lite-plus","annual-bundle"]},
+      {f:{en:"Net-worth & cash-flow trends",es:"Tendencias de patrimonio y flujo"},inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+      {f:{en:"Downloadable PDF reports",es:"Reportes PDF descargables"},inc:["monthly-lite-plus","annual-bundle"]},
+    ]},
   ];
   const Ck=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={th.pos} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>;
   const Xx=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={th.dim} strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>;
-  return<div style={{...mCARD(th),padding:0,overflow:"hidden"}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:420}}>
-    <thead><tr style={{borderBottom:"1px solid "+th.cardBorder}}><th style={{textAlign:"left",padding:"12px 16px",fontSize:10,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.12em",textTransform:"uppercase",color:th.dim,fontWeight:500}}>{L==="es"?"Característica":"Feature"}</th>{cols.map(([id,nm])=><th key={id} style={{textAlign:"center",padding:"12px 14px",fontSize:11.5,fontWeight:600,color:id==="monthly-lite-plus"?GOLD:th.text,background:id==="monthly-lite-plus"?GOLD+"0E":"transparent",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{nm}</th>)}</tr></thead>
-    <tbody>{rows.map((r,i)=><tr key={i} style={{borderTop:i?("1px solid "+th.cardBorder):"none"}}><td style={{textAlign:"left",padding:"11px 16px",fontSize:12,color:th.muted}}>{r[L]}</td>{cols.map(([id])=><td key={id} style={{textAlign:"center",padding:"11px 14px",background:id==="monthly-lite-plus"?GOLD+"0A":"transparent"}}><span style={{display:"inline-flex",verticalAlign:"middle"}}>{r.inc.includes(id)?<Ck/>:<Xx/>}</span></td>)}</tr>)}</tbody>
+  return<div style={{...mCARD(th),padding:0,overflow:"hidden"}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:480}}>
+    <thead><tr style={{borderBottom:"1px solid "+th.cardBorder}}><th style={{textAlign:"left",padding:"13px 16px",fontSize:10,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.12em",textTransform:"uppercase",color:th.dim,fontWeight:500}}>{L==="es"?"Función":"Feature"}</th>{cols.map(([id,nm])=><th key={id} style={{textAlign:"center",padding:"13px 14px",fontSize:11.5,fontWeight:600,color:th.text,background:id==="monthly-lite-plus"?HL:"transparent",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{nm}</th>)}</tr></thead>
+    <tbody>{groups.flatMap((grp,gi)=>[
+      <tr key={"g"+gi}><td colSpan={4} style={{padding:"15px 16px 7px",fontSize:10,letterSpacing:"0.13em",textTransform:"uppercase",color:th.dim,fontFamily:"'JetBrains Mono',monospace",fontWeight:500,background:"rgba(198,216,242,0.035)"}}>{grp.g[L]}</td></tr>,
+      ...grp.rows.map((r,i)=><tr key={gi+"-"+i}><td style={{padding:"11px 16px",fontSize:12.5,color:th.muted,borderTop:"1px solid "+th.cardBorder}}>{r.f[L]}</td>{cols.map(([id])=><td key={id} style={{padding:"11px 14px",textAlign:"center",borderTop:"1px solid "+th.cardBorder,background:id==="monthly-lite-plus"?HL:"transparent"}}><span style={{display:"inline-flex",verticalAlign:"middle"}}>{r.inc.includes(id)?<Ck/>:<Xx/>}</span></td>)}</tr>)
+    ])}</tbody>
   </table></div></div>;
 }
-/* v0.63 PricingPage: standalone pricing (variant public=from landing / app=nav). */
-function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest}){
+/* v0.63.2 PricingPage: standalone (public from landing w/ line-field + EN/ES + modes, or app nav). */
+function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest,isDark,onToggleTheme,onToggleLang}){
   const th=useTh();const L=lang==="es"?"es":"en";
-  const inner=<div style={{maxWidth:1080,margin:"0 auto",padding:variant==="public"?"26px 24px 64px":"24px 24px 44px"}}>
-    <div style={{textAlign:"center",marginBottom:32}}>
+  const ctaLabel=(variant==="public")?(L==="es"?"Comenzar":"Get started"):(L==="es"?"Elegir plan":"Choose plan");
+  const inner=<div style={{maxWidth:1180,margin:"0 auto",padding:variant==="public"?"8px 24px 72px":"24px 16px 48px",position:"relative",zIndex:1}}>
+    <div style={{textAlign:"center",marginBottom:30}}>
       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.18em",textTransform:"uppercase",color:th.dim,marginBottom:10}}>{L==="es"?"Precios":"Pricing"}</div>
-      <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:34,color:th.text,margin:"0 0 10px",letterSpacing:"-0.01em",lineHeight:1.1}}>{L==="es"?"Elige el plan adecuado para ti":"Choose the plan that fits you"}</h1>
-      <p style={{fontSize:14,color:th.muted,maxWidth:560,margin:"0 auto",lineHeight:1.6}}>{L==="es"?"Membresías y servicios puntuales para cada etapa de tu camino financiero. Sin permanencia.":"Memberships and one-time services for every stage of your financial journey. No lock-in."}</p>
+      <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:35,color:th.text,margin:"0 0 10px",letterSpacing:"-0.01em",lineHeight:1.1}}>{L==="es"?"Elige el plan adecuado para ti":"Choose the plan that fits you"}</h1>
+      <p style={{fontSize:14,color:th.muted,maxWidth:560,margin:"0 auto",lineHeight:1.6}}>{L==="es"?"Membresías y servicios puntuales para cada etapa de tu camino financiero. Sin permanencia, cancela cuando quieras.":"Memberships and one-time services for every stage of your financial journey. No lock-in, cancel anytime."}</p>
     </div>
-    <PricingPlans variant={variant==="public"?"landing":"app"} t={t} lang={lang} settings={settings} onRequest={onRequest}/>
-    <div style={{margin:"40px 0 14px"}}><div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:"0.14em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{L==="es"?"Comparar membresías":"Compare memberships"}</div></div>
-    <PlanComparison lang={lang}/>
+    <PricingCarousel lang={lang} settings={settings} onRequest={onRequest} ctaLabel={ctaLabel}/>
+    <div style={{maxWidth:980,margin:"50px auto 0"}}>
+      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",color:th.dim,textAlign:"center",marginBottom:8}}>{L==="es"?"Comparación completa":"Full comparison"}</div>
+      <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:25,color:th.text,textAlign:"center",margin:"0 0 22px",lineHeight:1.15}}>{L==="es"?"Todo lo que puedes hacer, por plan":"Everything you can do, by plan"}</div>
+      <PlanComparison lang={lang}/>
+    </div>
   </div>;
   if(variant!=="public")return inner;
-  return <div style={{minHeight:"100vh",background:"radial-gradient(125% 120% at 50% -30%, "+(th.glow1||"transparent")+" 0%, transparent 55%), "+th.bg,color:th.text,overflowY:"auto"}}>
-    <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 26px",maxWidth:1240,margin:"0 auto"}}>
-      <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:8,background:"transparent",border:"none",cursor:"pointer",fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:th.navAcc||GOLD,fontSize:17,letterSpacing:"0.08em",textTransform:"uppercase"}}>⚓ Golden Anchor</button>
-      <button className="ga-press" onClick={onSignIn} style={{fontSize:12.5,fontWeight:600,padding:"9px 18px",borderRadius:99,background:GOLD,color:"#0B0C0E",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{L==="es"?"Iniciar sesión":"Sign in"}</button>
-    </header>
-    {inner}
+  const pill={fontSize:12,fontWeight:600,padding:"8px 13px",borderRadius:99,border:"1px solid "+th.cardBorder,background:"transparent",color:th.muted,cursor:"pointer",fontFamily:"inherit"};
+  return <div style={{minHeight:"100vh",position:"relative",overflow:"hidden",background:th.bg,color:th.text}}>
+    <LineField color={isDark?"150,180,220":"120,150,195"} dark={!!isDark}/>
+    <div style={{position:"relative",zIndex:1}}>
+      <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 26px",maxWidth:1240,margin:"0 auto"}}>
+        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:8,background:"transparent",border:"none",cursor:"pointer",fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:th.navAcc||GOLD,fontSize:17,letterSpacing:"0.08em",textTransform:"uppercase"}}>⚓ Golden Anchor</button>
+        <div style={{display:"flex",alignItems:"center",gap:9}}>
+          {onToggleLang&&<button onClick={onToggleLang} style={pill}>{L==="es"?"EN":"ES"}</button>}
+          {onToggleTheme&&<button onClick={onToggleTheme} style={pill}>{isDark?(L==="es"?"Claro":"Light"):(L==="es"?"Oscuro":"Dark")}</button>}
+          <button className="ga-press" onClick={onSignIn} style={{fontSize:12.5,fontWeight:600,padding:"9px 18px",borderRadius:99,background:GOLD,color:"#0B0C0E",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{L==="es"?"Iniciar sesión":"Sign in"}</button>
+        </div>
+      </header>
+      {inner}
+    </div>
   </div>;
 }
 function AboutPage({t,settings,lang}){const th=useTh();const[reqSvc,setReqSvc]=useState(null);return<div style={{padding:24,maxWidth:1280,margin:"0 auto"}}>{reqSvc&&<ServiceRequestModal svc={reqSvc} lang={lang} t={t} onClose={()=>setReqSvc(null)}/>}<div style={{...mCARD(th),padding:"32px 24px",marginBottom:20,textAlign:"center",background:`linear-gradient(180deg,${th.card} 0%,${th.bg}66 100%)`}}><div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><img src="/anchor-monogram.svg" style={{width:56,height:56}} alt="Golden Anchor"/></div><div style={{fontSize:22,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.12em",textTransform:"uppercase"}}>Golden Anchor</div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.2em",marginTop:2}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div><div style={{fontSize:13,color:th.muted,marginTop:12,lineHeight:1.7,maxWidth:480,margin:"12px auto 0"}}>{t.aboutDesc}</div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))",gap:16,marginBottom:24,alignItems:"stretch"}}><div style={{...mCARD(th),padding:22,display:"flex",flexDirection:"column"}}><div style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:8,letterSpacing:"-0.01em"}}>{settings?.advisorName||"Mauricio Hernandez"}</div><div style={{fontSize:12.5,color:th.muted,lineHeight:1.7,marginBottom:18}}>{t.advisorBio}</div><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:12,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏅 {t.certifications}</div>{CERTS.map(c=><div key={c} style={{fontSize:12.5,color:th.muted,marginBottom:7,display:"flex",gap:10,alignItems:"flex-start",lineHeight:1.5}}><span style={{color:GOLD,flexShrink:0,fontWeight:700}}>✓</span><span>{c}</span></div>)}</div><div style={{display:"flex",flexDirection:"column",gap:12}}><div style={{...mCARD(th),padding:22,flex:1}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>🔗 {t.connect}</div>{[{icon:"🌐",label:t.website,val:"goldenanchor.life",href:"https://goldenanchor.life"},{icon:"📸",label:"Instagram",val:`@${settings?.ig||"golden_anchor_inc"}`,href:`https://instagram.com/${settings?.ig||"golden_anchor_inc"}`},{icon:"✉️",label:t.lblEmail||"Email",val:settings?.advisorEmail,href:`mailto:${settings?.advisorEmail}`}].map(l=><div key={l.label} style={{marginBottom:14}}><div style={{fontSize:10,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:3}}>{l.label}</div><a href={l.href} target={l.href?.startsWith("http")?"_blank":"_self"} rel="noreferrer" style={{fontSize:13,color:th.accent,fontWeight:600,textDecoration:"none"}}>{l.val}</a></div>)}</div><div style={{...mCARD(th),padding:22,background:`linear-gradient(135deg,${GOLD}1A,${GOLD}08)`,border:`1px solid ${GOLD}55`}}><div style={{fontSize:11,fontWeight:700,color:GOLD,marginBottom:10,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏷 {t.referralCode||"Referral Code"}</div><div style={{fontSize:28,fontWeight:800,color:GOLD,letterSpacing:"0.12em",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>GOLDEN-2026</div><div style={{fontSize:11.5,color:th.muted,marginTop:8,lineHeight:1.5}}>{t.referralDesc}</div></div></div></div></div>;}
@@ -6120,7 +6195,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0631-standalone-pricing-page";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0632-pricing-carousel-coolhalo";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7957,7 +8032,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   const NAV=[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
-  if(!authUser)return<ThemeCtx.Provider value={theme}>{showPricing?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>setShowPricing(false)} onSignIn={()=>setShowPricing(false)} onRequest={null}/>:<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>setShowPricing(true)}/>}</ThemeCtx.Provider>;
+  if(!authUser)return<ThemeCtx.Provider value={theme}>{showPricing?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>setShowPricing(false)} onSignIn={()=>setShowPricing(false)} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>:<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>setShowPricing(true)}/>}</ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
@@ -7993,7 +8068,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         </button>
       </div>
     </div>}
-    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(125% 120% at 50% -45%, ${theme.glow1||"transparent"} 0%, transparent 55%), ${theme.bg}`,backgroundAttachment:"fixed",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent,"--ga-acc-rgb":isDark?"226,195,117":"184,144,30"}}>
+    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(125% 120% at 50% -45%, ${theme.glow1||"transparent"} 0%, transparent 55%), ${theme.bg}`,backgroundAttachment:"fixed",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent,"--ga-acc-rgb":isDark?"198,216,242":"120,150,200"}}>
       {!vp.isMobile&&<div id="ga-sidebar" style={{width:sidebarCollapsed?64:234,flexShrink:0,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width 0.25s cubic-bezier(0.2,0.8,0.2,1)"}}>
         <div style={{padding:sidebarCollapsed?"20px 12px 14px":"20px 16px 14px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between",gap:4,minHeight:72}}>
           {sidebarCollapsed?
