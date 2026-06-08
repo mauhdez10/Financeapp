@@ -69,5 +69,11 @@
   font-feature-settings: "tnum" 1;
 }
 
+/* v0.60 — modern Login/landing hero collapses to one column on narrow screens. */
+@media (max-width:880px){
+  .ga-login-hero{ grid-template-columns:1fr !important; gap:30px !important; }
+  .ga-login-hero h1{ font-size:clamp(2.3rem,10vw,3.2rem) !important; }
+}
+
 /* Brand font-face declarations are loaded via Google Fonts <link> in index.html.
    This file only declares the tokens — fonts must be available globally. */
