@@ -99,13 +99,17 @@ async function gaMigrateLocalStorage(userId){if(!supabase||!userId)return false;
 /* ── THEMES ─────────────────────────────────────────────────────────────── */
 const GOLD="#C9A84C";
 // v0.26.0 — bumped muted/dim/sideMuted on dark mode to pass WCAG AA contrast (4.5:1+ on dark navy bg). Was #9CA3AF/#6B7280.
-// v0.61 — glass tokens (glassBg/glassBorder/blur/cardShadow) drive mCARD so every
-// card adopts the Login's translucent glass texture; glow1/glow2 paint the shell.
-const makeDark=(a=GOLD)=>({bg:"#0A0C10",nav:"#0D1117",navBorder:"#1F2733",card:"#12161D",cardBorder:"#232B36",glassBg:"rgba(255,255,255,0.045)",glassBorder:"rgba(255,255,255,0.09)",blur:"blur(16px)",cardShadow:"none",glow1:"rgba(203,168,90,0.10)",glow2:"rgba(60,110,120,0.085)",modal:"#12161D",inp:"#12161D",inpBorder:"#2A3340",text:"#EDEFF2",muted:"#9AA3AF",dim:"#626B78",sideText:"#EDEFF2",sideMuted:"#9AA3AF",accent:a,pos:"#3DD68C",neg:"#F2766B",warn:"#CBA85A",blue:"#7FA8C9"});
+// v0.62 — Direction B (Linear/Vercel dark-tech): FLAT solid surfaces (not glass),
+// 1px hairline borders, mono labels, near-monochrome + one gold accent. glassBg/
+// glassBorder now carry solid B surfaces (blur off); hover-lift motion lives in CSS
+// (.ga-lift). glow1/glow2 kept very faint for a hint of depth on the near-black shell.
+const makeDark=(a=GOLD)=>({bg:"#08090A",nav:"#0B0C0D",navBorder:"#1B1D21",card:"#0E0F11",cardBorder:"#1B1D21",glassBg:"#0E0F11",glassBorder:"#1B1D21",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.05)",glow2:"rgba(60,110,120,0.04)",modal:"#0E0F11",inp:"#101113",inpBorder:"#1F2228",text:"#EDEEF0",muted:"#8A8F98",dim:"#565A63",sideText:"#EDEEF0",sideMuted:"#8A8F98",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
-const makeLight=(a="#C9A84C")=>({bg:"#FAFAF7",nav:"#0E1218",navBorder:"#1F2733",card:"#FFFFFF",cardBorder:"#ECEAE3",glassBg:"#FFFFFF",glassBorder:"#ECEAE3",blur:"blur(0px)",cardShadow:"0 1px 2px rgba(20,20,16,0.04), 0 12px 34px rgba(20,20,16,0.035)",glow1:"rgba(184,144,30,0.06)",glow2:"rgba(60,110,120,0.04)",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E2DCCB",text:"#16181C",muted:"#5A6270",dim:"#9AA0A8",sideText:"#EDEFF2",sideMuted:"#9AA3AF",accent:a,pos:"#0E9F6E",neg:"#D64545",warn:"#B8901E",blue:"#7FA8C9"});
+// v0.62 — Direction B light: flat white surfaces, 1px #ECEDEF hairline, no card
+// shadow (hover-lift adds it). Sidebar stays near-black (B keeps a dark rail in light).
+const makeLight=(a="#C9A84C")=>({bg:"#FBFBFC",nav:"#0B0C0D",navBorder:"#1B1D21",card:"#FFFFFF",cardBorder:"#ECEDEF",glassBg:"#FFFFFF",glassBorder:"#ECEDEF",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(184,144,30,0.045)",glow2:"rgba(60,110,120,0.03)",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E6E7EA",text:"#0B0C0E",muted:"#60646C",dim:"#9097A0",sideText:"#EDEEF0",sideMuted:"#8A8F98",accent:a,pos:"#0E9F6E",neg:"#D0453B",warn:"#B8901E",blue:"#5A7E9E"});
 const DARK_ACCENTS=[{l:"Gold",v:"#C9A84C"},{l:"Blue",v:"#3B82F6"},{l:"Emerald",v:"#10B981"},{l:"Purple",v:"#8B5CF6"}];
 const LIGHT_ACCENTS=[{l:"Blue",v:"#2563EB"},{l:"Teal",v:"#0D9488"},{l:"Emerald",v:"#059669"},{l:"Purple",v:"#7C3AED"}];
 // v0.8.1 — background/card shade presets for the Appearance settings
@@ -147,7 +151,7 @@ const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.t
 // v0.61 — glass card: translucent bg + thin hairline + backdrop blur (dark) or
 // soft shadow (light). Falls back to solid card tokens if glass tokens absent
 // (e.g. a user's custom card-color override flows in via th.glassBg at merge time).
-const mCARD=th=>({background:th.glassBg||th.card,border:`1px solid ${th.glassBorder||th.cardBorder}`,borderRadius:16,backdropFilter:th.blur||"none",WebkitBackdropFilter:th.blur||"none",boxShadow:th.cardShadow||"none",breakInside:"avoid",pageBreakInside:"avoid",WebkitPrintColorAdjust:"exact",printColorAdjust:"exact"});
+const mCARD=th=>({background:th.glassBg||th.card,border:`1px solid ${th.glassBorder||th.cardBorder}`,borderRadius:12,backdropFilter:th.blur||"none",WebkitBackdropFilter:th.blur||"none",boxShadow:th.cardShadow||"none",breakInside:"avoid",pageBreakInside:"avoid",WebkitPrintColorAdjust:"exact",printColorAdjust:"exact"});
 const mTH=th=>({fontSize:11,fontWeight:700,color:th.muted,padding:"0 6px 8px 0",textAlign:"left",whiteSpace:"nowrap",userSelect:"none",cursor:"pointer"});
 const mTHR=th=>({...mTH(th),textAlign:"right",padding:"0 0 8px 6px"});
 const mTD=th=>({fontSize:12,padding:"7px 6px 7px 0",borderTop:`1px solid ${th.cardBorder}`,color:th.text,verticalAlign:"middle"});
@@ -324,7 +328,7 @@ function KpiTile({label,value,color,sub,delta,spark}){
   const th=useTh();
   // v0.60 — modern (Origin): mono micro-label, neutral light-sans value, thin gold
   // sparkline on the right, arrow delta. Value is neutral (th.text), not color-coded.
-  return<div className="ga-sc" style={{...mCARD(th),padding:"18px 20px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",minHeight:112}}>
+  return<div className="ga-sc ga-lift" style={{...mCARD(th),padding:"18px 20px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",minHeight:112}}>
     <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500,fontFamily:"'JetBrains Mono',monospace",marginBottom:13}}>{label}</div>
     <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:10,marginTop:"auto"}}>
       <div style={{minWidth:0}}>
@@ -5204,13 +5208,13 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
   return<div data-ga-grid="three-col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"minmax(0,4fr) minmax(0,4fr) minmax(0,3fr)",gap:12,marginBottom:14}}>
     {slots.map((slotId,i)=>{
       const ch=dashCharts[slotId]||dashCharts.incomeVsSpending;
-      return<div key={i} style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column",position:"relative"}}>
+      return<div key={i} className="ga-lift" style={{...mCARD(th),padding:isMobile?14:16,display:"flex",flexDirection:"column",position:"relative"}}>
         <DashSlotPicker currentId={slotId} options={dashOpts} onPick={id=>setSlot(i,id)} th={th} t={t}/>
         {ch.render()}
       </div>;
     })}
   </div>;
-})()}<RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:20,marginBottom:10,gap:8,flexWrap:"wrap"}}><div style={{fontSize:12,fontWeight:700,color:th.dim}}>👥 {active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={"🔍 "+(t.searchClients||"Search clients...")} aria-label={t?.searchClientsPh||"Search clients"} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:isMobile?12:14,background:c.color1+"22",color:c.color1,border:`2px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
+})()}<RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:24,marginBottom:12,gap:8,flexWrap:"wrap"}}><div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:"0.13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={t.searchClients||"Search clients..."} aria-label={t?.searchClientsPh||"Search clients"} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} className="ga-lift" onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:isMobile?10:11,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:isMobile?12:14,fontFamily:"'JetBrains Mono',monospace",background:c.color1+"22",color:c.color1,border:`1px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
 
 /* ── PAGES ───────────────────────────────────────────────────────────────── */
 /* ── CLIENT LIST ─ v0.8.0 action-first bulk actions (WORKPLAN §3 Chat 4) ── */
@@ -6022,7 +6026,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-07-v061-glass-cards-glow-thin-charts";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v062-direction-b-dashboard-port";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7703,6 +7707,19 @@ const theme={..._baseTh,bg:(isDark?settings.darkBg:settings.lightBg)||_baseTh.bg
       html,body{overscroll-behavior-y:none}
       /* v0.26.0 — z-index scale (UI/UX Pro Max High-severity guideline #4) */
       :root{--ga-z-tooltip:10;--ga-z-sticky:20;--ga-z-sidebar:30;--ga-z-header:40;--ga-z-dropdown:70;--ga-z-overlay:90;--ga-z-modal:100;--ga-z-toast:120;}
+      /* v0.62 — Direction B+C motion (Emil-grounded: custom ease-out, ≤200ms, transform/opacity only).
+         .ga-lift = springy hover lift (Direction C). .ga-press = button press feedback.
+         .ga-rise = staggered entrance. --ga-lift/--ga-acc are set per-theme on the app shell.
+         Reduced-motion is neutralised by the @media block below. */
+      :root{--ga-ease:cubic-bezier(.23,1,.32,1);--ga-spring:cubic-bezier(.2,1.1,.3,1);--ga-lift:0 14px 34px rgba(0,0,0,.5);--ga-acc:#C9A84C;}
+      @media (hover:hover) and (pointer:fine){
+        .ga-lift{transition:transform .2s var(--ga-ease),box-shadow .2s var(--ga-ease),border-color .16s var(--ga-ease);}
+        .ga-lift:hover{transform:translateY(-3px);box-shadow:var(--ga-lift)!important;border-color:var(--ga-acc)!important;}
+      }
+      .ga-press{transition:transform .15s var(--ga-ease)!important;}
+      .ga-press:active{transform:scale(.97);}
+      .ga-rise{opacity:0;transform:translateY(8px);animation:gaRise .38s var(--ga-ease) forwards;}
+      @keyframes gaRise{to{opacity:1;transform:translateY(0);}}
       /* v0.26.0 — Reduced motion (UI/UX Pro Max guideline #8) */
       @media (prefers-reduced-motion: reduce){
         *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
@@ -7879,7 +7896,7 @@ const theme={..._baseTh,bg:(isDark?settings.darkBg:settings.lightBg)||_baseTh.bg
         </button>
       </div>
     </div>}
-    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(720px 540px at 84% -10%, ${theme.glow1||"transparent"}, transparent 62%), radial-gradient(680px 620px at 6% 112%, ${theme.glow2||"transparent"}, transparent 60%), ${theme.bg}`,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1)}}>
+    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(720px 540px at 84% -10%, ${theme.glow1||"transparent"}, transparent 62%), radial-gradient(680px 620px at 6% 112%, ${theme.glow2||"transparent"}, transparent 60%), ${theme.bg}`,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent}}>
       {!vp.isMobile&&<div id="ga-sidebar" style={{width:sidebarCollapsed?64:234,flexShrink:0,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width 0.25s cubic-bezier(0.2,0.8,0.2,1)"}}>
         <div style={{padding:sidebarCollapsed?"20px 12px 14px":"20px 16px 14px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between",gap:4,minHeight:72}}>
           {sidebarCollapsed?
