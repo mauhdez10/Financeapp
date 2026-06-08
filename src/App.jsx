@@ -313,14 +313,20 @@ function useAnimatedDisplay(value){
 // stroke 1.25 → 1.5 for a more visible chart. minHeight 104 → 124.
 function KpiTile({label,value,color,sub,delta,spark}){
   const th=useTh();
-  return<div className="ga-sc" style={{...mCARD(th),padding:"14px 18px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",gap:6,minHeight:124}}>
-    <div style={{fontSize:10,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>{label}</div>
-    <div style={{fontSize:26,fontWeight:600,color:color||th.accent,fontFamily:"'JetBrains Mono',ui-monospace,Menlo,monospace",fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.02em"}}>{value}</div>
-    {spark&&spark.length>=2&&<div style={{width:"100%",marginTop:2}}><Sparkline data={spark} color={color||GOLD} width={240} height={40} strokeWidth={1.5} fill={false}/></div>}
-    {(delta||sub)&&<div style={{fontSize:10.5,color:th.dim,display:"flex",alignItems:"center",gap:8,marginTop:"auto"}}>
-      {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{delta.up?"↑":delta.down?"↓":"→"} {delta.value}</span>}
-      {sub&&<span style={{letterSpacing:"0.02em"}}>{sub}</span>}
-    </div>}
+  // v0.60 — modern (Origin): mono micro-label, neutral light-sans value, thin gold
+  // sparkline on the right, arrow delta. Value is neutral (th.text), not color-coded.
+  return<div className="ga-sc" style={{...mCARD(th),padding:"18px 20px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",minHeight:112}}>
+    <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500,fontFamily:"'JetBrains Mono',monospace",marginBottom:13}}>{label}</div>
+    <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:10,marginTop:"auto"}}>
+      <div style={{minWidth:0}}>
+        <div style={{fontSize:27,fontWeight:500,color:th.text,fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.01em",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div>
+        {(delta||sub)&&<div style={{fontSize:11,color:th.dim,display:"flex",alignItems:"center",gap:7,marginTop:9}}>
+          {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{delta.up?"▲":delta.down?"▼":"→"} {delta.value}</span>}
+          {sub&&<span>{sub}</span>}
+        </div>}
+      </div>
+      {spark&&spark.length>=2&&<div style={{flexShrink:0}}><Sparkline data={spark} color={th.accent} width={92} height={32} strokeWidth={1} fill={false}/></div>}
+    </div>
   </div>;
 }
 
@@ -1315,12 +1321,12 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Trend line chart">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.25"/>
-          <stop offset="60%" stopColor={savingsColor} stopOpacity="0.08"/>
+          <stop offset="0%" stopColor={savingsColor} stopOpacity="0.10"/>
+          <stop offset="55%" stopColor={savingsColor} stopOpacity="0.03"/>
           <stop offset="100%" stopColor={savingsColor} stopOpacity="0"/>
         </linearGradient>
         <linearGradient id={debtGradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={debtColor} stopOpacity="0.15"/>
+          <stop offset="0%" stopColor={debtColor} stopOpacity="0.06"/>
           <stop offset="100%" stopColor={debtColor} stopOpacity="0"/>
         </linearGradient>
         <linearGradient id={`${gradId}-stroke`} x1="0" y1="0" x2="1" y2="0">
@@ -1345,7 +1351,7 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
       {/* v0.53 (PR 6) — both lines now 1.75px (was 1.5/1.75 split). Crossover
          and live dots use #111827 stroke per handoff spec instead of #fff. */}
       <path d={path(debtCoords,false)} fill="none" stroke={`url(#${debtGradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/>
-      <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`}/>
+      <path d={path(savCoords,false)} fill="none" stroke={`url(#${gradId}-stroke)`} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/>
       {/* v0.54 — smaller dots, no stroke, per Mauricio's feedback. */}
       {crossovers.map((c,i)=><g key={i}>
         <circle cx={c.x} cy={c.y} r="4" fill={GOLD} opacity="0.18"/>
@@ -4849,10 +4855,10 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
   // Delta = current vs previous period (last vs second-to-last).
   const dlt=arr=>{const n=arr.length;if(n<2)return null;const cur=arr[n-1],prev=arr[n-2];const ch=cur-prev;if(ch===0)return null;return{up:ch>0,down:ch<0,value:(ch>0?"+":"")+fmtS(Math.abs(ch))};};
   return<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
-    <KpiTile label={"👥 "+(t?.kpiClients||"Clients")} value={clients.length} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
-    <KpiTile label={"💼 "+(t.combinedNetMo||"Combined Net / mo")} value={hideNumbers?"●●●":fmtS(ti)} color={th.pos} spark={incomeSeries} delta={dlt(incomeSeries)} sub={t.vsLastMo||"vs last mo"}/>
-    <KpiTile label={"🏦 "+(t.combinedDebt||"Combined Debt")} value={hideNumbers?"●●●":fmtS(td)} color={th.neg} spark={debtSeries} delta={(()=>{const d=dlt(debtSeries);if(!d)return null;return{...d,up:debtSeries[debtSeries.length-1]<debtSeries[debtSeries.length-2],down:debtSeries[debtSeries.length-1]>debtSeries[debtSeries.length-2]};})()}/>
-    <KpiTile label={"💧 "+(t.liquidAssets||"Liquid Assets")} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
+    <KpiTile label={t?.kpiClients||"Clients"} value={clients.length} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
+    <KpiTile label={t.combinedNetMo||"Combined Net / mo"} value={hideNumbers?"●●●":fmtS(ti)} color={th.pos} spark={incomeSeries} delta={dlt(incomeSeries)} sub={t.vsLastMo||"vs last mo"}/>
+    <KpiTile label={t.combinedDebt||"Combined Debt"} value={hideNumbers?"●●●":fmtS(td)} color={th.neg} spark={debtSeries} delta={(()=>{const d=dlt(debtSeries);if(!d)return null;return{...d,up:debtSeries[debtSeries.length-1]<debtSeries[debtSeries.length-2],down:debtSeries[debtSeries.length-1]>debtSeries[debtSeries.length-2]};})()}/>
+    <KpiTile label={t.liquidAssets||"Liquid Assets"} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
   </div>;
 })()}
 
@@ -4863,7 +4869,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
     incomeVsSpending:{id:"incomeVsSpending",label:"📊 "+(t.incomeVsSpendingHdr||"Income vs Spending"),render:()=><>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8,paddingRight:30}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase"}}>📊 {t.incomeVsSpendingHdr||"Income vs Spending"}</div>
+          <div style={{fontSize:10,fontWeight:500,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{t.incomeVsSpendingHdr||"Income vs Spending"}</div>
           <div style={{display:"flex",gap:14,marginTop:6,flexWrap:"wrap"}}>
             <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.pos}}/>{t.income||"Income"}</span>
             <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:th.neg}}/>{t.spending||"Spending"}</span>
@@ -4959,7 +4965,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       const live={label:"▶ Now",debt:Math.round(active.reduce((s,c)=>s+c.cards.reduce((a,cd)=>a+(+cd.balance||0),0),0)),savings:Math.round(active.reduce((s,c)=>s+liquidA(c),0))};
       data.push(live);
       return<>
-        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📈 {t.debtVsSavingsSlot||"Debt vs Savings Trend"}</div><div style={{display:"flex",gap:14,marginBottom:8,flexWrap:"wrap"}}>
+        <div style={{paddingRight:30}}><div style={{fontSize:10,fontWeight:500,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>{t.debtVsSavingsSlot||"Debt vs Savings Trend"}</div><div style={{display:"flex",gap:14,marginBottom:8,flexWrap:"wrap"}}>
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#EF4444"}}/>{t.totalDebt||"Debt"}</span>
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#10B981"}}/>{t.savings||"Savings"}</span>
         </div></div>
@@ -5030,7 +5036,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       const projection=[];
       for(let i=1;i<=5;i++){projection.push({label:`+${i}y`,value:liveNW+growth*12*i});}
       return<>
-        <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🔮 {t.netWorthForecastSlot||"Net Worth Forecast"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthForecastSub||"History + 5-year projection cone."}</div></div>
+        <div style={{paddingRight:30}}><div style={{fontSize:10,fontWeight:500,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>{t.netWorthForecastSlot||"Net Worth Forecast"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthForecastSub||"History + 5-year projection cone."}</div></div>
         {history.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need 2+ snapshots."}</div>:<ForecastCone history={history} projection={projection} width={460} height={isMobile?200:230} confidence={0.22}/>}
       </>;
     }},
