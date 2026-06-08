@@ -5898,9 +5898,9 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
             <span style={{width:6,height:6,borderRadius:99,background:P.gold}}/>{lang==="es"?"Plataforma de asesoría financiera":"Financial coaching platform"}
           </div>
           <h1 style={{fontWeight:500,fontSize:"clamp(2.6rem,5.6vw,4.6rem)",color:P.text,lineHeight:1.04,letterSpacing:"-0.032em",margin:"0 0 26px"}}>{lang==="es"?<>El tablero que tu <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>asesor</span> lleva a cada reunión.</>:<>The dashboard your <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>advisor</span> brings to every meeting.</>}</h1>
-          <p style={{fontSize:17,lineHeight:1.62,color:P.muted,maxWidth:520,margin:"0 0 30px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros — actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings — updated each session and summarized in a monthly report."}</p>
+          <p style={{fontSize:17,lineHeight:1.62,color:P.muted,maxWidth:520,margin:"0 0 30px"}}>{lang==="es"?"Una imagen completa de tus ingresos, gastos, deudas y ahorros, actualizada en cada sesión y resumida en un reporte mensual.":"A complete picture of your income, bills, debt, and savings, updated each session and summarized in a monthly report."}</p>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {(lang==="es"?["Resumen mensual","Modelos de deuda y flujo","Admisión","EN · ES"]:["Monthly snapshot","Debt & cash-flow models","Public intake","EN · ES"]).map((s,i)=><span key={i} style={{fontSize:9.5,padding:"7px 13px",borderRadius:99,...glass,color:P.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{s}</span>)}
+            {(lang==="es"?["Resumen mensual","Modelos de deuda y flujo"]:["Monthly snapshot","Debt & cash-flow models"]).map((s,i)=><span key={i} style={{fontSize:9.5,padding:"7px 13px",borderRadius:99,...glass,color:P.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{s}</span>)}
           </div>
         </div>
 
