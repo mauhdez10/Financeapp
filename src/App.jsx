@@ -4094,14 +4094,27 @@ if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div s
 // feedback. Was minmax(220, 1fr) with 104px minHeight reading as a wall of
 // thin cards. Now minmax(300, 1fr) + 130px minHeight + 16/18 padding +
 // 32px icon. Fewer tiles per row, each one feels substantial.
-return<div style={{padding:"24px 14px"}}><p style={{fontSize:11,color:th.dim,marginBottom:20,marginTop:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>{calcs.map(c=><div key={c.id} className="ga-lift ga-spot" onClick={()=>{setActive(c.id);onActiveChange?.(c.id);}} style={{...mCARD(th),padding:"16px 18px",cursor:"pointer",minHeight:130,display:"flex",flexDirection:"row",alignItems:"center",textAlign:"left",gap:14}}>
-  <div style={{flexShrink:0,width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center",background:th.accent+"12",border:`1px solid ${th.accent}26`,borderRadius:12}}>{(()=>{const Ic={retirement:PiggyBank,portfolio:TrendingUp,homeEquity:Home,income:Wallet,debtReduction:TrendingDown,carLoan:Car,affordability:KeyRound,interest:Percent,savings:Gem}[c.id];return Ic?<Ic size={22} strokeWidth={1.5} color={th.accent}/>:null;})()}</div>
-  <div style={{minWidth:0,flex:1}}>
-    <div style={{fontSize:14,fontWeight:700,color:th.text,lineHeight:1.3}}>{c.label.substring(c.label.indexOf(" ")+1)}</div>
-    <div style={{fontSize:11,color:th.muted,lineHeight:1.5,marginTop:4}}>{{retirement:"Retirement savings projection",portfolio:"Portfolio growth estimate",homeEquity:"Home equity & refinance",income:"Take-home pay breakdown",debtReduction:"Debt payoff strategies",carLoan:"Monthly payments & interest",affordability:"Home affordability estimate",interest:"Compound interest",savings:"HY savings growth"}[c.id]||""}</div>
-  </div>
-  <span style={{color:th.accent,fontSize:18,opacity:0.5,flexShrink:0}}>›</span>
-</div>)}</div></div>;}
+const ICONS={retirement:PiggyBank,portfolio:TrendingUp,homeEquity:Home,income:Wallet,debtReduction:TrendingDown,carLoan:Car,affordability:KeyRound,interest:Percent,savings:Gem};
+  const DESCS={retirement:t.descRetirement||"Project your retirement savings to a target age.",portfolio:t.descPortfolio||"Estimate long-term portfolio growth.",savings:t.descSavings||"See how high-yield savings compound.",interest:t.descInterest||"Compound interest on any balance.",debtReduction:t.descDebtReduction||"Compare avalanche vs snowball payoff.",carLoan:t.descCarLoan||"Monthly payment, interest, and amortization.",homeEquity:t.descHomeEquity||"Equity, refinance, and borrowing power.",affordability:t.descAffordability||"How much home you can afford.",income:t.descIncomeCalc||"Take-home pay after taxes."};
+  const CATS=[{title:t.calcCatPlan||"Plan & grow",ids:["retirement","portfolio","savings","interest"]},{title:t.calcCatDebt||"Tackle debt",ids:["debtReduction","carLoan"]},{title:t.calcCatHome||"Home & affordability",ids:["homeEquity","affordability"]},{title:t.calcCatIncome||"Income",ids:["income"]}];
+  return<div className="ga-np" style={{padding:"24px 20px",maxWidth:1100,margin:"0 auto"}}>
+    <div style={{marginBottom:28}}>
+      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.18em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:9,textTransform:"uppercase"}}>{t.calcEyebrow||"Tools"}</div>
+      <h1 style={{margin:"0 0 9px",fontSize:27,fontWeight:800,letterSpacing:"-0.02em",color:th.text}}>{t.calculators||"Calculators"}</h1>
+      <p style={{fontSize:13,color:th.muted,lineHeight:1.6,maxWidth:560,margin:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p>
+    </div>
+    {CATS.map(cat=><div key={cat.title} style={{marginBottom:24}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}><span style={{fontSize:10.5,fontWeight:600,letterSpacing:"0.14em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",textTransform:"uppercase",whiteSpace:"nowrap"}}>{cat.title}</span><div style={{flex:1,height:1,background:th.cardBorder}}/></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}}>
+        {cat.ids.map(id=>{const c=calcs.find(x=>x.id===id);if(!c)return null;const Ic=ICONS[id];return<div key={id} className="ga-lift ga-spot" onClick={()=>{setActive(id);onActiveChange?.(id);}} style={{...mCARD(th),padding:18,cursor:"pointer",display:"flex",flexDirection:"column",gap:13,minHeight:152}}>
+          <div style={{width:44,height:44,borderRadius:12,background:th.accent+"12",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center"}}>{Ic?<Ic size={21} strokeWidth={1.6} color={th.accent}/>:null}</div>
+          <div style={{flex:1}}><div style={{fontSize:14.5,fontWeight:700,color:th.text,marginBottom:5,lineHeight:1.3}}>{stripLeadEmoji(c.label)}</div><div style={{fontSize:12,color:th.muted,lineHeight:1.55}}>{DESCS[id]||""}</div></div>
+          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:600,color:th.accent}}>{t.calcOpen||"Open"} <span>→</span></div>
+        </div>;})}
+      </div>
+    </div>)}
+  </div>;
+}
 
 const expBackup=(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();};
 const validateBackup=json=>{try{const d=JSON.parse(json);return d.__ga_backup__&&Array.isArray(d.clients)?d:null;}catch{return null;}};
@@ -6337,7 +6350,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0661-signup-form-strength-reveal";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0670-calculators-categorized-cards";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
