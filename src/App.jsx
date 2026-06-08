@@ -5566,7 +5566,50 @@ function PricingPlans({t,lang,settings,variant="app",onRequest}){
     </div>
   </div>;
 }
-function AboutPage({t,settings,lang}){const th=useTh();const[reqSvc,setReqSvc]=useState(null);return<div style={{padding:24,maxWidth:1280,margin:"0 auto"}}>{reqSvc&&<ServiceRequestModal svc={reqSvc} lang={lang} t={t} onClose={()=>setReqSvc(null)}/>}<div style={{...mCARD(th),padding:"32px 24px",marginBottom:20,textAlign:"center",background:`linear-gradient(180deg,${th.card} 0%,${th.bg}66 100%)`}}><div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><img src="/anchor-monogram.svg" style={{width:56,height:56}} alt="Golden Anchor"/></div><div style={{fontSize:22,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.12em",textTransform:"uppercase"}}>Golden Anchor</div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.2em",marginTop:2}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div><div style={{fontSize:13,color:th.muted,marginTop:12,lineHeight:1.7,maxWidth:480,margin:"12px auto 0"}}>{t.aboutDesc}</div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))",gap:16,marginBottom:24,alignItems:"stretch"}}><div style={{...mCARD(th),padding:22,display:"flex",flexDirection:"column"}}><div style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:8,letterSpacing:"-0.01em"}}>{settings?.advisorName||"Mauricio Hernandez"}</div><div style={{fontSize:12.5,color:th.muted,lineHeight:1.7,marginBottom:18}}>{t.advisorBio}</div><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:12,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏅 {t.certifications}</div>{CERTS.map(c=><div key={c} style={{fontSize:12.5,color:th.muted,marginBottom:7,display:"flex",gap:10,alignItems:"flex-start",lineHeight:1.5}}><span style={{color:GOLD,flexShrink:0,fontWeight:700}}>✓</span><span>{c}</span></div>)}</div><div style={{display:"flex",flexDirection:"column",gap:12}}><div style={{...mCARD(th),padding:22,flex:1}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>🔗 {t.connect}</div>{[{icon:"🌐",label:t.website,val:"goldenanchor.life",href:"https://goldenanchor.life"},{icon:"📸",label:"Instagram",val:`@${settings?.ig||"golden_anchor_inc"}`,href:`https://instagram.com/${settings?.ig||"golden_anchor_inc"}`},{icon:"✉️",label:t.lblEmail||"Email",val:settings?.advisorEmail,href:`mailto:${settings?.advisorEmail}`}].map(l=><div key={l.label} style={{marginBottom:14}}><div style={{fontSize:10,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:3}}>{l.label}</div><a href={l.href} target={l.href?.startsWith("http")?"_blank":"_self"} rel="noreferrer" style={{fontSize:13,color:th.accent,fontWeight:600,textDecoration:"none"}}>{l.val}</a></div>)}</div><div style={{...mCARD(th),padding:22,background:`linear-gradient(135deg,${GOLD}1A,${GOLD}08)`,border:`1px solid ${GOLD}55`}}><div style={{fontSize:11,fontWeight:700,color:GOLD,marginBottom:10,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏷 {t.referralCode||"Referral Code"}</div><div style={{fontSize:28,fontWeight:800,color:GOLD,letterSpacing:"0.12em",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>GOLDEN-2026</div><div style={{fontSize:11.5,color:th.muted,marginTop:8,lineHeight:1.5}}>{t.referralDesc}</div></div></div></div><PricingPlans variant="app" t={t} lang={lang} settings={settings} onRequest={setReqSvc}/></div>;}
+/* v0.63 PlanComparison: membership feature matrix (check/X). */
+function PlanComparison({lang}){
+  const th=useTh();const L=lang==="es"?"es":"en";
+  const cols=[["monthly-lite","Lite"],["monthly-lite-plus","Lite+"],["annual-bundle","Annual"]];
+  const rows=[
+    {en:"Client dashboard access",es:"Acceso al panel de cliente",inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+    {en:"Monthly check-ins",es:"Chequeos mensuales",inc:["monthly-lite","monthly-lite-plus"]},
+    {en:"Message-based Q&A",es:"Preguntas por mensaje",inc:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+    {en:"1 Strategy Session / month",es:"1 Sesión Estratégica / mes",inc:["monthly-lite-plus"]},
+    {en:"Priority responses",es:"Respuestas prioritarias",inc:["monthly-lite-plus","annual-bundle"]},
+    {en:"4 Quarterly Reviews",es:"4 Revisiones Trimestrales",inc:["annual-bundle"]},
+    {en:"Priority Strategy Sessions",es:"Sesiones Estratégicas prioritarias",inc:["annual-bundle"]},
+    {en:"Year-end report",es:"Informe de fin de año",inc:["annual-bundle"]},
+  ];
+  const Ck=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={th.pos} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>;
+  const Xx=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={th.dim} strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+  return<div style={{...mCARD(th),padding:0,overflow:"hidden"}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:420}}>
+    <thead><tr style={{borderBottom:"1px solid "+th.cardBorder}}><th style={{textAlign:"left",padding:"12px 16px",fontSize:10,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.12em",textTransform:"uppercase",color:th.dim,fontWeight:500}}>{L==="es"?"Característica":"Feature"}</th>{cols.map(([id,nm])=><th key={id} style={{textAlign:"center",padding:"12px 14px",fontSize:11.5,fontWeight:600,color:id==="monthly-lite-plus"?GOLD:th.text,background:id==="monthly-lite-plus"?GOLD+"0E":"transparent",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{nm}</th>)}</tr></thead>
+    <tbody>{rows.map((r,i)=><tr key={i} style={{borderTop:i?("1px solid "+th.cardBorder):"none"}}><td style={{textAlign:"left",padding:"11px 16px",fontSize:12,color:th.muted}}>{r[L]}</td>{cols.map(([id])=><td key={id} style={{textAlign:"center",padding:"11px 14px",background:id==="monthly-lite-plus"?GOLD+"0A":"transparent"}}><span style={{display:"inline-flex",verticalAlign:"middle"}}>{r.inc.includes(id)?<Ck/>:<Xx/>}</span></td>)}</tr>)}</tbody>
+  </table></div></div>;
+}
+/* v0.63 PricingPage: standalone pricing (variant public=from landing / app=nav). */
+function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest}){
+  const th=useTh();const L=lang==="es"?"es":"en";
+  const inner=<div style={{maxWidth:1080,margin:"0 auto",padding:variant==="public"?"26px 24px 64px":"24px 24px 44px"}}>
+    <div style={{textAlign:"center",marginBottom:32}}>
+      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.18em",textTransform:"uppercase",color:th.dim,marginBottom:10}}>{L==="es"?"Precios":"Pricing"}</div>
+      <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:34,color:th.text,margin:"0 0 10px",letterSpacing:"-0.01em",lineHeight:1.1}}>{L==="es"?"Elige el plan adecuado para ti":"Choose the plan that fits you"}</h1>
+      <p style={{fontSize:14,color:th.muted,maxWidth:560,margin:"0 auto",lineHeight:1.6}}>{L==="es"?"Membresías y servicios puntuales para cada etapa de tu camino financiero. Sin permanencia.":"Memberships and one-time services for every stage of your financial journey. No lock-in."}</p>
+    </div>
+    <PricingPlans variant={variant==="public"?"landing":"app"} t={t} lang={lang} settings={settings} onRequest={onRequest}/>
+    <div style={{margin:"40px 0 14px"}}><div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:"0.14em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{L==="es"?"Comparar membresías":"Compare memberships"}</div></div>
+    <PlanComparison lang={lang}/>
+  </div>;
+  if(variant!=="public")return inner;
+  return <div style={{minHeight:"100vh",background:"radial-gradient(125% 120% at 50% -30%, "+(th.glow1||"transparent")+" 0%, transparent 55%), "+th.bg,color:th.text,overflowY:"auto"}}>
+    <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 26px",maxWidth:1240,margin:"0 auto"}}>
+      <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:8,background:"transparent",border:"none",cursor:"pointer",fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",color:th.navAcc||GOLD,fontSize:17,letterSpacing:"0.08em",textTransform:"uppercase"}}>⚓ Golden Anchor</button>
+      <button className="ga-press" onClick={onSignIn} style={{fontSize:12.5,fontWeight:600,padding:"9px 18px",borderRadius:99,background:GOLD,color:"#0B0C0E",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{L==="es"?"Iniciar sesión":"Sign in"}</button>
+    </header>
+    {inner}
+  </div>;
+}
+function AboutPage({t,settings,lang}){const th=useTh();const[reqSvc,setReqSvc]=useState(null);return<div style={{padding:24,maxWidth:1280,margin:"0 auto"}}>{reqSvc&&<ServiceRequestModal svc={reqSvc} lang={lang} t={t} onClose={()=>setReqSvc(null)}/>}<div style={{...mCARD(th),padding:"32px 24px",marginBottom:20,textAlign:"center",background:`linear-gradient(180deg,${th.card} 0%,${th.bg}66 100%)`}}><div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><img src="/anchor-monogram.svg" style={{width:56,height:56}} alt="Golden Anchor"/></div><div style={{fontSize:22,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.12em",textTransform:"uppercase"}}>Golden Anchor</div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.2em",marginTop:2}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div><div style={{fontSize:13,color:th.muted,marginTop:12,lineHeight:1.7,maxWidth:480,margin:"12px auto 0"}}>{t.aboutDesc}</div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))",gap:16,marginBottom:24,alignItems:"stretch"}}><div style={{...mCARD(th),padding:22,display:"flex",flexDirection:"column"}}><div style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:8,letterSpacing:"-0.01em"}}>{settings?.advisorName||"Mauricio Hernandez"}</div><div style={{fontSize:12.5,color:th.muted,lineHeight:1.7,marginBottom:18}}>{t.advisorBio}</div><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:12,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏅 {t.certifications}</div>{CERTS.map(c=><div key={c} style={{fontSize:12.5,color:th.muted,marginBottom:7,display:"flex",gap:10,alignItems:"flex-start",lineHeight:1.5}}><span style={{color:GOLD,flexShrink:0,fontWeight:700}}>✓</span><span>{c}</span></div>)}</div><div style={{display:"flex",flexDirection:"column",gap:12}}><div style={{...mCARD(th),padding:22,flex:1}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>🔗 {t.connect}</div>{[{icon:"🌐",label:t.website,val:"goldenanchor.life",href:"https://goldenanchor.life"},{icon:"📸",label:"Instagram",val:`@${settings?.ig||"golden_anchor_inc"}`,href:`https://instagram.com/${settings?.ig||"golden_anchor_inc"}`},{icon:"✉️",label:t.lblEmail||"Email",val:settings?.advisorEmail,href:`mailto:${settings?.advisorEmail}`}].map(l=><div key={l.label} style={{marginBottom:14}}><div style={{fontSize:10,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:3}}>{l.label}</div><a href={l.href} target={l.href?.startsWith("http")?"_blank":"_self"} rel="noreferrer" style={{fontSize:13,color:th.accent,fontWeight:600,textDecoration:"none"}}>{l.val}</a></div>)}</div><div style={{...mCARD(th),padding:22,background:`linear-gradient(135deg,${GOLD}1A,${GOLD}08)`,border:`1px solid ${GOLD}55`}}><div style={{fontSize:11,fontWeight:700,color:GOLD,marginBottom:10,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏷 {t.referralCode||"Referral Code"}</div><div style={{fontSize:28,fontWeight:800,color:GOLD,letterSpacing:"0.12em",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>GOLDEN-2026</div><div style={{fontSize:11.5,color:th.muted,marginTop:8,lineHeight:1.5}}>{t.referralDesc}</div></div></div></div></div>;}
 
 /* ── CLIENT DETAIL ───────────────────────────────────────────────────────── */
 function ClientDetail({client,onUpdate,lang,t,onBack,startTab,allClients,onSplit,onJoin,onArchive,onDelete,settings,onTabChange}){const th=useTh();const{isMobile}=useViewport();const[tab,setTab]=useState(startTab||"report");const[editOpen,setEditOpen]=useState(false);const[splitOpen,setSplitOpen]=useState(false);const[joinOpen,setJoinOpen]=useState(false);const[archiveConf,setArchiveConf]=useState(false);const[deleteConf,setDeleteConf]=useState(false);const tA=totalA(client),tL=totalL(client);const tabs=[{id:"report",l:"📊 "+t.report},{id:"monthly",l:"📅 "+t.monthly},{id:"financialStatements",l:"📋 "+t.financialStatements},{id:"investments",l:"💹 "+t.investments},{id:"plan",l:(t.strategyPlanHdrEmoji||"📋 Strategy Plan")},{id:"calculators",l:"🧮 Calculators"},{id:"backfill",l:"🔧 Backfill"},{id:"notes",l:"🗒 "+t.notes}];const fileRef=useRef();const tabRowRef=useRef();const[canScrollL,setCanScrollL]=useState(false);const[canScrollR,setCanScrollR]=useState(false);
@@ -5665,7 +5708,7 @@ function HeroVisual({palette,reducedMotion}){
   </svg>;
 }
 
-function Login({onLogin,t,isDark,onToggle,lang,onLangToggle}){
+function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
   const reducedMotion=useReducedMotion();
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
@@ -5769,7 +5812,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle}){
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          {onLangToggle&&<button onClick={onLangToggle} aria-label="Toggle language" style={pillTog}>{lang==="es"?"EN":"ES"}</button>}
+          {onShowPricing&&<button onClick={onShowPricing} style={pillTog}>{lang==="es"?"Precios":"Pricing"}</button>}{onLangToggle&&<button onClick={onLangToggle} aria-label="Toggle language" style={pillTog}>{lang==="es"?"EN":"ES"}</button>}
           <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={pillTog}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
         </div>
       </header>
@@ -5820,13 +5863,6 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle}){
           <h3 style={{fontWeight:600,fontSize:15.5,color:P.text,margin:"0 0 8px",letterSpacing:"-0.01em"}}>{f.t}</h3>
           <p style={{fontSize:13,lineHeight:1.6,color:P.muted,margin:0}}>{f.b}</p>
         </div>)}
-      </section>
-
-      {/* v0.63 — Plans & pricing on the landing so future clients can see memberships. */}
-      <section style={{maxWidth:1240,margin:"8px auto 0",padding:"34px 40px 10px"}}>
-        <h2 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:27,color:P.text,margin:"0 0 6px",letterSpacing:"-0.01em"}}>{lang==="es"?"Planes y precios":"Plans & pricing"}</h2>
-        <p style={{fontSize:13,color:P.muted,margin:"0 0 24px",maxWidth:560,lineHeight:1.6}}>{lang==="es"?"Membresías y servicios para cada etapa de tu camino financiero.":"Memberships and services for every stage of your financial journey."}</p>
-        <PricingPlans variant="landing" t={t} lang={lang}/>
       </section>
 
       <footer style={{maxWidth:1240,margin:"30px auto 0",padding:"22px 40px 40px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
@@ -6084,7 +6120,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v063-pricing-plans-landing-and-app";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0631-standalone-pricing-page";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7569,7 +7605,7 @@ const _cardOv=isDark?settings.darkCard:settings.lightCard;
 // v0.62 — bg is pinned to the factory B near-black/off-white too (like glassBg). A legacy
 // stored darkBg (#111827 navy) was overriding the redesign and making the page read blue.
 const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh.glassBg};const t=T[lang]||T.en; // EN/ES toggle wired in v0.2.0
-  const[nav,setNav]=useState("dashboard");const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState("report");const[selectedCalc,setSelectedCalc]=useState(null);// v0.13.1 — which calculator is open inside the /calculators page
+  const[nav,setNav]=useState("dashboard");const[showPricing,setShowPricing]=useState(false);const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState("report");const[selectedCalc,setSelectedCalc]=useState(null);// v0.13.1 — which calculator is open inside the /calculators page
   const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
@@ -7918,10 +7954,10 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   const deleteMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.filter(c=>!s.has(c.id)));setSelected(null);},[]);
   const splitClientPair=useCallback((origId,p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==origId),p1,p2]);setSelected(null);},[]);
   // v0.44.0 — Sidebar items use Lucide icons (`icon` key) instead of emoji prefixes
-  const NAV=[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
+  const NAV=[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
-  if(!authUser)return<ThemeCtx.Provider value={theme}><Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")}/></ThemeCtx.Provider>;
+  if(!authUser)return<ThemeCtx.Provider value={theme}>{showPricing?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>setShowPricing(false)} onSignIn={()=>setShowPricing(false)} onRequest={null}/>:<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>setShowPricing(true)}/>}</ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
@@ -8027,7 +8063,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
           nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} settings={settings} onConvert={c=>{addClient(c);}}/>:
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
-          nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
+          nav==="pricing"?<PricingPage variant="app" t={t} lang={lang} settings={settings} onRequest={null}/>:nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="resources"?<ResourcesPage t={t}/>:
           nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={()=>setProfileOpen(true)} t={t}/>:
           nav==="security"?<SecurityPage t={t}/>:
