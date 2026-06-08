@@ -5892,7 +5892,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
         </div>
       </header>
 
-      <section style={{maxWidth:1240,margin:"0 auto",padding:"58px 40px 70px",display:"grid",gridTemplateColumns:"minmax(0,1.5fr) minmax(0,1fr)",gap:60,alignItems:"center"}} className="ga-login-hero">
+      <section style={{maxWidth:1240,margin:"0 auto",padding:"40px 40px 30px",display:"grid",gridTemplateColumns:"minmax(0,1.5fr) minmax(0,1fr)",gap:60,alignItems:"center"}} className="ga-login-hero">
         <div style={{position:"relative"}}>
           <div style={{display:"flex",alignItems:"center",gap:9,fontSize:9.5,color:P.gold,marginBottom:22,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>
             <span style={{width:6,height:6,borderRadius:99,background:P.gold}}/>{lang==="es"?"Plataforma de asesoría financiera":"Financial coaching platform"}
@@ -5927,12 +5927,12 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
             {mode==="forgot"&&<div style={{textAlign:"center",marginTop:15}}>
               <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:P.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"8px 12px",minHeight:40}}>← {t.backToSignIn||"Back to Sign In"}</button>
             </div>}
-            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contact us</a></>}</div>
+            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contáctanos</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contact us</a></>}</div>
           </div>
         </div>
       </section>
 
-      <section style={{maxWidth:1240,margin:"0 auto",padding:"30px 40px 50px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
+      <section style={{maxWidth:1240,margin:"0 auto",padding:"8px 40px 24px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
         {FEATS.map((f,i)=><div key={i} style={{...glass,borderRadius:16,padding:22}}>
           <div style={{width:40,height:40,borderRadius:11,...glass,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>{fIcon(f.icon)}</div>
           <h3 style={{fontWeight:600,fontSize:15.5,color:P.text,margin:"0 0 8px",letterSpacing:"-0.01em"}}>{f.t}</h3>
@@ -5940,7 +5940,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
         </div>)}
       </section>
 
-      <footer style={{maxWidth:1240,margin:"30px auto 0",padding:"22px 40px 40px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+      <footer style={{maxWidth:1240,margin:"6px auto 0",padding:"16px 40px 30px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
         <div style={{fontSize:11.5,color:P.dim,lineHeight:1.6,maxWidth:640}}>{lang==="es"?"Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":"Educational financial coaching — not investment, tax, or legal advice."}</div>
         <div style={{display:"flex",gap:16,fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>
           <a href="mailto:mauricio@goldenanchor.life" style={{color:P.muted,textDecoration:"none"}}>Email</a>
