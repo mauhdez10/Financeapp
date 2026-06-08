@@ -5603,7 +5603,7 @@ function PricingCarousel({lang,settings,onRequest,ctaLabel}){
   return<div><div style={{display:"flex",alignItems:"center",gap:isMobile?8:14}}>
     {!isMobile&&<button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label="Previous">‹</button>}
     <div ref={ref} onScroll={sync} style={{flex:1,display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"86%":"calc((100% - 36px)/3)",gap:18,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",scrollPaddingLeft:14,scrollPaddingRight:26,padding:"16px 26px 16px 14px"}}>
-      {["monthly-lite","monthly-lite-plus","annual-bundle","initial-checkup","client-checkup","quarterly-review","strategy-session","insurance-consult"].map(_id=>SVCS.find(s=>s.id===_id)).filter(Boolean).map(svc=>{const feats=(PLAN_FEATURES[svc.id]||{})[L];const pop=svc.id==="monthly-lite-plus";return<div key={svc.id} data-card className="ga-lift" style={{scrollSnapAlign:"start",...mCARD(th),padding:"22px 20px",display:"flex",flexDirection:"column",minHeight:isMobile?350:430,border:pop?("1px solid "+th.glassBorder):undefined}}>
+      {["monthly-lite","monthly-lite-plus","annual-bundle","initial-checkup","client-checkup","quarterly-review","strategy-session","insurance-consult"].map(_id=>SVCS.find(s=>s.id===_id)).filter(Boolean).map(svc=>{const feats=(PLAN_FEATURES[svc.id]||{})[L];const pop=svc.id==="monthly-lite-plus";return<div key={svc.id} data-card className="ga-lift ga-spot" style={{scrollSnapAlign:"start",...mCARD(th),padding:"22px 20px",display:"flex",flexDirection:"column",minHeight:isMobile?350:430,border:pop?("1px solid "+th.glassBorder):undefined}}>
         {pop&&<span style={{alignSelf:"flex-start",fontSize:8.5,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",background:"rgba(198,216,242,0.16)",color:th.text,padding:"4px 10px",borderRadius:99,marginBottom:14,border:"1px solid rgba(198,216,242,0.4)"}}>{L==="es"?"Más popular":"Most popular"}</span>}
         <div style={{fontSize:17,fontWeight:600,color:th.text,letterSpacing:"-0.01em"}}>{svc[L]||svc.en}</div>
         <div style={{fontSize:12,color:th.dim,lineHeight:1.5,margin:"5px 0 16px",minHeight:32}}>{(L==="es"&&svc.descEs)||svc.desc}</div>
@@ -6195,7 +6195,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0634-diagonal-bg-gold-title-enes-restore";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v064-spotlight-glow-cards";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7485,7 +7485,7 @@ function HelpSupportPage({t,settings,authUser}){
 /* ── SettingsCard — 2-col read-only card for the Profile & Settings page.
    Click "Edit" to open the ProfileModal scoped to that section.            */
 function SettingsCard({title,rows,onEdit,t,th}){
-  return <div className="ga-lift" style={{...mCARD(th),padding:16,minHeight:0}}>
+  return <div className="ga-lift ga-spot" style={{...mCARD(th),padding:16,minHeight:0}}>
     <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",marginBottom:12,fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div>
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       {/* v0.25.0 — let labels shrink so values get more room. Removed ellipsis; values wrap onto 2 lines if very long. */}
@@ -7890,6 +7890,12 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       .ga-press:active{transform:scale(.97);}
       .ga-rise{opacity:0;transform:translateY(8px);animation:gaRise .38s var(--ga-ease) forwards;}
       @keyframes gaRise{to{opacity:1;transform:translateY(0);}}
+      /* v0.64 — spotlight glow (translated from 21st.dev GlowCard): a gold radial that
+         follows the cursor across the card. --mx/--my set by a pointermove listener. */
+      .ga-spot{position:relative;}
+      .ga-spot::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--ga-ease);background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), rgba(var(--ga-acc-rgb),0.14), transparent 60%);z-index:0;}
+      @media (hover:hover) and (pointer:fine){.ga-spot:hover::after{opacity:1;}}
+      .ga-spot>*{position:relative;z-index:1;}
       /* v0.26.0 — Reduced motion (UI/UX Pro Max guideline #8) */
       @media (prefers-reduced-motion: reduce){
         *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
@@ -8008,7 +8014,10 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       @media screen{.ga-print-header,.ga-print-footer,.ga-print-only{display:none!important}}
     `;
     document.head.appendChild(s);
-    return()=>{const el=document.getElementById("ga-styles");if(el)el.remove();};
+    // v0.64 — spotlight: update --mx/--my on the hovered .ga-spot card (cursor-follow glow)
+    const onSpot=e=>{const el=e.target.closest&&e.target.closest(".ga-spot");if(!el)return;const r=el.getBoundingClientRect();el.style.setProperty("--mx",(e.clientX-r.left)+"px");el.style.setProperty("--my",(e.clientY-r.top)+"px");};
+    window.addEventListener("pointermove",onSpot,{passive:true});
+    return()=>{const el=document.getElementById("ga-styles");if(el)el.remove();window.removeEventListener("pointermove",onSpot);};
   },[]);
   // v0.26.0 — "✓ Saved" toast helper (UI/UX Pro Max guideline #6 — Submit Feedback)
   const toastSaved=useCallback((msg)=>setToast({kind:"success",msg:msg||(t.savedToast||"Saved"),ts:Date.now()}),[t]);
