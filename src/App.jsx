@@ -99,11 +99,11 @@ async function gaMigrateLocalStorage(userId){if(!supabase||!userId)return false;
 /* ── THEMES ─────────────────────────────────────────────────────────────── */
 const GOLD="#C9A84C";
 // v0.26.0 — bumped muted/dim/sideMuted on dark mode to pass WCAG AA contrast (4.5:1+ on dark navy bg). Was #9CA3AF/#6B7280.
-const makeDark=(a=GOLD)=>({bg:"#111827",nav:"#1F2937",navBorder:"#374151",card:"#1F2937",cardBorder:"#374151",modal:"#1E293B",inp:"#111827",inpBorder:"#4B5563",text:"#F1F5F9",muted:"#B3C0D1",dim:"#94A3B8",sideText:"#F1F5F9",sideMuted:"#B3C0D1",accent:a,pos:"#10B981",neg:"#EF4444",warn:"#F59E0B",blue:"#3B82F6"});
+const makeDark=(a=GOLD)=>({bg:"#0A0C10",nav:"#0D1117",navBorder:"#1F2733",card:"#12161D",cardBorder:"#232B36",modal:"#12161D",inp:"#12161D",inpBorder:"#2A3340",text:"#EDEFF2",muted:"#9AA3AF",dim:"#626B78",sideText:"#EDEFF2",sideMuted:"#9AA3AF",accent:a,pos:"#3DD68C",neg:"#F2766B",warn:"#CBA85A",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
-const makeLight=(a="#C9A84C")=>({bg:"#FAF6EC",nav:"#0D1B2A",navBorder:"#1F2937",card:"#FFFFFF",cardBorder:"#E8DFC6",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E8DFC6",text:"#0D1B2A",muted:"#475569",dim:"#94A3B8",sideText:"#F1F5F9",sideMuted:"#CBD5E1",accent:a,pos:"#047857",neg:"#B83227",warn:"#C9A84C",blue:"#C9A84C"});
+const makeLight=(a="#C9A84C")=>({bg:"#FAFAF7",nav:"#0E1218",navBorder:"#1F2733",card:"#FFFFFF",cardBorder:"#ECEAE3",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E2DCCB",text:"#16181C",muted:"#5A6270",dim:"#9AA0A8",sideText:"#EDEFF2",sideMuted:"#9AA3AF",accent:a,pos:"#0E9F6E",neg:"#D64545",warn:"#B8901E",blue:"#7FA8C9"});
 const DARK_ACCENTS=[{l:"Gold",v:"#C9A84C"},{l:"Blue",v:"#3B82F6"},{l:"Emerald",v:"#10B981"},{l:"Purple",v:"#8B5CF6"}];
 const LIGHT_ACCENTS=[{l:"Blue",v:"#2563EB"},{l:"Teal",v:"#0D9488"},{l:"Emerald",v:"#059669"},{l:"Purple",v:"#7C3AED"}];
 // v0.8.1 — background/card shade presets for the Appearance settings
@@ -137,8 +137,8 @@ const FH=({v,c:client,forcePts})=>{const{hide}=useHN();return hide||(client?.hid
 const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#C9A84C",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#FAF6EC",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","client-checkup":"https://buy.stripe.com/fZu4gAfou4nh1tq6XJfrW03","quarterly-review":"https://buy.stripe.com/cNieVe6RY7ztdc86XJfrW05","strategy-session":"https://buy.stripe.com/14A9AU1xE2f98VSgyjfrW02","monthly-lite":"https://buy.stripe.com/9B68wQ9062f91tq95RfrW00","monthly-lite-plus":"https://buy.stripe.com/eVq3cw1xEg5Z8VS3LxfrW07","annual-bundle":"https://buy.stripe.com/aFa00kekqg5Z7ROa9VfrW01","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null,dashboardSlots:["incomeVsSpending","sankey","netWorthDonut"],chartCustomizations:{}};
 
 /* ── STYLES ─────────────────────────────────────────────────────────────── */
-const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
-const mCARD=th=>({background:th.card,border:`1px solid ${th.cardBorder}`,borderRadius:12,breakInside:"avoid",pageBreakInside:"avoid",WebkitPrintColorAdjust:"exact",printColorAdjust:"exact"});
+const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:10,padding:"9px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
+const mCARD=th=>({background:th.card,border:`1px solid ${th.cardBorder}`,borderRadius:14,breakInside:"avoid",pageBreakInside:"avoid",WebkitPrintColorAdjust:"exact",printColorAdjust:"exact"});
 const mTH=th=>({fontSize:11,fontWeight:700,color:th.muted,padding:"0 6px 8px 0",textAlign:"left",whiteSpace:"nowrap",userSelect:"none",cursor:"pointer"});
 const mTHR=th=>({...mTH(th),textAlign:"right",padding:"0 0 8px 6px"});
 const mTD=th=>({fontSize:12,padding:"7px 6px 7px 0",borderTop:`1px solid ${th.cardBorder}`,color:th.text,verticalAlign:"middle"});
