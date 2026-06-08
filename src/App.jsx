@@ -5822,6 +5822,13 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle}){
         </div>)}
       </section>
 
+      {/* v0.63 — Plans & pricing on the landing so future clients can see memberships. */}
+      <section style={{maxWidth:1240,margin:"8px auto 0",padding:"34px 40px 10px"}}>
+        <h2 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:27,color:P.text,margin:"0 0 6px",letterSpacing:"-0.01em"}}>{lang==="es"?"Planes y precios":"Plans & pricing"}</h2>
+        <p style={{fontSize:13,color:P.muted,margin:"0 0 24px",maxWidth:560,lineHeight:1.6}}>{lang==="es"?"Membresías y servicios para cada etapa de tu camino financiero.":"Memberships and services for every stage of your financial journey."}</p>
+        <PricingPlans variant="landing" t={t} lang={lang}/>
+      </section>
+
       <footer style={{maxWidth:1240,margin:"30px auto 0",padding:"22px 40px 40px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
         <div style={{fontSize:11.5,color:P.dim,lineHeight:1.6,maxWidth:640}}>{lang==="es"?"Asesoría financiera educativa — no constituye asesoría de inversión, fiscal, o legal.":"Educational financial coaching — not investment, tax, or legal advice."}</div>
         <div style={{display:"flex",gap:16,fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>
@@ -6077,7 +6084,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v063-pricing-plans-inapp";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v063-pricing-plans-landing-and-app";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
