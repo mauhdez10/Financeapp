@@ -5810,13 +5810,20 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
         if(error){setErr(error.message||"Password update failed.");setBusy(false);return;}
         setInfo(t.resetDone||"Password updated. Signing you in…");
         if(data?.user){setTimeout(()=>{if(typeof window!=="undefined"&&window.location.hash)window.location.hash="";onLogin(data.user);},700);}else{setBusy(false);}
+      }else if(mode==="signup"){
+        if(!em||em.indexOf("@")<0){setErr(t.emailRequired||"Valid email required.");setBusy(false);return;}
+        if(!pw||pw.length<8){setErr(t.passwordMin8||"Password must be at least 8 characters.");setBusy(false);return;}
+        const redirectTo=(typeof window!=="undefined")?window.location.origin:undefined;
+        const{data,error}=await supabase.auth.signUp({email:em,password:pw,options:{emailRedirectTo:redirectTo}});
+        if(error){setErr(error.message||"Sign-up failed.");setBusy(false);return;}
+        if(data?.session?.user){onLogin(data.session.user);}else{setInfo(lang==="es"?"¡Cuenta creada! Revisa tu correo para confirmar, luego inicia sesión.":"Account created. Check your email to confirm, then sign in.");setMode("signin");setBusy(false);}
       }
     }catch(e){setErr(e?.message||"Operation failed.");setBusy(false);}
   };
   const INP={background:isDark?"#111827":"#F0F7FF",border:`1px solid ${isDark?"#4B5563":"#CBD5E1"}`,color:isDark?"#F1F5F9":"#0F172A",borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"};
   const switchMode=(m)=>{setMode(m);setErr("");setInfo("");setPw("");};
-  const title=mode==="forgot"?(t.resetPassword||"Reset Password"):mode==="setNew"?(t.setNewPassword||"Set New Password"):(t.signIn||"Sign In");
-  const btnLabel=mode==="forgot"?(t.sendResetLink||"Send Reset Link"):mode==="setNew"?(t.updatePassword||"Update Password"):(t.signIn||"Sign In");
+  const title=mode==="forgot"?(t.resetPassword||"Reset Password"):mode==="setNew"?(t.setNewPassword||"Set New Password"):mode==="signup"?(lang==="es"?"Crear cuenta":"Create account"):(t.signIn||"Sign In");
+  const btnLabel=mode==="forgot"?(t.sendResetLink||"Send Reset Link"):mode==="setNew"?(t.updatePassword||"Update Password"):mode==="signup"?(lang==="es"?"Crear cuenta":"Create account"):(t.signIn||"Sign In");
   // v0.54.0 (PR 1 from HANDOFF-v0.46) — landing page rework:
   //   - Personal credentials stripped (no MBA/FPWMP/FL0215/Mauricio name).
   //     The hero is about the product, not the advisor.
@@ -5927,7 +5934,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
             {mode==="forgot"&&<div style={{textAlign:"center",marginTop:15}}>
               <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:P.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"8px 12px",minHeight:40}}>← {t.backToSignIn||"Back to Sign In"}</button>
             </div>}
-            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contáctanos</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contact us</a></>}</div>
+            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{mode==="signup"?<>{lang==="es"?"¿Ya tienes cuenta? ":"Already have an account? "}<a onClick={()=>switchMode("signin")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Iniciar sesión":"Sign in"}</a></>:mode==="signin"?<>{lang==="es"?"¿Sin cuenta? ":"No account yet? "}<a onClick={()=>switchMode("signup")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Crear cuenta":"Create account"}</a></>:null}</div>
           </div>
         </div>
       </section>
@@ -6195,7 +6202,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0641-spotlight-pages-resources-icons";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0642-signup-flow";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
