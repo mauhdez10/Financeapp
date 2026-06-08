@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, useId, createContext
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
-import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, Bell, HelpCircle, LogOut, ImageIcon, BarChart3, PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem } from "lucide-react";
+import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, Bell, HelpCircle, LogOut, ImageIcon, BarChart3, PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem, Globe, AtSign, Mail, Phone, Award, GraduationCap, HeartHandshake, Target, Languages, ShieldCheck, CalendarCheck } from "lucide-react";
 import { T } from "./translations";
 import { ENGAGEMENT_LETTER, ELT_DEFAULTS, fillTokens } from "./engagementLetterTemplate";
 
@@ -5737,7 +5737,84 @@ function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest,is
     </div>
   </div>;
 }
-function AboutPage({t,settings,lang}){const th=useTh();const[reqSvc,setReqSvc]=useState(null);return<div style={{padding:24,maxWidth:1280,margin:"0 auto"}}>{reqSvc&&<ServiceRequestModal svc={reqSvc} lang={lang} t={t} onClose={()=>setReqSvc(null)}/>}<div style={{...mCARD(th),padding:"32px 24px",marginBottom:20,textAlign:"center",background:`linear-gradient(180deg,${th.card} 0%,${th.bg}66 100%)`}}><div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><img src="/anchor-monogram.svg" style={{width:56,height:56}} alt="Golden Anchor"/></div><div style={{fontSize:22,fontWeight:500,color:GOLD,fontFamily:"'Newsreader',Georgia,serif",letterSpacing:"0.12em",textTransform:"uppercase"}}>Golden Anchor</div><div style={{fontSize:10,color:th.dim,letterSpacing:"0.2em",marginTop:2}}>{t.financialAdvisoryUpper||"FINANCIAL ADVISORY"}</div><div style={{fontSize:13,color:th.muted,marginTop:12,lineHeight:1.7,maxWidth:480,margin:"12px auto 0"}}>{t.aboutDesc}</div></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))",gap:16,marginBottom:24,alignItems:"stretch"}}><div className="ga-lift ga-spot" style={{...mCARD(th),padding:22,display:"flex",flexDirection:"column"}}><div style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:8,letterSpacing:"-0.01em"}}>{settings?.advisorName||"Mauricio Hernandez"}</div><div style={{fontSize:12.5,color:th.muted,lineHeight:1.7,marginBottom:18}}>{t.advisorBio}</div><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:12,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏅 {t.certifications}</div>{CERTS.map(c=><div key={c} style={{fontSize:12.5,color:th.muted,marginBottom:7,display:"flex",gap:10,alignItems:"flex-start",lineHeight:1.5}}><span style={{color:GOLD,flexShrink:0,fontWeight:700}}>✓</span><span>{c}</span></div>)}</div><div style={{display:"flex",flexDirection:"column",gap:12}}><div style={{...mCARD(th),padding:22,flex:1}}><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>🔗 {t.connect}</div>{[{icon:"🌐",label:t.website,val:"goldenanchor.life",href:"https://goldenanchor.life"},{icon:"📸",label:"Instagram",val:`@${settings?.ig||"golden_anchor_inc"}`,href:`https://instagram.com/${settings?.ig||"golden_anchor_inc"}`},{icon:"✉️",label:t.lblEmail||"Email",val:settings?.advisorEmail,href:`mailto:${settings?.advisorEmail}`}].map(l=><div key={l.label} style={{marginBottom:14}}><div style={{fontSize:10,color:th.dim,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:3}}>{l.label}</div><a href={l.href} target={l.href?.startsWith("http")?"_blank":"_self"} rel="noreferrer" style={{fontSize:13,color:th.accent,fontWeight:600,textDecoration:"none"}}>{l.val}</a></div>)}</div><div style={{...mCARD(th),padding:22,background:`linear-gradient(135deg,${GOLD}1A,${GOLD}08)`,border:`1px solid ${GOLD}55`}}><div style={{fontSize:11,fontWeight:700,color:GOLD,marginBottom:10,letterSpacing:"0.06em",textTransform:"uppercase"}}>🏷 {t.referralCode||"Referral Code"}</div><div style={{fontSize:28,fontWeight:800,color:GOLD,letterSpacing:"0.12em",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>GOLDEN-2026</div><div style={{fontSize:11.5,color:th.muted,marginTop:8,lineHeight:1.5}}>{t.referralDesc}</div></div></div></div></div>;}
+function AboutPage({t,settings,lang,isDark}){
+  const th=useTh();
+  const ig=(settings&&settings.ig)||"golden_anchor_inc";
+  const email=(settings&&settings.advisorEmail)||"mauricio@goldenanchor.life";
+  const phone=(settings&&settings.advisorPhone)||"";
+  const goldGrad=isDark?"linear-gradient(100deg,#F4DC9B 0%,#D8B14E 50%,#C9A84C 100%)":"linear-gradient(100deg,#B8901E 0%,#8A6B1E 100%)";
+  const clip={backgroundImage:goldGrad,WebkitBackgroundClip:"text",backgroundClip:"text",color:"transparent",WebkitTextFillColor:"transparent"};
+  const feats=[
+    {Icon:HeartHandshake,ti:t.featCoachingT||"Educational coaching",de:t.featCoachingD||"Guidance, not management. You learn the why behind every decision.",span:2},
+    {Icon:Languages,ti:t.featBilingualT||"Bilingual, EN & ES",de:t.featBilingualD||"Every plan, document, and conversation in your language.",span:1},
+    {Icon:Target,ti:t.featPlanT||"Personalized plans",de:t.featPlanD||"Built around your goals, income, and timeline.",span:1},
+    {Icon:TrendingDown,ti:t.featDebtT||"Debt payoff strategy",de:t.featDebtD||"Avalanche or snowball, mapped to your real numbers.",span:1},
+    {Icon:ShieldCheck,ti:t.featInsuranceT||"Insurance advisory",de:t.featInsuranceD||"Life and health coverage matched to your stage.",span:1},
+    {Icon:CalendarCheck,ti:t.featCheckinT||"Monthly check-ins",de:t.featCheckinD||"We track progress together, every single month.",span:3},
+  ];
+  const socials=[
+    {Icon:Globe,label:t.website||"Website",val:"goldenanchor.life",href:"https://goldenanchor.life"},
+    {Icon:AtSign,label:"Instagram",val:"@"+ig,href:"https://instagram.com/"+ig},
+    {Icon:Mail,label:t.lblEmail||"Email",val:email,href:"mailto:"+email},
+  ];
+  if(phone)socials.push({Icon:Phone,label:t.phone||"Phone",val:phone,href:"tel:"+phone.replace(/[^0-9+]/g,"")});
+  return <div className="ga-np" style={{padding:24,maxWidth:1180,margin:"0 auto"}}>
+    <style>{`@keyframes gaSpinSlow{from{transform:rotate(0)}to{transform:rotate(360deg)}}@keyframes gaSpinRev{from{transform:rotate(0)}to{transform:rotate(-360deg)}}.ga-orbit{animation:gaSpinSlow 42s linear infinite;transform-box:fill-box;transform-origin:center}.ga-orbit-rev{animation:gaSpinRev 58s linear infinite;transform-box:fill-box;transform-origin:center}.ga-social-dot{transition:transform .25s cubic-bezier(.23,1,.32,1)}.ga-social-dot:hover{transform:translateY(-3px)}.ga-social-dot:hover .ga-social-ring{box-shadow:0 12px 30px ${GOLD}44;border-color:${GOLD}}@media (prefers-reduced-motion:reduce){.ga-orbit,.ga-orbit-rev{animation:none}}`}</style>
+
+    {/* HERO */}
+    <div data-ga-grid="about-hero" className="ga-rise" style={{display:"grid",gridTemplateColumns:"minmax(0,1.1fr) minmax(0,.9fr)",gap:32,alignItems:"center",margin:"6px 0 38px"}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.2em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:18}}>{t.aboutEyebrow||"EDUCATIONAL FINANCIAL COACHING"}</div>
+        <h1 style={{margin:0,fontFamily:"'Newsreader',Georgia,serif",fontWeight:500,fontSize:"clamp(30px,4.4vw,48px)",lineHeight:1.1,letterSpacing:"-0.01em",color:th.text}}><span style={{fontStyle:"italic",...clip}}>{t.aboutHeroTitle||"Anchored in your financial future."}</span></h1>
+        <p style={{fontSize:14,color:th.muted,lineHeight:1.8,maxWidth:540,margin:"20px 0 0"}}>{t.aboutDesc}</p>
+        <div style={{display:"flex",gap:9,marginTop:24,flexWrap:"wrap"}}>{[(t.aboutChipCoaching||"Coaching, not management"),"EN · ES","Miami, FL"].map((c,i)=><span key={i} style={{fontSize:11,fontWeight:600,color:th.muted,padding:"6px 13px",borderRadius:99,background:th.card,border:"1px solid "+th.cardBorder,letterSpacing:"0.02em"}}>{c}</span>)}</div>
+      </div>
+      <div style={{position:"relative",width:"100%",maxWidth:330,aspectRatio:"1",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{position:"absolute",inset:"10%",borderRadius:"50%",background:"radial-gradient(circle at 50% 45%, "+GOLD+"2E, transparent 66%)"}}/>
+        <svg viewBox="0 0 200 200" style={{position:"absolute",inset:0,width:"100%",height:"100%",overflow:"visible"}}>
+          <circle className="ga-orbit" cx="100" cy="100" r="88" fill="none" stroke={GOLD} strokeWidth="0.6" strokeDasharray="1.5 7" opacity="0.55"/>
+          <circle className="ga-orbit-rev" cx="100" cy="100" r="66" fill="none" stroke={th.muted} strokeWidth="0.5" strokeDasharray="1 7" opacity="0.45"/>
+        </svg>
+        <div style={{position:"relative",width:"44%",height:"44%",borderRadius:26,background:th.card,border:"1px solid "+th.cardBorder,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 22px 60px "+GOLD+"22"}}><img src="/anchor-monogram.svg" style={{width:"60%",height:"60%"}} alt="Golden Anchor"/></div>
+      </div>
+    </div>
+
+    {/* WHAT WE DO */}
+    <div style={{marginBottom:16}}>
+      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.16em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:7,textTransform:"uppercase"}}>{t.aboutWhatWeDo||"What we do"}</div>
+      <div style={{fontSize:14,color:th.muted,lineHeight:1.6,maxWidth:580}}>{t.aboutWhatWeDoSub||"Coaching and advisory built around your life, not a product to sell."}</div>
+    </div>
+    <div data-ga-grid="bento" style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:14,marginBottom:34}}>
+      {feats.map((f,i)=><div key={i} className="ga-lift ga-spot" style={{...mCARD(th),gridColumn:"span "+f.span,padding:22,display:"flex",flexDirection:"column",gap:13,minHeight:140}}>
+        <div style={{width:42,height:42,borderRadius:12,background:GOLD+"1A",border:"1px solid "+GOLD+"3A",display:"flex",alignItems:"center",justifyContent:"center",color:GOLD,flexShrink:0}}><f.Icon size={20} strokeWidth={1.6}/></div>
+        <div><div style={{fontSize:15,fontWeight:700,color:th.text,letterSpacing:"-0.01em",marginBottom:5}}>{f.ti}</div><div style={{fontSize:12.5,color:th.muted,lineHeight:1.65,maxWidth:560}}>{f.de}</div></div>
+      </div>)}
+    </div>
+
+    {/* ADVISOR + CONNECT + REFERRAL */}
+    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1.25fr 1fr",gap:16,alignItems:"stretch"}}>
+      <div className="ga-lift ga-spot" style={{...mCARD(th),padding:26,display:"flex",flexDirection:"column"}}>
+        <div style={{fontSize:10.5,fontWeight:600,letterSpacing:"0.16em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:12,textTransform:"uppercase"}}>{t.aboutAdvisorEyebrow||"Your advisor"}</div>
+        <div style={{fontSize:20,fontWeight:800,color:th.text,letterSpacing:"-0.01em",marginBottom:10}}>{(settings&&settings.advisorName)||"Mauricio Hernandez"}</div>
+        <div style={{fontSize:13,color:th.muted,lineHeight:1.8,marginBottom:22}}>{t.advisorBio}</div>
+        <div style={{fontSize:10.5,fontWeight:600,letterSpacing:"0.12em",color:th.dim,marginBottom:14,textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}><Award size={14} strokeWidth={1.7} style={{color:GOLD}}/>{t.certifications}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:"auto"}}>{CERTS.map(c=><div key={c} style={{fontSize:12.5,color:th.muted,display:"flex",gap:11,alignItems:"flex-start",lineHeight:1.5}}><GraduationCap size={15} strokeWidth={1.6} style={{color:GOLD,flexShrink:0,marginTop:1}}/><span>{c}</span></div>)}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div className="ga-lift" style={{...mCARD(th),padding:24}}>
+          <div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:4}}>{t.aboutConnectHdr||"Connect with us"}</div>
+          <div style={{fontSize:12,color:th.muted,lineHeight:1.6,marginBottom:18}}>{t.aboutConnectSub||"Questions, or ready to start? Reach out."}</div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>{socials.map((so,i)=><a key={i} href={so.href} target={so.href.startsWith("http")?"_blank":"_self"} rel="noreferrer" title={so.label+": "+so.val} className="ga-social-dot" style={{display:"flex",flexDirection:"column",alignItems:"center",gap:7,textDecoration:"none",width:64}}><span className="ga-social-ring" style={{width:52,height:52,borderRadius:16,background:th.card,border:"1px solid "+GOLD+"55",display:"flex",alignItems:"center",justifyContent:"center",color:GOLD,transition:"box-shadow .25s ease,border-color .25s ease"}}><so.Icon size={21} strokeWidth={1.6}/></span><span style={{fontSize:10,color:th.muted,fontWeight:600,textAlign:"center",whiteSpace:"nowrap"}}>{so.label}</span></a>)}</div>
+        </div>
+        <div className="ga-lift" style={{...mCARD(th),padding:24,background:"linear-gradient(135deg,"+GOLD+"1F,"+GOLD+"08)",border:"1px solid "+GOLD+"55"}}>
+          <div style={{fontSize:10.5,fontWeight:700,color:GOLD,marginBottom:10,letterSpacing:"0.14em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}><Tag size={14} strokeWidth={1.8}/>{t.referralCode||"Referral code"}</div>
+          <div style={{fontSize:27,fontWeight:800,color:GOLD,letterSpacing:"0.1em",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>GOLDEN-2026</div>
+          <div style={{fontSize:11.5,color:th.muted,marginTop:9,lineHeight:1.55}}>{t.referralDesc}</div>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
 
 /* ── CLIENT DETAIL ───────────────────────────────────────────────────────── */
 function ClientDetail({client,onUpdate,lang,t,onBack,startTab,allClients,onSplit,onJoin,onArchive,onDelete,settings,onTabChange}){const th=useTh();const{isMobile}=useViewport();const[tab,setTab]=useState(startTab||"report");const[editOpen,setEditOpen]=useState(false);const[splitOpen,setSplitOpen]=useState(false);const[joinOpen,setJoinOpen]=useState(false);const[archiveConf,setArchiveConf]=useState(false);const[deleteConf,setDeleteConf]=useState(false);const tA=totalA(client),tL=totalL(client);const tabs=[{id:"report",l:"📊 "+t.report},{id:"monthly",l:"📅 "+t.monthly},{id:"financialStatements",l:"📋 "+t.financialStatements},{id:"investments",l:"💹 "+t.investments},{id:"plan",l:(t.strategyPlanHdrEmoji||"📋 Strategy Plan")},{id:"calculators",l:"🧮 Calculators"},{id:"backfill",l:"🔧 Backfill"},{id:"notes",l:"🗒 "+t.notes}];const fileRef=useRef();const tabRowRef=useRef();const[canScrollL,setCanScrollL]=useState(false);const[canScrollR,setCanScrollR]=useState(false);
@@ -6255,7 +6332,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0652-advisor-branding-sig-scoped-popups-bigger-resources";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0660-about-rebuild-hero-bento-connect";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -8030,6 +8107,8 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         [data-ga-grid="kpi-4"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
         [data-ga-grid="portfolios"]{grid-template-columns:1fr!important}
         [data-ga-grid="two-col"]{grid-template-columns:1fr!important}
+        [data-ga-grid="bento"]{grid-template-columns:1fr!important}
+        [data-ga-grid="about-hero"]{grid-template-columns:1fr!important}
         /* Fallback for any inline 3-or-4 column grid not yet tagged.
            Walks up to direct children of role=main / .ga-page. Conservative
            selector so we don't fight intentional desktop layouts. */
@@ -8243,7 +8322,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="archived"?<ArchivedClientsPage clients={clients} onRestore={restoreClient} onDelete={deleteClient} t={t}/>:
           nav==="whats-new"?<WhatsNewPage t={t}/>:
           nav==="help"?<HelpSupportPage t={t} settings={settings} authUser={authUser}/>:
-          <AboutPage t={t} settings={settings} lang={lang}/>}
+          <AboutPage t={t} settings={settings} lang={lang} isDark={isDark}/>}
       </div></div>
     </div>
   </ChartConfigCtx.Provider></HideCtx.Provider></ThemeCtx.Provider>;
