@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Pricing (design lab)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--ease:cubic-bezier(.23,1,.32,1);--spring:cubic-bezier(.2,1.1,.3,1);}
+/* cool halo (eclipse white-blue) instead of gold */
+[data-theme="dark"]{--bg:#0A0B0D;--surf:#16181C;--surf2:#1B1E23;--line:#2A2E35;--text:#ECEEF1;--mut:#9BA1AB;--dim:#6B7079;--gold:#E2C375;--pos:#3DD68C;--neg:#F0857B;--halo:198,216,242;--field:150,180,220;}
+[data-theme="light"]{--bg:#FBFBFC;--surf:#FFFFFF;--surf2:#FFFFFF;--line:#ECEDEF;--text:#0B0C0E;--mut:#60646C;--dim:#9097A0;--gold:#B8901E;--pos:#0E9F6E;--neg:#D0453B;--halo:120,150,200;--field:120,150,195;}
+*{box-sizing:border-box;}html,body{margin:0;padding:0;}
+body{font-family:'IBM Plex Sans','Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;transition:background .3s;}
+.num{font-variant-numeric:tabular-nums;}.mono{font-family:'JetBrains Mono',monospace;}
+.lbl{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em;}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+canvas#field{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+.wrap{position:relative;z-index:1;}
+
+/* top bar */
+.bar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;max-width:1240px;margin:0 auto;}
+.brand{font-family:'Newsreader',serif;font-style:italic;font-size:18px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:8px;}
+.brand svg{stroke:var(--gold);}
+.controls{display:flex;align-items:center;gap:9px;}
+.pill{font-size:12px;font-weight:600;padding:8px 13px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;transition:all .15s var(--ease);font-family:inherit;}
+.pill:hover{color:var(--text);border-color:var(--dim);}.pill:active{transform:scale(.94);}
+.signin{background:var(--gold);color:#0B0C0E;border:none;font-weight:600;padding:9px 18px;}
+
+/* header */
+.head{text-align:center;max-width:640px;margin:18px auto 30px;padding:0 24px;}
+.head .eb{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
+.head h1{font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:38px;letter-spacing:-.01em;margin:0 0 12px;line-height:1.08;}
+.head p{font-size:14.5px;color:var(--mut);line-height:1.6;margin:0;}
+
+/* carousel */
+.carousel{max-width:1240px;margin:0 auto;padding:0 30px;}
+.crow{display:flex;align-items:center;gap:14px;}
+.arrow{flex-shrink:0;width:42px;height:42px;border-radius:99px;border:1px solid var(--line);background:var(--surf);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s var(--ease);}
+.arrow:hover{border-color:rgba(var(--halo),.6);box-shadow:0 0 22px 1px rgba(var(--halo),.22);}
+.arrow:active{transform:scale(.92);}.arrow:disabled{opacity:.3;cursor:default;box-shadow:none;}
+.track{flex:1;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 2*18px)/3);gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:14px 2px;}
+.track::-webkit-scrollbar{display:none;}
+.card{scroll-snap-align:start;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:24px 22px;display:flex;flex-direction:column;min-height:430px;transition:transform .2s var(--ease),box-shadow .25s var(--ease),border-color .2s var(--ease);}
+@media(hover:hover){.card:hover{transform:translateY(-3px);border-color:rgba(var(--halo),.5);box-shadow:0 0 0 1px rgba(var(--halo),.25),0 0 40px 2px rgba(var(--halo),.22),0 18px 44px rgba(0,0,0,.4);}}
+.card.pop{border-color:rgba(var(--halo),.55);}
+.tag{align-self:flex-start;font-size:8.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;background:rgba(var(--halo),.18);color:var(--text);padding:4px 10px;border-radius:99px;margin-bottom:14px;border:1px solid rgba(var(--halo),.4);}
+.card h3{font-size:17px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;}
+.card .desc{font-size:12px;color:var(--mut);line-height:1.5;margin:0 0 16px;min-height:34px;}
+.price{display:flex;align-items:baseline;gap:4px;margin-bottom:18px;}
+.price .v{font-size:38px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;line-height:1;}
+.price .c{font-size:13px;color:var(--dim);font-family:'JetBrains Mono',monospace;}
+.feats{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:11px;flex:1;}
+.feats li{display:flex;gap:10px;font-size:12.5px;color:var(--mut);line-height:1.4;}
+.feats svg{flex-shrink:0;margin-top:1px;}
+.cta{margin-top:auto;display:block;text-align:center;text-decoration:none;font-size:12.5px;font-weight:600;padding:11px 16px;border-radius:9px;cursor:pointer;font-family:inherit;transition:transform .15s var(--ease),filter .15s;}
+.cta:active{transform:scale(.97);}
+.cta.primary{background:var(--gold);color:#0B0C0E;border:none;}.cta.primary:hover{filter:brightness(1.06);}
+.cta.ghost{background:transparent;color:var(--text);border:1px solid var(--line);}.cta.ghost:hover{border-color:rgba(var(--halo),.6);}
+.dots{display:flex;justify-content:center;gap:7px;margin-top:14px;}
+.dot{width:7px;height:7px;border-radius:99px;background:var(--line);cursor:pointer;transition:all .2s var(--ease);}
+.dot.on{background:rgba(var(--halo),1);width:20px;}
+
+/* detailed comparison */
+.detail{max-width:1080px;margin:60px auto 0;padding:0 30px 80px;}
+.detail .h{text-align:center;margin-bottom:8px;}
+.detail .h .eb{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+.detail .h h2{font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:26px;margin:0 0 4px;}
+.detail .h p{font-size:13px;color:var(--mut);margin:0 0 28px;}
+.cmp{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surf);}
+.cmp table{width:100%;border-collapse:collapse;}
+.cmp thead th{position:sticky;top:0;background:var(--surf2);padding:14px 16px;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;text-align:center;border-bottom:1px solid var(--line);}
+.cmp thead th:first-child{text-align:left;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-size:10px;font-weight:500;}
+.cmp .grp td{padding:14px 16px 6px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace;font-weight:500;background:rgba(var(--halo),.04);}
+.cmp tbody td{padding:11px 16px;font-size:12.5px;border-top:1px solid var(--line);}
+.cmp tbody td:first-child{color:var(--text);}
+.cmp tbody td:not(:first-child){text-align:center;color:var(--mut);}
+.cmp .pophl{background:rgba(var(--halo),.05);}
+.note{max-width:1080px;margin:0 auto;padding:0 30px 50px;color:var(--dim);font-size:12px;line-height:1.6;}
+</style></head>
+<body data-theme="dark" data-lang="en">
+<canvas id="field"></canvas>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/></svg><span data-i="brand">Golden Anchor</span></div>
+    <div class="controls">
+      <button class="pill" id="lang">ES</button>
+      <button class="pill" id="theme">Light</button>
+      <button class="pill signin" data-i="signin">Sign in</button>
+    </div>
+  </div>
+
+  <div class="head">
+    <div class="eb" data-i="eb">Pricing</div>
+    <h1 data-i="title">Choose the plan that fits you</h1>
+    <p data-i="sub">Memberships and one-time services for every stage of your financial journey. No lock-in — cancel anytime.</p>
+  </div>
+
+  <div class="carousel">
+    <div class="crow">
+      <button class="arrow" id="prev" aria-label="Previous"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="track" id="track"></div>
+      <button class="arrow" id="next" aria-label="Next"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="detail">
+    <div class="h">
+      <div class="eb" data-i="cmpEb">Full comparison</div>
+      <h2 data-i="cmpTitle">Everything you can do — by plan</h2>
+      <p data-i="cmpSub">The complete picture of what each membership unlocks in the app.</p>
+    </div>
+    <div class="cmp"><table id="cmp"></table></div>
+  </div>
+  <div class="note" data-i="note">Design lab — cool eclipse-white halo (hover a card), ambient drifting line-field (like the landing), carousel (3 cards, arrows), full feature comparison, EN/ES + light/dark. Tell me what to change and I port the winner.</div>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const T={
+  en:{brand:"Golden Anchor",signin:"Sign in",eb:"Pricing",title:"Choose the plan that fits you",sub:"Memberships and one-time services for every stage of your financial journey. No lock-in — cancel anytime.",cmpEb:"Full comparison",cmpTitle:"Everything you can do — by plan",cmpSub:"The complete picture of what each membership unlocks in the app.",note:"Design lab — cool eclipse-white halo (hover a card), ambient drifting line-field (like the landing), carousel (3 cards, arrows), full feature comparison, EN/ES + light/dark. Tell me what to change and I port the winner.",get:"Get started",choose:"Choose plan",contact:"Contact us"},
+  es:{brand:"Golden Anchor",signin:"Iniciar sesión",eb:"Precios",title:"Elige el plan adecuado para ti",sub:"Membresías y servicios puntuales para cada etapa de tu camino financiero. Sin permanencia — cancela cuando quieras.",cmpEb:"Comparación completa",cmpTitle:"Todo lo que puedes hacer — por plan",cmpSub:"El panorama completo de lo que desbloquea cada membresía en la app.",note:"Lab de diseño — halo eclipse frío, fondo de líneas en movimiento (como el landing), carrusel, comparación completa, EN/ES + claro/oscuro.",get:"Comenzar",choose:"Elegir plan",contact:"Contáctanos"},
+};
+const PLANS=[
+  {id:"lite",name:{en:"Monthly Lite",es:"Mensual Lite"},desc:{en:"Ongoing support, light touch.",es:"Soporte continuo, ligero."},price:"49",cyc:"/mo",pop:false,feats:{en:["Brief monthly check-ins","Message-based Q&A","Accountability & progress tracking","Client dashboard access"],es:["Chequeos mensuales breves","Preguntas por mensaje","Acompañamiento y seguimiento","Acceso al panel de cliente"]}},
+  {id:"liteplus",name:{en:"Monthly Lite +",es:"Mensual Lite +"},desc:{en:"Support plus a monthly strategy session.",es:"Soporte más una sesión mensual."},price:"79",cyc:"/mo",pop:true,feats:{en:["Everything in Lite","1 Strategy Session / month","Priority responses","Quarterly progress recap"],es:["Todo lo de Lite","1 Sesión Estratégica / mes","Respuestas prioritarias","Resumen trimestral"]}},
+  {id:"annual",name:{en:"Annual Bundle",es:"Paquete Anual"},desc:{en:"Best value — the full year, handled.",es:"Mejor valor — todo el año."},price:"499",cyc:"/yr",pop:false,feats:{en:["4 Quarterly Reviews","Priority Strategy Sessions","Year-end report","Best value vs monthly"],es:["4 Revisiones Trimestrales","Sesiones Estratégicas prioritarias","Informe de fin de año","Mejor valor vs mensual"]}},
+  {id:"initial",name:{en:"Initial Checkup",es:"Chequeo Inicial"},desc:{en:"One-time full financial snapshot.",es:"Radiografía financiera completa."},price:"149",cyc:"",pop:false,feats:{en:["Income, debt & savings review","Goal-setting session","Written summary & next steps"],es:["Revisión de ingresos, deuda y ahorro","Sesión de metas","Resumen escrito y próximos pasos"]}},
+  {id:"quarterly",name:{en:"Quarterly Review",es:"Revisión Trimestral"},desc:{en:"Deeper quarterly deep-dive.",es:"Revisión trimestral profunda."},price:"199",cyc:"",pop:false,feats:{en:["Cash-flow & debt strategy","Goal progress check","Updated action plan"],es:["Estrategia de flujo y deuda","Progreso de metas","Plan de acción actualizado"]}},
+  {id:"strategy",name:{en:"Strategy Session",es:"Sesión Estratégica"},desc:{en:"One major decision, handled.",es:"Una decisión clave, resuelta."},price:"129",cyc:"",pop:false,feats:{en:["Home / job / budget focus","Scenario modeling","Clear recommendation"],es:["Hogar / trabajo / presupuesto","Modelado de escenarios","Recomendación clara"]}},
+];
+// full feature matrix for the detailed list
+const GROUPS=[
+  {g:{en:"Coaching & support",es:"Asesoría y soporte"},rows:[
+    {f:{en:"Client dashboard access",es:"Acceso al panel de cliente"},in:["lite","liteplus","annual"]},
+    {f:{en:"Monthly check-ins",es:"Chequeos mensuales"},in:["lite","liteplus"]},
+    {f:{en:"Message-based Q&A",es:"Preguntas por mensaje"},in:["lite","liteplus","annual"]},
+    {f:{en:"Priority responses",es:"Respuestas prioritarias"},in:["liteplus","annual"]},
+  ]},
+  {g:{en:"Strategy & reviews",es:"Estrategia y revisiones"},rows:[
+    {f:{en:"Strategy Session / month",es:"Sesión Estratégica / mes"},in:["liteplus"]},
+    {f:{en:"Quarterly Reviews (4)",es:"Revisiones Trimestrales (4)"},in:["annual"]},
+    {f:{en:"Priority Strategy Sessions",es:"Sesiones Estratégicas prioritarias"},in:["annual"]},
+    {f:{en:"Year-end report",es:"Informe de fin de año"},in:["annual"]},
+  ]},
+  {g:{en:"Tools in the app",es:"Herramientas en la app"},rows:[
+    {f:{en:"Income, bills, debt & savings tracking",es:"Seguimiento de ingresos, gastos, deuda y ahorro"},in:["lite","liteplus","annual"]},
+    {f:{en:"Debt payoff calculators (avalanche/snowball)",es:"Calculadoras de pago de deuda"},in:["lite","liteplus","annual"]},
+    {f:{en:"Retirement & investment projections",es:"Proyecciones de retiro e inversión"},in:["liteplus","annual"]},
+    {f:{en:"Net-worth & cash-flow trends",es:"Tendencias de patrimonio y flujo"},in:["lite","liteplus","annual"]},
+    {f:{en:"Downloadable financial reports (PDF)",es:"Reportes financieros descargables (PDF)"},in:["liteplus","annual"]},
+  ]},
+];
+const COLS=[["lite","Lite"],["liteplus","Lite +"],["annual","Annual"]];
+function ck(c){return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;}
+function xx(c){return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;}
+function gv(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+function L(){return document.body.dataset.lang;}
+
+function render(){
+  const lang=L(),t=T[lang],pos=gv('--pos'),dim=gv('--dim'),gold=gv('--gold');
+  $$("[data-i]").forEach(e=>{if(t[e.dataset.i]!=null)e.textContent=t[e.dataset.i];});
+  // cards
+  $("#track").innerHTML=PLANS.map(p=>`<div class="card${p.pop?' pop':''}">
+    ${p.pop?`<span class="tag">${lang==='es'?'Más popular':'Most popular'}</span>`:''}
+    <h3>${p.name[lang]}</h3>
+    <div class="desc">${p.desc[lang]}</div>
+    <div class="price"><span class="v">$${p.price}</span>${p.cyc?`<span class="c">${p.cyc}</span>`:''}</div>
+    <ul class="feats">${p.feats[lang].map(f=>`<li>${ck(pos)}${f}</li>`).join('')}</ul>
+    <a class="cta ${p.pop?'primary':'ghost'}">${p.cyc?t.choose:t.get}</a>
+  </div>`).join('');
+  // dots
+  buildDots();
+  // comparison
+  let html=`<thead><tr><th>${lang==='es'?'Función':'Feature'}</th>${COLS.map(c=>`<th class="${c[0]==='liteplus'?'pophl':''}">${c[1]}</th>`).join('')}</tr></thead><tbody>`;
+  GROUPS.forEach(grp=>{
+    html+=`<tr class="grp"><td colspan="4">${grp.g[lang]}</td></tr>`;
+    grp.rows.forEach(r=>{html+=`<tr><td>${r.f[lang]}</td>${COLS.map(c=>`<td class="${c[0]==='liteplus'?'pophl':''}">${r.in.includes(c[0])?ck(pos):xx(dim)}</td>`).join('')}</tr>`;});
+  });
+  html+=`</tbody>`;
+  $("#cmp").innerHTML=html;
+  syncArrows();
+}
+function buildDots(){const tr=$("#track");const n=Math.max(1,PLANS.length-2);$("#dots").innerHTML=Array.from({length:n},(_,i)=>`<span class="dot${i===0?' on':''}" data-i="${i}"></span>`).join('');$$("#dots .dot").forEach(d=>d.onclick=()=>{const cw=tr.querySelector('.card').offsetWidth+18;tr.scrollTo({left:cw*+d.dataset.i,behavior:'smooth'});});}
+function syncArrows(){const tr=$("#track");$("#prev").disabled=tr.scrollLeft<6;$("#next").disabled=tr.scrollLeft+tr.clientWidth>=tr.scrollWidth-6;const cw=tr.querySelector('.card')?.offsetWidth+18||1;const idx=Math.round(tr.scrollLeft/cw);$$("#dots .dot").forEach((d,i)=>d.classList.toggle('on',i===idx));}
+$("#prev").onclick=()=>{const tr=$("#track");tr.scrollBy({left:-(tr.querySelector('.card').offsetWidth+18),behavior:'smooth'});};
+$("#next").onclick=()=>{const tr=$("#track");tr.scrollBy({left:(tr.querySelector('.card').offsetWidth+18),behavior:'smooth'});};
+$("#track").addEventListener('scroll',()=>{clearTimeout(window._st);window._st=setTimeout(syncArrows,60);});
+$("#theme").onclick=()=>{const d=document.body.dataset.theme==='dark';document.body.dataset.theme=d?'light':'dark';$("#theme").textContent=d?'Dark':'Light';render();};
+$("#lang").onclick=()=>{const en=document.body.dataset.lang==='en';document.body.dataset.lang=en?'es':'en';$("#lang").textContent=en?'EN':'ES';render();};
+
+/* ambient drifting line-field (auto-drift, no mouse-follow) — echoes the landing */
+(function(){
+  const c=$("#field");if(!c)return;const ctx=c.getContext('2d');const DPR=Math.min(2,window.devicePixelRatio||1);
+  const E={friction:0.5,trails:42,size:34,dampening:0.025,tension:0.99};const pos={x:0,y:0};
+  let lines=[],raf,phase=1.3,drift=0;const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function resize(){c.width=c.clientWidth*DPR;c.height=c.clientHeight*DPR;pos.x=c.width*0.5;pos.y=c.height*0.36;}
+  function Node(){this.x=pos.x;this.y=pos.y;this.vx=0;this.vy=0;}
+  function build(){lines=[];for(let i=0;i<E.trails;i++){const l={spring:0.4+(i/E.trails)*0.025,friction:E.friction+(Math.random()*0.01-0.005),nodes:[]};for(let j=0;j<E.size;j++)l.nodes.push(new Node());lines.push(l);}}
+  function upd(l){let e=l.spring,t=l.nodes[0];t.vx+=(pos.x-t.x)*e;t.vy+=(pos.y-t.y)*e;for(let i=0;i<l.nodes.length;i++){t=l.nodes[i];if(i>0){const n=l.nodes[i-1];t.vx+=(n.x-t.x)*e;t.vy+=(n.y-t.y)*e;t.vx+=n.vx*E.dampening;t.vy+=n.vy*E.dampening;}t.vx*=l.friction;t.vy*=l.friction;t.x+=t.vx;t.y+=t.vy;e*=E.tension;}}
+  function draw(l){ctx.beginPath();ctx.moveTo(l.nodes[0].x,l.nodes[0].y);let i;for(i=1;i<l.nodes.length-2;i++){const a=l.nodes[i],b=l.nodes[i+1];ctx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);}const a=l.nodes[i],b=l.nodes[i+1];ctx.quadraticCurveTo(a.x,a.y,b.x,b.y);ctx.stroke();}
+  function render(){const dark=document.body.dataset.theme==='dark';drift+=0.006;pos.x=c.width*(0.5+0.34*Math.sin(drift*0.7));pos.y=c.height*(0.38+0.26*Math.cos(drift*0.9));ctx.clearRect(0,0,c.width,c.height);phase+=0.0016;const sh=0.5+Math.sin(phase)*0.5;ctx.globalCompositeOperation=dark?'lighter':'source-over';const f=gv('--field').split(',').map(Number);const a=dark?(0.04+sh*0.05):(0.06+sh*0.06);ctx.strokeStyle=`rgba(${f[0]},${f[1]},${f[2]},${a})`;ctx.lineWidth=DPR*(dark?5:4);for(const l of lines){upd(l);draw(l);}raf=requestAnimationFrame(render);}
+  window.addEventListener('resize',()=>{resize();build();});resize();build();
+  if(reduced){for(let k=0;k<60;k++)for(const l of lines)upd(l);const f=gv('--field').split(',').map(Number);ctx.strokeStyle=`rgba(${f[0]},${f[1]},${f[2]},0.06)`;ctx.lineWidth=DPR*5;for(const l of lines)draw(l);}else render();
+})();
+render();
+</script>
+</body></html>

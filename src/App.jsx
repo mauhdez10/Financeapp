@@ -5790,12 +5790,12 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
     if(name==="gauge")return <svg {...C}><path d="M12 14l4-4"/><path d="M3.3 17a9 9 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1" fill={P.gold} stroke="none"/></svg>;
     return <svg {...C}><path d="M14 3v5h5"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg>;};
   const FEATS = lang==="es"?[
-    {icon:"flow",t:"A dónde va cada dólar",b:"Un flujo en vivo muestra el ingreso moviéndose hacia gastos, deuda y ahorro — al instante."},
-    {icon:"gauge",t:"Salud, medida",b:"Razón de deuda, tasa de ahorro y meses de fondo de emergencia como metas claras — sin jerga."},
+    {icon:"flow",t:"A dónde va cada dólar",b:"Un flujo en vivo muestra el ingreso moviéndose hacia gastos, deuda y ahorro, al instante."},
+    {icon:"gauge",t:"Salud, medida",b:"Razón de deuda, tasa de ahorro y meses de fondo de emergencia como metas claras, sin jerga."},
     {icon:"report",t:"Reportes que parecen reportes",b:"Un PDF de calidad profesional, cada sección en su página. Listo para revisar o compartir."},
   ]:[
-    {icon:"flow",t:"Where every dollar goes",b:"A live flow shows income moving into bills, debt, and savings — at a glance."},
-    {icon:"gauge",t:"Health, scored",b:"Debt ratio, savings rate, and emergency-fund months as clear targets — no jargon."},
+    {icon:"flow",t:"Where every dollar goes",b:"A live flow shows income moving into bills, debt, and savings, at a glance."},
+    {icon:"gauge",t:"Health, scored",b:"Debt ratio, savings rate, and emergency-fund months as clear targets, no jargon."},
     {icon:"report",t:"Reports that look like reports",b:"A designer-grade PDF, each section on its own page. Ready to review or share."},
   ];
   return<div style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
@@ -5852,7 +5852,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
             {mode==="forgot"&&<div style={{textAlign:"center",marginTop:15}}>
               <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:P.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"8px 12px",minHeight:40}}>← {t.backToSignIn||"Back to Sign In"}</button>
             </div>}
-            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contact Mauricio</a></>}</div>
+            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{lang==="es"?<>¿Sin cuenta? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contacta a Mauricio</a></>:<>No account yet? <a href="mailto:mauricio@goldenanchor.life" style={{color:P.accent,fontWeight:600,textDecoration:"none"}}>Contact us</a></>}</div>
           </div>
         </div>
       </section>
