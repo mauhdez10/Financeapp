@@ -5512,7 +5512,43 @@ function PromotionsPage({settings,onSettingsChange,t}){
     </div>
   </div>;
 }
-function ResourcesPage({t}){const th=useTh();const guides=[{title:t.guideCreditTitle||"Understanding Your Credit Score",desc:t.guideCreditDesc||"How credit scores are calculated and actionable strategies to improve yours.",icon:"📊",url:"https://www.experian.com/blogs/ask-experian/credit-education/score-basics/understanding-credit-scores/"},{title:t.guideDebtTitle||"Debt Payoff Strategies",desc:t.guideDebtDesc||"Avalanche vs. Snowball — which method is right for your situation.",icon:"📉",url:"https://www.nerdwallet.com/article/finance/debt-snowball-vs-avalanche"},{title:t.guideEFTitle||"Building an Emergency Fund",desc:t.guideEFDesc||"Why 3-6 months of expenses matters and how to build it fast.",icon:"🛡️",url:"https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"},{title:t.guideRetTitle||"Retirement Savings 101",desc:t.guideRetDesc||"Roth IRA, 401k, contribution strategies, and employer matching.",icon:"🎯",url:"https://www.investor.gov/additional-resources/retirement-toolkit"},{title:t.guideHomeTitle||"First-Time Homebuyer Guide",desc:t.guideHomeDesc||"Pre-approval, down payment, DTI requirements, and timing.",icon:"🏠",url:"https://www.consumerfinance.gov/owning-a-home/"},{title:t.guideInvestTitle||"Investment Allocation Basics",desc:t.guideInvestDesc||"Risk tolerance, time horizon, and diversification principles.",icon:"📈",url:"https://www.investor.gov/introduction-investing/getting-started/asset-allocation"}];return<div style={{padding:24}}>{/* v0.24.0 — page title removed (TopBar shows it). */}<p style={{fontSize:11,color:th.dim,marginBottom:16,marginTop:0}}>{t.resourcesDesc}</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>{guides.map(g=><div key={g.title} className="ga-lift ga-spot" style={{...mCARD(th),padding:"12px 14px",display:"flex",flexDirection:"column",gap:6}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{flexShrink:0,width:36,height:36,borderRadius:10,background:th.accent+"12",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center"}}>{(()=>{const M={"📊":TrendingUp,"📉":TrendingDown,"🛡️":Shield,"🎯":PiggyBank,"🏠":Home,"📈":TrendingUp};const Ic=M[g.icon];return Ic?<Ic size={19} strokeWidth={1.5} color={th.accent}/>:null;})()}</div><div style={{fontWeight:700,fontSize:12.5,color:th.text,lineHeight:1.3}}>{g.title}</div></div><div style={{fontSize:11,color:th.muted,lineHeight:1.5}}>{g.desc}</div><a href={g.url} target="_blank" rel="noopener noreferrer" style={{fontSize:10.5,padding:"3px 10px",borderRadius:5,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",textDecoration:"none",fontWeight:600,alignSelf:"flex-start",marginTop:4}}>{t.openGuide}</a></div>)}</div></div>;}
+function ResourcesPage({t}){
+  const th=useTh();const{isMobile}=useViewport();
+  const guides=[
+    {key:"credit",Icon:TrendingUp,c:"#7FA8C9",title:t.guideCreditTitle||"Understanding Your Credit Score",desc:t.guideCreditDesc||"How credit scores are calculated and actionable strategies to improve yours.",url:"https://www.experian.com/blogs/ask-experian/credit-education/score-basics/understanding-credit-scores/"},
+    {key:"debt",Icon:TrendingDown,c:"#F0857B",title:t.guideDebtTitle||"Debt Payoff Strategies",desc:t.guideDebtDesc||"Avalanche vs. Snowball, which method is right for your situation.",url:"https://www.nerdwallet.com/article/finance/debt-snowball-vs-avalanche"},
+    {key:"ef",Icon:Shield,c:"#3DD68C",title:t.guideEFTitle||"Building an Emergency Fund",desc:t.guideEFDesc||"Why 3-6 months of expenses matters and how to build it fast.",url:"https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"},
+    {key:"ret",Icon:PiggyBank,c:"#9D8CFF",title:t.guideRetTitle||"Retirement Savings 101",desc:t.guideRetDesc||"Roth IRA, 401k, contribution strategies, and employer matching.",url:"https://www.investor.gov/additional-resources/retirement-toolkit"},
+    {key:"home",Icon:Home,c:GOLD,title:t.guideHomeTitle||"First-Time Homebuyer Guide",desc:t.guideHomeDesc||"Pre-approval, down payment, DTI requirements, and timing.",url:"https://www.consumerfinance.gov/owning-a-home/"},
+    {key:"invest",Icon:TrendingUp,c:"#46D6C6",title:t.guideInvestTitle||"Investment Allocation Basics",desc:t.guideInvestDesc||"Risk tolerance, time horizon, and diversification principles.",url:"https://www.investor.gov/introduction-investing/getting-started/asset-allocation"},
+  ];
+  const ref=useRef(null);const[stt,setStt]=useState({s:true,e:false});
+  const sync=()=>{const el=ref.current;if(!el)return;setStt({s:el.scrollLeft<6,e:el.scrollLeft+el.clientWidth>=el.scrollWidth-6});};
+  useEffect(()=>{sync();},[]);
+  const scroll=d=>{const el=ref.current;if(!el)return;const cw=(el.querySelector("[data-rc]")?.offsetWidth||330)+18;el.scrollBy({left:d*cw,behavior:"smooth"});};
+  const arr=on=>({flexShrink:0,width:42,height:42,borderRadius:99,border:"1px solid "+th.cardBorder,background:th.glassBg,color:th.text,cursor:on?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",opacity:on?1:0.3,fontSize:20,lineHeight:1});
+  return<div style={{padding:"24px 24px 44px"}}>
+    <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:22,gap:16,flexWrap:"wrap"}}>
+      <div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.18em",textTransform:"uppercase",color:th.dim,marginBottom:9}}>{t.resources||"Resources"}</div>
+        <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:30,color:th.text,margin:0,lineHeight:1.05}}>{t.resourcesHeadline||(_gaLang()==="es"?"Aprende los fundamentos":"Learn the fundamentals")}</h1>
+        <p style={{fontSize:13,color:th.muted,margin:"9px 0 0",maxWidth:540,lineHeight:1.6}}>{t.resourcesDesc}</p>
+      </div>
+      {!isMobile&&<div style={{display:"flex",gap:8}}><button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label="Previous">‹</button><button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label="Next">›</button></div>}
+    </div>
+    <div ref={ref} onScroll={sync} style={{display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"82%":"330px",gap:18,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",padding:"4px 2px 14px"}}>
+      {guides.map(g=>{const Ic=g.Icon;return<a key={g.key} data-rc href={g.url} target="_blank" rel="noopener noreferrer" className="ga-lift" style={{scrollSnapAlign:"start",textDecoration:"none",position:"relative",height:isMobile?320:380,borderRadius:16,overflow:"hidden",border:"1px solid "+th.cardBorder,display:"block",background:"linear-gradient(150deg, "+g.c+"2E 0%, "+th.glassBg+" 58%)"}}>
+        <div style={{position:"absolute",inset:0,background:"radial-gradient(120% 80% at 82% 0%, "+g.c+"33, transparent 55%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:22,left:22,width:52,height:52,borderRadius:14,background:g.c+"22",border:"1px solid "+g.c+"55",display:"flex",alignItems:"center",justifyContent:"center"}}><Ic size={26} strokeWidth={1.5} color={g.c}/></div>
+        <div style={{position:"absolute",left:0,right:0,bottom:0,padding:"22px 22px 24px",background:"linear-gradient(0deg, "+th.bg+"F2 0%, "+th.bg+"D0 52%, transparent 100%)"}}>
+          <div style={{fontSize:17,fontWeight:700,color:th.text,lineHeight:1.25,marginBottom:8,letterSpacing:"-0.01em"}}>{g.title}</div>
+          <div style={{fontSize:12.5,color:th.muted,lineHeight:1.55,marginBottom:14,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{g.desc}</div>
+          <div style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:g.c}}>{(t.openGuide||"Read more").replace(/\s*→\s*$/,"")} <span style={{fontSize:14}}>→</span></div>
+        </div>
+      </a>;})}
+    </div>
+  </div>;
+}
 function ServiceRequestModal({svc,lang,t,onClose}){const th=useTh();const[f,setF]=useState({name:"",email:"",phone:"",message:""});const[sent,setSent]=useState(false);const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));const send=()=>{const sub=encodeURIComponent(`Service Request: ${svc[lang]||svc.en}`);const body=encodeURIComponent(`Name: ${f.name}\nEmail: ${f.email}\nPhone: ${f.phone}\n\n${f.message||"Interested."}`);window.location.href=`mailto:mauricio@goldenanchor.life?subject=${sub}&body=${body}`;setSent(true);setTimeout(onClose,2000);};const INP=mINP(th);return<Modal title={"📋 "+t.requestServiceTitle} onClose={onClose}>{sent?<div style={{textAlign:"center",padding:20,color:th.pos,fontSize:14,fontWeight:700}}>✅ {t.requestSent}</div>:<><div style={{...mCARD(th),padding:12,marginBottom:16,display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:24}}>{svc.icon}</span><div><div style={{fontWeight:700,color:th.text}}>{svc[lang]||svc.en}</div><div style={{fontSize:11,color:th.accent}}>{svc.price}</div></div></div><Field label={t.yourName}><input style={INP} value={f.name} onChange={u("name")}/></Field><Row2><Field label={t.yourEmail}><input style={INP} value={f.email} onChange={u("email")}/></Field><Field label={t.yourPhone}><input style={INP} value={f.phone} onChange={u("phone")}/></Field></Row2><Field label={t.message}><textarea style={{...INP,height:80,resize:"vertical"}} value={f.message} onChange={u("message")} placeholder={t?.tellUsNeedsPh||"Tell us about your needs…"}/></Field><SaveBar onSave={send} onCancel={onClose} t={{...t,save:t.sendRequest}}/></>}</Modal>;}
 // v0.59 — About / Services rebuilt from Playwright screenshot. Services
 // grid had per-card height drift because some cards rendered 1 button
@@ -6202,7 +6238,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0642-signup-flow";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v065-resources-redesign";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
