@@ -5915,7 +5915,7 @@ function HeroVisual({palette,reducedMotion}){
 
 function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
   const reducedMotion=useReducedMotion();
-  const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");
+  const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");const[showPw,setShowPw]=useState(false);
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
   useEffect(()=>{if(typeof window==="undefined")return;const h=window.location.hash||"";if(h.includes("type=recovery")){setMode("setNew");setInfo(t.resetSetNewIntro||"Enter your new password below.");}},[]);
   const go=async()=>{
@@ -6047,13 +6047,18 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
               <h2 style={{fontWeight:600,fontSize:19,color:P.text,margin:0,letterSpacing:"-0.01em"}}>{title}</h2>
               {mode==="signin"&&<span style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
             </div>
+            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Acceso inmediato a tu tablero, sin tarjeta.":"Start free. Instant access to your dashboard, no card required."}</p>}
             {mode!=="setNew"&&<div style={{marginBottom:14}}>
               <label style={LBL}>{t.email||"Email"}</label>
               <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
             </div>}
-            {mode!=="forgot"&&<div style={{marginBottom:18}}>
+            {mode!=="forgot"&&<div style={{marginBottom:(mode==="signup"||mode==="setNew")?16:18}}>
               <label style={LBL}>{mode==="setNew"?(t.newPassword||"New Password"):t.password||"Password"}</label>
-              <input type="password" value={pw} onChange={ev=>setPw(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={mode==="setNew"?"new-password":"current-password"} placeholder="••••••••"/>
+              <div style={{position:"relative"}}>
+                <input type={showPw?"text":"password"} value={pw} onChange={ev=>setPw(ev.target.value)} style={{...INP_L,paddingRight:62}} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={(mode==="setNew"||mode==="signup")?"new-password":"current-password"} placeholder="••••••••"/>
+                <button type="button" onClick={()=>setShowPw(v=>!v)} aria-label={showPw?(lang==="es"?"Ocultar contraseña":"Hide password"):(lang==="es"?"Mostrar contraseña":"Show password")} style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:P.dim,cursor:"pointer",padding:"7px 9px",fontSize:9.5,fontFamily:MONO,fontWeight:600,letterSpacing:"0.1em"}}>{showPw?(lang==="es"?"OCULTAR":"HIDE"):(lang==="es"?"VER":"SHOW")}</button>
+              </div>
+              {(mode==="signup"||mode==="setNew")&&(()=>{const sc=pw.length===0?0:(pw.length>=12&&/[^A-Za-z0-9]/.test(pw)&&/[0-9]/.test(pw))?3:(pw.length>=8&&/[0-9]/.test(pw))?2:1;const labs=lang==="es"?["","Débil","Aceptable","Fuerte"]:["","Weak","Fair","Strong"];const cols=["","#E0795F","#E0A23A","#5BBF7B"];return<div style={{marginTop:10}}><div style={{display:"flex",gap:4}}>{[1,2,3].map(n=><div key={n} style={{flex:1,height:3,borderRadius:99,background:sc>=n?cols[sc]:P.border,transition:"background .2s"}}/>)}</div><div style={{display:"flex",justifyContent:"space-between",marginTop:7}}><span style={{fontSize:9.5,color:P.dim,fontFamily:MONO,letterSpacing:"0.06em"}}>{lang==="es"?"Mín. 8 caracteres":"Min. 8 characters"}</span>{sc>0&&<span style={{fontSize:9.5,color:cols[sc],fontFamily:MONO,fontWeight:600,letterSpacing:"0.06em"}}>{labs[sc]}</span>}</div></div>;})()}
             </div>}
             {err&&<div role="alert" style={{fontSize:11,color:"#F2766B",marginBottom:12,padding:"9px 12px",background:"#F2766B18",border:"1px solid #F2766B44",borderRadius:9,lineHeight:1.5}}>{err}</div>}
             {info&&<div role="status" style={{fontSize:11,color:P.gold,marginBottom:12,padding:"9px 12px",background:`${P.gold}18`,border:`1px solid ${P.gold}44`,borderRadius:9,lineHeight:1.5}}>{info}</div>}
@@ -6332,7 +6337,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0660-about-rebuild-hero-bento-connect";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0661-signup-form-strength-reveal";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
