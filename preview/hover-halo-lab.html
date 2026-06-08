@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Halo hover + background options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--ease:cubic-bezier(.23,1,.32,1);}
+[data-theme="dark"]{--bg:#0A0B0D;--surf:#16181C;--line:#2A2E35;--text:#ECEEF1;--mut:#9BA1AB;--dim:#6B7079;--acc:#E2C375;--accSoft:226,195,117;--pos:#3DD68C;--neg:#F0857B;--lift:0 18px 44px rgba(0,0,0,.5);}
+[data-theme="light"]{--bg:#FBFBFC;--surf:#FFFFFF;--line:#ECEDEF;--text:#0B0C0E;--mut:#60646C;--dim:#9097A0;--acc:#B8901E;--accSoft:184,144,30;--pos:#0E9F6E;--neg:#D0453B;--lift:0 1px 2px rgba(20,20,16,.05),0 16px 40px rgba(20,20,16,.09);}
+*{box-sizing:border-box;}html,body{margin:0;padding:0;}
+body{font-family:'IBM Plex Sans','Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased;color:var(--text);min-height:100vh;transition:background .3s;}
+.num{font-variant-numeric:tabular-nums;}.lbl{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.13em;}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* backgrounds */
+body[data-bg="flat"]{background:var(--bg);}
+body[data-bg="gold"]{background:radial-gradient(125% 120% at 50% -45%, rgba(var(--accSoft),.13) 0%, transparent 55%), var(--bg);}
+body[data-bg="eclipse"]{background:radial-gradient(55% 45% at 50% 42%, rgba(var(--accSoft),.10), transparent 70%), var(--bg);}
+body[data-bg="corners"]{background:radial-gradient(640px 480px at 88% -8%, rgba(var(--accSoft),.12), transparent 60%), radial-gradient(620px 560px at 6% 110%, rgba(60,110,120,.10), transparent 60%), var(--bg);}
+
+.bar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:13px 26px;backdrop-filter:blur(12px);background:rgba(10,10,12,.55);border-bottom:1px solid var(--line);flex-wrap:wrap;}
+[data-theme="light"] .bar{background:rgba(255,255,255,.7);}
+.bar b{font-family:'Newsreader',serif;font-style:italic;color:var(--acc);font-size:17px;margin-right:6px;}
+.chip{font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;transition:all .15s;font-family:inherit;}
+.chip:hover{color:var(--text);}.chip.on{background:rgba(var(--accSoft),.16);border-color:rgba(var(--accSoft),.5);color:var(--acc);}
+.bar .grp{display:flex;gap:6px;align-items:center;}.bar .sp{flex:1;}.bar .cap{font-size:10px;color:var(--dim);font-family:'JetBrains Mono';text-transform:uppercase;letter-spacing:.1em;}
+
+.wrap{max-width:1080px;margin:34px auto;padding:0 26px;}
+.h{font-family:'Newsreader',serif;font-style:italic;font-size:24px;color:var(--text);margin:0 0 4px;}
+.sub{color:var(--mut);font-size:13px;margin:0 0 24px;}
+
+.card{background:var(--surf);border:1px solid var(--line);border-radius:13px;transition:transform .2s var(--ease),box-shadow .25s var(--ease),border-color .2s var(--ease);}
+/* ── HALO HOVER ── soft accent corona bloom + gentle lift (the eclipse instinct) */
+@media(hover:hover){
+  body[data-hover="halo"] .card:hover{transform:translateY(-2px);border-color:rgba(var(--accSoft),.45);
+    box-shadow:0 0 0 1px rgba(var(--accSoft),.25), 0 0 34px 2px rgba(var(--accSoft),.20), var(--lift);}
+  body[data-hover="lift"] .card:hover{transform:translateY(-3px);border-color:var(--acc);box-shadow:var(--lift);}
+}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.kpi{padding:15px 18px;}
+.kpi .l{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.kpi .row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;}
+.kpi .v{font-size:25px;font-weight:600;letter-spacing:-.02em;line-height:1;}
+.kpi .d{font-size:11px;margin-top:8px;color:var(--pos);font-family:'JetBrains Mono';}
+.chart{padding:18px;margin-top:14px;}
+.ch{font-family:'JetBrains Mono';font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);margin-bottom:14px;}
+.rows{margin-top:14px;display:flex;flex-direction:column;gap:9px;}
+.crow{padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.av{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;font-family:'JetBrains Mono';}
+.crow .nm{font-size:13.5px;font-weight:600;flex:1;}
+.crow .mini{font-family:'JetBrains Mono';font-size:12px;color:var(--mut);}
+.spk{display:block;}
+.note{max-width:1080px;margin:6px auto 50px;padding:0 26px;color:var(--dim);font-size:12px;line-height:1.6;}
+</style></head>
+<body data-theme="dark" data-bg="gold" data-hover="halo">
+<div class="bar">
+  <b>Golden Anchor</b>
+  <span class="cap">Hover&nbsp;style</span>
+  <div class="grp"><button class="chip" data-hv="halo">Halo</button><button class="chip" data-hv="lift">Lift (current)</button></div>
+  <span class="cap" style="margin-left:10px">Background</span>
+  <div class="grp"><button class="chip" data-b="flat">Flat</button><button class="chip" data-b="gold">Gold glow</button><button class="chip" data-b="eclipse">Eclipse</button><button class="chip" data-b="corners">Corner glows</button></div>
+  <span class="sp"></span>
+  <button class="chip" id="theme">Light</button>
+</div>
+
+<div class="wrap">
+  <h2 class="h">Hover the cards.</h2>
+  <p class="sub">Halo = a soft accent corona instead of a hard border — lighter, less dense. Switch hover style + background up top, toggle light/dark. Same B cards either way.</p>
+  <div class="kpis" id="kpis"></div>
+  <div class="card chart"><div class="ch">Income vs Spending · 6 months</div><div id="line"></div></div>
+  <div class="rows" id="rows"></div>
+</div>
+<div class="note">Mockup. If you like Halo, I swap <code>.ga-lift</code>'s hard border for this corona app-wide. Background pick gets recolored & applied to the app shell (or kept Flat). All pure CSS — no new dependencies.</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const gv=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+const INC=[60,63,61,67,69,72,71,75],SPD=[47,50,48,51,54,52,55,53];
+const KPI=[["Clients","24","+3"],["Practice net worth","$4.82M","+6.1%"],["Active plans","11","+1"]];
+const CL=[["AC","Amanda Chen","#7C8FF0","5,240","612K"],["MW","Marcus Webb","#E0935B","3,910","388K"],["SR","Sofia Reyes","#3DD68C","6,720","845K"]];
+function spk(d,c,w=90,h=30){const mn=Math.min(...d),mx=Math.max(...d),r=mx-mn||1;const p=d.map((v,i)=>`${(i/(d.length-1))*w},${h-((v-mn)/r)*(h-5)-3}`).join(" ");return `<svg class="spk" width="${w}" height="${h}" style="overflow:visible"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${w}" cy="${h-((d[d.length-1]-mn)/r)*(h-5)-3}" r="1.6" fill="${c}"/></svg>`;}
+function line(){const acc=gv('--acc'),mut=gv('--mut'),W=320,H=120,max=80,P=a=>a.map((v,i)=>`${(i/(a.length-1))*W},${H-(v/max)*H}`).join(" ");return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible"><polyline points="${P(INC)}" fill="none" stroke="${acc}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${P(SPD)}" fill="none" stroke="${mut}" stroke-width="1.2" stroke-dasharray="3 4" opacity=".6"/><circle cx="${W}" cy="${H-(INC[INC.length-1]/max)*H}" r="2.4" fill="${acc}"/></svg>`;}
+function render(){const acc=gv('--acc');
+  $("#kpis").innerHTML=KPI.map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="row"><div><div class="v num">${k[1]}</div><div class="d">▲ ${k[2]}</div></div>${spk([5,6,5.6,7,6.7,8,9,10],acc)}</div></div>`).join("");
+  $("#line").innerHTML=line();
+  $("#rows").innerHTML=CL.map(c=>`<div class="card crow"><div class="av" style="background:${c[2]}22;color:${c[2]};border:1px solid ${c[2]}44">${c[0]}</div><div class="nm">${c[1]}</div><div class="mini">$${c[3]}/mo</div><div class="mini" style="color:${acc}">$${c[4]}</div>${spk([6,6.3,6.6,7.1,7.4,7.8,8.4,9],acc,70,24)}</div>`).join("");}
+$$(".chip[data-hv]").forEach(b=>b.onclick=()=>{document.body.dataset.hover=b.dataset.hv;mark();});
+$$(".chip[data-b]").forEach(b=>b.onclick=()=>{document.body.dataset.bg=b.dataset.b;mark();});
+$("#theme").onclick=()=>{const d=document.body.dataset.theme==="dark";document.body.dataset.theme=d?"light":"dark";$("#theme").textContent=d?"Dark":"Light";render();};
+function mark(){$$(".chip[data-hv]").forEach(b=>b.classList.toggle("on",b.dataset.hv===document.body.dataset.hover));$$(".chip[data-b]").forEach(b=>b.classList.toggle("on",b.dataset.b===document.body.dataset.bg));}
+mark();render();
+</script>
+</body></html>

@@ -107,7 +107,7 @@ const GOLD="#C9A84C";
 // Lift card surfaces (#16181C) clearly above the near-black bg (#0A0B0D) + more
 // visible hairline borders (#2A2E35), brighter muted/dim text. Linear-style: panels
 // read as distinct on a near-black ground.
-const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.05)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
+const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.11)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
@@ -115,7 +115,7 @@ const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"
 // shadow (hover-lift adds it). Sidebar stays near-black (B keeps a dark rail in light).
 // Light sidebar (B in light keeps a clean off-white rail, not a dark one). navAcc =
 // walnut gold so active items stay legible on white (gold #C9A84C fails AA on white).
-const makeLight=(a="#C9A84C")=>({bg:"#FBFBFC",nav:"#FFFFFF",navBorder:"#ECEDEF",card:"#FFFFFF",cardBorder:"#ECEDEF",glassBg:"#FFFFFF",glassBorder:"#ECEDEF",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(184,144,30,0.045)",glow2:"rgba(60,110,120,0.03)",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E6E7EA",text:"#0B0C0E",muted:"#60646C",dim:"#9097A0",sideText:"#16181C",sideMuted:"#60646C",navAcc:"#8A6B1E",accent:a,pos:"#0E9F6E",neg:"#D0453B",warn:"#B8901E",blue:"#5A7E9E"});
+const makeLight=(a="#C9A84C")=>({bg:"#FBFBFC",nav:"#FFFFFF",navBorder:"#ECEDEF",card:"#FFFFFF",cardBorder:"#ECEDEF",glassBg:"#FFFFFF",glassBorder:"#ECEDEF",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(184,144,30,0.09)",glow2:"rgba(60,110,120,0.03)",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E6E7EA",text:"#0B0C0E",muted:"#60646C",dim:"#9097A0",sideText:"#16181C",sideMuted:"#60646C",navAcc:"#8A6B1E",accent:a,pos:"#0E9F6E",neg:"#D0453B",warn:"#B8901E",blue:"#5A7E9E"});
 const DARK_ACCENTS=[{l:"Gold",v:"#C9A84C"},{l:"Blue",v:"#3B82F6"},{l:"Emerald",v:"#10B981"},{l:"Purple",v:"#8B5CF6"}];
 const LIGHT_ACCENTS=[{l:"Blue",v:"#2563EB"},{l:"Teal",v:"#0D9488"},{l:"Emerald",v:"#059669"},{l:"Purple",v:"#7C3AED"}];
 // v0.8.1 — background/card shade presets for the Appearance settings
@@ -6032,7 +6032,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0621-dark-separation-compact-kpi";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0622-halo-hover-gold-glow-bg";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7719,10 +7719,11 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
          .ga-lift = springy hover lift (Direction C). .ga-press = button press feedback.
          .ga-rise = staggered entrance. --ga-lift/--ga-acc are set per-theme on the app shell.
          Reduced-motion is neutralised by the @media block below. */
-      :root{--ga-ease:cubic-bezier(.23,1,.32,1);--ga-spring:cubic-bezier(.2,1.1,.3,1);--ga-lift:0 14px 34px rgba(0,0,0,.5);--ga-acc:#C9A84C;}
+      :root{--ga-ease:cubic-bezier(.23,1,.32,1);--ga-spring:cubic-bezier(.2,1.1,.3,1);--ga-lift:0 14px 34px rgba(0,0,0,.5);--ga-acc:#C9A84C;--ga-acc-rgb:201,168,76;}
       @media (hover:hover) and (pointer:fine){
-        .ga-lift{transition:transform .2s var(--ga-ease),box-shadow .2s var(--ga-ease),border-color .16s var(--ga-ease);}
-        .ga-lift:hover{transform:translateY(-3px);box-shadow:var(--ga-lift)!important;border-color:var(--ga-acc)!important;}
+        .ga-lift{transition:transform .2s var(--ga-ease),box-shadow .25s var(--ga-ease),border-color .2s var(--ga-ease);}
+        /* v0.62.2 — Halo hover: soft accent corona bloom instead of a hard border (less dense). */
+        .ga-lift:hover{transform:translateY(-2px);border-color:rgba(var(--ga-acc-rgb),.42)!important;box-shadow:0 0 0 1px rgba(var(--ga-acc-rgb),.22), 0 0 34px 2px rgba(var(--ga-acc-rgb),.20), var(--ga-lift)!important;}
       }
       .ga-press{transition:transform .15s var(--ga-ease)!important;}
       .ga-press:active{transform:scale(.97);}
@@ -7904,7 +7905,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         </button>
       </div>
     </div>}
-    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(720px 540px at 84% -10%, ${theme.glow1||"transparent"}, transparent 62%), radial-gradient(680px 620px at 6% 112%, ${theme.glow2||"transparent"}, transparent 60%), ${theme.bg}`,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent}}>
+    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(125% 120% at 50% -45%, ${theme.glow1||"transparent"} 0%, transparent 55%), ${theme.bg}`,backgroundAttachment:"fixed",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent,"--ga-acc-rgb":isDark?"226,195,117":"184,144,30"}}>
       {!vp.isMobile&&<div id="ga-sidebar" style={{width:sidebarCollapsed?64:234,flexShrink:0,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width 0.25s cubic-bezier(0.2,0.8,0.2,1)"}}>
         <div style={{padding:sidebarCollapsed?"20px 12px 14px":"20px 16px 14px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between",gap:4,minHeight:72}}>
           {sidebarCollapsed?
