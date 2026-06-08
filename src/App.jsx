@@ -107,7 +107,7 @@ const GOLD="#C9A84C";
 // Lift card surfaces (#16181C) clearly above the near-black bg (#0A0B0D) + more
 // visible hairline borders (#2A2E35), brighter muted/dim text. Linear-style: panels
 // read as distinct on a near-black ground.
-const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(198,216,242,0.06)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
+const makeDark=(a=GOLD)=>({bg:"#0C0D11",nav:"#101216",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.16)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
@@ -6195,7 +6195,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0632-pricing-carousel-coolhalo";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0633-topbar-clean-bg-depth";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7609,7 +7609,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     {divider:true},
     {icon:"signOut",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
   ];
-  return <div className="ga-np" style={{padding:isMobile?"12px 14px":"16px 24px",borderBottom:`1px solid ${th.cardBorder}`,background:th.bg,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+  return <div className="ga-np" style={{padding:isMobile?"12px 14px":"16px 24px",background:th.bg,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
     <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
       {isMobile&&<button onClick={onOpenDrawer} title={t?.menu||"Menu"} aria-label={t?.menu||"Menu"} style={{background:th.accent+"22",border:`1px solid ${th.accent}44`,color:th.accent,borderRadius:8,padding:"8px 10px",cursor:"pointer",fontSize:16,lineHeight:1}}>☰</button>}
       <div style={{minWidth:0}}>
@@ -7618,9 +7618,6 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div role="group" aria-label={t?.languageSelector||"Language"} style={{display:"flex",border:`1px solid ${th.cardBorder}`,borderRadius:8,overflow:"hidden"}}>
-        {["en","es"].map(l=><button key={l} onClick={()=>setLang(l)} aria-pressed={lang===l} aria-label={l==="en"?(t?.langEn||"English"):(t?.langEs||"Spanish")} style={{padding:"5px 12px",fontSize:11,fontWeight:700,background:lang===l?th.accent+"22":"transparent",color:lang===l?th.accent:th.muted,border:"none",cursor:"pointer",letterSpacing:"0.05em",textTransform:"uppercase"}}>{l}</button>)}
-      </div>
       <button onClick={()=>setHide(!hideNumbers)} title={t?.hideNumbers||"Hide all numbers"} aria-label={hideNumbers?(t?.showNumbers||"Show all numbers"):(t?.hideNumbers||"Hide all numbers")} aria-pressed={hideNumbers} style={{background:hideNumbers?th.accent+"22":"transparent",color:hideNumbers?th.accent:th.muted,border:`1px solid ${hideNumbers?th.accent+"44":th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{hideNumbers?"👁️‍🗨️":"👁️"}</button>
       <button onClick={()=>setDark(!isDark)} title={t?.theme||"Theme"} aria-label={isDark?(t?.switchToLight||"Switch to light mode"):(t?.switchToDark||"Switch to dark mode")} style={{background:"transparent",color:th.muted,border:`1px solid ${th.cardBorder}`,borderRadius:8,padding:"5px 11px",fontSize:14,cursor:"pointer",lineHeight:1}}>{isDark?"🌙":"☀️"}</button>
       <div ref={menuRef} style={{position:"relative"}}>
@@ -8068,7 +8065,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         </button>
       </div>
     </div>}
-    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(125% 120% at 50% -45%, ${theme.glow1||"transparent"} 0%, transparent 55%), ${theme.bg}`,backgroundAttachment:"fixed",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent,"--ga-acc-rgb":isDark?"198,216,242":"120,150,200"}}>
+    <div style={{display:"flex",minHeight:"100vh",width:"100%",background:`radial-gradient(1100px 720px at 97% -16%, ${theme.glow1||"transparent"}, transparent 56%), radial-gradient(820px 640px at 2% 118%, ${theme.glow2||"transparent"}, transparent 60%), ${theme.bg}`,backgroundAttachment:"fixed",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",fontVariantNumeric:"tabular-nums",fontFeatureSettings:"'tnum' 1",color:theme.text,fontSize:"14px",zoom:(settings.appZoom||1),"--ga-lift":isDark?"0 14px 34px rgba(0,0,0,.5)":"0 1px 2px rgba(20,20,16,.05), 0 14px 34px rgba(20,20,16,.08)","--ga-acc":theme.accent,"--ga-acc-rgb":isDark?"226,195,117":"184,144,30"}}>
       {!vp.isMobile&&<div id="ga-sidebar" style={{width:sidebarCollapsed?64:234,flexShrink:0,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width 0.25s cubic-bezier(0.2,0.8,0.2,1)"}}>
         <div style={{padding:sidebarCollapsed?"20px 12px 14px":"20px 16px 14px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between",gap:4,minHeight:72}}>
           {sidebarCollapsed?
