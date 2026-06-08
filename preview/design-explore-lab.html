@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Anchor — Design Exploration (4 directions)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --ink:#16181C; --paper:#FAFAF7; --line:#E8E5DC; --gold:#B8901E; --pos:#0E9F6E; --neg:#D64545; --mut:#5A6270; --dim:#9AA0A8;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#0a0a0c;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#fff;}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+.mono{font-family:'JetBrains Mono',monospace;}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+
+/* ───── global control bar ───── */
+.bar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;padding:14px 26px;
+  background:rgba(10,10,12,0.82);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.08);}
+.bar .brand{font-family:'Newsreader',serif;font-style:italic;font-size:18px;letter-spacing:.04em;color:#E2C375;}
+.bar .sub{font-size:11px;color:#7e8696;letter-spacing:.14em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+.bar .sp{flex:1;}
+.tog{font-size:12px;font-weight:600;padding:8px 15px;border-radius:99px;border:1px solid rgba(255,255,255,0.16);
+  background:transparent;color:#cbd2dd;cursor:pointer;transition:all .15s;font-family:inherit;}
+.tog:hover{border-color:rgba(255,255,255,0.34);color:#fff;}
+.tog:active{transform:scale(.96);}
+
+.intro{max-width:860px;margin:34px auto 8px;padding:0 26px;}
+.intro h1{font-family:'Newsreader',serif;font-weight:500;font-size:30px;margin:0 0 8px;letter-spacing:-.01em;color:#f4f1ea;}
+.intro p{color:#a8b0bd;font-size:14.5px;line-height:1.65;margin:0;}
+.intro .hint{margin-top:12px;font-size:12.5px;color:#E2C375;font-family:'JetBrains Mono',monospace;}
+
+/* ───── direction wrapper ───── */
+.dir-wrap{max-width:1180px;margin:30px auto;padding:0 26px;}
+.dir-head{display:flex;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+.dir-head .badge{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;color:#3a3f4b;line-height:1;}
+.dir-head .name{font-size:19px;font-weight:700;color:#f4f1ea;letter-spacing:-.01em;}
+.dir-head .ref{font-size:11px;color:#7e8696;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;}
+.dir-head .phil{flex-basis:100%;font-size:13px;color:#9aa2b0;line-height:1.55;max-width:760px;}
+.frame{border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,0.09);box-shadow:0 30px 80px rgba(0,0,0,0.45);}
+.screen{min-height:430px;padding:30px 32px;position:relative;overflow:hidden;}
+
+/* shared mock helpers (overridden per direction) */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.charts{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-top:14px;}
+.rowlist{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+
+/* ════════════ A · EDITORIAL PRIVATE-BANK ════════════ */
+.A{--bg:#FAF8F3;--text:#1C1810;--mut:#766c58;--dim:#a89e88;--gold:#9c7b1e;--pos:#0d8a5f;--neg:#c0392f;--line:#e7e0d0;}
+body[data-theme="dark"] .A{--bg:#13110B;--text:#EDE6D4;--mut:#a59a82;--dim:#6b6450;--gold:#D8B14E;--pos:#3DD68C;--neg:#F0857B;--line:#2a2516;}
+.A .screen{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;}
+.A .eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);}
+.A .pagetitle{font-family:'Newsreader',serif;font-weight:500;font-size:34px;letter-spacing:-.015em;margin:6px 0 2px;}
+.A .pagetitle em{font-style:italic;color:var(--gold);}
+.A .kpis{grid-template-columns:repeat(4,1fr);gap:0;margin-top:26px;border-top:1px solid var(--line);}
+.A .kpi{padding:20px 22px 18px;border-right:1px solid var(--line);}
+.A .kpi:last-child{border-right:none;}
+.A .kpi .l{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);}
+.A .kpi .v{font-family:'Newsreader',serif;font-size:38px;font-weight:400;letter-spacing:-.01em;margin-top:12px;line-height:1;}
+.A .kpi .d{font-size:11px;color:var(--mut);margin-top:8px;}
+.A .kpi .d b{color:var(--pos);font-weight:600;}
+.A .charts{margin-top:26px;border-top:1px solid var(--line);padding-top:22px;}
+.A . chart, .A .panel{}
+.A .chdr{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:4px;}
+.A .csub{font-family:'Newsreader',serif;font-style:italic;font-size:15px;color:var(--text);margin-bottom:16px;}
+.A .rowlist{margin-top:26px;border-top:1px solid var(--line);padding-top:8px;}
+.A .crow{display:flex;align-items:center;gap:18px;padding:15px 6px;border-bottom:1px solid var(--line);position:relative;cursor:pointer;transition:padding-left .25s cubic-bezier(.2,.8,.2,1);}
+.A .crow::before{content:"";position:absolute;left:0;top:18%;bottom:18%;width:2px;background:var(--gold);transform:scaleY(0);transform-origin:center;transition:transform .25s;}
+.A .crow:hover{padding-left:16px;}
+.A .crow:hover::before{transform:scaleY(1);}
+.A .crow .nm{font-family:'Newsreader',serif;font-size:18px;flex:1;}
+.A .crow .mini{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--mut);}
+.A .crow .mini b{color:var(--text);font-weight:500;}
+
+/* ════════════ B · LINEAR / VERCEL DARK-TECH ════════════ */
+.B{--bg:#FCFCFD;--surf:#FFFFFF;--text:#0B0C0E;--mut:#60646C;--dim:#9097A0;--acc:#B8901E;--pos:#1A8F5E;--neg:#D0453B;--line:#ECEDEF;}
+body[data-theme="dark"] .B{--bg:#08090A;--surf:#0E0F11;--text:#EDEEF0;--mut:#8A8F98;--dim:#565a63;--acc:#E2C375;--pos:#3DD68C;--neg:#F0857B;--line:#1B1D21;}
+.B .screen{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans','Plus Jakarta Sans',sans-serif;}
+.B .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.B .top .t{font-size:17px;font-weight:600;letter-spacing:-.02em;}
+.B .top .eb{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;}
+.B .btn{font-size:12px;font-weight:600;padding:7px 13px;border-radius:7px;background:var(--text);color:var(--bg);border:none;cursor:pointer;transition:transform .12s,opacity .12s;}
+.B .btn:active{transform:scale(.97);} .B .btn:hover{opacity:.86;}
+.B .kpi{background:var(--surf);border:1px solid var(--line);border-radius:9px;padding:14px 15px;cursor:default;transition:border-color .15s;}
+.B .kpi:hover{border-color:var(--acc);}
+.B .kpi .l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);}
+.B .kpi .v{font-size:25px;font-weight:600;letter-spacing:-.02em;margin-top:11px;line-height:1;}
+.B .kpi .d{font-size:11px;margin-top:8px;color:var(--mut);display:flex;align-items:center;gap:5px;}
+.B .kpi .d .chip{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--pos);}
+.B .card{background:var(--surf);border:1px solid var(--line);border-radius:9px;padding:16px;}
+.B .chdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.B .chdr .l{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);}
+.B .chdr .s{font-size:10px;color:var(--dim);}
+.B .crow{display:flex;align-items:center;gap:13px;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surf);cursor:pointer;transition:border-color .14s,transform .14s;}
+.B .crow:hover{border-color:var(--acc);transform:translateX(2px);}
+.B .av{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.B .crow .nm{font-size:13px;font-weight:600;flex:1;}
+.B .crow .mini{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mut);}
+
+/* ════════════ C · SOFT-GLASS / ARC ════════════ */
+.C{--bg1:#F3F0FF;--bg2:#EAF6F2;--surf:rgba(255,255,255,0.66);--brd:rgba(20,20,40,0.07);--text:#1B1A2E;--mut:#5b5a72;--dim:#9492aa;--gold:#C08A2A;--pos:#0FA978;--neg:#E25563;--vio:#7C6CF0;--teal:#1FB6A6;}
+body[data-theme="dark"] .C{--bg1:#16121f;--bg2:#0f1a1a;--surf:rgba(255,255,255,0.055);--brd:rgba(255,255,255,0.10);--text:#EFEAF6;--mut:#aaa6c0;--dim:#6a6680;--gold:#E2B45A;--pos:#3DE0A0;--neg:#FF8290;--vio:#9D8CFF;--teal:#46D6C6;}
+.C .screen{background:radial-gradient(700px 460px at 12% -8%,var(--bg1),transparent 60%),radial-gradient(700px 520px at 100% 110%,var(--bg2),transparent 60%),var(--bg1);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;}
+.C .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.C .top .t{font-size:23px;font-weight:800;letter-spacing:-.02em;}
+.C .top .eb{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--vio);}
+.C .pill{font-size:12px;font-weight:700;padding:10px 16px;border-radius:99px;border:1px solid var(--brd);background:var(--surf);backdrop-filter:blur(16px);color:var(--text);cursor:pointer;transition:transform .18s cubic-bezier(.2,1.4,.4,1);}
+.C .pill:active{transform:scale(.93);}
+.C .glass{background:var(--surf);border:1px solid var(--brd);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:22px;}
+.C .kpis{gap:14px;}
+.C .kpi{padding:18px 20px;cursor:default;transition:transform .22s cubic-bezier(.2,1,.3,1),box-shadow .22s;}
+.C .kpi:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(80,60,200,0.12);}
+.C .kpi .ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.C .kpi .l{font-size:11px;font-weight:600;color:var(--mut);letter-spacing:.02em;}
+.C .kpi .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:5px;line-height:1;}
+.C .kpi .d{font-size:11.5px;font-weight:600;margin-top:7px;color:var(--pos);}
+.C .card{padding:20px;}
+.C .chdr{font-size:13px;font-weight:700;margin-bottom:3px;}
+.C .csub{font-size:11px;color:var(--mut);margin-bottom:16px;}
+.C .crow{padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .2s cubic-bezier(.2,1,.3,1),box-shadow .2s;}
+.C .crow:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(80,60,200,0.10);}
+.C .av{width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+.C .crow .nm{font-size:15px;font-weight:700;flex:1;}
+.C .crow .mini{font-size:13px;font-weight:700;}
+
+/* ════════════ D · DATA-DENSE PRO TERMINAL ════════════ */
+.D{--bg:#F4F5F7;--surf:#FFFFFF;--text:#11151B;--mut:#525B68;--dim:#8b95a3;--acc:#B8901E;--pos:#0B8A5A;--neg:#CC3B33;--line:#E1E4E9;--head:#EEF0F3;}
+body[data-theme="dark"] .D{--bg:#0C0F14;--surf:#11151B;--text:#E6E9ED;--mut:#8b95a3;--dim:#525b68;--acc:#E2C375;--pos:#39C98A;--neg:#F26B62;--line:#1E242C;--head:#161B22;}
+.D .screen{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;padding:22px 24px;}
+.D .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.D .top .t{font-size:15px;font-weight:700;letter-spacing:-.01em;}
+.D .top .eb{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);}
+.D .rail{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+.D .kpi{background:var(--surf);padding:11px 13px;}
+.D .kpi .l{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.D .kpi .v{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:600;margin-top:6px;line-height:1;letter-spacing:-.01em;}
+.D .kpi .d{font-size:10px;margin-top:5px;color:var(--pos);font-family:'JetBrains Mono',monospace;}
+.D .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-top:12px;}
+.D .panel{background:var(--surf);border:1px solid var(--line);border-radius:5px;}
+.D .ph{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--line);}
+.D .ph .l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);}
+.D .ph .s{font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;}
+.D table{width:100%;border-collapse:collapse;}
+.D th{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);text-align:right;padding:7px 12px;background:var(--head);cursor:pointer;user-select:none;border-bottom:1px solid var(--line);}
+.D th:first-child{text-align:left;}
+.D th:hover{color:var(--acc);}
+.D td{font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);color:var(--mut);}
+.D td:first-child{text-align:left;font-family:'IBM Plex Sans';font-weight:600;color:var(--text);}
+.D tr{transition:background .12s;cursor:pointer;}
+.D tbody tr:hover{background:var(--head);}
+.D .tag{font-family:'JetBrains Mono',monospace;font-size:8px;padding:1px 6px;border-radius:3px;letter-spacing:.05em;}
+
+.foot{max-width:1180px;margin:20px auto 70px;padding:0 26px;color:#6e7686;font-size:12.5px;line-height:1.7;}
+.foot b{color:#cbd2dd;}
+</style>
+</head>
+<body data-theme="dark" data-lang="en">
+
+<div class="bar">
+  <span class="brand">Golden Anchor</span>
+  <span class="sub" data-en="Design Exploration" data-es="Exploración de Diseño">Design Exploration</span>
+  <span class="sp"></span>
+  <button class="tog" id="langTog">ES</button>
+  <button class="tog" id="themeTog">Light</button>
+</div>
+
+<div class="intro">
+  <h1 data-en="Four directions. Same data. Pick what feels right." data-es="Cuatro direcciones. Mismos datos. Elige lo que se sienta bien.">Four directions. Same data. Pick what feels right.</h1>
+  <p data-en="Each section below is the SAME practice dashboard rendered in a completely different modern design language. Toggle light/dark and EN/ES up top. Hover the cards and rows — interactions differ per direction. Tell me which pieces you like (e.g. “A’s numbers, C’s cards, D’s table”) and I’ll assemble the winner into the real app." data-es="Cada sección es el MISMO panel, en un lenguaje de diseño moderno distinto. Cambia claro/oscuro y EN/ES arriba. Pasa el cursor por las tarjetas y filas — las interacciones cambian. Dime qué piezas te gustan y armo el ganador en la app real.">Each section below is the SAME practice dashboard rendered in a completely different modern design language. Toggle light/dark and EN/ES up top. Hover the cards and rows — interactions differ per direction. Tell me which pieces you like (e.g. "A's numbers, C's cards, D's table") and I'll assemble the winner into the real app.</p>
+  <div class="hint">↓ scroll to compare · hover to feel the motion</div>
+</div>
+
+<!-- ════ A ════ -->
+<div class="dir-wrap A">
+  <div class="dir-head">
+    <span class="badge">A</span>
+    <span class="name" data-en="Editorial private-bank" data-es="Banca privada editorial">Editorial private-bank</span>
+    <span class="ref">Origin · boutique wealth · Newsreader</span>
+    <span class="phil" data-en="Content floats on the page — almost no boxes, just hairline rules and breathing room. Serif display numbers feel hand-set and expensive. The calmest, most 'trusted advisor' option, and the closest to the landing page you already loved." data-es="El contenido flota — casi sin cajas, sólo líneas finas y aire. Números serif que se sienten caros. La opción más calmada y de 'asesor de confianza', y la más cercana al landing que ya te gustó.">Content floats on the page — almost no boxes, just hairline rules and breathing room. Serif display numbers feel hand-set and expensive. The calmest, most "trusted advisor" option, and the closest to the landing page you already loved.</span>
+  </div>
+  <div class="frame"><div class="screen">
+    <div class="eyebrow" data-en="Practice" data-es="Práctica">Practice</div>
+    <div class="pagetitle" data-en="Good evening, <em>Mauricio</em>" data-es="Buenas noches, <em>Mauricio</em>">Good evening, <em>Mauricio</em></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l" data-en="Clients" data-es="Clientes">Clients</div><div class="v num">24</div><div class="d"><b>↑ 3</b> <span data-en="this quarter" data-es="este trimestre">this quarter</span></div></div>
+      <div class="kpi"><div class="l" data-en="Practice net worth" data-es="Patrimonio total">Practice net worth</div><div class="v num">$4.82M</div><div class="d"><b>↑ 6.1%</b></div></div>
+      <div class="kpi"><div class="l" data-en="Avg debt ratio" data-es="Razón de deuda">Avg debt ratio</div><div class="v num">31%</div><div class="d"><b>↓ 2 pts</b></div></div>
+      <div class="kpi"><div class="l" data-en="Active plans" data-es="Planes activos">Active plans</div><div class="v num">11</div><div class="d"><b>↑ 1</b></div></div>
+    </div>
+    <div class="charts">
+      <div class="chart">
+        <div class="chdr" data-en="Income vs Spending" data-es="Ingresos vs Gastos">Income vs Spending</div>
+        <div class="csub" data-en="Last six months, practice aggregate" data-es="Últimos seis meses, agregado">Last six months, practice aggregate</div>
+        <div id="A-line"></div>
+      </div>
+      <div class="panel">
+        <div class="chdr" data-en="Net worth" data-es="Patrimonio">Net worth</div>
+        <div class="csub" data-en="By asset class" data-es="Por clase de activo">By asset class</div>
+        <div id="A-alloc"></div>
+      </div>
+    </div>
+    <div class="rowlist" id="A-rows"></div>
+  </div></div>
+</div>
+
+<!-- ════ B ════ -->
+<div class="dir-wrap B">
+  <div class="dir-head">
+    <span class="badge">B</span>
+    <span class="name" data-en="Linear / Vercel dark-tech" data-es="Tech oscuro tipo Linear">Linear / Vercel dark-tech</span>
+    <span class="ref">linear.app · vercel · IBM Plex</span>
+    <span class="phil" data-en="The most 'current software' look: near-monochrome, one accent, razor-thin 1px everything, mono labels, crisp small type. Charts are pure lines, no fills. Feels fast, precise, engineered. Best if you want it to read as cutting-edge SaaS." data-es="La estética de 'software actual': casi monocromático, un acento, 1px en todo, etiquetas mono, tipografía pequeña y nítida. Gráficos de línea pura. Se siente rápido y preciso.">The most "current software" look: near-monochrome, one accent, razor-thin 1px everything, mono labels, crisp small type. Charts are pure lines, no fills. Feels fast, precise, engineered. Best if you want it to read as cutting-edge SaaS.</span>
+  </div>
+  <div class="frame"><div class="screen">
+    <div class="top">
+      <div><div class="eb" data-en="Overview" data-es="Resumen">Overview</div><div class="t" data-en="Practice" data-es="Práctica">Practice</div></div>
+      <button class="btn" data-en="New client" data-es="Nuevo cliente">New client</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="l" data-en="Clients" data-es="Clientes">Clients</div><div class="v num">24</div><div class="d"><span class="chip">↑3</span><span data-en="this qtr" data-es="este trim">this qtr</span></div></div>
+      <div class="kpi"><div class="l" data-en="Net worth" data-es="Patrimonio">Net worth</div><div class="v num">$4.82M</div><div class="d"><span class="chip">↑6.1%</span></div></div>
+      <div class="kpi"><div class="l" data-en="Debt ratio" data-es="Deuda">Debt ratio</div><div class="v num">31%</div><div class="d"><span class="chip">↓2pts</span></div></div>
+      <div class="kpi"><div class="l" data-en="Active plans" data-es="Planes">Active plans</div><div class="v num">11</div><div class="d"><span class="chip">↑1</span></div></div>
+    </div>
+    <div class="charts">
+      <div class="card"><div class="chdr"><span class="l" data-en="Income vs Spending" data-es="Ingresos vs Gastos">Income vs Spending</span><span class="s" data-en="6mo" data-es="6m">6mo</span></div><div id="B-line"></div></div>
+      <div class="card"><div class="chdr"><span class="l" data-en="Net worth" data-es="Patrimonio">Net worth</span><span class="s" data-en="by class" data-es="por clase">by class</span></div><div id="B-bars"></div></div>
+    </div>
+    <div class="rowlist" id="B-rows"></div>
+  </div></div>
+</div>
+
+<!-- ════ C ════ -->
+<div class="dir-wrap C">
+  <div class="dir-head">
+    <span class="badge">C</span>
+    <span class="name" data-en="Soft-glass / Arc playful" data-es="Glass suave tipo Arc">Soft-glass / Arc playful</span>
+    <span class="ref">Arc · Family · soft gradients</span>
+    <span class="phil" data-en="Warmer and friendlier: big rounded glass panels, gentle color glows, bold approachable numbers, springy motion (cards lift, toggles bounce). Still premium, but inviting rather than austere. More color, more personality." data-es="Más cálido y amigable: paneles glass redondeados, resplandores suaves, números grandes, movimiento elástico (las tarjetas se elevan). Premium pero acogedor. Más color y personalidad.">Warmer and friendlier: big rounded glass panels, gentle color glows, bold approachable numbers, springy motion (cards lift, toggles bounce). Still premium, but inviting rather than austere. More color, more personality.</span>
+  </div>
+  <div class="frame"><div class="screen">
+    <div class="top">
+      <div><div class="eb" data-en="Practice" data-es="Práctica">Practice</div><div class="t" data-en="Overview" data-es="Resumen">Overview</div></div>
+      <button class="pill" data-en="+ New client" data-es="+ Nuevo cliente">+ New client</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi glass"><div class="ic" style="background:rgba(124,108,240,.16);color:var(--vio)">◆</div><div class="l" data-en="Clients" data-es="Clientes">Clients</div><div class="v num">24</div><div class="d">↑ 3 <span style="color:var(--mut);font-weight:600" data-en="this qtr" data-es="este trim">this qtr</span></div></div>
+      <div class="kpi glass"><div class="ic" style="background:rgba(31,182,166,.16);color:var(--teal)">◆</div><div class="l" data-en="Net worth" data-es="Patrimonio">Net worth</div><div class="v num">$4.82M</div><div class="d">↑ 6.1%</div></div>
+      <div class="kpi glass"><div class="ic" style="background:rgba(192,138,42,.18);color:var(--gold)">◆</div><div class="l" data-en="Debt ratio" data-es="Deuda">Debt ratio</div><div class="v num">31%</div><div class="d">↓ 2 pts</div></div>
+      <div class="kpi glass"><div class="ic" style="background:rgba(15,169,120,.16);color:var(--pos)">◆</div><div class="l" data-en="Active plans" data-es="Planes">Active plans</div><div class="v num">11</div><div class="d">↑ 1</div></div>
+    </div>
+    <div class="charts">
+      <div class="card glass"><div class="chdr" data-en="Income vs Spending" data-es="Ingresos vs Gastos">Income vs Spending</div><div class="csub" data-en="Last 6 months" data-es="Últimos 6 meses">Last 6 months</div><div id="C-line"></div></div>
+      <div class="card glass"><div class="chdr" data-en="Net worth" data-es="Patrimonio">Net worth</div><div class="csub" data-en="By asset class" data-es="Por clase">By asset class</div><div id="C-ring"></div></div>
+    </div>
+    <div class="rowlist" id="C-rows"></div>
+  </div></div>
+</div>
+
+<!-- ════ D ════ -->
+<div class="dir-wrap D">
+  <div class="dir-head">
+    <span class="badge">D</span>
+    <span class="name" data-en="Data-dense pro terminal" data-es="Terminal pro de datos">Data-dense pro terminal</span>
+    <span class="ref">Bloomberg-lite · sortable · cockpit</span>
+    <span class="phil" data-en="Maximum information per screen: tight rows, sharp 4-5px corners, a compact KPI rail, sortable columns, inline sparklines. For when you want every client and number visible at once without scrolling. Powerful and serious." data-es="Máxima información por pantalla: filas compactas, esquinas marcadas, riel KPI, columnas ordenables, mini-gráficos en línea. Para ver todo de un vistazo. Potente y serio.">Maximum information per screen: tight rows, sharp 4-5px corners, a compact KPI rail, sortable columns, inline sparklines. For when you want every client and number visible at once without scrolling. Powerful and serious.</span>
+  </div>
+  <div class="frame"><div class="screen">
+    <div class="top"><div class="t" data-en="Practice · Overview" data-es="Práctica · Resumen">Practice · Overview</div><div class="eb" data-en="updated 2m ago" data-es="hace 2m">updated 2m ago</div></div>
+    <div class="rail">
+      <div class="kpi"><div class="l" data-en="Clients" data-es="Clientes">Clients</div><div class="v">24</div><div class="d">↑3 qtr</div></div>
+      <div class="kpi"><div class="l" data-en="Net worth" data-es="Patrimonio">Net worth</div><div class="v">$4.82M</div><div class="d">↑6.1%</div></div>
+      <div class="kpi"><div class="l" data-en="Debt ratio" data-es="Deuda">Debt ratio</div><div class="v">31%</div><div class="d">↓2pts</div></div>
+      <div class="kpi"><div class="l" data-en="Active plans" data-es="Planes">Active plans</div><div class="v">11</div><div class="d">↑1</div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><div class="ph"><span class="l" data-en="Income vs Spending" data-es="Ingresos vs Gastos">Income vs Spending</span><span class="s">6MO</span></div><div style="padding:12px 12px 6px" id="D-line"></div></div>
+      <div class="panel"><div class="ph"><span class="l" data-en="Allocation" data-es="Asignación">Allocation</span><span class="s">%</span></div><div style="padding:12px" id="D-bars"></div></div>
+    </div>
+    <div class="panel" style="margin-top:12px"><div class="ph"><span class="l" data-en="Clients · 24" data-es="Clientes · 24">Clients · 24</span><span class="s" data-en="click headers to sort" data-es="clic para ordenar">click headers to sort</span></div>
+      <table id="D-tbl"><thead><tr>
+        <th data-en="Client" data-es="Cliente">Client</th><th data-en="Net/mo" data-es="Neto/mes">Net/mo</th><th data-en="Debt" data-es="Deuda">Debt</th><th data-en="Net worth" data-es="Patrimonio">Net worth</th><th data-en="Trend" data-es="Tend">Trend</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div></div>
+</div>
+
+<div class="foot">
+  <p data-en="These are mockups, not the real app — nothing here is wired to your data yet. Once you pick (mix and match freely), I port the winning direction into App.jsx with your real numbers, EN/ES, and both themes. I can also build a second round zooming into any one direction (e.g. four versions of just the client list, or the report page)." data-es="Esto son mockups, no la app real. Cuando elijas (puedes mezclar), porto la dirección ganadora a App.jsx con tus datos reales, EN/ES y ambos temas. También puedo hacer una segunda ronda enfocada en una dirección.">These are mockups, not the real app — nothing here is wired to your data yet. Once you pick (mix and match freely), I port the winning direction into App.jsx with your real numbers, EN/ES, and both themes. I can also build a second round zooming into any one direction (e.g. four versions of just the client list, or the report page).</p>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const INC=[60,63,61,67,69,72,71,75], SPD=[47,50,48,51,54,52,55,53];
+const CLIENTS=[
+  {i:"AC",n:"Amanda Chen",c:"#7C6CF0",net:"5,240",debt:"182K",nw:"612K",up:1,spark:[5,6,5.6,7,6.7,8,9,10]},
+  {i:"MW",n:"Marcus Webb",c:"#E0935B",net:"3,910",debt:"240K",nw:"388K",up:0,spark:[9,8.4,8.6,8,7.7,7.5,7.2,7]},
+  {i:"SR",n:"Sofia Reyes",c:"#1FB6A6",net:"6,720",debt:"96K",nw:"845K",up:1,spark:[6,6.3,6.6,7.1,7.4,7.8,8.4,9]},
+];
+
+/* ── thin line chart (income solid, spending dashed) ── */
+function lineSVG(stroke,dash,w=320,h=120,fill){
+  const max=80, P=a=>a.map((v,i)=>`${(i/(a.length-1))*w},${h-(v/max)*h}`).join(" ");
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;overflow:visible">
+    ${fill?`<defs><linearGradient id="g${stroke.slice(1)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${stroke}" stop-opacity=".14"/><stop offset="1" stop-color="${stroke}" stop-opacity="0"/></linearGradient></defs>
+    <polyline points="0,${h} ${P(INC)} ${w},${h}" fill="url(#g${stroke.slice(1)})" stroke="none"/>`:""}
+    <polyline points="${P(INC)}" fill="none" stroke="${stroke}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="${P(SPD)}" fill="none" stroke="${dash}" stroke-width="1.2" stroke-dasharray="3 4" stroke-linecap="round" opacity=".7"/>
+    <circle cx="${w}" cy="${h-(INC[INC.length-1]/max)*h}" r="2.4" fill="${stroke}"/>
+  </svg>`;
+}
+function sparkSVG(data,c,w=64,h=20){
+  const mn=Math.min(...data),mx=Math.max(...data),r=mx-mn||1;
+  const p=data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/r)*(h-4)-2}`).join(" ");
+  return `<svg width="${w}" height="${h}" style="display:block;overflow:visible"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${w}" cy="${h-((data[data.length-1]-mn)/r)*(h-4)-2}" r="1.8" fill="${c}"/></svg>`;
+}
+/* horizontal allocation bars */
+function allocRows(text,mut){
+  const segs=[["Cash",28,"#C9A84C"],["Investments",42,"#3DD68C"],["Property",22,"#7FA8C9"],["Other",8,mut]];
+  return segs.map(s=>`<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:5px;color:${mut}"><span>${s[0]}</span><b class="num" style="color:${text}">${s[1]}%</b></div><div style="height:4px;border-radius:99px;background:${mut}22"><div style="height:100%;width:${s[1]}%;border-radius:99px;background:${s[2]}"></div></div></div>`).join("");
+}
+/* glass ring */
+function ringSVG(text,dim){
+  const segs=[[28,"#C08A2A"],[42,"#0FA978"],[22,"#7C6CF0"],[8,dim]]; let acc=0,C=2*Math.PI*44;
+  let arcs=segs.map(s=>{const len=s[0]/100*C,off=acc*C/100;acc+=s[0];return `<circle cx="58" cy="58" r="44" fill="none" stroke="${s[1]}" stroke-width="9" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 58 58)" stroke-linecap="round"/>`}).join("");
+  return `<div style="display:flex;align-items:center;gap:18px"><svg width="116" height="116">${arcs}<text x="58" y="54" text-anchor="middle" font-size="15" font-weight="800" fill="${text}" font-family="'Plus Jakarta Sans'">$4.82M</text><text x="58" y="70" text-anchor="middle" font-size="8" fill="${dim}" font-family="'JetBrains Mono'" letter-spacing="1">NET WORTH</text></svg>
+  <div style="flex:1">${[["Cash",28,"#C08A2A"],["Investments",42,"#0FA978"],["Property",22,"#7C6CF0"],["Other",8,dim]].map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:8px;color:${text}"><span style="width:8px;height:8px;border-radius:99px;background:${s[2]}"></span>${s[0]}<b class="num" style="margin-left:auto">${s[1]}%</b></div>`).join("")}</div></div>`;
+}
+
+function render(){
+  // A
+  $("#A-line").innerHTML=lineSVG(getVar('.A','--gold'),getVar('.A','--dim'),320,120,false);
+  $("#A-alloc").innerHTML=allocRows(getVar('.A','--text'),getVar('.A','--mut'));
+  $("#A-rows").innerHTML=CLIENTS.map(c=>`<div class="crow"><div class="nm">${c.n}</div><div class="mini" data-en="Net/mo" data-es="Neto/mes">Net/mo <b>$${c.net}</b></div><div class="mini">Debt <b>$${c.debt}</b></div><div class="mini">NW <b>$${c.nw}</b></div></div>`).join("");
+  // B
+  $("#B-line").innerHTML=lineSVG(getVar('.B','--acc'),getVar('.B','--dim'),320,110,false);
+  $("#B-bars").innerHTML=allocRows(getVar('.B','--text'),getVar('.B','--mut'));
+  $("#B-rows").innerHTML=CLIENTS.map(c=>`<div class="crow"><div class="av" style="background:${c.c}22;color:${c.c}">${c.i}</div><div class="nm">${c.n}</div><div class="mini">$${c.net}/mo</div><div class="mini" style="color:${c.up?getVar('.B','--pos'):getVar('.B','--neg')}">${c.up?'↑':'↓'} $${c.nw}</div>${sparkSVG(c.spark,getVar('.B','--acc'))}</div>`).join("");
+  // C
+  $("#C-line").innerHTML=lineSVG(getVar('.C','--vio'),getVar('.C','--teal'),320,120,true);
+  $("#C-ring").innerHTML=ringSVG(getVar('.C','--text'),getVar('.C','--dim'));
+  $("#C-rows").innerHTML=CLIENTS.map(c=>`<div class="crow glass"><div class="av" style="background:${c.c}26;color:${c.c}">${c.i}</div><div class="nm">${c.n}</div><div class="mini" style="color:var(--pos)">$${c.net}<span style="color:var(--mut);font-weight:600">/mo</span></div>${sparkSVG(c.spark,c.c)}</div>`).join("");
+  // D
+  $("#D-line").innerHTML=lineSVG(getVar('.D','--acc'),getVar('.D','--dim'),320,90,false);
+  $("#D-bars").innerHTML=allocRows(getVar('.D','--text'),getVar('.D','--mut'));
+  renderTbl();
+  applyLang();
+}
+let sortKey='nw',sortDir=-1;
+function renderTbl(){
+  const acc=getVar('.D','--acc'),pos=getVar('.D','--pos'),neg=getVar('.D','--neg');
+  const num=s=>parseFloat(String(s).replace(/[,K]/g,''));
+  const data=[...CLIENTS].sort((a,b)=>{const m={net:'net',debt:'debt',nw:'nw'};const k=m[sortKey]||'nw';return (num(a[k])-num(b[k]))*sortDir;});
+  $("#D-tbl tbody").innerHTML=data.map(c=>`<tr><td>${c.n}</td><td style="color:${pos}">$${c.net}</td><td style="color:${neg}">$${c.debt}</td><td style="color:${acc}">$${c.nw}</td><td style="text-align:right"><span style="display:inline-block">${sparkSVG(c.spark,c.up?pos:neg,54,16)}</span></td></tr>`).join("");
+}
+$$("#D-tbl th").forEach((th,idx)=>{ if(idx===0||idx===4)return; th.onclick=()=>{const keys=['','net','debt','nw'];const k=keys[idx];if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}renderTbl();applyLang();};});
+
+function getVar(sel,name){const el=$(sel);return getComputedStyle(el).getPropertyValue(name).trim();}
+function applyLang(){const l=document.body.dataset.lang;$$("[data-en]").forEach(e=>{const v=e.dataset[l];if(v!=null)e.innerHTML=v;});}
+
+$("#themeTog").onclick=()=>{const d=document.body.dataset.theme==="dark";document.body.dataset.theme=d?"light":"dark";$("#themeTog").textContent=d?"Dark":"Light";render();};
+$("#langTog").onclick=()=>{const en=document.body.dataset.lang==="en";document.body.dataset.lang=en?"es":"en";$("#langTog").textContent=en?"EN":"ES";applyLang();};
+render();
+</script>
+</body>
+</html>
