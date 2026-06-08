@@ -103,7 +103,11 @@ const GOLD="#C9A84C";
 // 1px hairline borders, mono labels, near-monochrome + one gold accent. glassBg/
 // glassBorder now carry solid B surfaces (blur off); hover-lift motion lives in CSS
 // (.ga-lift). glow1/glow2 kept very faint for a hint of depth on the near-black shell.
-const makeDark=(a=GOLD)=>({bg:"#08090A",nav:"#0B0C0D",navBorder:"#1B1D21",card:"#0E0F11",cardBorder:"#1B1D21",glassBg:"#0E0F11",glassBorder:"#1B1D21",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.05)",glow2:"rgba(60,110,120,0.04)",modal:"#0E0F11",inp:"#101113",inpBorder:"#1F2228",text:"#EDEEF0",muted:"#8A8F98",dim:"#565A63",sideText:"#EDEEF0",sideMuted:"#8A8F98",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
+// v0.62.1 — dark was too dark (bg & card nearly identical → no panel separation).
+// Lift card surfaces (#16181C) clearly above the near-black bg (#0A0B0D) + more
+// visible hairline borders (#2A2E35), brighter muted/dim text. Linear-style: panels
+// read as distinct on a near-black ground.
+const makeDark=(a=GOLD)=>({bg:"#0A0B0D",nav:"#0E0F12",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.05)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
@@ -330,9 +334,9 @@ function KpiTile({label,value,color,sub,delta,spark}){
   const th=useTh();
   // v0.60 — modern (Origin): mono micro-label, neutral light-sans value, thin gold
   // sparkline on the right, arrow delta. Value is neutral (th.text), not color-coded.
-  return<div className="ga-sc ga-lift" style={{...mCARD(th),padding:"18px 20px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",minHeight:112}}>
-    <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500,fontFamily:"'JetBrains Mono',monospace",marginBottom:13}}>{label}</div>
-    <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:10,marginTop:"auto"}}>
+  return<div className="ga-sc ga-lift" style={{...mCARD(th),padding:"15px 18px",flex:1,minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500,fontFamily:"'JetBrains Mono',monospace",marginBottom:10}}>{label}</div>
+    <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:10}}>
       <div style={{minWidth:0}}>
         <div style={{fontSize:27,fontWeight:500,color:th.text,fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.01em",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div>
         {(delta||sub)&&<div style={{fontSize:11,color:th.dim,display:"flex",alignItems:"center",gap:7,marginTop:9}}>
