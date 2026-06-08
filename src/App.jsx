@@ -4887,12 +4887,17 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </div>
       <ResponsiveContainer width="100%" height={isMobile?200:230} style={{outline:"none"}}>
         <ComposedChart data={(()=>{const labels=_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"];const monthCounts={};labels.forEach(l=>{const k=l.split(" ")[0];monthCounts[k]=(monthCounts[k]||0)+1;});return labels.map(m=>{const parts=m.split(" ");const monthKey=monthCounts[parts[0]]>1&&parts[1]?`${parts[0]} '${String(parts[1]).slice(-2)}`:parts[0];const income=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);const spending=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);return{m:monthKey,income,spending,net:income-spending};});})()} margin={{top:12,right:12,left:0,bottom:0}}>
-          <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false}/>
+          <defs>
+            {/* v0.61.1 — thin gradient bars (vivid top → transparent base) read lighter than solid blocks */}
+            <linearGradient id="ivsInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={th.pos} stopOpacity="0.95"/><stop offset="100%" stopColor={th.pos} stopOpacity="0.32"/></linearGradient>
+            <linearGradient id="ivsSpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={th.neg} stopOpacity="0.85"/><stop offset="100%" stopColor={th.neg} stopOpacity="0.26"/></linearGradient>
+          </defs>
+          <CartesianGrid stroke={th.cardBorder} strokeDasharray="2 4" vertical={false} opacity={0.6}/>
           <XAxis dataKey="m" tick={{fontSize:11,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false}/>
           <YAxis tick={{fontSize:10,fill:th.dim,fontFamily:"'JetBrains Mono',monospace"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtS(v)} width={50}/>
           <ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/>
-          <Bar dataKey="income" name={t.income||"Income"} fill={th.pos} fillOpacity={0.85} radius={[2,2,0,0]} maxBarSize={16}/>
-          <Bar dataKey="spending" name={t.spending||"Spending"} fill={th.neg} fillOpacity={0.7} radius={[2,2,0,0]} maxBarSize={16}/>
+          <Bar dataKey="income" name={t.income||"Income"} fill="url(#ivsInc)" radius={[3,3,0,0]} maxBarSize={11}/>
+          <Bar dataKey="spending" name={t.spending||"Spending"} fill="url(#ivsSpd)" radius={[3,3,0,0]} maxBarSize={11}/>
           <Line type="monotone" dataKey="net" name={t.netLbl||"Net"} stroke={GOLD} strokeWidth={1.6} dot={{r:2.2,fill:GOLD,strokeWidth:0}} activeDot={{r:4,fill:GOLD,strokeWidth:0}}/>
         </ComposedChart>
       </ResponsiveContainer>
