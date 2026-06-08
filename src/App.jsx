@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, useId, createContext
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
-import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, HelpCircle, LogOut, ImageIcon, BarChart3, PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem } from "lucide-react";
+import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, Bell, HelpCircle, LogOut, ImageIcon, BarChart3, PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem } from "lucide-react";
 import { T } from "./translations";
 import { ENGAGEMENT_LETTER, ELT_DEFAULTS, fillTokens } from "./engagementLetterTemplate";
 
@@ -6238,7 +6238,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v065-resources-redesign";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0651-settings-inline-edit";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7527,25 +7527,48 @@ function HelpSupportPage({t,settings,authUser}){
 
 /* ── SettingsCard — 2-col read-only card for the Profile & Settings page.
    Click "Edit" to open the ProfileModal scoped to that section.            */
-function SettingsCard({title,rows,onEdit,t,th}){
+function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th}){
+  const[editing,setEditing]=useState(false);const[draft,setDraft]=useState({});
+  const set=(k,v)=>setDraft(p=>({...p,[k]:v}));
+  const begin=()=>{if(!fields){onEdit&&onEdit();return;}const d={};fields.forEach(f=>{let v=settings?settings[f.k]:undefined;if(f.type==="toggle")v=(v===undefined?(f.def||false):!!v);else v=(v??f.def??"");d[f.k]=v;});setDraft(d);setEditing(true);};
+  const save=()=>{const patch={...draft};fields.forEach(f=>{if(f.type==="number")patch[f.k]=(patch[f.k]===""||patch[f.k]==null)?undefined:+patch[f.k];});onSave&&onSave(patch);setEditing(false);};
+  const canEdit=!!fields||!!onEdit;
   return <div className="ga-lift ga-spot" style={{...mCARD(th),padding:16,minHeight:0}}>
-    <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",marginBottom:12,fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div>
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {/* v0.25.0 — let labels shrink so values get more room. Removed ellipsis; values wrap onto 2 lines if very long. */}
-      {rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:`1px dashed ${th.cardBorder}`,gap:10}}>
-        <span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span>
-        <span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span>
-      </div>)}
+    <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
+      {Icon&&<div style={{width:30,height:30,borderRadius:9,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={15} strokeWidth={1.6} color={th.accent}/></div>}
+      <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div>
     </div>
-    <div style={{marginTop:12,textAlign:"right"}}>
-      <button onClick={onEdit} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button>
-    </div>
+    {editing?
+      <div style={{display:"flex",flexDirection:"column",gap:11}}>
+        {fields.map(f=><div key={f.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,minHeight:30}}>
+          <span style={{fontSize:11.5,color:th.muted,flexShrink:0}}>{f.l}</span>
+          {f.type==="toggle"?<div onClick={()=>set(f.k,!draft[f.k])} style={{width:38,height:22,borderRadius:99,background:draft[f.k]?th.accent:th.cardBorder,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:draft[f.k]?18:2,width:18,height:18,borderRadius:99,background:"#fff",transition:"left .2s"}}/></div>
+          :f.type==="select"?<select value={draft[f.k]} onChange={e=>set(f.k,e.target.value)} style={{...mINP(th),width:170,padding:"7px 10px",fontSize:12}}>{f.options.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
+          :f.type==="color"?<span style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:10.5,fontFamily:"'JetBrains Mono',monospace",color:th.dim}}>{(draft[f.k]||"").toString().toUpperCase()}</span><input type="color" value={draft[f.k]||"#000000"} onChange={e=>set(f.k,e.target.value)} style={{width:34,height:28,border:"1px solid "+th.cardBorder,borderRadius:7,background:"transparent",cursor:"pointer",padding:2}}/></span>
+          :<input type={f.type==="number"?"number":"text"} value={draft[f.k]} step={f.step} min={f.min} max={f.max} onChange={e=>set(f.k,e.target.value)} style={{...mINP(th),width:180,padding:"7px 10px",fontSize:12}}/>}
+        </div>)}
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:6}}>
+          <button onClick={()=>setEditing(false)} style={{fontSize:11,padding:"6px 14px",borderRadius:8,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.cancel||"Cancel"}</button>
+          <button className="ga-press" onClick={save} style={{fontSize:11,padding:"6px 16px",borderRadius:8,background:GOLD,color:"#16120A",border:"none",cursor:"pointer",fontWeight:700}}>{t?.save||"Save"}</button>
+        </div>
+      </div>
+    :<>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),gap:10}}>
+          <span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span>
+          <span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span>
+        </div>)}
+      </div>
+      {canEdit&&<div style={{marginTop:12,textAlign:"right"}}>
+        <button className="ga-press" onClick={begin} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button>
+      </div>}
+    </>}
   </div>;
 }
 
 /* ── SettingsPage — full-page replacement for the old scrollable ProfileModal.
    Matches ui_kits/advisor_app/index.html SettingsView (2-col card grid).    */
-function SettingsPage({settings,onEdit,onBackup,onRestoreBackup,t,clients}){
+function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients}){
   const th=useTh();
   const numArchived=(clients||[]).filter(c=>c.archived).length;
   const advisorRows=[
@@ -7603,16 +7626,19 @@ function SettingsPage({settings,onEdit,onBackup,onRestoreBackup,t,clients}){
     [t?.autoBackup||"Auto-backup", t?.weeklyLbl||"Weekly"],
     [t?.exportFormat||"Export format", "JSON + CSV"],
   ];
+  const advisorFields=[{k:"advisorName",l:t?.nameLbl||"Name",type:"text"},{k:"advisorEmail",l:t?.emailLbl||"Email",type:"text"},{k:"advisorPhone",l:t?.phoneLbl||"Phone",type:"text"},{k:"ig",l:t?.instagram||"Instagram",type:"text"},{k:"companyName",l:t?.company||"Company",type:"text"}];
+  const appearanceFields=[{k:"darkAccent",l:(t?.darkMode||"Dark")+" "+(t?.accent||"accent"),type:"color",def:GOLD},{k:"lightAccent",l:(t?.lightMode||"Light")+" "+(t?.accent||"accent"),type:"color",def:"#C9A84C"},{k:"appZoom",l:t?.appZoom||"App zoom",type:"number",step:0.05,min:0.8,max:1.5,def:1}];
+  const remindersFields=[{k:"noContactDays",l:t?.noContactThresh||"No-contact days",type:"number",def:30},{k:"dsrAlert",l:t?.highDsrAlert||"High DSR alert",type:"toggle",def:true},{k:"promoLeadDays",l:t?.promoExpiringAlert||"Promo lead days",type:"number",def:60},{k:"debtRisingAlert",l:t?.debtRisingAlert||"Debt-rising alert",type:"toggle",def:false}];
   return <div className="ga-np" style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
     {/* v0.24.0 — page title removed (TopBar shows it). */}
     <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.profileSettingsSub||"Edit any section to update your details, services, or theme."}</div>
     <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-      <SettingsCard title={"👤 "+(t?.advisorInformation||"Advisor Information")} rows={advisorRows} onEdit={()=>onEdit("profile")} t={t} th={th}/>
-      <SettingsCard title={"🎨 "+(t?.appearance||"Appearance")} rows={appearanceRows} onEdit={()=>onEdit("appearance")} t={t} th={th}/>
-      <SettingsCard title={"🌍 "+(t?.localization||"Localization")} rows={localizationRows} onEdit={()=>onEdit("localization")} t={t} th={th}/>
-      <SettingsCard title={"🔔 "+(t?.reminders||"Reminders")} rows={remindersRows} onEdit={()=>onEdit("reminders")} t={t} th={th}/>
-      <SettingsCard title={"💼 "+(t?.servicesAndStripeLinks||"Services & Stripe Links")} rows={servicesRows} onEdit={()=>onEdit("services")} t={t} th={th}/>
-      <SettingsCard title={"💾 "+(t?.backupAndData||"Backup & Data")} rows={backupRows} onEdit={()=>onEdit("backup")} t={t} th={th}/>
+      <SettingsCard icon={Users} title={t?.advisorInformation||"Advisor Information"} rows={advisorRows} fields={advisorFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={Sparkles} title={t?.appearance||"Appearance"} rows={appearanceRows} fields={appearanceFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} rows={localizationRows} t={t} th={th}/>
+      <SettingsCard icon={Bell} title={t?.reminders||"Reminders"} rows={remindersRows} fields={remindersFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={Receipt} title={t?.servicesAndStripeLinks||"Services & Stripe Links"} rows={servicesRows} onEdit={()=>onEdit("services")} t={t} th={th}/>
+      <SettingsCard icon={HardDriveDownload} title={t?.backupAndData||"Backup & Data"} rows={backupRows} onEdit={()=>onEdit("backup")} t={t} th={th}/>
     </div>
     {numArchived>0 && <div style={{marginTop:14,padding:"10px 14px",background:th.warn+"11",border:`1px solid ${th.warn}33`,borderRadius:10,fontSize:11,color:th.muted}}>🗂 {numArchived} {t?.archivedClientsLbl||"archived clients"} · <button onClick={()=>onEdit("archived")} style={{background:"transparent",border:"none",color:th.accent,fontWeight:700,fontSize:11,cursor:"pointer",padding:0,textDecoration:"underline"}}>{t?.viewArchived||"View archived"}</button></div>}
   </div>;
@@ -8190,7 +8216,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
           nav==="pricing"?<PricingPage variant="app" t={t} lang={lang} settings={settings} onRequest={null}/>:nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="resources"?<ResourcesPage t={t}/>:
-          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={()=>setProfileOpen(true)} t={t}/>:
+          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={()=>setProfileOpen(true)} onSave={patch=>setSettings(s=>({...s,...patch}))} t={t}/>:
           nav==="security"?<SecurityPage t={t}/>:
           nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
