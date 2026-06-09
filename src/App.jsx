@@ -5838,7 +5838,7 @@ function AboutPage({t,settings,lang,isDark}){
 }
 
 /* ── CLIENT DETAIL ───────────────────────────────────────────────────────── */
-function ClientDetail({client,onUpdate,lang,t,onBack,startTab,allClients,onSplit,onJoin,onArchive,onDelete,settings,onTabChange}){const th=useTh();const{isMobile}=useViewport();const[tab,setTab]=useState(startTab||"report");const[editOpen,setEditOpen]=useState(false);const[splitOpen,setSplitOpen]=useState(false);const[joinOpen,setJoinOpen]=useState(false);const[archiveConf,setArchiveConf]=useState(false);const[deleteConf,setDeleteConf]=useState(false);const[portalOpen,setPortalOpen]=useState(false);const tA=totalA(client),tL=totalL(client);const tabs=[{id:"report",l:"📊 "+t.report},{id:"monthly",l:"📅 "+t.monthly},{id:"financialStatements",l:"📋 "+t.financialStatements},{id:"investments",l:"💹 "+t.investments},{id:"plan",l:(t.strategyPlanHdrEmoji||"📋 Strategy Plan")},{id:"calculators",l:"🧮 Calculators"},{id:"backfill",l:"🔧 Backfill"},{id:"notes",l:"🗒 "+t.notes}];const fileRef=useRef();const tabRowRef=useRef();const[canScrollL,setCanScrollL]=useState(false);const[canScrollR,setCanScrollR]=useState(false);
+function ClientDetail({client,onUpdate,lang,t,onBack,startTab,allClients,onSplit,onJoin,onArchive,onDelete,settings,onTabChange,clientMode}){const th=useTh();const{isMobile}=useViewport();const[tab,setTab]=useState(startTab||"report");const[editOpen,setEditOpen]=useState(false);const[splitOpen,setSplitOpen]=useState(false);const[joinOpen,setJoinOpen]=useState(false);const[archiveConf,setArchiveConf]=useState(false);const[deleteConf,setDeleteConf]=useState(false);const[portalOpen,setPortalOpen]=useState(false);const tA=totalA(client),tL=totalL(client);const tabs=[{id:"report",l:"📊 "+t.report},{id:"monthly",l:"📅 "+t.monthly},{id:"financialStatements",l:"📋 "+t.financialStatements},{id:"investments",l:"💹 "+t.investments},{id:"plan",l:(t.strategyPlanHdrEmoji||"📋 Strategy Plan")},{id:"calculators",l:"🧮 Calculators"},{id:"backfill",l:"🔧 Backfill"},{id:"notes",l:"🗒 "+t.notes}];const fileRef=useRef();const tabRowRef=useRef();const[canScrollL,setCanScrollL]=useState(false);const[canScrollR,setCanScrollR]=useState(false);
   useEffect(()=>{const el=tabRowRef.current;if(!el)return;const update=()=>{setCanScrollL(el.scrollLeft>4);setCanScrollR(el.scrollLeft+el.clientWidth<el.scrollWidth-4);};update();el.addEventListener("scroll",update,{passive:true});window.addEventListener("resize",update);return()=>{el.removeEventListener("scroll",update);window.removeEventListener("resize",update);};},[]);const impC=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{try{const nc=parseCSV(ev.target.result,client);onUpdate(nc);alert("Imported!");}catch{alert("Invalid CSV.");}};reader.readAsText(f);e.target.value="";};
 const[trendMode,setTrendMode]=useState("revolving");// "all"|"revolving"|"current"
 const[trendRange,setTrendRange]=useState("6");// "3" | "6" | "12" | "all"
@@ -5850,7 +5850,7 @@ const _rangeN=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:(client
 // state was stuck at whatever the user last clicked. startTab acts as the
 // controlled value; this useEffect keeps the local state matching.
 useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab);},[startTab]);
-return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{portalOpen&&<PortalShareModal client={client} t={t} onClose={()=>setPortalOpen(false)}/>}{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}><button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button><div style={{width:40,height:40,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:14,fontFamily:"'JetBrains Mono',monospace",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:600,fontSize:15,color:th.text,letterSpacing:"-0.01em"}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{label:"🔗 "+(t.sharePortal||"Share portal"),onClick:()=>setPortalOpen(true),color:th.accent},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}>{(()=>{const spk=k=>trendData.map(d=>+d[k]||0);const dl=(arr,goodUp)=>{const n=arr.length;if(n<2)return null;const ch=arr[n-1]-arr[n-2];if(ch===0)return null;const rose=ch>0;const good=goodUp?rose:!rose;const pv=Math.abs(arr[n-2]||0);const pct=pv?Math.round(Math.abs(ch)/pv*100):0;return{up:good,down:!good,value:(pct||1)+"%"};};const cf=Math.round(sumN(client.incomeStreams)-sumB(client.bills)-sumMin(client.cards));return<><KpiTile label={t.totalIncome||"Net Income"} value={fmt(sumN(client.incomeStreams))} color={th.pos} spark={spk("income")} delta={dl(spk("income"),true)}/><KpiTile label={t.totalDebt||"Total Debt"} value={fmt(tL)} color={th.neg} spark={spk("debt")} delta={dl(spk("debt"),false)}/><KpiTile label={t.liquidAssets||"Liquid Savings"} value={fmt(liquidA(client))} color={GOLD} spark={spk("savings")} delta={dl(spk("savings"),true)}/><KpiTile label={t.cashFlow||"Cash Flow"} value={fmt(cf)} color={cf>=0?th.pos:th.neg} spark={spk("cashFlow")} delta={dl(spk("cashFlow"),true)}/></>;})()}</div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.53.0 — PR 6 (HANDOFF-v0.46). The "● live" trend pair now uses
+return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{flex:1,overflowY:"auto"}}>{portalOpen&&<PortalShareModal client={client} t={t} onClose={()=>setPortalOpen(false)}/>}{archiveConf&&<Modal title={client.archived?"↩ Restore Client":"📦 Archive Client"} onClose={()=>setArchiveConf(false)}><div style={{fontSize:12,color:useTh().muted,marginBottom:16,lineHeight:1.7}}>{client.archived?<>Restore <b>{client.firstName} {client.lastName}</b> to your active client list?</>:<>Archive <b>{client.firstName} {client.lastName}</b>? Data is preserved and can be restored.</>}</div><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={()=>setArchiveConf(false)}>Cancel</Btn><BSolid onClick={()=>{onArchive(client.id);setArchiveConf(false);onBack();}}>{client.archived?"Restore":"Archive"}</BSolid></div></Modal>}{deleteConf&&<DeleteClientModal client={client} onConfirm={()=>{onDelete(client.id);setDeleteConf(false);onBack();}} onClose={()=>setDeleteConf(false)} t={t}/>}{editOpen&&<ClientForm client={client} onSave={c=>{onUpdate(c);setEditOpen(false);}} onDelete={null} onClose={()=>setEditOpen(false)} t={t}/>}{splitOpen&&client.partnerFirst&&<SplitAssignModal client={client} onConfirm={(p1,p2)=>{onSplit(p1,p2);setSplitOpen(false);}} onClose={()=>setSplitOpen(false)} t={t}/>}{joinOpen&&<JoinModal client={client} allClients={allClients} onConfirm={sel=>{onJoin(client,sel);setJoinOpen(false);}} onClose={()=>setJoinOpen(false)} t={t}/>}<input ref={fileRef} type="file" accept=".csv" onChange={impC} style={{display:"none"}}/><div className="ga-np" style={{padding:isMobile?"12px 14px":"18px 24px",borderBottom:`1px solid ${th.cardBorder}`}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>{!clientMode&&<button onClick={onBack} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer"}}>{t.back}</button>}<div style={{width:40,height:40,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:14,fontFamily:"'JetBrains Mono',monospace",background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}44`,flexShrink:0}}>{client.firstName[0]}{client.lastName[0]}</div><div><div style={{fontWeight:600,fontSize:15,color:th.text,letterSpacing:"-0.01em"}}>{client.firstName} {client.lastName}{client.partnerFirst&&<span style={{color:th.muted,fontWeight:400}}> & {client.partnerFirst}</span>}</div><div style={{fontSize:11,color:th.dim}}>{client.email}</div></div><div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}><Kebab items={clientMode?[{label:(t.kebabEditClient||"Edit"),onClick:()=>setEditOpen(true)},{label:(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue}]:[{label:"✏️ "+(t.kebabEditClient||"Edit Client"),onClick:()=>setEditOpen(true)},client.partnerFirst?{label:"✂️ "+(t.kebabSplitClient||"Split Client"),onClick:()=>setSplitOpen(true),color:th.warn}:{label:"🔗 "+(t.kebabJoinClient||"Join Client"),onClick:()=>setJoinOpen(true),color:th.pos},{divider:true},{label:"⬆️ "+(t.kebabImportCsv||"Import CSV"),onClick:()=>fileRef.current?.click()},{label:"⬇️ "+(t.kebabExportCsv||"Export CSV"),onClick:()=>expCSV(client)},{label:"💾 "+(t.kebabExportBackup||"Export Backup"),onClick:()=>expBackup([client],{}),color:th.blue},{label:"🔗 "+(t.sharePortal||"Share portal"),onClick:()=>setPortalOpen(true),color:th.accent},{divider:true},{label:client.archived?"↩ "+(t.kebabUnarchive||"Unarchive"):"📦 "+(t.kebabArchive||"Archive"),onClick:()=>setArchiveConf(true),color:client.archived?th.pos:th.warn},{label:"🗑️ "+(t.kebabDelete||"Delete"),onClick:()=>setDeleteConf(true),color:th.neg}]} t={t}/></div></div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}>{(()=>{const spk=k=>trendData.map(d=>+d[k]||0);const dl=(arr,goodUp)=>{const n=arr.length;if(n<2)return null;const ch=arr[n-1]-arr[n-2];if(ch===0)return null;const rose=ch>0;const good=goodUp?rose:!rose;const pv=Math.abs(arr[n-2]||0);const pct=pv?Math.round(Math.abs(ch)/pv*100):0;return{up:good,down:!good,value:(pct||1)+"%"};};const cf=Math.round(sumN(client.incomeStreams)-sumB(client.bills)-sumMin(client.cards));return<><KpiTile label={t.totalIncome||"Net Income"} value={fmt(sumN(client.incomeStreams))} color={th.pos} spark={spk("income")} delta={dl(spk("income"),true)}/><KpiTile label={t.totalDebt||"Total Debt"} value={fmt(tL)} color={th.neg} spark={spk("debt")} delta={dl(spk("debt"),false)}/><KpiTile label={t.liquidAssets||"Liquid Savings"} value={fmt(liquidA(client))} color={GOLD} spark={spk("savings")} delta={dl(spk("savings"),true)}/><KpiTile label={t.cashFlow||"Cash Flow"} value={fmt(cf)} color={cf>=0?th.pos:th.neg} spark={spk("cashFlow")} delta={dl(spk("cashFlow"),true)}/></>;})()}</div><div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{/* v0.53.0 — PR 6 (HANDOFF-v0.46). The "● live" trend pair now uses
    LiveTrendCard which wraps SmoothAreaLine (line) or PairedBars (bar)
    behind a per-card toggle persisted to localStorage. Colors moved to
    the handoff "screen" palette (#DC2626 / #059669). Cash Flow card
@@ -5936,7 +5936,7 @@ function HeroVisual({palette,reducedMotion}){
 
 function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
   const reducedMotion=useReducedMotion();
-  const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");const[showPw,setShowPw]=useState(false);
+  const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");const[showPw,setShowPw]=useState(false);const[signupRole,setSignupRole]=useState("client");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
   useEffect(()=>{if(typeof window==="undefined")return;const h=window.location.hash||"";if(h.includes("type=recovery")){setMode("setNew");setInfo(t.resetSetNewIntro||"Enter your new password below.");}},[]);
   const go=async()=>{
@@ -5965,7 +5965,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
         if(!em||em.indexOf("@")<0){setErr(t.emailRequired||"Valid email required.");setBusy(false);return;}
         if(!pw||pw.length<8){setErr(t.passwordMin8||"Password must be at least 8 characters.");setBusy(false);return;}
         const redirectTo=(typeof window!=="undefined")?window.location.origin:undefined;
-        const{data,error}=await supabase.auth.signUp({email:em,password:pw,options:{emailRedirectTo:redirectTo}});
+        const{data,error}=await supabase.auth.signUp({email:em,password:pw,options:{emailRedirectTo:redirectTo,data:{role:signupRole}}});
         if(error){setErr(error.message||"Sign-up failed.");setBusy(false);return;}
         if(data?.session?.user){onLogin(data.session.user);}else{setInfo(lang==="es"?"¡Cuenta creada! Revisa tu correo para confirmar, luego inicia sesión.":"Account created. Check your email to confirm, then sign in.");setMode("signin");setBusy(false);}
       }
@@ -6068,7 +6068,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
               <h2 style={{fontWeight:600,fontSize:19,color:P.text,margin:0,letterSpacing:"-0.01em"}}>{title}</h2>
               {mode==="signin"&&<span style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
             </div>
-            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Acceso inmediato a tu tablero, sin tarjeta.":"Start free. Instant access to your dashboard, no card required."}</p>}
+            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Acceso inmediato a tu tablero, sin tarjeta.":"Start free. Instant access to your dashboard, no card required."}</p>}{mode==="signup"&&<div style={{marginBottom:16}}><label style={LBL}>{lang==="es"?"Tipo de cuenta":"Account type"}</label><div style={{display:"flex",gap:8}}>{[["client",lang==="es"?"Personal":"Personal",lang==="es"?"Mis finanzas":"My finances"],["advisor",lang==="es"?"Asesor":"Advisor",lang==="es"?"Gestiono clientes":"I manage clients"]].map(([v,tt,sub])=><button key={v} type="button" onClick={()=>setSignupRole(v)} style={{flex:1,textAlign:"left",padding:"10px 12px",borderRadius:11,cursor:"pointer",background:signupRole===v?P.gold+"1A":P.inp,border:"1px solid "+(signupRole===v?P.gold:P.border),color:P.text}}><div style={{fontSize:12.5,fontWeight:700}}>{tt}</div><div style={{fontSize:10.5,color:P.muted,marginTop:2}}>{sub}</div></button>)}</div></div>}
             {mode!=="setNew"&&<div style={{marginBottom:14}}>
               <label style={LBL}>{t.email||"Email"}</label>
               <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
@@ -6358,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0681-fix-cross-account-cache-leak";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0690-client-role-portal";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7778,7 +7778,7 @@ function AvatarBubble({initials,size,ring,onClick,title}){
    Title + breadcrumb on the left; EN/ES + hide + theme + avatar dropdown on
    the right. Avatar opens the big account menu (Profile, Settings, Security,
    Billing, Backup, Archived clients, What's new, Help, Sign out).          */
-function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onNav,onPickAvatar,onOpenChartSettings,onSignOut,advisorName,advisorEmail,avatarId,avatarInitials,th,isMobile,onOpenDrawer,t,version,archivedCount}){
+function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHide,signedIn,onNav,onPickAvatar,onOpenChartSettings,onSignOut,advisorName,advisorEmail,avatarId,avatarInitials,th,isMobile,onOpenDrawer,t,version,archivedCount,role}){
   const[menu,setMenu]=useState(false);
   const menuRef=useRef();
   useEffect(()=>{
@@ -7787,7 +7787,14 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     return()=>document.removeEventListener("mousedown",h);
   },[]);
   // v0.44.0 — Avatar menu items use Lucide icon keys (rendered via <GAIcon/>)
-  const items=[
+  const items=role==="client"?[
+    {icon:"settings",label:t?.menuProfileSettings||"Profile settings",sub:t?.menuSettingsSub||"Theme, language, info",onClick:()=>onNav("settings")},
+    {icon:"security",label:t?.menuSecurity||"Security",sub:t?.menuSecuritySub||"Change password",onClick:()=>onNav("security")},
+    {icon:"billing",label:t?.menuBilling||"Billing & plan",sub:t?.menuBillingSubClient||"Your plan",onClick:()=>onNav("billing")},
+    {icon:"help",label:t?.menuHelp||"Help & support",onClick:()=>onNav("help")},
+    {divider:true},
+    {icon:"signOut",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
+  ]:[
     {icon:"profile",label:t?.menuProfile||"Profile",sub:t?.menuProfileSub||"Change profile image",onClick:onPickAvatar},
     {icon:"charts",label:t?.menuChartSettings||"Chart Settings",sub:t?.menuChartSettingsSub||"Pick Dashboard charts",onClick:onOpenChartSettings},
     {icon:"settings",label:t?.menuSettings||"Settings",sub:t?.menuSettingsSub||"Theme, language, info",onClick:()=>onNav("settings")},
@@ -8010,7 +8017,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     const armWarning=()=>{_idleWarnTimerRef.current=setTimeout(()=>setIdleWarn(true),IDLE_WARN_MS);};
     const armLogout=()=>{_idleTimerRef.current=setTimeout(async()=>{
       // Save in-flight selected-client edits as a draft before signing out
-      try{if(selected){localStorage.setItem("ga_session_draft",JSON.stringify({clientId:selected.id,data:selected,savedAt:Date.now()}));}}catch{}
+      try{if(selected){localStorage.setItem("ga_session_draft",JSON.stringify({clientId:selected.id,data:selected,savedAt:Date.now(),uid:authUser?.id}));}}catch{}
       if(supabase){try{await supabase.auth.signOut();}catch{}}
       setIdleWarn(false);setAuthUser(null);setSelected(null);
     },IDLE_TIMEOUT_MS);};
@@ -8049,7 +8056,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       setBootstrapping(true);
       // SECURITY (v0.68.1): never let one account's cached data show or upload under another
       // on a shared browser. If the cache belongs to a different user, purge it before anything.
-      const _foreignCache=(()=>{try{const u=localStorage.getItem("ga_cache_uid");return !!(u&&u!==authUser.id);}catch{return false;}})();
+      const _foreignCache=(()=>{try{const u=localStorage.getItem("ga_cache_uid");return u!==authUser.id;}catch{return false;}})();
       if(_foreignCache){gaClearLocalCache();setClients([]);setSettings(s=>({...DEF_SETTINGS,lang:s.lang,isDark:s.isDark}));}
       try{localStorage.setItem("ga_cache_uid",authUser.id);}catch(e){}
       try{
@@ -8062,6 +8069,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           setClients(mapped);
         }else{
           if(_foreignCache){_lastClientsRef.current=[];setClients([]);}
+          else if((authUser?.user_metadata?.role)==="client"){const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"My",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});_lastClientsRef.current=[];setClients([_self]);}
           else{_lastClientsRef.current=clients;}  // local data became the seed (migration uploaded it)
         }
         const remoteSettings=await gaLoadSettings(authUser.id);
@@ -8074,7 +8082,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           const raw=localStorage.getItem("ga_session_draft");
           if(raw){
             const d=JSON.parse(raw);
-            if(d?.clientId&&d?.data){
+            if(d?.clientId&&d?.data&&d.uid===authUser?.id&&(authUser?.user_metadata?.role)!=="client"){
               setSelected(d.data);setSelectedTab("monthly");setNav("clients");
               setJustRestoredDraft(true);
               setToast({kind:"info",msg:t.draftRestoredToast||"Restored your in-flight edits from your previous session. Save when ready.",ts:Date.now()});
@@ -8103,6 +8111,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     gaSaveSettings(authUser.id,settings);
     _lastSettingsRef.current=settings;
   },[settings,authUser]);
+  useEffect(()=>{if((authUser?.user_metadata?.role)!=="client"||bootstrapping||!_cloudReadyRef.current||clients.length>0)return;const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"My",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});setClients([_self]);},[bootstrapping,clients.length,authUser]);
   useEffect(()=>{if(typeof window!=="undefined")window.__GA_LANG=lang;},[lang]);
   // v0.11.0 — Browser history integration. Push a history entry on each
   // in-app navigation change (nav / open client / tab) so the browser Back
@@ -8355,7 +8364,9 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   const deleteMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.filter(c=>!s.has(c.id)));setSelected(null);},[]);
   const splitClientPair=useCallback((origId,p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==origId),p1,p2]);setSelected(null);},[]);
   // v0.44.0 — Sidebar items use Lucide icons (`icon` key) instead of emoji prefixes
-  const NAV=[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
+  const role=(authUser?.user_metadata?.role==="client")?"client":"advisor";
+  const displayName=role==="client"?((((clients[0]?.firstName||"")+" "+(clients[0]?.lastName||"")).trim())||authUser?.email||"You"):(settings.advisorName||authUser?.email||"Mauricio Hernandez");
+  const NAV=role==="client"?[{id:"dashboard",icon:"dashboard",l:(t.myOverview||"Overview")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"resources",icon:"resources",l:t.resources},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"about",icon:"about",l:t.about}]:[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;if(isPublicPortalRoute)return<PublicPortal/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
   if(!authUser)return<ThemeCtx.Provider value={theme}>{showPricing?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>setShowPricing(false)} onSignIn={()=>setShowPricing(false)} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>:<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>setShowPricing(true)}/>}</ThemeCtx.Provider>;
@@ -8380,7 +8391,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         them position:fixed relative to the viewport again. */}
     {vp.isMobile&&drawerOpen&&<div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,background:"#000a",zIndex:90,touchAction:"none"}} aria-hidden="true"/>}
     {vp.isMobile&&<div id="ga-sidebar-mobile" style={{width:260,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",transform:drawerOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.25s ease-out",zIndex:100,boxShadow:drawerOpen?"4px 0 32px #000a":"none",visibility:drawerOpen?"visible":"hidden"}}>
-      <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:theme.navAcc,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{t.advisorPortalUpper||"ADVISOR PORTAL"}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
+      <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:theme.navAcc,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{role==="client"?(t.clientPortalUpper||"CLIENT PORTAL"):(t.advisorPortalUpper||"ADVISOR PORTAL")}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
       <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:active?theme.navAcc+"22":"transparent",color:active?theme.navAcc:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}><GAIcon name={n.icon} size={18} color={active?theme.navAcc:undefined}/><span>{n.l}</span></button>;})}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
         {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
@@ -8388,7 +8399,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         <button onClick={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",padding:"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
           <AvatarImg id={settings.avatarId||"mh-gold"} size={36}/>
           <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
-            <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
+            <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis"}}>{displayName}</div>
             <div style={{fontSize:10,color:theme.navAcc,marginTop:1}}>{t.profileSettings||"Profile & settings"} ›</div>
           </div>
         </button>
@@ -8407,7 +8418,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
                 <img src="/anchor-monogram.svg" alt="" style={{width:30,height:30,flexShrink:0}}/>
                 <div style={{overflow:"hidden"}}>
                   <div style={{fontFamily:"'Newsreader',Georgia,serif",fontSize:13,fontWeight:500,color:theme.navAcc,letterSpacing:"0.10em",whiteSpace:"nowrap",textTransform:"uppercase",lineHeight:1}}>{settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div>
-                  <div style={{fontSize:9,color:theme.sideMuted,marginTop:4,letterSpacing:"0.08em",whiteSpace:"nowrap",textTransform:"uppercase",fontWeight:600}}>{t.advisorPortalUpper||"Advisor Portal"}</div>
+                  <div style={{fontSize:9,color:theme.sideMuted,marginTop:4,letterSpacing:"0.08em",whiteSpace:"nowrap",textTransform:"uppercase",fontWeight:600}}>{role==="client"?(t.clientPortalUpper||(lang==="es"?"Portal de Cliente":"Client Portal")):(t.advisorPortalUpper||"Advisor Portal")}</div>
                 </div>
               </div>
               <button onClick={()=>setSidebarCollapsed(true)} title={t?.navCollapse||"Collapse sidebar"} style={{background:"transparent",border:"none",color:theme.sideMuted,fontSize:16,cursor:"pointer",padding:4,lineHeight:1,borderRadius:6}}>‹</button>
@@ -8421,7 +8432,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           <button onClick={()=>{setNav("settings");setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={t?.profileSettings||"Profile & Settings"} style={{width:"100%",padding:sidebarCollapsed?"6px":"10px",borderRadius:10,fontSize:12,cursor:"pointer",background:"transparent",color:theme.sideText,border:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",gap:sidebarCollapsed?0:10,justifyContent:sidebarCollapsed?"center":"flex-start",textAlign:"left"}}>
             <AvatarImg id={settings.avatarId||"mh-gold"} size={sidebarCollapsed?28:36}/>
             {!sidebarCollapsed && <div style={{minWidth:0,flex:1,overflow:"hidden"}}>
-              <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{settings.advisorName||authUser?.email||"Mauricio"}</div>
+              <div style={{fontSize:12,fontWeight:700,color:theme.sideText,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</div>
               <div style={{fontSize:10,color:GOLD,marginTop:1,whiteSpace:"nowrap"}}>⚙️ {t.profileSettings||"Profile & settings"} ›</div>
             </div>}
           </button>
@@ -8448,19 +8459,20 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           onPickAvatar={()=>setAvatarPickerOpen(true)}
           onOpenChartSettings={()=>setChartSettingsOpen(true)}
           onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}gaClearLocalCache();setSelected(null);setClients([]);setAuthUser(null);}}
-          advisorName={settings.advisorName||authUser?.email||"Mauricio Hernandez"}
+          advisorName={displayName}
           advisorEmail={settings.advisorEmail||authUser?.email||""}
           avatarId={settings.avatarId||"mh-gold"}
-          avatarInitials={(settings.advisorName||authUser?.email||"MH").trim().split(/\s+/).slice(0,2).map(p=>p[0]).join("").toUpperCase().slice(0,2)||"MH"}
+          avatarInitials={(displayName||"MH").trim().split(/\s+/).slice(0,2).map(p=>p[0]).join("").toUpperCase().slice(0,2)||"MH"}
           th={theme}
           isMobile={vp.isMobile} onOpenDrawer={()=>setDrawerOpen(true)}
           t={t}
           archivedCount={clients.filter(c=>c.archived).length}
+          role={role}
           version={(()=>{const b=typeof window!=="undefined"?(window.__GA_BUILD__||""):"";/* v0.28.0 — regex bumped to \d{2} for minor so v0280 → v0.28.0 (was buggy: parsed as v0.2.80). */const m=b.match(/v(\d)(\d{2})(\d+)-/);return m?`v${m[1]}.${parseInt(m[2],10)}.${parseInt(m[3],10)}`:"v0.36.0";})()}
         />
         <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:
-          nav==="dashboard"?<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>:
+          nav==="dashboard"?(role==="client"?(clients[0]?<ClientDetail client={clients[0]} clientMode={true} onUpdate={upClient} lang={lang} t={t} onBack={()=>{}} startTab={selectedTab} allClients={clients} settings={settings} onTabChange={setSelectedTab}/>:<div className="ga-np" style={{padding:24,color:theme.muted,fontSize:13}}>{t.settingUpProfile||"Setting up your profile…"}</div>):<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>):
           nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
           nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} settings={settings} onConvert={c=>{addClient(c);}}/>:
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
