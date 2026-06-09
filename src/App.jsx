@@ -7649,14 +7649,11 @@ function HelpSupportPage({t,settings,authUser}){
    Click "Edit" to open the ProfileModal scoped to that section.            */
 function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th}){
   const[editing,setEditing]=useState(false);const[draft,setDraft]=useState({});
-  const rm=useReducedMotion();const[flipping,setFlipping]=useState(false);
-  const flipTo=(fn)=>{if(rm){fn();return;}setFlipping(true);setTimeout(()=>{fn();setTimeout(()=>setFlipping(false),30);},230);};
   const set=(k,v)=>setDraft(p=>({...p,[k]:v}));
-  const begin=()=>{if(!fields){onEdit&&onEdit();return;}const d={};fields.forEach(f=>{if(f.type==="logos"){d.logoLight=(settings&&settings.logoLight)||"";d.logoDark=(settings&&settings.logoDark)||"";return;}if(f.type==="signature"){d.advisorSignature=(settings&&settings.advisorSignature)||"";return;}let v=settings?settings[f.k]:undefined;if(f.type==="toggle")v=(v===undefined?(f.def||false):!!v);else v=(v??f.def??"");d[f.k]=v;});flipTo(()=>{setDraft(d);setEditing(true);});};
-  const save=()=>{const patch={...draft};fields.forEach(f=>{if(f.type==="number")patch[f.k]=(patch[f.k]===""||patch[f.k]==null)?undefined:+patch[f.k];});onSave&&onSave(patch);flipTo(()=>setEditing(false));};
+  const begin=()=>{if(!fields){onEdit&&onEdit();return;}const d={};fields.forEach(f=>{if(f.type==="logos"){d.logoLight=(settings&&settings.logoLight)||"";d.logoDark=(settings&&settings.logoDark)||"";return;}if(f.type==="signature"){d.advisorSignature=(settings&&settings.advisorSignature)||"";return;}let v=settings?settings[f.k]:undefined;if(f.type==="toggle")v=(v===undefined?(f.def||false):!!v);else v=(v??f.def??"");d[f.k]=v;});setDraft(d);setEditing(true);};
+  const save=()=>{const patch={...draft};fields.forEach(f=>{if(f.type==="number")patch[f.k]=(patch[f.k]===""||patch[f.k]==null)?undefined:+patch[f.k];});onSave&&onSave(patch);setEditing(false);};
   const canEdit=!!fields||!!onEdit;
-  return <div className="ga-lift" style={{borderRadius:12}}>
-    <div className="ga-spot" style={{...mCARD(th),padding:16,minHeight:0,overflow:"hidden",transformOrigin:"center",transition:rm?"none":"transform .24s cubic-bezier(.4,0,.2,1),opacity .24s ease",transform:flipping?"perspective(1100px) rotateY(90deg)":"perspective(1100px) rotateY(0deg)",opacity:flipping?0.1:1}}>
+  return <div className="ga-lift ga-spot" style={{...mCARD(th),padding:16,minHeight:0}}>
     <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
       {Icon&&<div style={{width:30,height:30,borderRadius:9,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={15} strokeWidth={1.6} color={th.accent}/></div>}
       <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div>
@@ -7674,7 +7671,7 @@ function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th})
           :<input type={f.type==="number"?"number":"text"} value={draft[f.k]} step={f.step} min={f.min} max={f.max} onChange={e=>set(f.k,e.target.value)} style={{...mINP(th),width:180,padding:"7px 10px",fontSize:12}}/>}
         </div>;})}
         <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:6}}>
-          <button onClick={()=>flipTo(()=>setEditing(false))} style={{fontSize:11,padding:"6px 14px",borderRadius:8,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.cancel||"Cancel"}</button>
+          <button onClick={()=>setEditing(false)} style={{fontSize:11,padding:"6px 14px",borderRadius:8,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.cancel||"Cancel"}</button>
           <button className="ga-press" onClick={save} style={{fontSize:11,padding:"6px 16px",borderRadius:8,background:GOLD,color:"#16120A",border:"none",cursor:"pointer",fontWeight:700}}>{t?.save||"Save"}</button>
         </div>
       </div>
@@ -7689,7 +7686,6 @@ function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th})
         <button className="ga-press" onClick={begin} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button>
       </div>}
     </>}
-    </div>
   </div>;
 }
 
