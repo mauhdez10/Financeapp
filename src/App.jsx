@@ -6358,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0696-fix-refresh-route-and-card-natural-height";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0697-no-dashboard-flash-on-refresh";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -8003,7 +8003,10 @@ const _cardOv=isDark?settings.darkCard:settings.lightCard;
 // v0.62 — bg is pinned to the factory B near-black/off-white too (like glassBg). A legacy
 // stored darkBg (#111827 navy) was overriding the redesign and making the page read blue.
 const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh.glassBg};const t=T[lang]||T.en; // EN/ES toggle wired in v0.2.0
-  const[nav,setNav]=useState("dashboard");const[showPricing,setShowPricing]=useState(false);const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState("report");const[selectedCalc,setSelectedCalc]=useState(null);// v0.13.1 — which calculator is open inside the /calculators page
+  // v0.69.7 — seed nav/tab/calc from the URL synchronously so a refresh paints the
+  // correct page on the FIRST render (no dashboard flash before hydration runs).
+  const _gaInitRoute=(()=>{try{if(typeof window==="undefined")return null;return parseGAPath(window.location.pathname);}catch{return null;}})();
+  const[nav,setNav]=useState((_gaInitRoute&&_gaInitRoute.nav)||"dashboard");const[showPricing,setShowPricing]=useState(false);const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState((_gaInitRoute&&_gaInitRoute.selectedTab)||"report");const[selectedCalc,setSelectedCalc]=useState((_gaInitRoute&&_gaInitRoute.selectedCalc)||null);// v0.13.1 — which calculator is open inside the /calculators page
   const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[profileSection,setProfileSection]=useState(null);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));const isPublicPortalRoute=typeof window!=="undefined"&&/\/portal\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
