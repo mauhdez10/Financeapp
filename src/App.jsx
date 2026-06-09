@@ -6358,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0695-settings-flip-uniform-centered-toggle";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0696-fix-refresh-route-and-card-natural-height";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7209,7 +7209,7 @@ function IntakeSubmissionEditor({submission,onSave,onCancel,t}){
 // selectedTab} to a real URL path so refresh / bookmark / share / browser
 // Back-Forward all work. The /intake route stays under D-28 (handled by
 // isPublicIntakeRoute) and is not parsed here.
-const _GA_NAVS=["dashboard","clients","intake-submissions","calculators","promotions","resources","about"];
+const _GA_NAVS=["dashboard","clients","intake-submissions","calculators","promotions","pricing","resources","about","settings","security","billing","backup","archived","whats-new","help"];
 const _GA_CLIENT_TABS=["report","monthly","financialStatements","investments","plan","calculators","backfill","notes"];
 function buildGAPath(nav,selectedId,selectedTab,selectedCalc){
   if(selectedId!=null){
@@ -7672,14 +7672,14 @@ function SettingsCard({title,icon:Icon,desc,rows,fields,onSave,onEdit,settings,t
       </div>
       <SaveBar onSave={save} onCancel={()=>setEditing(false)} t={t}/>
     </Modal>}
-    <div className="ga-lift" onMouseEnter={()=>_flipOn&&!rm&&setFlip(true)} onMouseLeave={()=>_flipOn&&!rm&&!editing&&setFlip(false)} onClick={()=>_flipOn&&rm&&setFlip(f=>!f)} style={{perspective:1600,borderRadius:12}}>
-      <div style={{position:"relative",transformStyle:"preserve-3d",transition:rm?"none":"transform .55s cubic-bezier(.23,1,.32,1)",transform:showBack?"rotateY(180deg)":"rotateY(0deg)"}}>
-        <div className="ga-spot" style={{...mCARD(th),boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",padding:16,display:"flex",flexDirection:"column",height:224}}>
+    <div className="ga-lift ga-spot" onMouseEnter={()=>_flipOn&&!rm&&setFlip(true)} onMouseLeave={()=>_flipOn&&!rm&&!editing&&setFlip(false)} onClick={()=>_flipOn&&rm&&setFlip(f=>!f)} style={{...mCARD(th),position:"relative",perspective:1600,padding:0}}>
+      <div style={{position:"relative",minHeight:"100%",transformStyle:"preserve-3d",transition:rm?"none":"transform .55s cubic-bezier(.23,1,.32,1)",transform:showBack?"rotateY(180deg)":"rotateY(0deg)"}}>
+        <div style={{boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",padding:16,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>{Icon&&<div style={{width:28,height:28,borderRadius:8,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={14} strokeWidth={1.6} color={th.accent}/></div>}<div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div></div>
-          <div style={{display:"flex",flexDirection:"column",gap:8,flex:1,overflow:"auto",minHeight:0}}>{rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),gap:10}}><span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span><span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span></div>)}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>{rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),gap:10}}><span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span><span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span></div>)}</div>
           {canEdit&&<div style={{marginTop:12,textAlign:"right"}}><button className="ga-press" onClick={(e)=>{e.stopPropagation();begin();}} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button></div>}
         </div>
-        <div style={{position:"absolute",inset:0,...mCARD(th),boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",padding:18,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",textAlign:"center",gap:10}}>
+        <div style={{position:"absolute",inset:0,boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",padding:18,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",textAlign:"center",gap:10}}>
           {Icon&&<div style={{width:44,height:44,borderRadius:12,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon size={22} strokeWidth={1.6} color={th.accent}/></div>}
           <div style={{fontSize:15,fontWeight:700,color:th.text,letterSpacing:"-0.01em"}}>{stripLeadEmoji(title)}</div>
           {desc&&<div style={{fontSize:12,color:th.muted,lineHeight:1.55}}>{desc}</div>}
@@ -7762,7 +7762,7 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
     {/* v0.24.0 — page title removed (TopBar shows it). */}
     <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.profileSettingsSub||"Edit any section to update your details, services, or theme."}</div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:11,marginBottom:14}}><span style={{fontSize:11.5,color:th.muted,fontWeight:600}}>{t?.flipCards||"Flip cards"}</span><div onClick={()=>onSave({cardsFlip:!flipOn})} role="switch" aria-checked={flipOn} style={{width:42,height:24,borderRadius:99,background:flipOn?th.accent:th.cardBorder,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:flipOn?20:2,width:20,height:20,borderRadius:99,background:"#fff",transition:"left .2s"}}/></div></div>
-    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignItems:"start"}}>
+    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
       <SettingsCard icon={Users} title={t?.advisorInformation||"Advisor Information"} desc={t?.descAdvisor||"Name, contact, branding & signature"} flipOn={flipOn} rows={advisorRows} fields={advisorFields} onSave={onSave} settings={settings} t={t} th={th}/>
       <SettingsCard icon={Sparkles} title={t?.appearance||"Appearance"} desc={t?.descAppearance||"Theme accent & app zoom"} flipOn={flipOn} rows={appearanceRows} fields={appearanceFields} onSave={onSave} settings={settings} t={t} th={th}/>
       <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} desc={t?.descLocalization||"Language, date format & currency"} flipOn={flipOn} rows={localizationRows} fields={localizationFields} onSave={onSave} settings={settings} t={t} th={th}/>
