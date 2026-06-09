@@ -6358,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0692-settings-flip-animation";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0694-settings-flip-cover-edit-popup";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7647,18 +7647,15 @@ function HelpSupportPage({t,settings,authUser}){
 
 /* ── SettingsCard — 2-col read-only card for the Profile & Settings page.
    Click "Edit" to open the ProfileModal scoped to that section.            */
-function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th}){
+function SettingsCard({title,icon:Icon,desc,rows,fields,onSave,onEdit,settings,t,th}){
   const[editing,setEditing]=useState(false);const[draft,setDraft]=useState({});
+  const rm=useReducedMotion();const[flip,setFlip]=useState(false);
   const set=(k,v)=>setDraft(p=>({...p,[k]:v}));
   const begin=()=>{if(!fields){onEdit&&onEdit();return;}const d={};fields.forEach(f=>{if(f.type==="logos"){d.logoLight=(settings&&settings.logoLight)||"";d.logoDark=(settings&&settings.logoDark)||"";return;}if(f.type==="signature"){d.advisorSignature=(settings&&settings.advisorSignature)||"";return;}let v=settings?settings[f.k]:undefined;if(f.type==="toggle")v=(v===undefined?(f.def||false):!!v);else v=(v??f.def??"");d[f.k]=v;});setDraft(d);setEditing(true);};
   const save=()=>{const patch={...draft};fields.forEach(f=>{if(f.type==="number")patch[f.k]=(patch[f.k]===""||patch[f.k]==null)?undefined:+patch[f.k];});onSave&&onSave(patch);setEditing(false);};
   const canEdit=!!fields||!!onEdit;
-  return <div className="ga-lift ga-spot" style={{...mCARD(th),padding:16,minHeight:0}}>
-    <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14}}>
-      {Icon&&<div style={{width:30,height:30,borderRadius:9,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={15} strokeWidth={1.6} color={th.accent}/></div>}
-      <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div>
-    </div>
-    {editing?
+  return <>
+    {editing&&fields&&<Modal title={stripLeadEmoji(title)} onClose={()=>setEditing(false)} width={460} disableBackdropClose={true}>
       <div style={{display:"flex",flexDirection:"column",gap:11}}>
         {fields.map(f=>{const onLogo=(mode)=>(e)=>{const fl=e.target.files&&e.target.files[0];if(!fl)return;if(fl.size>500*1024){alert((t?.logoTooLarge||"Logo image is too large (max 500KB).")+" "+Math.round(fl.size/1024)+"KB");return;}const r=new FileReader();r.onload=ev=>set(mode==="light"?"logoLight":"logoDark",ev.target.result);r.readAsDataURL(fl);};
         if(f.type==="logos")return <div key={f.k} style={{display:"flex",flexDirection:"column",gap:7,paddingTop:4}}><span style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{f.l}</span><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[["light","#FFFFFF","logoLight"],["dark","#0D1B2A","logoDark"]].map(([m,bgc,k])=><div key={m}><div style={{padding:8,background:bgc,border:"1px solid "+th.cardBorder,borderRadius:9,minHeight:54,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:5}}>{draft[k]?<img src={draft[k]} alt={m} style={{maxHeight:42,maxWidth:"100%",objectFit:"contain"}}/>:<span style={{fontSize:10,color:"#9AA0A8",fontStyle:"italic"}}>{t?.logoNone||"No logo"}</span>}</div><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={onLogo(m)} style={{fontSize:10,width:"100%",color:th.muted}}/>{draft[k]&&<button type="button" onClick={()=>set(k,"")} style={{fontSize:9,marginTop:3,padding:"2px 8px",borderRadius:5,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.clearLogo||"Clear"}</button>}</div>)}</div></div>;
@@ -7670,23 +7667,24 @@ function SettingsCard({title,icon:Icon,rows,fields,onSave,onEdit,settings,t,th})
           :f.type==="color"?<span style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:10.5,fontFamily:"'JetBrains Mono',monospace",color:th.dim}}>{(draft[f.k]||"").toString().toUpperCase()}</span><input type="color" value={draft[f.k]||"#000000"} onChange={e=>set(f.k,e.target.value)} style={{width:34,height:28,border:"1px solid "+th.cardBorder,borderRadius:7,background:"transparent",cursor:"pointer",padding:2}}/></span>
           :<input type={f.type==="number"?"number":"text"} value={draft[f.k]} step={f.step} min={f.min} max={f.max} onChange={e=>set(f.k,e.target.value)} style={{...mINP(th),width:180,padding:"7px 10px",fontSize:12}}/>}
         </div>;})}
-        <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:6}}>
-          <button onClick={()=>setEditing(false)} style={{fontSize:11,padding:"6px 14px",borderRadius:8,background:"transparent",color:th.muted,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{t?.cancel||"Cancel"}</button>
-          <button className="ga-press" onClick={save} style={{fontSize:11,padding:"6px 16px",borderRadius:8,background:GOLD,color:"#16120A",border:"none",cursor:"pointer",fontWeight:700}}>{t?.save||"Save"}</button>
+      </div>
+      <SaveBar onSave={save} onCancel={()=>setEditing(false)} t={t}/>
+    </Modal>}
+    <div className="ga-lift" onMouseEnter={()=>!rm&&setFlip(true)} onMouseLeave={()=>!rm&&setFlip(false)} onClick={()=>rm&&setFlip(f=>!f)} style={{perspective:1600,borderRadius:12}}>
+      <div style={{position:"relative",transformStyle:"preserve-3d",transition:rm?"none":"transform .55s cubic-bezier(.23,1,.32,1)",transform:flip?"rotateY(180deg)":"rotateY(0deg)"}}>
+        <div className="ga-spot" style={{...mCARD(th),boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",padding:16,display:"flex",flexDirection:"column",minHeight:158}}>
+          <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>{Icon&&<div style={{width:28,height:28,borderRadius:8,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={14} strokeWidth={1.6} color={th.accent}/></div>}<div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div></div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,flex:1}}>{rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),gap:10}}><span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span><span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span></div>)}</div>
+          {canEdit&&<div style={{marginTop:12,textAlign:"right"}}><button className="ga-press" onClick={(e)=>{e.stopPropagation();begin();}} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button></div>}
+        </div>
+        <div style={{position:"absolute",inset:0,...mCARD(th),boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",padding:18,display:"flex",flexDirection:"column",justifyContent:"center",gap:10}}>
+          {Icon&&<div style={{width:44,height:44,borderRadius:12,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon size={22} strokeWidth={1.6} color={th.accent}/></div>}
+          <div style={{fontSize:15,fontWeight:700,color:th.text,letterSpacing:"-0.01em"}}>{stripLeadEmoji(title)}</div>
+          {desc&&<div style={{fontSize:12,color:th.muted,lineHeight:1.55}}>{desc}</div>}
         </div>
       </div>
-    :<>
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),gap:10}}>
-          <span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span>
-          <span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span>
-        </div>)}
-      </div>
-      {canEdit&&<div style={{marginTop:12,textAlign:"right"}}>
-        <button className="ga-press" onClick={begin} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button>
-      </div>}
-    </>}
-  </div>;
+    </div>
+  </>;
 }
 
 /* ── SettingsPage — full-page replacement for the old scrollable ProfileModal.
@@ -7760,13 +7758,13 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
   return <div className="ga-np" style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
     {/* v0.24.0 — page title removed (TopBar shows it). */}
     <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.profileSettingsSub||"Edit any section to update your details, services, or theme."}</div>
-    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-      <SettingsCard icon={Users} title={t?.advisorInformation||"Advisor Information"} rows={advisorRows} fields={advisorFields} onSave={onSave} settings={settings} t={t} th={th}/>
-      <SettingsCard icon={Sparkles} title={t?.appearance||"Appearance"} rows={appearanceRows} fields={appearanceFields} onSave={onSave} settings={settings} t={t} th={th}/>
-      <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} rows={localizationRows} fields={localizationFields} onSave={onSave} settings={settings} t={t} th={th}/>
-      <SettingsCard icon={Bell} title={t?.reminders||"Reminders"} rows={remindersRows} fields={remindersFields} onSave={onSave} settings={settings} t={t} th={th}/>
-      <SettingsCard icon={Receipt} title={t?.servicesAndStripeLinks||"Services & Stripe Links"} rows={servicesRows} onEdit={()=>onEdit("services")} t={t} th={th}/>
-      <SettingsCard icon={HardDriveDownload} title={t?.backupAndData||"Backup & Data"} rows={backupRows} onEdit={()=>onEdit("backup")} t={t} th={th}/>
+    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignItems:"start"}}>
+      <SettingsCard icon={Users} title={t?.advisorInformation||"Advisor Information"} desc={t?.descAdvisor||"Name, contact, branding & signature"} rows={advisorRows} fields={advisorFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={Sparkles} title={t?.appearance||"Appearance"} desc={t?.descAppearance||"Theme accent & app zoom"} rows={appearanceRows} fields={appearanceFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} desc={t?.descLocalization||"Language, date format & currency"} rows={localizationRows} fields={localizationFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={Bell} title={t?.reminders||"Reminders"} desc={t?.descReminders||"Alert thresholds & toggles"} rows={remindersRows} fields={remindersFields} onSave={onSave} settings={settings} t={t} th={th}/>
+      <SettingsCard icon={Receipt} title={t?.servicesAndStripeLinks||"Services & Stripe Links"} desc={t?.descServices||"Your services & payment links"} rows={servicesRows} onEdit={()=>onEdit("services")} t={t} th={th}/>
+      <SettingsCard icon={HardDriveDownload} title={t?.backupAndData||"Backup & Data"} desc={t?.descBackup||"Export & verify your backups"} rows={backupRows} onEdit={()=>onEdit("backup")} t={t} th={th}/>
     </div>
     {numArchived>0 && <div style={{marginTop:14,padding:"10px 14px",background:th.warn+"11",border:`1px solid ${th.warn}33`,borderRadius:10,fontSize:11,color:th.muted}}>🗂 {numArchived} {t?.archivedClientsLbl||"archived clients"} · <button onClick={()=>onEdit("archived")} style={{background:"transparent",border:"none",color:th.accent,fontWeight:700,fontSize:11,cursor:"pointer",padding:0,textDecoration:"underline"}}>{t?.viewArchived||"View archived"}</button></div>}
   </div>;
