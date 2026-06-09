@@ -6358,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0697-no-dashboard-flash-on-refresh";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0698-settings-card-clip-3d-no-page-jump";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7672,7 +7672,7 @@ function SettingsCard({title,icon:Icon,desc,rows,fields,onSave,onEdit,settings,t
       </div>
       <SaveBar onSave={save} onCancel={()=>setEditing(false)} t={t}/>
     </Modal>}
-    <div className="ga-lift ga-spot" onMouseEnter={()=>_flipOn&&!rm&&setFlip(true)} onMouseLeave={()=>_flipOn&&!rm&&!editing&&setFlip(false)} onClick={()=>_flipOn&&rm&&setFlip(f=>!f)} style={{...mCARD(th),position:"relative",perspective:1600,padding:0}}>
+    <div className="ga-lift ga-spot" onMouseEnter={()=>_flipOn&&!rm&&setFlip(true)} onMouseLeave={()=>_flipOn&&!rm&&!editing&&setFlip(false)} onClick={()=>_flipOn&&rm&&setFlip(f=>!f)} style={{...mCARD(th),position:"relative",perspective:1600,padding:0,overflow:"hidden"}}>
       <div style={{position:"relative",minHeight:"100%",transformStyle:"preserve-3d",transition:rm?"none":"transform .55s cubic-bezier(.23,1,.32,1)",transform:showBack?"rotateY(180deg)":"rotateY(0deg)"}}>
         <div style={{boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",padding:16,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>{Icon&&<div style={{width:28,height:28,borderRadius:8,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={14} strokeWidth={1.6} color={th.accent}/></div>}<div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div></div>
