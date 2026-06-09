@@ -211,7 +211,7 @@ const MS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec
 const MS_ES=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const ML_ES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const mLabel=(label,lang)=>{if(!label||lang!=="es")return label;const parts=String(label).split(" ");if(parts.length<2)return label;const i=MS.indexOf(parts[0]);if(i<0)return label;return MS_ES[i]+" "+parts.slice(1).join(" ");};
-const fmtDate=(d,lang)=>{try{const date=d instanceof Date?d:new Date(d);if(isNaN(date))return "";if(lang==="es"){return `${date.getDate()} de ${ML_ES[date.getMonth()].toLowerCase()} de ${date.getFullYear()}`;}return date.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});}catch(e){return "";}};
+let _GA_DATEFMT="long";const fmtDate=(d,lang)=>{try{const date=d instanceof Date?d:new Date(d);if(isNaN(date))return "";if(_GA_DATEFMT==="short"){const mm=String(date.getMonth()+1).padStart(2,"0"),dd=String(date.getDate()).padStart(2,"0");return lang==="es"?`${dd}/${mm}/${date.getFullYear()}`:`${mm}/${dd}/${date.getFullYear()}`;}if(lang==="es"){return `${date.getDate()} de ${ML_ES[date.getMonth()].toLowerCase()} de ${date.getFullYear()}`;}return date.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});}catch(e){return "";}};
 
 const ML=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const CERTS=["Master of Business Administration (MBA)","Bachelor of Business Administration (BBA)","FMVA — Financial Modeling & Valuation Analyst","FPWMP — Financial Planning & Wealth Management Professional","FL0215 — Florida Life & Health Insurance License"];
@@ -245,7 +245,7 @@ const SEED=[mk({id:1,firstName:"Miguel",lastName:"Torres",partnerFirst:"Sofia",p
 /* ── HELPERS ─────────────────────────────────────────────────────────────── */
 const FREQ={weekly:52/12,biweekly:26/12,semimonthly:2,monthly2:1,annual:1/12};
 const toM=(a,f)=>a*(FREQ[f]??1);
-const fmt=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n||0);
+let _GA_CCY="USD";const fmt=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:_GA_CCY||"USD",maximumFractionDigits:0}).format(n||0);
 const fmtD=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
 const fmtS=n=>{if(n>=1000000)return"$"+(n/1000000).toFixed(1)+"M";if(n>=1000)return"$"+(n/1000).toFixed(0)+"K";return fmt(n);};
 const bE=e=>['e','E','+','-'].includes(e.key)&&e.preventDefault();
@@ -496,7 +496,7 @@ function ProfileToggleField({k,label,s,setS,th,INP}){
   </div>;
 }
 
-function ProfileModal({settings,onSave,onClose,t,section}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
+function ProfileModal({settings,onSave,onClose,t,section,clients}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
 const services = s.services && s.services.length ? s.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:(v.en||""),price:(v.price||""),stripeUrl:(s.stripeLinks||{})[v.id]||""}));
 const updateService=(idx,field,val)=>{const next=services.map((sv,i)=>i===idx?{...sv,[field]:val}:sv);setS(p=>({...p,services:next}));};
 const addService=()=>{const next=[...services,{id:"svc-"+Date.now(),icon:"💼",name:"",price:"",stripeUrl:""}];setS(p=>({...p,services:next}));};
@@ -527,7 +527,7 @@ if(section==="services"){return<Modal title={t.servicesAndStripeLinks||"Services
 if(section==="backup"){return<Modal title={t.backupAndData||"Backup & Data"} onClose={onClose} width={520} disableBackdropClose={true}>
 <div style={{fontSize:11,color:th.dim,marginBottom:12,lineHeight:1.6,fontStyle:"italic"}}>{t.settingsBackupHelp||"Export a full backup monthly via Dashboard → ⋯ → Backup All (JSON). Save the file to your password-manager vault or encrypted drive."}</div>
 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:th.bg,borderRadius:8,marginBottom:12,border:`1px solid ${th.cardBorder}`}}><span style={{fontSize:11,color:th.muted}}>{t.lastBackupLbl||"Last verified backup"}</span><span style={{fontSize:11,fontWeight:700,color:th.text,fontFamily:"'JetBrains Mono',monospace"}}>{s.lastBackupVerified?fmtDate(s.lastBackupVerified):(t.settingsBackupNever||"never")}</span></div>
-<button onClick={()=>setS(p=>({...p,lastBackupVerified:new Date().toISOString().slice(0,10)}))} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>✓ {t.settingsBackupMarkVerified||"Mark Verified Today"}</button>
+<button onClick={()=>expBackup(clients||[],s)} style={{fontSize:12,padding:"10px 14px",borderRadius:9,background:th.accent,color:"#1A1208",border:"none",cursor:"pointer",fontWeight:700,display:"block",width:"100%",marginBottom:8}}>{t.saveBackupBtn||"Save backup (.json)"}</button><div style={{fontSize:10,color:th.dim,marginBottom:14,lineHeight:1.5,fontStyle:"italic"}}>{t.saveBackupHelp||"Choose where to save, your computer or a synced Drive folder. (Some browsers save straight to Downloads.)"}</div><button onClick={()=>setS(p=>({...p,lastBackupVerified:new Date().toISOString().slice(0,10)}))} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:th.accent+"22",color:th.accent,border:`1px solid ${th.accent}44`,cursor:"pointer",fontWeight:600}}>✓ {t.settingsBackupMarkVerified||"Mark Verified Today"}</button>
 <SaveBar onSave={()=>onSave(s)} onCancel={onClose} t={t}/>
 </Modal>;}
 return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBackdropClose={true}>
@@ -4123,7 +4123,7 @@ const ICONS={retirement:PiggyBank,portfolio:TrendingUp,homeEquity:Home,income:Wa
   </div>;
 }
 
-const expBackup=(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`golden_anchor_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();};
+const expBackup=async(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const fname="golden_anchor_backup_"+new Date().toISOString().slice(0,10)+".json";try{if(typeof window!=="undefined"&&window.showSaveFilePicker){const h=await window.showSaveFilePicker({suggestedName:fname,types:[{description:"Golden Anchor backup (JSON)",accept:{"application/json":[".json"]}}]});const w=await h.createWritable();await w.write(data);await w.close();return;}}catch(e){if(e&&e.name==="AbortError")return;}const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;a.click();};
 const validateBackup=json=>{try{const d=JSON.parse(json);return d.__ga_backup__&&Array.isArray(d.clients)?d:null;}catch{return null;}};
 /* ── EXCEL / CSV IMPORTER ────────────────────────────────────────────────── */
 const xFreq=f=>{const s=(f||'').toLowerCase().replace(/[-\s]/g,'');if(s.includes('biweek')||s.includes('byweek'))return'biweekly';if(s.includes('week'))return'weekly';if(s.includes('year')||s.includes('annual'))return'annual';return'monthly2';};
@@ -6358,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0690-client-role-portal";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0691-localization-editable-backup-destination";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -7726,9 +7726,14 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
     [t?.appZoom||"App zoom", Math.round((settings.appZoom||1)*100)+"%"],
   ];
   const localizationRows=[
-    [t?.language||"Language", t?.englishEn||"English (EN)"],
-    [t?.dateFormat||"Date format", "Month DD, YYYY"],
-    [t?.currency||"Currency", "USD ($)"],
+    [t?.language||"Language", settings.lang==="es"?"Español (ES)":(t?.englishEn||"English (EN)")],
+    [t?.dateFormat||"Date format", settings.dateFormat==="short"?"MM/DD/YYYY":"Month DD, YYYY"],
+    [t?.currency||"Currency", (settings.currency||"USD")],
+  ];
+  const localizationFields=[
+    {k:"lang",l:t?.language||"Language",type:"select",options:[["en",t?.englishEn||"English (EN)"],["es","Espanol (ES)"]]},
+    {k:"dateFormat",l:t?.dateFormat||"Date format",type:"select",options:[["long","Month DD, YYYY"],["short","MM/DD/YYYY"]]},
+    {k:"currency",l:t?.currency||"Currency",type:"select",options:[["USD","USD ($)"],["EUR","EUR (\u20ac)"],["GBP","GBP (\u00a3)"],["MXN","MXN ($)"],["CAD","CAD ($)"]]},
   ];
   const remindersRows=[
     [t?.noContactThresh||"No-contact threshold", (settings.noContactDays||30)+" "+(t?.daysLbl||"days")],
@@ -7758,7 +7763,7 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
     <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
       <SettingsCard icon={Users} title={t?.advisorInformation||"Advisor Information"} rows={advisorRows} fields={advisorFields} onSave={onSave} settings={settings} t={t} th={th}/>
       <SettingsCard icon={Sparkles} title={t?.appearance||"Appearance"} rows={appearanceRows} fields={appearanceFields} onSave={onSave} settings={settings} t={t} th={th}/>
-      <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} rows={localizationRows} t={t} th={th}/>
+      <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} rows={localizationRows} fields={localizationFields} onSave={onSave} settings={settings} t={t} th={th}/>
       <SettingsCard icon={Bell} title={t?.reminders||"Reminders"} rows={remindersRows} fields={remindersFields} onSave={onSave} settings={settings} t={t} th={th}/>
       <SettingsCard icon={Receipt} title={t?.servicesAndStripeLinks||"Services & Stripe Links"} rows={servicesRows} onEdit={()=>onEdit("services")} t={t} th={th}/>
       <SettingsCard icon={HardDriveDownload} title={t?.backupAndData||"Backup & Data"} rows={backupRows} onEdit={()=>onEdit("backup")} t={t} th={th}/>
@@ -8373,14 +8378,14 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}gaClearLocalCache();setClients([]);setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
-  const globalHide=settings.hideNumbers||false;
+  const globalHide=settings.hideNumbers||false;_GA_CCY=settings.currency||"USD";_GA_DATEFMT=settings.dateFormat||"long";
   return<ThemeCtx.Provider value={theme}><HideCtx.Provider value={{hide:globalHide}}><ChartConfigCtx.Provider value={settings.chartCustomizations||{}}>
     {/* v0.5.2a — Idle warning modal */}
     {idleWarn&&<div style={{position:"fixed",inset:0,background:"#0008",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}><div style={{background:theme.modal,border:`2px solid ${theme.warn}`,borderRadius:14,padding:24,maxWidth:380,boxShadow:"0 32px 80px #0009"}}><div style={{fontSize:28,marginBottom:8,textAlign:"center"}}>⏰</div><div style={{fontSize:14,fontWeight:700,color:theme.text,marginBottom:8,textAlign:"center"}}>{t.idleWarnTitle||"You'll be signed out soon"}</div><div style={{fontSize:12,color:theme.muted,marginBottom:16,textAlign:"center",lineHeight:1.5}}>{t.idleWarnBody||"You've been inactive for a while. Click below to stay signed in, or you'll be logged out in 1 minute. Any in-flight client edits will be saved as a draft."}</div><button onClick={()=>{setIdleWarn(false);}} style={{width:"100%",padding:"10px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:theme.accent,color:"#0D1B2A",border:"none"}}>{t.stayLoggedIn||"Stay Signed In"}</button></div></div>}
     {/* v0.5.2a — Toast (save failures / info) */}
     {toast&&<div role="status" aria-live="polite" style={{position:"fixed",bottom:24,right:24,maxWidth:380,zIndex:120,background:toast.kind==="error"?"#EF4444":toast.kind==="success"?"#10B981":theme.accent,color:"#fff",padding:"12px 16px",borderRadius:10,boxShadow:"0 12px 40px #0008",fontSize:12,fontWeight:600,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:10}}><span style={{fontSize:16}}>{toast.kind==="error"?"⚠️":toast.kind==="success"?"✓":"ℹ️"}</span><span style={{flex:1}}>{toast.msg}</span><button onClick={()=>setToast(null)} aria-label={t.close||"Close"} style={{background:"transparent",border:"none",color:"#fff",cursor:"pointer",fontSize:14,padding:0,opacity:0.8}}>✕</button></div>}
     {importDupResolver&&<DuplicateResolverModal incoming={importDupResolver.incoming} existing={clients} onResolve={importDupResolver.resolver} onClose={()=>setImportDupResolver(null)} t={t}/>}{addOpen&&<NewClientModal onSave={addClient} onClose={()=>setAddOpen(false)} t={t}/>}
-    {profileOpen&&<ProfileModal section={profileSection} settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);setProfileSection(null);}} onClose={()=>{setProfileOpen(false);setProfileSection(null);}} t={t}/>}
+    {profileOpen&&<ProfileModal section={profileSection} clients={clients} settings={settings} onSave={s=>{setSettings(s);setProfileOpen(false);setProfileSection(null);}} onClose={()=>{setProfileOpen(false);setProfileSection(null);}} t={t}/>}
     <AvatarPickerModal open={avatarPickerOpen} current={settings.avatarId||"mh-gold"} onPick={id=>{setSettings(s=>({...s,avatarId:id}));setAvatarPickerOpen(false);}} onClose={()=>setAvatarPickerOpen(false)} t={t} theme={theme}/>
     {chartSettingsOpen&&<ChartSettingsModal settings={settings} onSave={setSettings} onClose={()=>setChartSettingsOpen(false)} t={t}/>}
     {sidebarImportOpen&&<ImportWizard onClose={()=>setSidebarImportOpen(false)} onImport={cs=>{importMultiple(cs);setSidebarImportOpen(false);}} existingClients={clients} t={t}/>}
@@ -8452,7 +8457,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           )}
           breadcrumb={selected?((t?.clients||"Clients")+" · "+selected.firstName+" "+selected.lastName):null}
           isDark={isDark} setDark={()=>setDark(d=>!d)}
-          lang={lang} setLang={setLang}
+          lang={lang} setLang={l=>{setLang(l);setSettings(s=>({...s,lang:l}));}}
           hideNumbers={settings.hideNumbers||false} setHide={v=>setSettings(s=>({...s,hideNumbers:v}))}
           signedIn={!!authUser}
           onNav={(n)=>{setNav(n);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}}
@@ -8478,7 +8483,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
           nav==="pricing"?<PricingPage variant="app" t={t} lang={lang} settings={settings} onRequest={null}/>:nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="resources"?<ResourcesPage t={t}/>:
-          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={(sec)=>{setProfileSection(sec||null);setProfileOpen(true);}} onSave={patch=>setSettings(s=>({...s,...patch}))} t={t}/>:
+          nav==="settings"?<SettingsPage settings={settings} clients={clients} onEdit={(sec)=>{setProfileSection(sec||null);setProfileOpen(true);}} onSave={patch=>{setSettings(s=>({...s,...patch}));if(patch.lang==="en"||patch.lang==="es")setLang(patch.lang);}} t={t}/>:
           nav==="security"?<SecurityPage t={t}/>:
           nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
