@@ -100,6 +100,7 @@ async function gaDownloadCompleteReport(payload){
   }
 }
 async function gaMigrateLocalStorage(userId){if(!supabase||!userId)return false;if(localStorage.getItem("ga_migrated_to_supabase")==="1")return false;try{const lsClients=localStorage.getItem("ga_v3");const lsSettings=localStorage.getItem("ga_settings");const existing=await gaLoadClients(userId);if((existing||[]).length>0){localStorage.setItem("ga_migrated_to_supabase","1");return false;}let allOk=true;let savedCount=0;let totalCount=0;if(lsClients){const arr=JSON.parse(lsClients);if(Array.isArray(arr)&&arr.length>0){totalCount=arr.length;for(const c of arr){const ok=await gaSaveClient(userId,c);if(ok)savedCount++;else allOk=false;}}}if(lsSettings){try{const s=JSON.parse(lsSettings);await gaSaveSettings(userId,s);}catch(se){console.error("[GA] settings migrate error",se);}}if(allOk&&totalCount===savedCount){localStorage.setItem("ga_migrated_to_supabase","1");console.log(`[GA] migration complete: ${savedCount}/${totalCount} clients migrated`);return true;}else{console.error(`[GA] migration incomplete: ${savedCount}/${totalCount} clients saved — flag NOT set, will retry next login`);return false;}}catch(e){console.error("[GA] migration error",e);return false;}}
+function gaClearLocalCache(){try{["ga_v3","ga_settings","ga_session_draft","ga_migrated_to_supabase","ga_cache_uid"].forEach(k=>localStorage.removeItem(k));}catch(e){}}
 
 
 /* ── THEMES ─────────────────────────────────────────────────────────────── */
@@ -6357,7 +6358,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-08-v0680-client-portal-readonly-token";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-09-v0681-fix-cross-account-cache-leak";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -8046,8 +8047,13 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     _cloudReadyRef.current=false;
     (async()=>{
       setBootstrapping(true);
+      // SECURITY (v0.68.1): never let one account's cached data show or upload under another
+      // on a shared browser. If the cache belongs to a different user, purge it before anything.
+      const _foreignCache=(()=>{try{const u=localStorage.getItem("ga_cache_uid");return !!(u&&u!==authUser.id);}catch{return false;}})();
+      if(_foreignCache){gaClearLocalCache();setClients([]);setSettings(s=>({...DEF_SETTINGS,lang:s.lang,isDark:s.isDark}));}
+      try{localStorage.setItem("ga_cache_uid",authUser.id);}catch(e){}
       try{
-        await gaMigrateLocalStorage(authUser.id);
+        if(!_foreignCache)await gaMigrateLocalStorage(authUser.id);
         const remote=await gaLoadClients(authUser.id);
         if(cancelled)return;
         if(Array.isArray(remote)&&remote.length>0){
@@ -8055,7 +8061,8 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           _lastClientsRef.current=mapped;  // seed BEFORE setClients so save effect sees no diff
           setClients(mapped);
         }else{
-          _lastClientsRef.current=clients;  // local data became the seed (migration uploaded it)
+          if(_foreignCache){_lastClientsRef.current=[];setClients([]);}
+          else{_lastClientsRef.current=clients;}  // local data became the seed (migration uploaded it)
         }
         const remoteSettings=await gaLoadSettings(authUser.id);
         if(cancelled)return;
@@ -8354,7 +8361,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   if(!authUser)return<ThemeCtx.Provider value={theme}>{showPricing?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>setShowPricing(false)} onSignIn={()=>setShowPricing(false)} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>:<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>setShowPricing(true)}/>}</ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
-  if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
+  if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}gaClearLocalCache();setClients([]);setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
   const globalHide=settings.hideNumbers||false;
   return<ThemeCtx.Provider value={theme}><HideCtx.Provider value={{hide:globalHide}}><ChartConfigCtx.Provider value={settings.chartCustomizations||{}}>
     {/* v0.5.2a — Idle warning modal */}
@@ -8440,7 +8447,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           onNav={(n)=>{setNav(n);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}}
           onPickAvatar={()=>setAvatarPickerOpen(true)}
           onOpenChartSettings={()=>setChartSettingsOpen(true)}
-          onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}setAuthUser(null);}}
+          onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}gaClearLocalCache();setSelected(null);setClients([]);setAuthUser(null);}}
           advisorName={settings.advisorName||authUser?.email||"Mauricio Hernandez"}
           advisorEmail={settings.advisorEmail||authUser?.email||""}
           avatarId={settings.avatarId||"mh-gold"}
