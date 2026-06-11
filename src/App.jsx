@@ -100,7 +100,7 @@ function KpiTile({label,value,color,sub,delta,spark}){
       <div style={{minWidth:0}}>
         <div style={{fontSize:27,fontWeight:600,color:th.text,fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.5px",fontFamily:"'JetBrains Mono',ui-monospace,monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div>
         {(delta||sub)&&<div style={{fontSize:11,color:th.dim,display:"flex",alignItems:"center",gap:7,marginTop:9}}>
-          {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{delta.up?"▲":delta.down?"▼":"→"} {delta.value}</span>}
+          {delta&&<span style={{background:(delta.up?th.pos:delta.down?th.neg:th.dim)+"1A",color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",fontSize:10.5,padding:"2px 8px",borderRadius:99,lineHeight:1.4,whiteSpace:"nowrap"}}>{delta.up?"▲":delta.down?"▼":"→"} {delta.value}</span>}
           {sub&&<span>{sub}</span>}
         </div>}
       </div>
@@ -4656,7 +4656,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-10-v0711-role-guard-logic-skill";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-10-v0712-kpi-delta-chips";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
