@@ -66,6 +66,17 @@
       always compounds monthly.** Decide: wire it or remove the dropdown.
       Also: IncomeCalc uses **hardcoded 2025 tax brackets** — annual maintenance item.
 
+### 4c. Continuation batch 2 (v0.72.1 → v0.72.2)
+- [ ] **Phase 2a+2b extraction:** marketing pages, landing/Login, legal components
+      (SignaturePad/EngagementLetter/ToS), intake pages, admin/settings pages, and the
+      portal pages all live in src/pages + src/components now. **App.jsx: 8,502 →
+      ~3,790 lines (-55%).** Every extracted surface was driven live after the move
+      (Resources, About, Pricing, landing+canvas, Promotions, Settings+signature popup,
+      Intake admin, public /intake guard).
+- [ ] **Pre-existing routing bug FIXED:** deep-linking or refreshing on /intake-submissions
+      always bounced to the dashboard (the public-intake prefix check swallowed it —
+      since v0.13). Refresh on the Intake Forms page now stays put. Try it.
+
 ### 5. Explicitly NOT done this sprint (so nothing is silent)
 - Phase 1b/2 extraction (calculators, primitives, ClientDetail split into tabs).
 - Design surface items: landing hero spec, table polish, type-scale snap, page-header
