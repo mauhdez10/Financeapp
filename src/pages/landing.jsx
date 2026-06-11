@@ -67,6 +67,8 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing,onBack
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");const[showPw,setShowPw]=useState(false);const[signupRole,setSignupRole]=useState("client");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
   useEffect(()=>{if(typeof window==="undefined")return;const h=window.location.hash||"";if(h.includes("type=recovery")){setMode("setNew");setInfo(t.resetSetNewIntro||"Enter your new password below.");}},[]);
+  // v0.78 — hero email-capture handoff: land directly in signup with the email prefilled
+  useEffect(()=>{try{const e=sessionStorage.getItem("ga_signup_email");if(e!=null){sessionStorage.removeItem("ga_signup_email");setMode("signup");if(e)setEm(e);}}catch(_e){}},[]);
   const go=async()=>{
     setErr("");setInfo("");
     if(!supabase){setErr((t.supabaseError||"Connection error. Please reload.")+" (env vars missing)");return;}
@@ -376,11 +378,57 @@ function GoldenTides({reducedMotion}){
   return <canvas ref={ref} aria-hidden="true" style={{position:"absolute",inset:0,width:"100%",height:"100%"}}/>;
 }
 
-/* ── LandingPage (MD-E part 2, v0.74.1; hero rebuilt v0.77 from the owner's
-   cinematic references) — the marketing front door at "/". Hero = always-dark
-   GoldenTides cinema (premium editorial, like the refs) regardless of theme;
-   the sections below follow the user's theme. Compliance stays one quiet footer
-   line (D-17) — no front-page disclaimer walls, per the owner's directive.      */
+/* ── HeroVideo (v0.78) — full-screen looping background video with the owner's
+   exact rAF fade system: 500ms fade-in on load/loop start, 500ms fade-out when
+   0.55s remain, reset+replay on end; each new fade cancels the previous frame
+   and resumes from current opacity. Falls back to GoldenTides if the video
+   errors. /public/hero-bg.mp4 = "Golden Particles in Water" (Pexels 10296179,
+   free license, commercial use, no attribution required).                      */
+function HeroVideo({reducedMotion,onFail}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const v=ref.current;if(!v)return;
+    if(reducedMotion){v.pause();v.style.opacity=0.6;return;}
+    let rafId=null;const fadingOutRef={current:false};
+    const fadeTo=(target,ms)=>{
+      if(rafId)cancelAnimationFrame(rafId);
+      const from=parseFloat(v.style.opacity||"0");const t0=performance.now();
+      const step=(now)=>{
+        const k=Math.min(1,(now-t0)/ms);
+        v.style.opacity=String(from+(target-from)*k);
+        if(k<1)rafId=requestAnimationFrame(step);
+      };
+      rafId=requestAnimationFrame(step);
+    };
+    const onPlaying=()=>{fadingOutRef.current=false;fadeTo(0.6,500);};
+    const onTime=()=>{
+      if(fadingOutRef.current)return;
+      if(v.duration&&v.duration-v.currentTime<=0.55){fadingOutRef.current=true;fadeTo(0,500);}
+    };
+    const onEnded=()=>{
+      v.style.opacity="0";
+      setTimeout(()=>{v.currentTime=0;const p=v.play();if(p&&p.catch)p.catch(()=>{});},100);
+    };
+    v.style.opacity="0";
+    v.addEventListener("playing",onPlaying);
+    v.addEventListener("timeupdate",onTime);
+    v.addEventListener("ended",onEnded);
+    const p=v.play();if(p&&p.catch)p.catch(()=>{});
+    // resilience: if playback can't start (low-power mode, hidden tab), still show a
+    // static frame rather than black — fade in once data exists.
+    const still=setTimeout(()=>{if(parseFloat(v.style.opacity||"0")<0.05&&v.readyState>=2)fadeTo(0.6,500);},1600);
+    return()=>{clearTimeout(still);if(rafId)cancelAnimationFrame(rafId);v.removeEventListener("playing",onPlaying);v.removeEventListener("timeupdate",onTime);v.removeEventListener("ended",onEnded);};
+  },[reducedMotion]);
+  return <video ref={ref} muted playsInline autoPlay preload="auto" onError={onFail} aria-hidden="true"
+    src="/hero-bg.mp4"
+    style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:0}}/>;
+}
+
+/* ── LandingPage — hero rebuilt v0.78 to the owner's liquid-glass-over-video
+   spec (capsule glass nav, Instrument Serif headline with gold period, glass
+   email-capture bar, floating glass card, grid lines + central glow, circular
+   glass social buttons). Hero is always cinematic-dark; sections below follow
+   the user's theme. Compliance stays one quiet footer line (D-17).            */
 function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav}){
   const reducedMotion=useReducedMotion();
   const es=lang==="es";
@@ -448,66 +496,81 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
     {name:"Premium",price:"$3+",sub:es?"Todo desbloqueado — paga lo que elijas":"Everything unlocked — choose what you pay",hot:true},
     {name:es?"Con asesor":"With an advisor",price:"$49+",sub:es?"Acompañamiento mensual bilingüe":"Bilingual monthly coaching"},
   ];
-  // hero palette — the cinema is ALWAYS dark (both references are), independent of theme
-  const HP={text:"#F2EFE6",muted:"rgba(232,226,210,0.74)",dim:"rgba(216,208,188,0.46)",gold:"#E2C375",line:"rgba(242,239,230,0.14)",glass:"rgba(255,255,255,0.06)"};
-  const heroPill={fontSize:12,padding:"9px 15px",minHeight:40,borderRadius:99,background:HP.glass,border:`1px solid ${HP.line}`,color:HP.muted,cursor:"pointer",fontWeight:600,fontFamily:"inherit",backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)"};
+  // v0.78 — liquid-glass video hero state (video falls back to GoldenTides on error)
+  const[videoOk,setVideoOk]=useState(true);
+  const[heroEmail,setHeroEmail]=useState("");
   return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
     <div style={{position:"relative",zIndex:2}}>
 
-      {/* ── CINEMATIC HERO (v0.77, built from the owner's two Mux references) ── */}
-      <section style={{position:"relative",minHeight:"92vh",display:"flex",flexDirection:"column",background:"#07090D",overflow:"hidden"}}>
-        <GoldenTides reducedMotion={reducedMotion}/>
-        <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(7,9,13,0.46) 0%, rgba(7,9,13,0) 30%)",pointerEvents:"none"}}/>
-        <header style={{position:"relative",zIndex:3,maxWidth:1320,width:"100%",margin:"0 auto",padding:"22px 40px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,boxSizing:"border-box",flexWrap:"wrap"}}>
-          <div style={{display:"flex",alignItems:"center",gap:11}}>
-            <div style={{width:34,height:34,borderRadius:10,background:HP.glass,border:`1px solid ${HP.line}`,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(10px)"}}><img src="/anchor-monogram.svg" alt="" style={{width:20,height:20}}/></div>
-            <div>
-              <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.01em",color:HP.text,lineHeight:1}}>Golden Anchor</div>
-              <div style={{fontSize:8,color:HP.dim,marginTop:3,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>{es?"Asesoría Financiera":"Financial Advisory"}</div>
+      {/* ── LIQUID-GLASS VIDEO HERO (v0.78, owner's spec) ───────────────────── */}
+      <section style={{position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",background:"#070b0a",overflow:"hidden"}}>
+        {videoOk?<HeroVideo reducedMotion={reducedMotion} onFail={()=>setVideoOk(false)}/>:<GoldenTides reducedMotion={reducedMotion}/>}
+        {/* readability overlays: left + bottom-up gradients (spec) */}
+        <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(90deg, rgba(7,11,10,0.82) 0%, rgba(7,11,10,0.25) 45%, rgba(7,11,10,0) 70%)",pointerEvents:"none"}}/>
+        <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(0deg, rgba(7,11,10,0.92) 0%, rgba(7,11,10,0.25) 36%, rgba(7,11,10,0) 60%)",pointerEvents:"none"}}/>
+        {/* thin vertical grid lines at 25/50/75 (desktop) */}
+        <div className="ga-hero-grid" aria-hidden><span style={{left:"25%"}}/><span style={{left:"50%"}}/><span style={{left:"75%"}}/></div>
+        {/* central glow ellipse */}
+        <svg aria-hidden style={{position:"absolute",left:"50%",top:"18%",transform:"translateX(-50%)",width:900,height:340,pointerEvents:"none",opacity:0.5}} viewBox="0 0 900 340">
+          <defs><filter id="ga-hero-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="25"/></filter></defs>
+          <ellipse cx="450" cy="170" rx="330" ry="80" fill="rgba(201,168,76,0.30)" filter="url(#ga-hero-blur)"/>
+        </svg>
+
+        {/* capsule glass nav */}
+        <header style={{position:"relative",zIndex:4,padding:"22px 24px"}}>
+          <div className="ga-liquid" style={{borderRadius:999,padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,maxWidth:1040,margin:"0 auto",flexWrap:"wrap"}}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <img src="/anchor-monogram.svg" alt="" style={{width:22,height:22}}/>
+              <span style={{fontWeight:600,fontSize:16,letterSpacing:"-0.01em",color:"#F2EFE6"}}>Golden Anchor</span>
             </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
-            {onNav&&<button onClick={()=>onNav("about")} style={heroPill}>{es?"Nosotros":"About"}</button>}
-            <button onClick={onPricing} style={heroPill}>{es?"Precios":"Pricing"}</button>
-            {onNav&&<button onClick={()=>onNav("faq")} style={heroPill}>Q&A</button>}
-            {onNav&&<button onClick={()=>onNav("contact")} style={heroPill}>{es?"Contacto":"Contact"}</button>}
-            <button onClick={onLangToggle} aria-label="Toggle language" style={heroPill}>{es?"EN":"ES"}</button>
-            <button onClick={onToggle} aria-label="Toggle theme" style={heroPill}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
-            <button className="ga-press" onClick={onSignIn} style={{...heroPill,background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",fontWeight:700,border:"none",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32)"}}>{es?"Iniciar sesión":"Sign in"}</button>
+            <nav style={{display:"flex",alignItems:"center",gap:22,flexWrap:"wrap"}}>
+              {onNav&&[["about",es?"Nosotros":"About"],["faq","Q&A"],["contact",es?"Contacto":"Contact"]].map(([id,l])=><button key={id} onClick={()=>onNav(id)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:13.5,fontWeight:500,fontFamily:"inherit",padding:"6px 2px"}} onMouseEnter={e=>e.currentTarget.style.color="#E2C375"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.8)"}>{l}</button>)}
+              <button onClick={onPricing} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:13.5,fontWeight:500,fontFamily:"inherit",padding:"6px 2px"}} onMouseEnter={e=>e.currentTarget.style.color="#E2C375"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.8)"}>{es?"Precios":"Pricing"}</button>
+            </nav>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <button onClick={onLangToggle} className="ga-liquid" style={{borderRadius:999,padding:"8px 14px",color:"rgba(255,255,255,0.85)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"EN":"ES"}</button>
+              <button onClick={onSignIn} className="ga-liquid ga-press" style={{borderRadius:999,padding:"8px 20px",color:"#fff",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"Iniciar sesión":"Sign in"}</button>
+            </div>
           </div>
         </header>
 
-        <div style={{position:"relative",zIndex:3,flex:1,maxWidth:1320,width:"100%",margin:"0 auto",padding:"2vh 40px 0",boxSizing:"border-box",display:"flex",flexDirection:"column",justifyContent:"center"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,fontSize:10,color:HP.gold,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.2em",marginBottom:26}}>
-            <span style={{width:26,height:1,background:HP.gold,opacity:0.7}}/>{es?"Coaching financiero bilingüe":"Bilingual financial coaching"}
+        {/* hero content, centered */}
+        <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 0",textAlign:"center",transform:"translateY(-3%)"}}>
+          {/* floating liquid-glass card */}
+          <div className="ga-liquid" style={{borderRadius:18,padding:"18px 20px",maxWidth:240,marginBottom:32,textAlign:"left",background:"rgba(255,255,255,0.01)"}}>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",fontFamily:MONO,letterSpacing:"0.12em",marginBottom:8}}>[ 2026 ]</div>
+            <div style={{fontSize:17,color:"#F2EFE6",lineHeight:1.3,fontWeight:600}}>
+              {es?<>Guiado por <span style={{fontFamily:"'Instrument Serif',serif",fontStyle:"italic",fontWeight:400,color:"#E2C375"}}>profesionales</span> con licencia</>
+                 :<>Guided by licensed <span style={{fontFamily:"'Instrument Serif',serif",fontStyle:"italic",fontWeight:400,color:"#E2C375"}}>professionals</span></>}
+            </div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",lineHeight:1.55,marginTop:8}}>{es?"Educación financiera bilingüe — humana cuando la necesitas.":"Bilingual financial coaching — human when you need it."}</div>
           </div>
-          <h1 style={{margin:"0 0 10px",lineHeight:0.98,letterSpacing:"-0.02em"}}>
-            <span style={{display:"block",fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,fontSize:"clamp(3rem,8vw,6.6rem)",color:HP.text,textShadow:"0 2px 40px rgba(0,0,0,0.45)"}}>{es?"Tu dinero,":"Your money,"}</span>
-            <span style={{display:"block",fontWeight:300,fontSize:"clamp(2.5rem,6.6vw,5.4rem)",color:HP.gold,letterSpacing:"-0.03em",marginTop:"0.6rem",textShadow:"0 2px 40px rgba(0,0,0,0.45)"}}>{es?"claro por fin.":"finally clear."}</span>
+
+          <div style={{fontSize:11,fontWeight:700,color:"#E2C375",textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:18}}>{es?"Coaching financiero bilingüe":"Bilingual financial coaching"}</div>
+          <h1 style={{margin:"0 0 22px",fontFamily:"'Instrument Serif',serif",fontWeight:400,fontSize:"clamp(2.9rem,7.2vw,5.4rem)",lineHeight:1.04,letterSpacing:"-0.01em",color:"#F4F1E8",textShadow:"0 2px 50px rgba(0,0,0,0.5)"}}>
+            {es?<>Tu dinero, <em style={{fontStyle:"italic",color:"#E2C375"}}>claro</em> por fin<span style={{color:"#C9A84C"}}>.</span></>
+               :<>Your money, finally <em style={{fontStyle:"italic",color:"#E2C375"}}>clear</em><span style={{color:"#C9A84C"}}>.</span></>}
           </h1>
+          <p style={{fontSize:14,lineHeight:1.7,color:"rgba(255,255,255,0.7)",maxWidth:512,margin:"0 0 26px"}}>
+            {es?"Un tablero que muestra a dónde va cada dólar y el siguiente paso — solo, o con un asesor bilingüe a tu lado. Gratis para empezar; Premium desde $3 al mes.":"One dashboard that shows where every dollar goes and what to do next — on your own, or with a bilingual advisor by your side. Free to start; Premium from $3 a month."}
+          </p>
+
+          {/* glass email-capture bar */}
+          <form onSubmit={e=>{e.preventDefault();try{sessionStorage.setItem("ga_signup_email",heroEmail.trim());}catch(_e){}onSignIn();}} style={{width:"100%",maxWidth:480}}>
+            <div className="ga-liquid" style={{borderRadius:999,padding:"6px 6px 6px 22px",display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.01)"}}>
+              <input value={heroEmail} onChange={e=>setHeroEmail(e.target.value)} type="email" inputMode="email" placeholder={es?"Tu correo electrónico":"Enter your email"} style={{flex:1,minWidth:0,background:"transparent",border:"none",outline:"none",color:"#fff",fontSize:14.5,fontFamily:"inherit"}}/>
+              <button type="submit" className="ga-press" aria-label={es?"Crear cuenta":"Create account"} style={{flexShrink:0,width:44,height:44,borderRadius:999,border:"none",cursor:"pointer",background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32)",fontSize:18,fontWeight:700}}>→</button>
+            </div>
+          </form>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:12}}>{es?"Cuenta gratis al instante — sin tarjeta, cancela cuando sea.":"Instant free account — no card, cancel anytime."}</div>
+          <button className="ga-liquid ga-press" onClick={onPricing} style={{marginTop:18,borderRadius:999,padding:"11px 30px",color:"#fff",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"Ver precios":"See pricing"}</button>
         </div>
 
-        {/* corner annotations, like the reference */}
-        <div style={{position:"relative",zIndex:3,maxWidth:1320,width:"100%",margin:"0 auto",padding:"0 40px 44px",boxSizing:"border-box",display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:24,flexWrap:"wrap"}}>
-          <div style={{maxWidth:340}}>
-            <p style={{fontSize:13,lineHeight:1.7,color:HP.muted,margin:"0 0 14px"}}>
-              {es?"Un tablero que muestra a dónde va cada dólar, qué tan sano está tu plan, y el siguiente paso — solo, o con un asesor bilingüe a tu lado.":"One dashboard that shows where every dollar goes, how healthy your plan is, and what to do next — on your own, or with a bilingual advisor by your side."}
-            </p>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-              {(es?["Sin tarjeta","EN / ES","Cancela cuando sea"]:["No card required","EN / ES","Cancel anytime"]).map((s,i)=><span key={i} style={{fontSize:9,padding:"6px 11px",borderRadius:99,background:HP.glass,border:`1px solid ${HP.line}`,color:HP.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em",backdropFilter:"blur(10px)"}}>{s}</span>)}
-            </div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:12}}>
-            <p style={{fontSize:11.5,lineHeight:1.65,color:HP.dim,margin:0,maxWidth:260,textAlign:"right"}}>
-              {es?"Gratis para empezar. Premium desde $3 al mes — tú eliges el monto.":"Free to start. Premium from $3 a month — you choose the amount."}
-            </p>
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-end"}}>
-              <button className="ga-press" onClick={onPricing} style={{...ghostBtn,color:HP.text,border:`1px solid ${HP.line}`,backdropFilter:"blur(10px)",background:HP.glass}}>{es?"Ver precios":"See pricing"}</button>
-              <button className="ga-press" onClick={onSignIn} style={{...goldBtn,fontSize:14,padding:"14px 30px"}}>{es?"Empieza gratis":"Start free"}</button>
-            </div>
-          </div>
+        {/* circular glass social buttons */}
+        <div style={{position:"relative",zIndex:4,display:"flex",justifyContent:"center",gap:14,padding:"30px 0 36px"}}>
+          {[["https://instagram.com/golden_anchor_inc","Instagram","@"],["mailto:mauricio@goldenanchor.life","Email","✉"],["https://goldenanchor.life","Website","◍"]].map(([href,label,glyph])=>
+            <a key={label} href={href} target={href.startsWith("http")?"_blank":"_self"} rel="noreferrer" aria-label={label} className="ga-liquid ga-press" style={{width:48,height:48,borderRadius:999,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.85)",textDecoration:"none",fontSize:17,background:"rgba(255,255,255,0.01)"}}>{glyph}</a>)}
         </div>
-        <div aria-hidden style={{position:"absolute",left:"50%",bottom:10,transform:"translateX(-50%)",zIndex:3,color:HP.dim,fontSize:9,fontFamily:MONO,letterSpacing:"0.22em",textTransform:"uppercase"}}>{es?"Desliza":"Scroll"} ↓</div>
       </section>
 
       {/* ── THE PRODUCT, staged (was the hero right column) ─────────────────── */}

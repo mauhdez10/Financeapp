@@ -6,13 +6,16 @@
 
 ## Finish-the-project run — 2026-06-11 (v0.75.2 → v0.76.1)
 
-### 🎬 The landing redesign from YOUR references (v0.77)
-- [ ] Open https://finance.goldenanchor.life logged out: the hero is now full-screen
-      cinema — slow golden wave-ridgelines glowing out of the dark (your Lithos-style
-      reference, in our gold), rising embers, mouse parallax, huge serif headline,
-      corner annotations. The dashboard preview moved below ("Your whole picture,
-      live."). Check it on your phone too. Tell me: more glow? different headline?
-      faster/slower drift? I iterate from your reaction.
+### 🎬 The landing redesign, take 2 — YOUR liquid-glass video spec (v0.78)
+- [ ] Open https://finance.goldenanchor.life logged out: **real cinematic video**
+      now — golden dust swirling in dark water (licensed footage, self-hosted),
+      smooth fade-looped exactly per your spec, under liquid-glass UI: capsule nav,
+      the floating "[ 2026 ]" glass card, Instrument Serif headline with the gold
+      period, glass email bar (type an email → lands in signup prefilled), glass
+      pills + circular social buttons, grid lines + central glow. Phone-checked.
+- [ ] Want different footage? Drop any .mp4 over `public/hero-bg.mp4` and it just
+      works — or tell me a vibe (ocean at dusk, city lights, abstract gold) and I'll
+      source it. Everything else (glow, copy, card, speed) is a minutes-level tweak.
 
 ### The big one: clients can now LINK to your records (Link-R)
 - [ ] Open any client → ☰ kebab → **"Link client account"** → their email → Send

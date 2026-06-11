@@ -2,6 +2,30 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.78 — 2026-06-11 (Minor surface) — Liquid-glass VIDEO hero (owner's exact spec)
+
+Owner rejected the canvas-line hero; his two pasted specs define the target: cinematic
+background VIDEO + liquid glass UI. Shipped:
+- **Real footage**: `public/hero-bg.mp4` — "Golden Particles in Water" (Pexels
+  10296179, free commercial license, 1280×720, 14.4s, 4.5MB) — golden dust swirling
+  in dark water, literally brand-gold. 60% opacity under left + bottom-up gradients.
+- **The owner's rAF fade-loop system verbatim**: 500ms fade-in on playing, fade-out
+  when 0.55s remain (fadingOutRef guard), reset+replay on ended, each fade cancels
+  the prior frame and resumes from current opacity. Plus a static-frame fallback if
+  playback can't start, and GoldenTides canvas as onError fallback.
+- **Liquid glass** (`.ga-liquid`, his exact recipe): rgba(255,255,255,0.01) +
+  luminosity blend + 4px backdrop blur + inset highlight + ::before masked-gradient
+  border (xor/exclude). Used for: capsule nav (logo + About/Q&A/Contact/Pricing with
+  gold hover + Sign-in), floating "[ 2026 ] Guided by licensed professionals" card
+  (Instrument Serif italic accent), email-capture bar (→ /login signup with the email
+  prefilled via sessionStorage handoff), "See pricing" pill, 3 circular social buttons.
+- **Instrument Serif** headline (new font import): "Your money, finally *clear*." with
+  the gold period; 11px tracked gold eyebrow; thin vertical grid lines at 25/50/75
+  (desktop); central gold glow ellipse with 25px Gaussian blur.
+- Verified: all glass elements + grid + card render, footage draws in-page, email
+  handoff lands in signup prefilled, mobile clean (46px headline, no overflow, grid
+  hidden). EN/ES complete.
+
 ## v0.77 — 2026-06-11 (Minor surface) — Cinematic "Golden Tides" landing hero (owner's references)
 
 The landing hero rebuilt from the owner's two Mux reference animations (Lithos-style
