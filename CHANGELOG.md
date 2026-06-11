@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.74.3 — 2026-06-11 (Patch) — Page-title de-redundancy (MD-G part 1)
+
+The top banner already names the page; in-page literal duplicates removed app-wide:
+Calculators h1 gone (eyebrow+desc carry it), Promotions h1 gone ("Offers" eyebrow
+stays), Resources duplicate eyebrow gone (the editorial "Learn the fundamentals" h1
+stays). Editorial headers that DON'T duplicate the banner (About hero, Pricing) kept.
+
 ## v0.74.2 — 2026-06-11 (Patch) — MD-F named design fixes (About + public pricing)
 
 - Public pricing background: cursor line-field canvas → the landing's quiet radial glow

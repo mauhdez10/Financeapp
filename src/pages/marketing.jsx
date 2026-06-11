@@ -37,8 +37,8 @@ function PromotionsPage({settings,onSettingsChange,t}){
   return<div style={{padding:24}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
       <div>
+        {/* MD-G (v0.74.3): h1 removed — banner already says "Promotions"; eyebrow + desc carry the page. */}
         <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.18em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:9,textTransform:"uppercase"}}>{t.promoEyebrow||"Offers"}</div>
-        <h1 style={{margin:"0 0 7px",fontSize:27,fontWeight:800,letterSpacing:"-0.02em",color:th.text,lineHeight:1.1}}>{t.promotionsHdr||"Promotions"}</h1>
         <p style={{fontSize:13,color:th.muted,margin:0,maxWidth:560,lineHeight:1.55}}>{t.promotionsDesc}</p>
       </div>
       <BSolid onClick={startNew}>＋ {t.newPromotion||"New Promotion"}</BSolid>
@@ -192,7 +192,7 @@ function ResourcesPage({t}){
   return<div style={{padding:"24px 24px 44px"}}>
     <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:22,gap:16,flexWrap:"wrap"}}>
       <div>
-        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.18em",textTransform:"uppercase",color:th.dim,marginBottom:9}}>{t.resources||"Resources"}</div>
+        {/* MD-G (v0.74.3): "Resources" eyebrow removed — banner already says it; the editorial h1 stays. */}
         <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:30,color:th.text,margin:0,lineHeight:1.05}}>{t.resourcesHeadline||(_gaLang()==="es"?"Aprende los fundamentos":"Learn the fundamentals")}</h1>
         <p style={{fontSize:13,color:th.muted,margin:"9px 0 0",maxWidth:540,lineHeight:1.6}}>{t.resourcesDesc}</p>
       </div>

@@ -364,9 +364,8 @@ const ICONS={retirement:PiggyBank,portfolio:TrendingUp,homeEquity:Home,income:Wa
   const DESCS={retirement:t.descRetirement||"Project your retirement savings to a target age.",portfolio:t.descPortfolio||"Estimate long-term portfolio growth.",savings:t.descSavings||"See how high-yield savings compound.",interest:t.descInterest||"Compound interest on any balance.",debtReduction:t.descDebtReduction||"Compare avalanche vs snowball payoff.",carLoan:t.descCarLoan||"Monthly payment, interest, and amortization.",homeEquity:t.descHomeEquity||"Equity, refinance, and borrowing power.",affordability:t.descAffordability||"How much home you can afford.",income:t.descIncomeCalc||"Take-home pay after taxes."};
   const CATS=[{title:t.calcCatPlan||"Plan & grow",ids:["retirement","portfolio","savings","interest"]},{title:t.calcCatDebt||"Tackle debt",ids:["debtReduction","carLoan"]},{title:t.calcCatHome||"Home & affordability",ids:["homeEquity","affordability"]},{title:t.calcCatIncome||"Income",ids:["income"]}];
   return<div className="ga-np" style={{padding:"24px 20px",maxWidth:1100,margin:"0 auto"}}>
-    <div style={{marginBottom:28}}>
-      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.18em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:9,textTransform:"uppercase"}}>{t.calcEyebrow||"Tools"}</div>
-      <h1 style={{margin:"0 0 9px",fontSize:27,fontWeight:800,letterSpacing:"-0.02em",color:th.text}}>{t.calculators||"Calculators"}</h1>
+    {/* MD-G (v0.74.3): page h1 removed — the top banner already says "Calculators" (owner: redundant). */}
+    <div style={{marginBottom:24}}>
       <p style={{fontSize:13,color:th.muted,lineHeight:1.6,maxWidth:560,margin:0}}>{t.financialCalcDesc||"Financial calculators for planning."}</p>
     </div>
     {CATS.map(cat=><div key={cat.title} style={{marginBottom:24}}>
