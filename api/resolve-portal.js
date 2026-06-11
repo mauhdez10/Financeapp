@@ -91,7 +91,7 @@ export default async function handler(req, res) {
     // 1) Look up the link by token.
     const { data: link, error: lerr } = await admin
       .from("portal_links")
-      .select("id,user_id,client_local_id,revoked,expires_at,view_count")
+      .select("id,user_id,client_local_id,revoked,expires_at,view_count,modules")
       .eq("token", token)
       .maybeSingle();
     if (lerr) return res.status(500).json({ ok: false, error: lerr.message || "Lookup failed" });
@@ -149,7 +149,7 @@ export default async function handler(req, res) {
       viewer_ip_hash: ipHash
     }).eq("id", link.id).then(() => {}, () => {});
 
-    return res.status(200).json({ ok: true, client, advisor, lang });
+    return res.status(200).json({ ok: true, client, advisor, lang, modules: link.modules || null });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
