@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Anchor } from "lucide-react";
 import { useReducedMotion } from "../hooks/anim";
 import { supabase } from "../services/supabase";
+import { Donut, SmoothAreaLine, RadialGauge } from "../components/charts";
 
 const LOTTIE_HERO_URL = ""; // <- paste LottieFiles JSON URL here to enable Lottie hero
 function HeroVisual({palette,reducedMotion}){
@@ -259,4 +260,195 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
    (photographic anchor, looks right at hero/login scale). ⚓ emoji is the final fallback
    only if the asset itself fails to load. */
 
-export { HeroVisual, LOTTIE_HERO_URL, Login };
+/* ── LandingPage (MD-E part 2, v0.74.1) — the marketing front door at "/".
+   Origin-inspired: advertising voice, real product visuals (live SVG charts with
+   sample data — sharper than screenshots, theme-aware), motion-light, dual-mode.
+   Login moved to /login; CTAs route there. Compliance stays one quiet footer line
+   (D-17) — no front-page disclaimer walls, per the owner's directive.           */
+function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing}){
+  const reducedMotion=useReducedMotion();
+  const es=lang==="es";
+  const MONO="'JetBrains Mono',monospace";
+  const P = isDark ? {
+    bg:"#0A0C10", glowA:"rgba(203,168,90,0.12)", card:"rgba(255,255,255,0.045)", border:"rgba(255,255,255,0.09)",
+    text:"#EDEFF2", muted:"#9AA3AF", dim:"#626B78", gold:"#CBA85A", accent:"#E2C375", inp:"rgba(255,255,255,0.05)",
+    blur:"blur(16px)", shadow:"none", pos:"#34D399", neg:"#F87171",
+  } : {
+    bg:"#FAFAF7", glowA:"rgba(184,144,30,0.08)", card:"#FFFFFF", border:"#ECEAE3",
+    text:"#16181C", muted:"#5A6270", dim:"#9AA0A8", gold:"#B8901E", accent:"#8A6B1E", inp:"#FFFFFF",
+    blur:"blur(0px)", shadow:"0 1px 2px rgba(20,20,16,0.04), 0 12px 34px rgba(20,20,16,0.04)", pos:"#1F9D67", neg:"#DC5B5B",
+  };
+  const glass={background:P.card,border:`1px solid ${P.border}`,backdropFilter:P.blur,WebkitBackdropFilter:P.blur,boxShadow:P.shadow};
+  const pill={fontSize:12,padding:"10px 15px",minHeight:42,minWidth:52,borderRadius:99,...glass,color:P.muted,cursor:"pointer",fontWeight:600,fontFamily:"inherit"};
+  const goldBtn={display:"inline-block",fontSize:13.5,fontWeight:700,padding:"13px 26px",borderRadius:11,background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",border:"none",cursor:"pointer",fontFamily:"inherit",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32), 0 8px 22px rgba(201,168,76,0.25)",letterSpacing:"0.01em"};
+  const ghostBtn={display:"inline-block",fontSize:13.5,fontWeight:600,padding:"13px 24px",borderRadius:11,background:"transparent",color:P.text,border:`1px solid ${P.border}`,cursor:"pointer",fontFamily:"inherit"};
+  const eyebrow={fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em",color:P.gold};
+  const h2={fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(1.7rem,3.4vw,2.4rem)",color:P.text,lineHeight:1.12,letterSpacing:"-0.015em",margin:"10px 0 12px"};
+  // scroll-reveal: tag sections data-reveal; observer adds the rise. Reduced motion → instant.
+  const rootRef=useRef(null);
+  useEffect(()=>{
+    const root=rootRef.current;if(!root)return;
+    const els=[...root.querySelectorAll("[data-reveal]")];
+    if(reducedMotion||typeof IntersectionObserver==="undefined"){els.forEach(el=>{el.style.opacity=1;el.style.transform="none";});return;}
+    els.forEach(el=>{el.style.opacity=0;el.style.transform="translateY(14px)";el.style.transition="opacity .5s cubic-bezier(.23,1,.32,1), transform .5s cubic-bezier(.23,1,.32,1)";});
+    const io=new IntersectionObserver(entries=>{entries.forEach(en=>{if(en.isIntersecting){en.target.style.opacity=1;en.target.style.transform="none";io.unobserve(en.target);}});},{threshold:0.12});
+    els.forEach(el=>io.observe(el));
+    return()=>io.disconnect();
+  },[lang,isDark,reducedMotion]);
+  // sample product data (realistic, stable — not lorem)
+  const trend=[{label:es?"Ene":"Jan",debt:24800,savings:6200},{label:"Feb",debt:24100,savings:7400},{label:"Mar",debt:23500,savings:8500},{label:"Abr"+(es?"":""),debt:22900,savings:9600},{label:"May",debt:22300,savings:10700},{label:"Jun",debt:21600,savings:11900}].map(x=>({...x,label:x.label}));
+  const donutData=[{label:es?"Efectivo":"Cash",value:11900,color:P.gold},{label:es?"Retiro":"Retirement",value:38400,color:isDark?"#7FA7D9":"#4A6FA5"},{label:es?"Inversiones":"Investments",value:21200,color:P.pos},{label:es?"Bienes":"Property",value:14900,color:isDark?"#B59ADB":"#7E5FA8"}];
+  const kpi=(label,val,delta,up)=><div style={{...glass,borderRadius:13,padding:"13px 15px",flex:1,minWidth:118}}>
+    <div style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{label}</div>
+    <div style={{fontSize:19,fontWeight:600,color:P.text,fontFamily:MONO,letterSpacing:"-0.5px",fontVariantNumeric:"tabular-nums"}}>{val}</div>
+    <div style={{display:"inline-block",marginTop:6,fontSize:9.5,fontWeight:700,fontFamily:MONO,padding:"2px 8px",borderRadius:99,background:(up?P.pos:P.neg)+"1A",color:up?P.pos:P.neg}}>{delta}</div>
+  </div>;
+  const steps=es?[
+    {n:"01",t:"Crea tu cuenta gratis",b:"Dos minutos, sin tarjeta. Responde unas preguntas sencillas sobre tus metas."},
+    {n:"02",t:"Mira tu panorama completo",b:"Ingresos, gastos, deudas y ahorros en un solo tablero — números claros, sin jerga."},
+    {n:"03",t:"Avanza con o sin asesor",b:"Sigue tu plan por tu cuenta, o agrega un asesor bilingüe cuando lo necesites."},
+  ]:[
+    {n:"01",t:"Create your free account",b:"Two minutes, no card. Answer a few simple questions about your goals."},
+    {n:"02",t:"See your complete picture",b:"Income, bills, debt, and savings on one dashboard — clear numbers, no jargon."},
+    {n:"03",t:"Move forward, with or without an advisor",b:"Follow your plan on your own, or add a bilingual advisor whenever you need one."},
+  ];
+  const feats=es?[
+    {t:"A dónde va cada dólar",b:"Flujo de efectivo en vivo: ingreso entrando, gastos, deuda y ahorro saliendo — de un vistazo."},
+    {t:"Salud financiera, medida",b:"Razón de deuda, tasa de ahorro y fondo de emergencia como metas claras que puedes seguir."},
+    {t:"Reportes de calidad profesional",b:"Reportes completos listos para revisar, comparar mes a mes, y compartir en PDF."},
+    {t:"Calculadoras que usan TUS números",b:"Retiro, intereses, deudas, casa y auto — con tu información real, no ejemplos."},
+    {t:"En tu idioma",b:"Todo en inglés y español — la app, los reportes y el asesor."},
+    {t:"Recursos para cada situación",b:"Un directorio curado de ayuda real: programas, créditos justos y herramientas confiables."},
+  ]:[
+    {t:"Where every dollar goes",b:"Live cash flow: income in, bills, debt, and savings out — at a glance."},
+    {t:"Financial health, scored",b:"Debt ratio, savings rate, and emergency fund as clear targets you can track."},
+    {t:"Designer-grade reports",b:"Complete reports ready to review, compare month over month, and share as PDF."},
+    {t:"Calculators that use YOUR numbers",b:"Retirement, interest, debt, home, and car — with your real information, not examples."},
+    {t:"In your language",b:"Everything in English and Spanish — the app, the reports, and the advisor."},
+    {t:"Resources for every situation",b:"A curated directory of real help: programs, fair credit, and trusted tools."},
+  ];
+  const plans=[
+    {name:es?"Gratis":"Free",price:"$0",sub:es?"Perfil + calculadoras públicas + recursos":"Profile + public calculators + resources"},
+    {name:"Premium",price:"$3+",sub:es?"Todo desbloqueado — paga lo que elijas":"Everything unlocked — choose what you pay",hot:true},
+    {name:es?"Con asesor":"With an advisor",price:"$49+",sub:es?"Acompañamiento mensual bilingüe":"Bilingual monthly coaching"},
+  ];
+  return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
+    <div aria-hidden style={{position:"fixed",top:-200,right:60,width:620,height:620,borderRadius:"50%",background:`radial-gradient(circle,${P.glowA},transparent 70%)`,filter:"blur(50px)",pointerEvents:"none",zIndex:0}}/>
+    <div style={{position:"relative",zIndex:2}}>
+      <header style={{maxWidth:1240,margin:"0 auto",padding:"24px 40px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:11}}>
+          <div style={{width:34,height:34,borderRadius:10,...glass,display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/anchor-monogram.svg" alt="" style={{width:20,height:20}}/></div>
+          <div>
+            <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.01em",color:P.text,lineHeight:1}}>Golden Anchor</div>
+            <div style={{fontSize:8,color:P.dim,marginTop:3,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>{es?"Asesoría Financiera":"Financial Advisory"}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          <button onClick={onPricing} style={pill}>{es?"Precios":"Pricing"}</button>
+          <button onClick={onLangToggle} aria-label="Toggle language" style={pill}>{es?"EN":"ES"}</button>
+          <button onClick={onToggle} aria-label="Toggle theme" style={pill}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
+          <button onClick={onSignIn} style={{...pill,color:P.text,fontWeight:700}}>{es?"Iniciar sesión":"Sign in"}</button>
+        </div>
+      </header>
+
+      <section className="ga-login-hero" style={{maxWidth:1240,margin:"0 auto",padding:"44px 40px 30px",display:"grid",gridTemplateColumns:"minmax(0,1.18fr) minmax(0,1fr)",gap:54,alignItems:"center"}}>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:9,...eyebrow,marginBottom:22}}><span style={{width:6,height:6,borderRadius:99,background:P.gold}}/>{es?"Coaching financiero bilingüe":"Bilingual financial coaching"}</div>
+          <h1 style={{fontWeight:500,fontSize:"clamp(2.5rem,5.2vw,4.2rem)",color:P.text,lineHeight:1.05,letterSpacing:"-0.032em",margin:"0 0 24px"}}>
+            {es?<>Tu dinero, <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>claro</span> por fin.</>:<>Your money, finally <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>clear</span>.</>}
+          </h1>
+          <p style={{fontSize:17,lineHeight:1.62,color:P.muted,maxWidth:500,margin:"0 0 28px"}}>
+            {es?"Un tablero que muestra a dónde va cada dólar, qué tan sano está tu plan, y el siguiente paso — solo, o con un asesor bilingüe a tu lado.":"One dashboard that shows where every dollar goes, how healthy your plan is, and what to do next — on your own, or with a bilingual advisor by your side."}
+          </p>
+          <div style={{display:"flex",gap:11,flexWrap:"wrap",marginBottom:24}}>
+            <button className="ga-press" onClick={onSignIn} style={goldBtn}>{es?"Empieza gratis":"Start free"}</button>
+            <button className="ga-press" onClick={onPricing} style={ghostBtn}>{es?"Ver precios":"See pricing"}</button>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {(es?["Sin tarjeta","EN / ES","Cancela cuando sea"]:["No card required","EN / ES","Cancel anytime"]).map((s,i)=><span key={i} style={{fontSize:9.5,padding:"7px 13px",borderRadius:99,...glass,color:P.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{s}</span>)}
+          </div>
+        </div>
+        <div data-reveal style={{display:"flex",flexDirection:"column",gap:13,minWidth:0}}>
+          <div style={{display:"flex",gap:13,flexWrap:"wrap"}}>
+            {kpi(es?"Patrimonio neto":"Net worth","$86,400","+4.2%",true)}
+            {kpi(es?"Tasa de ahorro":"Savings rate","18%","+2pt",true)}
+            {kpi(es?"Razón de deuda":"Debt ratio","24%","−3pt",true)}
+          </div>
+          <div style={{...glass,borderRadius:16,padding:"16px 16px 8px"}}>
+            <div style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8}}>{es?"Deuda ↓ vs Ahorro ↑ — 6 meses":"Debt ↓ vs Savings ↑ — 6 months"}</div>
+            <SmoothAreaLine data={trend} height={172} debtColor={P.neg} savingsColor={P.pos} legendDebt={es?"Deuda":"Debt"} legendSav={es?"Ahorro":"Savings"}/>
+          </div>
+          <div style={{display:"flex",gap:13,flexWrap:"wrap"}}>
+            <div style={{...glass,borderRadius:16,padding:14,flex:1,minWidth:170,display:"flex",justifyContent:"center"}}>
+              <Donut data={donutData} size={142} centerLabel={es?"Activos":"Assets"} centerValue="$86.4k" centerColor={P.text}/>
+            </div>
+            <div style={{...glass,borderRadius:16,padding:14,flex:1,minWidth:170,display:"flex",justifyContent:"center"}}>
+              <RadialGauge value={11900} max={15000} label={es?"Ahorrado":"Saved"} subLabel={es?"meta 3 meses":"3-mo target"} color={P.pos} fmt={v=>"$"+Math.round(v/100)/10+"k"}/>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal style={{maxWidth:1240,margin:"0 auto",padding:"56px 40px 8px"}}>
+        <div style={{textAlign:"center",maxWidth:560,margin:"0 auto 34px"}}>
+          <div style={eyebrow}>{es?"Cómo funciona":"How it works"}</div>
+          <h2 style={h2}>{es?"Tres pasos, cero jerga.":"Three steps, zero jargon."}</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))",gap:16}}>
+          {steps.map((s,i)=><div key={i} style={{...glass,borderRadius:16,padding:"22px 22px 20px"}}>
+            <div style={{...eyebrow,color:P.dim,marginBottom:12}}>{s.n}</div>
+            <h3 style={{fontWeight:600,fontSize:15.5,color:P.text,margin:"0 0 8px",letterSpacing:"-0.01em"}}>{s.t}</h3>
+            <p style={{fontSize:13,lineHeight:1.6,color:P.muted,margin:0}}>{s.b}</p>
+          </div>)}
+        </div>
+      </section>
+
+      <section data-reveal style={{maxWidth:1240,margin:"0 auto",padding:"56px 40px 8px"}}>
+        <div style={{textAlign:"center",maxWidth:560,margin:"0 auto 34px"}}>
+          <div style={eyebrow}>{es?"Lo que obtienes":"What you get"}</div>
+          <h2 style={h2}>{es?"Hecho para familias reales.":"Built for real families."}</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16}}>
+          {feats.map((f,i)=><div key={i} style={{padding:"20px 22px",borderTop:`1px solid ${P.border}`}}>
+            <h3 style={{fontWeight:600,fontSize:15,color:P.text,margin:"0 0 7px",letterSpacing:"-0.01em"}}>{f.t}</h3>
+            <p style={{fontSize:13,lineHeight:1.6,color:P.muted,margin:0}}>{f.b}</p>
+          </div>)}
+        </div>
+      </section>
+
+      <section data-reveal style={{maxWidth:1240,margin:"0 auto",padding:"56px 40px 8px"}}>
+        <div style={{...glass,borderRadius:20,padding:"clamp(24px,4vw,44px)",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:28,alignItems:"center"}}>
+          <div>
+            <div style={eyebrow}>{es?"Tú decides":"Your call"}</div>
+            <h2 style={h2}>{es?"Con asesor, o por tu cuenta.":"With an advisor, or on your own."}</h2>
+            <p style={{fontSize:13.5,lineHeight:1.65,color:P.muted,margin:0,maxWidth:440}}>
+              {es?"La app completa funciona sin asesor. Y cuando quieras una mano — para entender tus números, armar un plan, o revisar tu seguro — un asesor bilingüe está a un clic, desde una consulta gratis.":"The full app works without an advisor. And when you want a hand — understanding your numbers, building a plan, or reviewing your insurance — a bilingual advisor is one click away, starting with a free consult."}
+            </p>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {plans.map((p,i)=><button key={i} className="ga-press" onClick={onPricing} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"14px 18px",borderRadius:13,background:P.inp,border:`1px solid ${p.hot?P.gold+"88":P.border}`,cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+              <span><span style={{display:"block",fontSize:13.5,fontWeight:700,color:P.text}}>{p.name}</span><span style={{display:"block",fontSize:11,color:P.muted,marginTop:2}}>{p.sub}</span></span>
+              <span style={{fontSize:16,fontWeight:600,color:p.hot?P.gold:P.text,fontFamily:MONO,letterSpacing:"-0.02em",flexShrink:0}}>{p.price}</span>
+            </button>)}
+          </div>
+        </div>
+      </section>
+
+      <section data-reveal style={{maxWidth:1240,margin:"0 auto",padding:"64px 40px 70px",textAlign:"center"}}>
+        <h2 style={{...h2,fontSize:"clamp(1.9rem,4vw,2.8rem)"}}>{es?"Empieza hoy. Es gratis.":"Start today. It's free."}</h2>
+        <p style={{fontSize:14,color:P.muted,margin:"0 0 24px"}}>{es?"Dos minutos para crear tu cuenta. Sin tarjeta, sin compromiso.":"Two minutes to create your account. No card, no commitment."}</p>
+        <button className="ga-press" onClick={onSignIn} style={{...goldBtn,fontSize:14.5,padding:"15px 34px"}}>{es?"Crear mi cuenta gratis":"Create my free account"}</button>
+      </section>
+
+      <footer style={{maxWidth:1240,margin:"0 auto",padding:"18px 40px 32px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+        <div style={{fontSize:11,color:P.dim,lineHeight:1.6,maxWidth:640}}>© Golden Anchor · {es?"Asesoría financiera educativa — no constituye asesoría de inversión, fiscal o legal.":"Educational financial coaching — not investment, tax, or legal advice."}</div>
+        <div style={{display:"flex",gap:16,fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>
+          <button onClick={onPricing} style={{background:"none",border:"none",cursor:"pointer",color:P.muted,fontFamily:"inherit",fontSize:"inherit",letterSpacing:"inherit",textTransform:"inherit",padding:0}}>{es?"Precios":"Pricing"}</button>
+          <a href="mailto:mauricio@goldenanchor.life" style={{color:P.muted,textDecoration:"none"}}>Email</a>
+        </div>
+      </footer>
+    </div>
+  </div>;
+}
+
+export { HeroVisual, LOTTIE_HERO_URL, Login, LandingPage };

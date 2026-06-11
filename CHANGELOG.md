@@ -2,6 +2,16 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.74.1 — 2026-06-11 (Minor surface) — Marketing landing page at / (MD-E part 2)
+
+New `LandingPage` (src/pages/landing.jsx): advertising-voice front door — hero with the
+"Your money, finally clear." headline + LIVE product visuals (real SmoothAreaLine/Donut/
+RadialGauge with sample data — theme-aware, sharper than screenshots), KPI chips,
+3-step how-it-works, 6-feature grid (hairline rows, no card-soup), "with an advisor or
+on your own" section with the 3-tier teaser, final CTA band, ONE quiet compliance line
+in the footer (D-17). Scroll-reveal honors reduced motion. EN/ES, dual-mode. Login now
+lives at /login; landing CTAs route there.
+
 ## v0.74 — 2026-06-11 (Minor) — Plan ladder + Premium gating (MD-A)
 
 - **Free vs Premium for client accounts.** New `src/components/premium.jsx`: `PremiumCtx`

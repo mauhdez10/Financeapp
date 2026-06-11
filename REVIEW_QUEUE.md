@@ -21,6 +21,15 @@
       they come from noreply@finance.goldenanchor.life, unlimited. (The Resend MCP key
       expired, so I can't mint one myself.)
 
+### MD-E: The marketing landing page is live at / (v0.74.1)
+- [ ] Open https://finance.goldenanchor.life **logged out**: real landing page now —
+      hero with live charts (not screenshots), how-it-works, features, the
+      with-or-without-advisor section, pricing teaser. "Sign in" / "Start free" →
+      **/login**; Pricing → **/pricing**. Check dark + light, EN + ES, and your phone.
+- [ ] This is v1 of the "better than Origin" page — tell me what to push further
+      (more motion? different headline? real screenshots?) and I iterate with the
+      full design pipeline.
+
 ### MD-A: Free vs Premium is live (v0.74)
 - [ ] Log in as **clientdemo** (I reset it again — you'll see the onboarding wizard
       first, then the FREE experience): open your profile → **Calculators tab**,
