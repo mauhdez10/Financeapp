@@ -191,8 +191,8 @@ function Row2({children,forceMobileStack=true}){const{isMobile}=useViewport();co
 function SHdr({label,right}){const th=useTh();return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><span style={{fontSize:12,fontWeight:700,color:th.accent,letterSpacing:"0.08em",textTransform:"uppercase"}}>{stripLeadEmoji(label)}</span>{right}</div>;}
 function PTag({who,client,t}){const color=who==="p1"?client.color1:who==="p2"?(client.color2||"#94A3B8"):"#94A3B8";const name=who==="p1"?client.firstName:who==="p2"?(client.partnerFirst||"P2"):"Joint";return<Pill color={color}>{name}</Pill>;}
 function SBadge({value,meta,t,ratioKey}){if(value===null||value===undefined||isNaN(value))return<Pill color="#94A3B8">N/A</Pill>;const g=meta.better==="higher"?value>=meta.threshold:value<=meta.threshold;const w=meta.better==="higher"?value>=meta.threshold*0.5:value<=meta.threshold*1.4;const c=g?"#10B981":w?"#F59E0B":"#EF4444";return<Pill color={c}>{g?t.good:w?t.warning:t.critical}</Pill>;}
-function Btn({children,onClick,color,small,style={}}){const th=useTh();const c=color||th.accent;return<button onClick={onClick} style={{fontSize:small?11:12,padding:small?"3px 10px":"7px 16px",borderRadius:8,background:c+"22",color:c,border:`1px solid ${c}44`,cursor:"pointer",fontWeight:600,...style}}>{children}</button>;}
-function BSolid({children,onClick,style={},color}){const th=useTh();const c=color||th.accent;return<button onClick={onClick} style={{fontSize:12,padding:"7px 20px",borderRadius:8,background:c,color:"#fff",fontWeight:700,border:"none",cursor:"pointer",...style}}>{children}</button>;}
+function Btn({children,onClick,color,small,style={}}){const th=useTh();const c=color||th.accent;return<button className="ga-press" onClick={onClick} style={{fontSize:small?11:12,padding:small?"3px 10px":"8px 16px",borderRadius:8,background:c+"18",color:c,border:`1px solid ${c}44`,cursor:"pointer",fontWeight:600,...style}}>{children}</button>;}
+function BSolid({children,onClick,style={},color}){const th=useTh();const c=color||th.accent;const ink=color?"#fff":"#1A1405";return<button className="ga-press" onClick={onClick} style={{fontSize:12,padding:"8px 20px",borderRadius:8,background:c,color:ink,fontWeight:700,border:"none",cursor:"pointer",...style}}>{children}</button>;}
 function Tog({label,checked,onChange}){const th=useTh();return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}><span style={{fontSize:12,color:th.muted}}>{label}</span><div onClick={()=>onChange(!checked)} style={{width:36,height:20,borderRadius:99,background:checked?th.accent:th.cardBorder,cursor:"pointer",position:"relative",transition:"background 0.2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:checked?18:2,width:16,height:16,borderRadius:99,background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px #0004"}}/></div></div>;}
 function MaskedNumInp({value,onChange,style={},min=0,max,step,prefix,...rest}){
   const fmtMask=v=>{if(v===""||v===null||v===undefined)return"";const s=String(v);const[int,dec]=s.split(".");const withCommas=int.replace(/\B(?=(\d{3})+(?!\d))/g,",");return dec!==undefined?withCommas+"."+dec:withCommas;};
@@ -4656,7 +4656,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-10-v0712-kpi-delta-chips";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-10-v0713-tables-buttons-accent";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -6336,7 +6336,7 @@ export default function App(){
   const IDLE_WARN_MS=29*60*1000;
   const _idleTimerRef=useRef(null);
   const _idleWarnTimerRef=useRef(null);
-  const _baseTh=isDark?makeDark(settings.darkAccent||GOLD):makeLight(settings.lightAccent||"#2563EB");
+  const _baseTh=isDark?makeDark(settings.darkAccent||GOLD):makeLight(settings.lightAccent||"#C9A84C");
 // v0.61 — glass cards are the redesign default. mCARD reads th.glassBg, which we
 // always pin to the factory glass value (translucent in dark, white in light) so the
 // modern texture shows regardless of any legacy stored solid card color. The old

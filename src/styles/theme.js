@@ -38,10 +38,10 @@ const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.t
 // soft shadow (light). Falls back to solid card tokens if glass tokens absent
 // (e.g. a user's custom card-color override flows in via th.glassBg at merge time).
 const mCARD=th=>({background:th.glassBg||th.card,border:`1px solid ${th.glassBorder||th.cardBorder}`,borderRadius:12,backdropFilter:th.blur||"none",WebkitBackdropFilter:th.blur||"none",boxShadow:th.cardShadow||"none",breakInside:"avoid",pageBreakInside:"avoid",WebkitPrintColorAdjust:"exact",printColorAdjust:"exact"});
-const mTH=th=>({fontSize:11,fontWeight:700,color:th.muted,padding:"0 6px 8px 0",textAlign:"left",whiteSpace:"nowrap",userSelect:"none",cursor:"pointer"});
+const mTH=th=>({fontSize:11,fontWeight:600,color:th.dim,letterSpacing:"0.07em",textTransform:"uppercase",padding:"0 6px 8px 0",textAlign:"left",whiteSpace:"nowrap",userSelect:"none",cursor:"pointer"});
 const mTHR=th=>({...mTH(th),textAlign:"right",padding:"0 0 8px 6px"});
-const mTD=th=>({fontSize:12,padding:"7px 6px 7px 0",borderTop:`1px solid ${th.cardBorder}`,color:th.text,verticalAlign:"middle"});
-const mTDR=th=>({...mTD(th),textAlign:"right",padding:"7px 0 7px 6px"});
+const mTD=th=>({fontSize:12.5,padding:"9px 6px 9px 0",borderTop:`1px solid ${th.cardBorder}`,color:th.text,verticalAlign:"middle"});
+const mTDR=th=>({...mTD(th),textAlign:"right",padding:"9px 0 9px 6px",fontFamily:"'JetBrains Mono',ui-monospace,monospace",fontVariantNumeric:"tabular-nums",fontSize:12});
 const mIIN=th=>({background:th.bg,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"4px 7px",fontSize:12,outline:"none",width:"100%"});
 
 export { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN };
