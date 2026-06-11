@@ -71,11 +71,17 @@ you mark the client's plan manually after payment; full webhook-synced subscript
 a later build). The buttons read prices from the catalog, so they auto-correct when F2 is
 resolved.
 
-## 4. Your decisions (then I finish the alignment in one pass)
+## 4. Decisions — RESOLVED 2026-06-11 (owner) + executed
 
-1. **F1:** merge the two checkups into one + `GACLIENT50`-style code? (yes/no)
-2. **F2:** which prices are truth — the catalog ($199/$129/$49/$499) or D-13
-   ($99/$99-79/$29/$299)? I'll re-lock D-13 and align catalog/links/letter accordingly.
-3. **F5:** keep one flat Strategy Session price, or restore the Car discount via code?
-4. Create the promo codes in Stripe (dashboard → Coupons/Promotion codes) and enable
-   "allow promotion codes" on the payment links — 10 minutes, needs your dashboard login.
+1. **F1 = YES.** `client-checkup` removed from the catalog (SVCS + stripeLinks + pricing
+   carousel). One Financial Checkup at $149; returning clients get a promo code. The
+   pricing card now says "Already a Golden Anchor client? Ask your advisor for your
+   discount code" (EN+ES) — safe wording until the code exists in Stripe.
+2. **F2 = CATALOG.** D-13 re-locked in AGENT.md at $149/$199/$129/$49/$79/$499.
+3. **F5 = ONE FLAT PRICE.** Strategy Session $129; Home/Job/Car split retired.
+4. **Stripe dashboard (owner, ~10 min, any PC):** see the checklist in REVIEW_QUEUE.md —
+   create the `GACLIENT50` promo code, archive the old Golden-Anchor-Client checkup
+   product/link, confirm live prices match the re-locked D-13, enable "allow promotion
+   codes" on the Checkup payment link.
+5. **NEXT (master directive §A):** add Free + Premium (choose-your-price, $3 floor)
+   products in Stripe when the plan-ladder build ships.

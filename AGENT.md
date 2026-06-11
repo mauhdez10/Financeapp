@@ -79,12 +79,13 @@ Decisions in this section have been agreed and should NOT be changed without the
 
 ### Business
 
-- **D-13 — Pricing tier (year 1):**
-  - Initial Checkup: $149 (regularly $249 strike-through)
-  - Quarterly: $99 per checkup
-  - Annual bundle: $299 (save $97 on 4 quarterlies)
-  - Monthly Lite Subscription: $29/mo
-  - Strategy sessions: $99 (Home, Job change), $79 (Car)
+- **D-13 — Pricing tier (RE-LOCKED 2026-06-11 at catalog prices; owner picked catalog over the old year-1 numbers — see docs/PRICING-AUDIT.md):**
+  - Financial Checkup: $149 — ONE product for new AND returning clients; returning clients get a Stripe promo code (~$50 off ⇒ $99 net; `client-checkup` product retired per F1)
+  - Quarterly Review: $199 per checkup
+  - Annual bundle: $499/yr (saves $297 vs 4 quarterlies)
+  - Monthly Lite: $49/mo · Monthly Lite+: $79/mo (Lite + 1 Strategy Session/mo)
+  - Strategy Session: $129 flat (Home/Job/Car split retired per F5)
+  - NEXT (master directive §A): Free tier + Premium self-serve at choose-your-price ($3 floor, suggested $3/$10/$20)
 - **D-14 — Health/Insurance bundle:** Free Initial Checkup for active insurance clients. Promo code `HEALTHFAMILY`.
 - **D-15 — Referral discount:** 25% off Initial Checkup (code `REFERRED25`); referrer gets $25 credit.
 - **D-16 — Seasonal promos:** New Year Reset ($99 Jan 1–31), Spring Review ($99 Mar 15–Apr 30), Back-to-School ($99 Aug 1–Sep 15), Holiday Prep ($79 Nov 1–30), Year-End Review ($99 Dec 15–31).

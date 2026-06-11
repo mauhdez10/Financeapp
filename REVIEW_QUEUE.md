@@ -6,13 +6,19 @@
 
 ## Finish-everything batch 2026-06-11 (v0.72.3)
 
-### A. Pricing audit (you asked for this before wiring billing) — DECISIONS NEEDED
-- [ ] Read `docs/PRICING-AUDIT.md` (5 min). Your calls: **F1** merge the two checkup
-      products into one $149 + a `GACLIENT50`-style code? **F2** which prices are truth —
-      catalog ($199/$129/$49/$499) or the locked D-13 plan ($99/$99-79/$29/$299)?
-      **F5** flat Strategy price or restore the Car discount via code?
-- [ ] Owner-only: open the Stripe dashboard, confirm product prices match the catalog,
-      create the promo code(s), and tick "allow promotion codes" on the payment links.
+### A. Pricing audit — ✅ DECIDED (F1 yes / F2 catalog / F5 flat) & EXECUTED app-side
+- [x] D-13 re-locked at catalog prices; `client-checkup` retired from the app; pricing
+      card now tells returning clients to ask you for their code.
+- [ ] **YOUR 10-MIN STRIPE CHECKLIST** (dashboard.stripe.com, any PC):
+      1. Products → find "Financial Checkup — Golden Anchor Client" → **Archive** it
+         (its payment link dies with it — that's intended).
+      2. Coupons → **+ New**: $50 off, duration "once", name `GACLIENT50` → then
+         Promotion codes → create code `GACLIENT50` from that coupon.
+      3. Payment links → open the **Initial Financial Checkup** link → toggle
+         **"Allow promotion codes"** ON.
+      4. Sanity-check live prices = $149 / $199 / $129 / $49 / $79 / $499.
+      (Alternative: paste a live restricted key — write on Products, Prices, Coupons,
+      Promotion codes, Payment links — in the chat and I do all four via API.)
 
 ### B. Client "Your plan" card now has real Upgrade buttons
 - [ ] Log in as clientdemo@goldenanchor.life → Settings → flip the **Your plan** card:
