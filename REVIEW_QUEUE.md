@@ -50,6 +50,22 @@
       portal allow-list, and every money formula with targets. **Add your "why" notes
       where the TODO marks** — the how-to guides will quote you.
 
+### 4b. Continuation batch (v0.71.2 → v0.72, same night)
+- [ ] KPI deltas on the dashboard are now tinted mono chips. Table headers app-wide are
+      uppercase micro-labels; every numeric (right-aligned) table cell is JetBrains Mono.
+      Primary gold buttons have dark ink (were white-on-gold). Light-mode accent for
+      accounts without a stored accent is gold now (was legacy blue).
+- [ ] **Phase 1b extraction done:** UI primitives (33 components) + the 9 standalone
+      calculators (21 exports) now live in src/components/. App.jsx is ~6,250 lines
+      (from 8,502). Spot-check: Calculators page, Retirement, Home Calculator →
+      Amortization tab (this one crashed during extraction and was fixed + re-verified),
+      a Settings edit popup, dashboard.
+- [ ] **Calculator math is now fully documented** in .claude/skills/golden-anchor-logic
+      §4 (inputs/formulas/assumptions per calc). ⚠️ One finding for you: **InterestCalc's
+      compound-frequency dropdown (Monthly/Quarterly/Annual) is decorative — the math
+      always compounds monthly.** Decide: wire it or remove the dropdown.
+      Also: IncomeCalc uses **hardcoded 2025 tax brackets** — annual maintenance item.
+
 ### 5. Explicitly NOT done this sprint (so nothing is silent)
 - Phase 1b/2 extraction (calculators, primitives, ClientDetail split into tabs).
 - Design surface items: landing hero spec, table polish, type-scale snap, page-header
