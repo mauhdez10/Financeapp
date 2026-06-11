@@ -261,11 +261,126 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing,onBack
    (photographic anchor, looks right at hero/login scale). ⚓ emoji is the final fallback
    only if the asset itself fails to load. */
 
-/* ── LandingPage (MD-E part 2, v0.74.1) — the marketing front door at "/".
-   Origin-inspired: advertising voice, real product visuals (live SVG charts with
-   sample data — sharper than screenshots, theme-aware), motion-light, dual-mode.
-   Login moved to /login; CTAs route there. Compliance stays one quiet footer line
-   (D-17) — no front-page disclaimer walls, per the owner's directive.           */
+/* ── GoldenTides (v0.77) — the cinematic hero canvas, built from the owner's two
+   Mux references (Lithos-style glowing dark terrain / immersive ambient scene):
+   layered golden wave-ridgelines drifting slowly out of deep navy-black, ember
+   particles rising, subtle mouse parallax. The anchor/ocean metaphor in brand gold.
+   Reduced motion → one static frame. Pauses when the tab is hidden.             */
+function GoldenTides({reducedMotion}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const c=ref.current;if(!c)return;const ctx=c.getContext("2d");
+    const DPR=Math.min(2,window.devicePixelRatio||1);
+    let raf,running=true,t=Math.PI*0.7,mx=0,targetMx=0;
+    const LAYERS=7;
+    let layers=[];
+    const resize=()=>{c.width=c.clientWidth*DPR;c.height=c.clientHeight*DPR;};
+    const build=()=>{
+      layers=[];
+      for(let i=0;i<LAYERS;i++){
+        const d=i/(LAYERS-1); // 0 = far, 1 = near
+        layers.push({
+          d,
+          base:0.46+d*0.50,                 // ridge baseline (fraction of height)
+          amp1:(18+34*d),amp2:(7+14*d),     // wave amplitudes (px @DPR=1)
+          k1:(1.1+0.5*d),k2:(2.6+1.1*d),    // spatial frequencies
+          p1:i*1.7+0.9,p2:i*2.9+0.2,        // phases
+          s1:(0.05+0.05*d)*(i%2?1:-1),s2:(0.085+0.06*d), // drift speeds
+          a:0.22+0.78*d,                    // line alpha by depth (near ridges burn brighter)
+        });
+      }
+    };
+    const emberN=26;
+    let embers=[];
+    const seedEmbers=()=>{embers=Array.from({length:emberN},(_,i)=>({x:(i*97%100)/100,y:0.45+((i*53%100)/100)*0.5,v:0.0007+((i*31%10)/10)*0.0012,r:(0.8+(i*7%10)/10*1.4),tw:i*0.7}));};
+    const draw=()=>{
+      const W=c.width,H=c.height;
+      ctx.clearRect(0,0,W,H);
+      // night sky: near-black with a faint gold horizon glow
+      const sky=ctx.createLinearGradient(0,0,0,H);
+      sky.addColorStop(0,"#06080C");sky.addColorStop(0.55,"#090B10");sky.addColorStop(1,"#0E0D0A");
+      ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+      const glow=ctx.createRadialGradient(W*0.68,H*0.52,0,W*0.68,H*0.52,W*0.55);
+      glow.addColorStop(0,"rgba(201,168,76,0.10)");glow.addColorStop(1,"rgba(201,168,76,0)");
+      ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+      const STEP=Math.max(3,Math.round(6*DPR));
+      for(const L of layers){
+        const px=mx*14*DPR*(L.d-0.4); // parallax by depth
+        const baseY=H*L.base;
+        ctx.beginPath();
+        for(let x=-20*DPR;x<=W+20*DPR;x+=STEP){
+          const u=x/(W||1)*Math.PI*2;
+          const y=baseY
+            +Math.sin(u*L.k1+L.p1+t*L.s1)*L.amp1*DPR
+            +Math.sin(u*L.k2+L.p2+t*L.s2)*L.amp2*DPR;
+          x<=-20*DPR+STEP?ctx.moveTo(x+px,y):ctx.lineTo(x+px,y);
+        }
+        // occluding fill below the ridge (terrain layering like the reference)
+        ctx.lineTo(W+20*DPR,H+20*DPR);ctx.lineTo(-20*DPR,H+20*DPR);ctx.closePath();
+        const fill=ctx.createLinearGradient(0,baseY-40*DPR,0,H);
+        fill.addColorStop(0,`rgba(13,12,8,${0.92})`);
+        fill.addColorStop(0.25,`rgba(9,9,8,${0.97})`);
+        fill.addColorStop(1,"#07080B");
+        ctx.fillStyle=fill;ctx.fill();
+        // the glowing gold ridgeline
+        ctx.beginPath();
+        for(let x=-20*DPR;x<=W+20*DPR;x+=STEP){
+          const u=x/(W||1)*Math.PI*2;
+          const y=baseY
+            +Math.sin(u*L.k1+L.p1+t*L.s1)*L.amp1*DPR
+            +Math.sin(u*L.k2+L.p2+t*L.s2)*L.amp2*DPR;
+          x<=-20*DPR+STEP?ctx.moveTo(x+px,y):ctx.lineTo(x+px,y);
+        }
+        const lg=ctx.createLinearGradient(0,0,W,0);
+        lg.addColorStop(0,`rgba(160,120,40,${L.a*0.55})`);
+        lg.addColorStop(0.45,`rgba(235,200,120,${L.a})`);
+        lg.addColorStop(0.75,`rgba(201,168,76,${L.a*0.8})`);
+        lg.addColorStop(1,`rgba(140,100,35,${L.a*0.45})`);
+        ctx.strokeStyle=lg;
+        ctx.lineWidth=(0.8+2.0*L.d)*DPR;
+        ctx.shadowColor="rgba(226,190,100,0.65)";
+        ctx.shadowBlur=(8+16*L.d)*DPR;
+        ctx.stroke();
+        ctx.shadowBlur=0;
+      }
+      // rising embers
+      for(const e of embers){
+        const ex=e.x*W+Math.sin(t*0.6+e.tw)*8*DPR;
+        const ey=e.y*H;
+        const tw=0.35+0.65*Math.abs(Math.sin(t*0.9+e.tw));
+        ctx.beginPath();ctx.arc(ex,ey,e.r*DPR,0,Math.PI*2);
+        ctx.fillStyle=`rgba(235,205,130,${0.5*tw})`;
+        ctx.shadowColor="rgba(235,205,130,0.8)";ctx.shadowBlur=6*DPR;
+        ctx.fill();ctx.shadowBlur=0;
+      }
+    };
+    const tick=()=>{
+      if(!running)return;
+      t+=0.016;
+      mx+=(targetMx-mx)*0.04;
+      for(const e of embers){e.y-=e.v;if(e.y<0.40)e.y=0.96;}
+      draw();
+      raf=requestAnimationFrame(tick);
+    };
+    const onMove=(ev)=>{const r=c.getBoundingClientRect();targetMx=((ev.clientX-r.left)/(r.width||1))*2-1;};
+    const onVis=()=>{const hid=document.hidden;running=!hid&&!reducedMotion;if(running){cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);}};
+    const onR=()=>{resize();draw();};
+    resize();build();seedEmbers();
+    // first frame paints SYNCHRONOUSLY — rAF can be throttled (hidden/occluded tab)
+    // and the hero must never flash blank.
+    if(reducedMotion){t=4.2;draw();}
+    else{draw();window.addEventListener("mousemove",onMove);document.addEventListener("visibilitychange",onVis);raf=requestAnimationFrame(tick);}
+    window.addEventListener("resize",onR);
+    return()=>{running=false;cancelAnimationFrame(raf);window.removeEventListener("resize",onR);window.removeEventListener("mousemove",onMove);document.removeEventListener("visibilitychange",onVis);};
+  },[reducedMotion]);
+  return <canvas ref={ref} aria-hidden="true" style={{position:"absolute",inset:0,width:"100%",height:"100%"}}/>;
+}
+
+/* ── LandingPage (MD-E part 2, v0.74.1; hero rebuilt v0.77 from the owner's
+   cinematic references) — the marketing front door at "/". Hero = always-dark
+   GoldenTides cinema (premium editorial, like the refs) regardless of theme;
+   the sections below follow the user's theme. Compliance stays one quiet footer
+   line (D-17) — no front-page disclaimer walls, per the owner's directive.      */
 function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav}){
   const reducedMotion=useReducedMotion();
   const es=lang==="es";
@@ -333,62 +448,92 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
     {name:"Premium",price:"$3+",sub:es?"Todo desbloqueado — paga lo que elijas":"Everything unlocked — choose what you pay",hot:true},
     {name:es?"Con asesor":"With an advisor",price:"$49+",sub:es?"Acompañamiento mensual bilingüe":"Bilingual monthly coaching"},
   ];
+  // hero palette — the cinema is ALWAYS dark (both references are), independent of theme
+  const HP={text:"#F2EFE6",muted:"rgba(232,226,210,0.74)",dim:"rgba(216,208,188,0.46)",gold:"#E2C375",line:"rgba(242,239,230,0.14)",glass:"rgba(255,255,255,0.06)"};
+  const heroPill={fontSize:12,padding:"9px 15px",minHeight:40,borderRadius:99,background:HP.glass,border:`1px solid ${HP.line}`,color:HP.muted,cursor:"pointer",fontWeight:600,fontFamily:"inherit",backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)"};
   return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
-    <div aria-hidden style={{position:"fixed",top:-200,right:60,width:620,height:620,borderRadius:"50%",background:`radial-gradient(circle,${P.glowA},transparent 70%)`,filter:"blur(50px)",pointerEvents:"none",zIndex:0}}/>
     <div style={{position:"relative",zIndex:2}}>
-      <header style={{maxWidth:1240,margin:"0 auto",padding:"24px 40px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:11}}>
-          <div style={{width:34,height:34,borderRadius:10,...glass,display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/anchor-monogram.svg" alt="" style={{width:20,height:20}}/></div>
-          <div>
-            <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.01em",color:P.text,lineHeight:1}}>Golden Anchor</div>
-            <div style={{fontSize:8,color:P.dim,marginTop:3,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>{es?"Asesoría Financiera":"Financial Advisory"}</div>
-          </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap",justifyContent:"flex-end"}}>
-          {onNav&&<button onClick={()=>onNav("about")} style={pill}>{es?"Nosotros":"About"}</button>}
-          <button onClick={onPricing} style={pill}>{es?"Precios":"Pricing"}</button>
-          {onNav&&<button onClick={()=>onNav("faq")} style={pill}>Q&A</button>}
-          {onNav&&<button onClick={()=>onNav("contact")} style={pill}>{es?"Contacto":"Contact"}</button>}
-          <button onClick={onLangToggle} aria-label="Toggle language" style={pill}>{es?"EN":"ES"}</button>
-          <button onClick={onToggle} aria-label="Toggle theme" style={pill}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
-          <button onClick={onSignIn} style={{...pill,color:P.text,fontWeight:700}}>{es?"Iniciar sesión":"Sign in"}</button>
-        </div>
-      </header>
 
-      <section className="ga-login-hero" style={{maxWidth:1240,margin:"0 auto",padding:"44px 40px 30px",display:"grid",gridTemplateColumns:"minmax(0,1.18fr) minmax(0,1fr)",gap:54,alignItems:"center"}}>
-        <div>
-          <div style={{display:"flex",alignItems:"center",gap:9,...eyebrow,marginBottom:22}}><span style={{width:6,height:6,borderRadius:99,background:P.gold}}/>{es?"Coaching financiero bilingüe":"Bilingual financial coaching"}</div>
-          <h1 style={{fontWeight:500,fontSize:"clamp(2.5rem,5.2vw,4.2rem)",color:P.text,lineHeight:1.05,letterSpacing:"-0.032em",margin:"0 0 24px"}}>
-            {es?<>Tu dinero, <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>claro</span> por fin.</>:<>Your money, finally <span style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,color:P.accent}}>clear</span>.</>}
-          </h1>
-          <p style={{fontSize:17,lineHeight:1.62,color:P.muted,maxWidth:500,margin:"0 0 28px"}}>
-            {es?"Un tablero que muestra a dónde va cada dólar, qué tan sano está tu plan, y el siguiente paso — solo, o con un asesor bilingüe a tu lado.":"One dashboard that shows where every dollar goes, how healthy your plan is, and what to do next — on your own, or with a bilingual advisor by your side."}
-          </p>
-          <div style={{display:"flex",gap:11,flexWrap:"wrap",marginBottom:24}}>
-            <button className="ga-press" onClick={onSignIn} style={goldBtn}>{es?"Empieza gratis":"Start free"}</button>
-            <button className="ga-press" onClick={onPricing} style={ghostBtn}>{es?"Ver precios":"See pricing"}</button>
+      {/* ── CINEMATIC HERO (v0.77, built from the owner's two Mux references) ── */}
+      <section style={{position:"relative",minHeight:"92vh",display:"flex",flexDirection:"column",background:"#07090D",overflow:"hidden"}}>
+        <GoldenTides reducedMotion={reducedMotion}/>
+        <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(7,9,13,0.46) 0%, rgba(7,9,13,0) 30%)",pointerEvents:"none"}}/>
+        <header style={{position:"relative",zIndex:3,maxWidth:1320,width:"100%",margin:"0 auto",padding:"22px 40px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,boxSizing:"border-box",flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:11}}>
+            <div style={{width:34,height:34,borderRadius:10,background:HP.glass,border:`1px solid ${HP.line}`,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(10px)"}}><img src="/anchor-monogram.svg" alt="" style={{width:20,height:20}}/></div>
+            <div>
+              <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.01em",color:HP.text,lineHeight:1}}>Golden Anchor</div>
+              <div style={{fontSize:8,color:HP.dim,marginTop:3,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>{es?"Asesoría Financiera":"Financial Advisory"}</div>
+            </div>
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {(es?["Sin tarjeta","EN / ES","Cancela cuando sea"]:["No card required","EN / ES","Cancel anytime"]).map((s,i)=><span key={i} style={{fontSize:9.5,padding:"7px 13px",borderRadius:99,...glass,color:P.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{s}</span>)}
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            {onNav&&<button onClick={()=>onNav("about")} style={heroPill}>{es?"Nosotros":"About"}</button>}
+            <button onClick={onPricing} style={heroPill}>{es?"Precios":"Pricing"}</button>
+            {onNav&&<button onClick={()=>onNav("faq")} style={heroPill}>Q&A</button>}
+            {onNav&&<button onClick={()=>onNav("contact")} style={heroPill}>{es?"Contacto":"Contact"}</button>}
+            <button onClick={onLangToggle} aria-label="Toggle language" style={heroPill}>{es?"EN":"ES"}</button>
+            <button onClick={onToggle} aria-label="Toggle theme" style={heroPill}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
+            <button className="ga-press" onClick={onSignIn} style={{...heroPill,background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",fontWeight:700,border:"none",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32)"}}>{es?"Iniciar sesión":"Sign in"}</button>
+          </div>
+        </header>
+
+        <div style={{position:"relative",zIndex:3,flex:1,maxWidth:1320,width:"100%",margin:"0 auto",padding:"2vh 40px 0",boxSizing:"border-box",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,fontSize:10,color:HP.gold,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.2em",marginBottom:26}}>
+            <span style={{width:26,height:1,background:HP.gold,opacity:0.7}}/>{es?"Coaching financiero bilingüe":"Bilingual financial coaching"}
+          </div>
+          <h1 style={{margin:"0 0 10px",lineHeight:0.98,letterSpacing:"-0.02em"}}>
+            <span style={{display:"block",fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:400,fontSize:"clamp(3rem,8vw,6.6rem)",color:HP.text,textShadow:"0 2px 40px rgba(0,0,0,0.45)"}}>{es?"Tu dinero,":"Your money,"}</span>
+            <span style={{display:"block",fontWeight:300,fontSize:"clamp(2.5rem,6.6vw,5.4rem)",color:HP.gold,letterSpacing:"-0.03em",marginTop:"0.6rem",textShadow:"0 2px 40px rgba(0,0,0,0.45)"}}>{es?"claro por fin.":"finally clear."}</span>
+          </h1>
+        </div>
+
+        {/* corner annotations, like the reference */}
+        <div style={{position:"relative",zIndex:3,maxWidth:1320,width:"100%",margin:"0 auto",padding:"0 40px 44px",boxSizing:"border-box",display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:24,flexWrap:"wrap"}}>
+          <div style={{maxWidth:340}}>
+            <p style={{fontSize:13,lineHeight:1.7,color:HP.muted,margin:"0 0 14px"}}>
+              {es?"Un tablero que muestra a dónde va cada dólar, qué tan sano está tu plan, y el siguiente paso — solo, o con un asesor bilingüe a tu lado.":"One dashboard that shows where every dollar goes, how healthy your plan is, and what to do next — on your own, or with a bilingual advisor by your side."}
+            </p>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+              {(es?["Sin tarjeta","EN / ES","Cancela cuando sea"]:["No card required","EN / ES","Cancel anytime"]).map((s,i)=><span key={i} style={{fontSize:9,padding:"6px 11px",borderRadius:99,background:HP.glass,border:`1px solid ${HP.line}`,color:HP.muted,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em",backdropFilter:"blur(10px)"}}>{s}</span>)}
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:12}}>
+            <p style={{fontSize:11.5,lineHeight:1.65,color:HP.dim,margin:0,maxWidth:260,textAlign:"right"}}>
+              {es?"Gratis para empezar. Premium desde $3 al mes — tú eliges el monto.":"Free to start. Premium from $3 a month — you choose the amount."}
+            </p>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-end"}}>
+              <button className="ga-press" onClick={onPricing} style={{...ghostBtn,color:HP.text,border:`1px solid ${HP.line}`,backdropFilter:"blur(10px)",background:HP.glass}}>{es?"Ver precios":"See pricing"}</button>
+              <button className="ga-press" onClick={onSignIn} style={{...goldBtn,fontSize:14,padding:"14px 30px"}}>{es?"Empieza gratis":"Start free"}</button>
+            </div>
           </div>
         </div>
-        <div data-reveal style={{display:"flex",flexDirection:"column",gap:13,minWidth:0}}>
-          <div style={{display:"flex",gap:13,flexWrap:"wrap"}}>
-            {kpi(es?"Patrimonio neto":"Net worth","$86,400","+4.2%",true)}
-            {kpi(es?"Tasa de ahorro":"Savings rate","18%","+2pt",true)}
-            {kpi(es?"Razón de deuda":"Debt ratio","24%","−3pt",true)}
+        <div aria-hidden style={{position:"absolute",left:"50%",bottom:10,transform:"translateX(-50%)",zIndex:3,color:HP.dim,fontSize:9,fontFamily:MONO,letterSpacing:"0.22em",textTransform:"uppercase"}}>{es?"Desliza":"Scroll"} ↓</div>
+      </section>
+
+      {/* ── THE PRODUCT, staged (was the hero right column) ─────────────────── */}
+      <section data-reveal style={{maxWidth:1240,margin:"0 auto",padding:"64px 40px 8px"}}>
+        <div style={{textAlign:"center",maxWidth:560,margin:"0 auto 30px"}}>
+          <div style={eyebrow}>{es?"Tu tablero":"Your dashboard"}</div>
+          <h2 style={h2}>{es?"Todo tu panorama, en vivo.":"Your whole picture, live."}</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(290px,1fr))",gap:13,alignItems:"start"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:13,minWidth:0}}>
+            <div style={{display:"flex",gap:13,flexWrap:"wrap"}}>
+              {kpi(es?"Patrimonio neto":"Net worth","$86,400","+4.2%",true)}
+              {kpi(es?"Tasa de ahorro":"Savings rate","18%","+2pt",true)}
+            </div>
+            <div style={{display:"flex",gap:13,flexWrap:"wrap"}}>
+              <div style={{...glass,borderRadius:16,padding:14,flex:1,minWidth:170,display:"flex",justifyContent:"center"}}>
+                <Donut data={donutData} size={142} centerLabel={es?"Activos":"Assets"} centerValue="$86.4k" centerColor={P.text}/>
+              </div>
+              <div style={{...glass,borderRadius:16,padding:14,flex:1,minWidth:170,display:"flex",justifyContent:"center"}}>
+                <RadialGauge value={11900} max={15000} label={es?"Ahorrado":"Saved"} subLabel={es?"meta 3 meses":"3-mo target"} color={P.pos} fmt={v=>"$"+Math.round(v/100)/10+"k"}/>
+              </div>
+            </div>
           </div>
-          <div style={{...glass,borderRadius:16,padding:"16px 16px 8px"}}>
+          <div style={{...glass,borderRadius:16,padding:"16px 16px 8px",minWidth:0}}>
             <div style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8}}>{es?"Deuda ↓ vs Ahorro ↑ — 6 meses":"Debt ↓ vs Savings ↑ — 6 months"}</div>
-            <SmoothAreaLine data={trend} height={172} debtColor={P.neg} savingsColor={P.pos} legendDebt={es?"Deuda":"Debt"} legendSav={es?"Ahorro":"Savings"}/>
-          </div>
-          <div style={{display:"flex",gap:13,flexWrap:"wrap"}}>
-            <div style={{...glass,borderRadius:16,padding:14,flex:1,minWidth:170,display:"flex",justifyContent:"center"}}>
-              <Donut data={donutData} size={142} centerLabel={es?"Activos":"Assets"} centerValue="$86.4k" centerColor={P.text}/>
-            </div>
-            <div style={{...glass,borderRadius:16,padding:14,flex:1,minWidth:170,display:"flex",justifyContent:"center"}}>
-              <RadialGauge value={11900} max={15000} label={es?"Ahorrado":"Saved"} subLabel={es?"meta 3 meses":"3-mo target"} color={P.pos} fmt={v=>"$"+Math.round(v/100)/10+"k"}/>
-            </div>
+            <SmoothAreaLine data={trend} height={232} debtColor={P.neg} savingsColor={P.pos} legendDebt={es?"Deuda":"Debt"} legendSav={es?"Ahorro":"Savings"}/>
           </div>
         </div>
       </section>

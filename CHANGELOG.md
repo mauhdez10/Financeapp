@@ -2,6 +2,21 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.77 — 2026-06-11 (Minor surface) — Cinematic "Golden Tides" landing hero (owner's references)
+
+The landing hero rebuilt from the owner's two Mux reference animations (Lithos-style
+glowing dark terrain / immersive ambient scene): full-bleed `GoldenTides` canvas —
+seven layered golden wave-ridgelines drifting slowly out of deep navy-black with
+occluding terrain fills, glow strokes, rising ember particles, and subtle mouse
+parallax (the anchor/ocean metaphor in brand gold). Huge mixed-type headline
+(Newsreader italic "Your money," + light sans gold "finally clear."), corner
+annotation blocks + CTA cluster like the reference, scroll cue. Hero is always
+cinematic-dark (both refs are); sections below follow the user's theme. The product
+mock moved to its own "Your whole picture, live." section. First frame paints
+synchronously (rAF can be throttled); reduced-motion renders a static frame; pauses
+when the tab hides. Verified by extracting the live canvas render and comparing
+against the reference frames.
+
 ## v0.76.2 — 2026-06-11 (Patch) — Function consolidation (Vercel 12-cap) + Link-R prod-verified
 
 The v0.76/v0.76.1 deploys FAILED silently: 15 serverless functions > Vercel Hobby's

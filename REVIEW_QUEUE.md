@@ -6,6 +6,14 @@
 
 ## Finish-the-project run — 2026-06-11 (v0.75.2 → v0.76.1)
 
+### 🎬 The landing redesign from YOUR references (v0.77)
+- [ ] Open https://finance.goldenanchor.life logged out: the hero is now full-screen
+      cinema — slow golden wave-ridgelines glowing out of the dark (your Lithos-style
+      reference, in our gold), rising embers, mouse parallax, huge serif headline,
+      corner annotations. The dashboard preview moved below ("Your whole picture,
+      live."). Check it on your phone too. Tell me: more glow? different headline?
+      faster/slower drift? I iterate from your reaction.
+
 ### The big one: clients can now LINK to your records (Link-R)
 - [ ] Open any client → ☰ kebab → **"Link client account"** → their email → Send
       invite. They get a branded email; they sign in (or create a free account) with
