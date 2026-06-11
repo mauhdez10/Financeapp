@@ -1062,6 +1062,1134 @@ const USEFUL_LINKS = [
       }
     ]
   },
+  {
+    id: "taxes",
+    icon: "FileText",
+    title: { en: "Taxes & Free Tax Filing", es: "Impuestos y declaración gratuita" },
+    blurb: {
+      en: "File for free, claim the credits you've earned, and get help when the IRS gets complicated.",
+      es: "Declare gratis, reclame los créditos que le corresponden y obtenga ayuda cuando el IRS se complique."
+    },
+    tips: [
+      {
+        en: "If your household made under about $89,000, you should never pay to file your taxes — free options above cover almost everyone. Always start from IRS.gov, not from an ad in your search results.",
+        es: "Si su hogar ganó menos de unos $89,000, nunca debería pagar por declarar sus impuestos — las opciones gratuitas de arriba cubren a casi todos. Siempre empiece desde IRS.gov, no desde un anuncio en los resultados de búsqueda."
+      },
+      {
+        en: "Check the EITC and Child Tax Credit every year even if you owe nothing — these can put thousands of dollars back in your pocket, and roughly 1 in 5 eligible families never claims the EITC.",
+        es: "Revise el EITC y el Crédito Tributario por Hijos cada año aunque no deba nada — pueden devolverle miles de dólares, y aproximadamente 1 de cada 5 familias elegibles nunca reclama el EITC."
+      },
+      {
+        en: "Skip 'rapid refund' or refund advance loans — they take a cut of your money. E-filing with direct deposit usually gets your full refund in about 21 days for free.",
+        es: "Evite los préstamos de 'reembolso rápido' o adelantos de reembolso — se quedan con parte de su dinero. Declarar electrónicamente con depósito directo normalmente le da su reembolso completo en unos 21 días, gratis."
+      },
+      {
+        en: "The IRS will never call, text, or email demanding immediate payment or threatening arrest — real IRS contact comes by postal mail. If someone does this, it's a scam; hang up.",
+        es: "El IRS nunca llama, envía mensajes de texto ni correos exigiendo pago inmediato o amenazando con arresto — el contacto real del IRS llega por correo postal. Si alguien hace esto, es una estafa; cuelgue."
+      }
+    ],
+    items: [
+      {
+        name: "IRS Free File",
+        url: "https://www.irs.gov/filing/irs-free-file-do-your-taxes-for-free",
+        what: {
+          en: "Free tax software from the IRS website. Answer simple questions and it fills out your federal tax return at no cost if your household made about $89,000 or less.",
+          es: "Software gratuito de impuestos desde el sitio del IRS. Responda preguntas sencillas y llena su declaración federal sin costo si su hogar ganó unos $89,000 o menos."
+        },
+        whoFor: {
+          en: "Anyone comfortable doing their own taxes on a computer or phone who wants to file for free.",
+          es: "Cualquier persona que se sienta cómoda haciendo sus propios impuestos en una computadora o teléfono y quiera declarar gratis."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Free Tax Prep Near You (IRS VITA/TCE)",
+        url: "https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers",
+        what: {
+          en: "Find a nearby site where trained, IRS-certified volunteers prepare and file your taxes for you, in person and completely free. Many sites have Spanish-speaking volunteers. Or call 800-906-9887.",
+          es: "Encuentre un sitio cercano donde voluntarios capacitados y certificados por el IRS preparan y presentan sus impuestos por usted, en persona y completamente gratis. Muchos sitios tienen voluntarios que hablan español. O llame al 800-906-9887."
+        },
+        whoFor: {
+          en: "People earning roughly $69,000 or less, people with disabilities, seniors, and people who prefer help in Spanish.",
+          es: "Personas que ganan aproximadamente $69,000 o menos, personas con discapacidades, adultos mayores y quienes prefieren ayuda en español."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "AARP Foundation Tax-Aide",
+        url: "https://www.aarp.org/money/taxes/aarp-taxaide/",
+        what: {
+          en: "Free in-person tax preparation at libraries, community centers, and senior centers across the country, February through April. You do not need to be an AARP member. Call 1-888-227-7669 to find a site.",
+          es: "Preparación gratuita de impuestos en persona en bibliotecas, centros comunitarios y centros de adultos mayores en todo el país, de febrero a abril. No necesita ser miembro de AARP. Llame al 1-888-227-7669 para encontrar un sitio."
+        },
+        whoFor: {
+          en: "Older adults (especially 50+) with low to moderate income who want a real person to sit down and do their taxes with them.",
+          es: "Adultos mayores (especialmente de 50+) con ingresos bajos a moderados que quieren que una persona real se siente a hacer sus impuestos con ellos."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "MyFreeTaxes (United Way)",
+        url: "https://www.myfreetaxes.com/",
+        what: {
+          en: "United Way's free tax filing website with free phone and chat help in English and Spanish (1-866-698-9435). Most people finish in under an hour.",
+          es: "El sitio gratuito de declaración de impuestos de United Way, con ayuda gratuita por teléfono y chat en inglés y español (1-866-698-9435). La mayoría de las personas terminan en menos de una hora."
+        },
+        whoFor: {
+          en: "Families earning under about $89,000 who want to file online but like having a helpline to call when stuck.",
+          es: "Familias que ganan menos de unos $89,000 y quieren declarar en línea pero les gusta tener una línea de ayuda para cuando se atoran."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "GetYourRefund",
+        url: "https://www.getyourrefund.org/",
+        what: {
+          en: "File your taxes online with help from an IRS-certified volunteer — you upload your documents from your phone and they prepare the return with you. Built by the nonprofit Code for America with the IRS.",
+          es: "Declare sus impuestos en línea con ayuda de un voluntario certificado por el IRS — sube sus documentos desde su teléfono y ellos preparan la declaración con usted. Creado por la organización sin fines de lucro Code for America junto con el IRS."
+        },
+        whoFor: {
+          en: "Lower-income families who want a volunteer to do their taxes but can't get to an in-person site.",
+          es: "Familias de bajos ingresos que quieren que un voluntario haga sus impuestos pero no pueden ir a un sitio en persona."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Earned Income Tax Credit (EITC) — IRS",
+        url: "https://www.irs.gov/credits-deductions/individuals/earned-income-tax-credit-eitc",
+        what: {
+          en: "Official page explaining the EITC — money back at tax time for working people with modest incomes, often thousands of dollars. Includes a simple tool to check if you qualify.",
+          es: "Página oficial que explica el EITC — dinero de regreso en la temporada de impuestos para trabajadores con ingresos modestos, a menudo miles de dólares. Incluye una herramienta sencilla para verificar si califica."
+        },
+        whoFor: {
+          en: "Working families and individuals with low to moderate income — many people qualify and don't know it.",
+          es: "Familias trabajadoras y personas con ingresos bajos a moderados — muchos califican y no lo saben."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Child Tax Credit — IRS",
+        url: "https://www.irs.gov/credits-deductions/individuals/child-tax-credit",
+        what: {
+          en: "Official page explaining the Child Tax Credit — up to $2,200 per child to lower your tax bill, with part of it refundable even if you owe little or no tax.",
+          es: "Página oficial que explica el Crédito Tributario por Hijos — hasta $2,200 por hijo para reducir su factura de impuestos, con una parte reembolsable aunque deba poco o nada de impuestos."
+        },
+        whoFor: {
+          en: "Parents and guardians with children under 17 — almost all working families qualify for at least part of it.",
+          es: "Padres y tutores con hijos menores de 17 años — casi todas las familias trabajadoras califican al menos para una parte."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "ITIN Basics — IRS",
+        url: "https://www.irs.gov/tin/itin/individual-taxpayer-identification-number-itin",
+        what: {
+          en: "Explains the ITIN — a tax number for people who can't get a Social Security number — what it's for, how to apply with Form W-7, and how to renew one.",
+          es: "Explica el ITIN — un número de impuestos para personas que no pueden obtener un número de Seguro Social — para qué sirve, cómo solicitarlo con el Formulario W-7 y cómo renovarlo."
+        },
+        whoFor: {
+          en: "Immigrant families and workers without a Social Security number who need to file taxes or be claimed on a return.",
+          es: "Familias inmigrantes y trabajadores sin número de Seguro Social que necesitan declarar impuestos o ser incluidos en una declaración."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Taxpayer Advocate Service",
+        url: "https://www.taxpayeradvocate.irs.gov/",
+        what: {
+          en: "An independent helper inside the IRS for when something goes wrong — a refund stuck for months, a notice you don't understand, or a tax bill you can't pay. Free to use.",
+          es: "Un defensor independiente dentro del IRS para cuando algo sale mal — un reembolso atascado por meses, una notificación que no entiende o una factura de impuestos que no puede pagar. Gratuito."
+        },
+        whoFor: {
+          en: "Anyone with an IRS problem they can't fix on their own, especially if it's causing financial hardship.",
+          es: "Cualquier persona con un problema del IRS que no puede resolver sola, especialmente si le está causando dificultades económicas."
+        },
+        esSite: true,
+        free: true
+      }
+    ]
+  },
+  {
+    id: "jobs-education",
+    icon: "GraduationCap",
+    title: { en: "Jobs, Training & Education", es: "Empleo, capacitación y educación" },
+    blurb: {
+      en: "Free career help, paid apprenticeships, the FAFSA, the GED, and free English classes.",
+      es: "Ayuda laboral gratuita, aprendizajes pagados, la FAFSA, el GED y clases de inglés gratis."
+    },
+    tips: [
+      {
+        en: "Never pay anyone to search for scholarships or to file the FAFSA. The official tools are free — 'Free' is the first word in FAFSA. Sites that charge a fee for these are taking advantage of you.",
+        es: "Nunca pague a nadie por buscar becas o por presentar la FAFSA. Las herramientas oficiales son gratuitas — 'Free' (gratis) es la primera palabra de FAFSA. Los sitios que cobran por esto se están aprovechando de usted."
+      },
+      {
+        en: "Visit an American Job Center in person if computers are hard for you. The staff helps for free with resumes, job applications, and finding training — and the government may pay for that training through state workforce programs.",
+        es: "Visite un American Job Center en persona si las computadoras se le dificultan. El personal ayuda gratis con currículums, solicitudes de empleo y búsqueda de capacitación — y el gobierno puede pagar esa capacitación a través de programas estatales de empleo."
+      },
+      {
+        en: "You can take the GED entirely in Spanish, and it counts exactly the same as the English version. Choose your language when you create your free account at GED.com.",
+        es: "Puede tomar el GED completamente en español, y vale exactamente lo mismo que la versión en inglés. Elija su idioma al crear su cuenta gratuita en GED.com."
+      },
+      {
+        en: "Be careful with look-alike websites. The real FAFSA is only at studentaid.gov, and the real GED is only at GED.com — anything else asking for money or personal information is likely a scam.",
+        es: "Cuidado con los sitios web imitadores. La FAFSA real solo está en studentaid.gov, y el GED real solo en GED.com — cualquier otro que pida dinero o información personal probablemente sea una estafa."
+      }
+    ],
+    items: [
+      {
+        name: "CareerOneStop (U.S. Department of Labor)",
+        url: "https://www.careeronestop.org/",
+        what: {
+          en: "The government's free career website: explore jobs, see what they pay, find training, and get job-search help all in one place.",
+          es: "El sitio gratuito de carreras del gobierno: explore empleos, vea cuánto pagan, encuentre capacitación y obtenga ayuda para buscar trabajo, todo en un solo lugar."
+        },
+        whoFor: {
+          en: "Anyone looking for a job, a better job, or a new career — no account needed.",
+          es: "Cualquier persona que busque un empleo, un mejor empleo o una nueva carrera — no se necesita cuenta."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "American Job Center Finder",
+        url: "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx",
+        what: {
+          en: "Type your ZIP code to find the nearest American Job Center — a free office with real people who help you write a resume, look for work, and apply for free job training. They also have computers and printers you can use.",
+          es: "Escriba su código postal para encontrar el American Job Center más cercano — una oficina gratuita con personas reales que le ayudan a escribir un currículum, buscar trabajo y solicitar capacitación laboral gratuita. También tienen computadoras e impresoras que puede usar."
+        },
+        whoFor: {
+          en: "Anyone who wants in-person help finding work or training, especially if you are not comfortable with computers.",
+          es: "Cualquier persona que quiera ayuda en persona para encontrar trabajo o capacitación, especialmente si no se siente cómoda con las computadoras."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "CareerOneStop Local Training Finder",
+        url: "https://www.careeronestop.org/Toolkit/Training/find-local-training.aspx",
+        what: {
+          en: "Search for job-training programs and schools near you. Your local American Job Center can often help pay for this training through state workforce programs.",
+          es: "Busque programas de capacitación laboral y escuelas cerca de usted. Su American Job Center local a menudo puede ayudar a pagar esta capacitación a través de programas estatales de empleo."
+        },
+        whoFor: {
+          en: "Adults who want to learn a new skill or trade to earn more, often at low or no cost.",
+          es: "Adultos que quieren aprender una nueva habilidad u oficio para ganar más, a menudo a bajo costo o gratis."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "FAFSA — Federal Student Aid",
+        url: "https://studentaid.gov/h/apply-for-aid/fafsa",
+        what: {
+          en: "The official, free government application for college money — grants, work-study, and student loans. Filling it out costs nothing. Full Spanish version at studentaid.gov/es.",
+          es: "La solicitud oficial y gratuita del gobierno para dinero universitario — becas, trabajo-estudio y préstamos estudiantiles. Llenarla no cuesta nada. Versión completa en español en studentaid.gov/es."
+        },
+        whoFor: {
+          en: "Students of any age (and parents of students) going to college or trade school.",
+          es: "Estudiantes de cualquier edad (y padres de estudiantes) que van a la universidad o a una escuela de oficios."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "CareerOneStop Scholarship Finder",
+        url: "https://www.careeronestop.org/Toolkit/Training/find-scholarships.aspx",
+        what: {
+          en: "A free government search of more than 9,500 scholarships and grants for school. None of the awards listed charge a fee to apply.",
+          es: "Un buscador gratuito del gobierno con más de 9,500 becas y subvenciones para estudiar. Ninguna de las becas listadas cobra por aplicar."
+        },
+        whoFor: {
+          en: "Students and parents looking for free money for college or trade school.",
+          es: "Estudiantes y padres que buscan dinero gratuito para la universidad o una escuela de oficios."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "GED Testing Service (official)",
+        url: "https://ged.com/",
+        what: {
+          en: "The official site to study for and take the GED, the high-school equivalency diploma. You can take the entire test in Spanish. Creating an account and getting study information is free; the test itself has a fee per subject.",
+          es: "El sitio oficial para estudiar y tomar el GED, el diploma de equivalencia de preparatoria. Puede tomar todo el examen en español. Crear una cuenta y obtener información de estudio es gratis; el examen en sí tiene una tarifa por materia."
+        },
+        whoFor: {
+          en: "Adults who did not finish high school and want the diploma that opens doors to better jobs and college.",
+          es: "Adultos que no terminaron la preparatoria y quieren el diploma que abre puertas a mejores empleos y a la universidad."
+        },
+        esSite: true,
+        free: false
+      },
+      {
+        name: "USA Learns",
+        url: "https://www.usalearns.org/",
+        what: {
+          en: "Completely free online English classes for adults, run by a county office of education. Learn at your own pace from home; the site's menus are also in Spanish.",
+          es: "Clases de inglés en línea completamente gratuitas para adultos, administradas por una oficina de educación de condado. Aprenda a su propio ritmo desde casa; los menús del sitio también están en español."
+        },
+        whoFor: {
+          en: "Adults who speak Spanish (or another language) and want to learn or improve their English for free.",
+          es: "Adultos que hablan español (u otro idioma) y quieren aprender o mejorar su inglés gratis."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Apprenticeship Finder (Apprenticeship.gov)",
+        url: "https://www.apprenticeship.gov/apprenticeship-job-finder",
+        what: {
+          en: "The government's search tool for apprenticeships — paid jobs where you earn a paycheck while you learn a skilled trade, with no college debt.",
+          es: "El buscador del gobierno de aprendizajes — empleos pagados donde gana un sueldo mientras aprende un oficio calificado, sin deuda universitaria."
+        },
+        whoFor: {
+          en: "People who want to learn a trade (electrician, plumber, healthcare, and more) while getting paid from day one.",
+          es: "Personas que quieren aprender un oficio (electricista, plomero, salud y más) mientras les pagan desde el primer día."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Khan Academy",
+        url: "https://www.khanacademy.org/",
+        what: {
+          en: "Free video lessons and practice in math, reading, science, and more, from a well-known nonprofit. Useful for GED study and helping kids with schoolwork. Spanish version at es.khanacademy.org.",
+          es: "Lecciones en video y práctica gratuitas de matemáticas, lectura, ciencias y más, de una reconocida organización sin fines de lucro. Útil para estudiar el GED y ayudar a los niños con la escuela. Versión en español en es.khanacademy.org."
+        },
+        whoFor: {
+          en: "Anyone studying for the GED, brushing up on basics, or helping children with school — at no cost.",
+          es: "Cualquier persona que estudie para el GED, repase lo básico o ayude a sus hijos con la escuela — sin costo."
+        },
+        esSite: true,
+        free: true
+      }
+    ]
+  },
+  {
+    id: "travel",
+    icon: "Plane",
+    title: { en: "Travel & Trip Planning", es: "Viajes y planificación" },
+    blurb: {
+      en: "Cheap flights, passports, REAL ID, travel insurance, and our own travel app (coming soon).",
+      es: "Vuelos baratos, pasaportes, REAL ID, seguro de viaje y nuestra propia app de viajes (próximamente)."
+    },
+    tips: [
+      {
+        en: "Never pay a website to 'help' with your passport or REAL ID — the only fees are the official government ones, paid at .gov sites or in person. Anyone else charging extra is a middleman or a scam.",
+        es: "Nunca pague a un sitio web por 'ayudarle' con su pasaporte o REAL ID — las únicas tarifas son las oficiales del gobierno, que se pagan en sitios .gov o en persona. Cualquier otro que cobre extra es un intermediario o una estafa."
+      },
+      {
+        en: "Set a free price alert on Google Flights instead of buying on impulse — fares change often, and being flexible by even one or two days can save hundreds of dollars.",
+        es: "Active una alerta de precio gratuita en Google Flights en lugar de comprar por impulso — las tarifas cambian seguido, y ser flexible aunque sea uno o dos días puede ahorrar cientos de dólares."
+      },
+      {
+        en: "Before buying travel insurance at checkout, check what you already have: many credit cards include trip protection, and your health plan may cover you. Don't pay twice for the same coverage.",
+        es: "Antes de comprar un seguro de viaje al pagar, revise lo que ya tiene: muchas tarjetas de crédito incluyen protección de viaje, y su plan de salud puede cubrirlo. No pague dos veces por la misma cobertura."
+      },
+      {
+        en: "Points and miles only save money if you never carry a balance — credit-card interest wipes out any free flight. If you carry debt, skip rewards cards and book the cheapest cash fare.",
+        es: "Los puntos y millas solo ahorran dinero si nunca mantiene un saldo — el interés de la tarjeta de crédito borra cualquier vuelo gratis. Si tiene deudas, olvide las tarjetas de recompensas y compre la tarifa más barata en efectivo."
+      }
+    ],
+    items: [
+      {
+        name: "Golden Anchor Travel App (Coming Soon)",
+        url: "#placeholder-golden-anchor-travel-app",
+        placeholder: true,
+        what: {
+          en: "Our own travel-planning app, built for our clients. This spot is reserved — the link will be added when the app launches.",
+          es: "Nuestra propia app de planificación de viajes, creada para nuestros clientes. Este espacio está reservado — el enlace se agregará cuando la app se lance."
+        },
+        whoFor: {
+          en: "All Golden Anchor clients who want budget-friendly trip planning with guidance from our team.",
+          es: "Todos los clientes de Golden Anchor que quieran planificar viajes económicos con la guía de nuestro equipo."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Google Flights",
+        url: "https://www.google.com/travel/flights",
+        what: {
+          en: "A free flight-search tool. Type where you want to go and it shows prices from many airlines side by side, with a calendar that highlights the cheapest days to fly.",
+          es: "Un buscador de vuelos gratuito. Escriba a dónde quiere ir y muestra precios de muchas aerolíneas lado a lado, con un calendario que resalta los días más baratos para volar."
+        },
+        whoFor: {
+          en: "Anyone shopping for a plane ticket who wants to compare prices without visiting many airline websites.",
+          es: "Cualquier persona que busque un boleto de avión y quiera comparar precios sin visitar muchos sitios de aerolíneas."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Google Flights — Track Flight Prices (How-To)",
+        url: "https://support.google.com/travel/answer/6235879",
+        what: {
+          en: "Google's official step-by-step instructions for turning on free price alerts, so you get an email when the fare for your trip drops.",
+          es: "Las instrucciones oficiales paso a paso de Google para activar alertas de precio gratuitas, para recibir un correo cuando baje la tarifa de su viaje."
+        },
+        whoFor: {
+          en: "Travelers with flexible dates who want to wait for a lower price instead of guessing when to buy.",
+          es: "Viajeros con fechas flexibles que quieren esperar un precio más bajo en lugar de adivinar cuándo comprar."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "NerdWallet — Beginner's Guide to Points and Miles",
+        url: "https://www.nerdwallet.com/article/travel/nerdwallets-beginners-guide-to-credit-cards-points-miles",
+        what: {
+          en: "A plain-English starter guide that explains what airline miles and credit-card points are, how to earn them, and how to use them to lower the cost of trips.",
+          es: "Una guía básica en lenguaje sencillo que explica qué son las millas de aerolínea y los puntos de tarjetas de crédito, cómo ganarlos y cómo usarlos para bajar el costo de los viajes."
+        },
+        whoFor: {
+          en: "People with good credit who pay their card in full each month and want to learn rewards from a trusted source — not a salesy blog.",
+          es: "Personas con buen crédito que pagan su tarjeta completa cada mes y quieren aprender sobre recompensas de una fuente confiable — no de un blog de ventas."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "NerdWallet — How to Find the Best Travel Insurance",
+        url: "https://www.nerdwallet.com/travel/learn/travel-insurance",
+        what: {
+          en: "Explains what travel insurance covers (trip cancellation, medical emergencies, lost bags), what it costs, and how to compare policies before you buy.",
+          es: "Explica qué cubre el seguro de viaje (cancelación del viaje, emergencias médicas, maletas perdidas), cuánto cuesta y cómo comparar pólizas antes de comprar."
+        },
+        whoFor: {
+          en: "Anyone planning a big or expensive trip, especially international travel or cruises.",
+          es: "Cualquier persona que planee un viaje grande o costoso, especialmente viajes internacionales o cruceros."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Insurance Information Institute — Should You Buy Travel Insurance?",
+        url: "https://www.iii.org/article/should-you-buy-travel-insurance",
+        what: {
+          en: "A short, neutral article from a nonprofit insurance-education group on when travel insurance is worth it and when you may already be covered.",
+          es: "Un artículo corto y neutral de un grupo educativo de seguros sin fines de lucro sobre cuándo vale la pena el seguro de viaje y cuándo quizá ya esté cubierto."
+        },
+        whoFor: {
+          en: "Travelers unsure whether to spend extra on insurance — read this before saying yes at checkout.",
+          es: "Viajeros que no están seguros de gastar extra en seguro — léalo antes de decir que sí al pagar."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "USAGov — Apply for a New Adult Passport",
+        url: "https://www.usa.gov/apply-adult-passport",
+        what: {
+          en: "The official government walk-through of getting a U.S. passport: what documents to bring, what it costs, and where to apply in person.",
+          es: "La guía oficial del gobierno para obtener un pasaporte de EE. UU.: qué documentos llevar, cuánto cuesta y dónde aplicar en persona."
+        },
+        whoFor: {
+          en: "U.S. citizens getting their first passport or helping a family member get one. Spanish version: usa.gov/es/solicitar-pasaporte-estadounidense-primera-vez.",
+          es: "Ciudadanos de EE. UU. que obtienen su primer pasaporte o ayudan a un familiar a obtenerlo. Versión en español: usa.gov/es/solicitar-pasaporte-estadounidense-primera-vez."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "TSA — REAL ID",
+        url: "https://www.tsa.gov/realid",
+        what: {
+          en: "The official page on REAL ID, the special star-marked driver's license now required to board domestic flights. Explains how to check your license and what to bring to the DMV.",
+          es: "La página oficial sobre REAL ID, la licencia de conducir especial marcada con una estrella que ahora se requiere para abordar vuelos nacionales. Explica cómo revisar su licencia y qué llevar al DMV."
+        },
+        whoFor: {
+          en: "Anyone flying inside the U.S. — check your license for the star BEFORE booking a flight.",
+          es: "Cualquier persona que vuele dentro de EE. UU. — revise que su licencia tenga la estrella ANTES de reservar un vuelo."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "U.S. State Department — Travel Advisories",
+        url: "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
+        what: {
+          en: "The government's official safety ratings for every country, from Level 1 (normal caution) to Level 4 (do not travel).",
+          es: "Las calificaciones oficiales de seguridad del gobierno para cada país, desde el Nivel 1 (precaución normal) hasta el Nivel 4 (no viajar)."
+        },
+        whoFor: {
+          en: "Anyone planning a trip abroad — check your destination here before buying tickets.",
+          es: "Cualquier persona que planee un viaje al extranjero — revise su destino aquí antes de comprar boletos."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "STEP — Smart Traveler Enrollment Program",
+        url: "https://step.state.gov",
+        what: {
+          en: "A free government sign-up that tells the nearest U.S. embassy about your trip abroad, so they can reach you in an emergency and send safety alerts.",
+          es: "Un registro gratuito del gobierno que informa a la embajada de EE. UU. más cercana sobre su viaje al extranjero, para que puedan contactarlo en una emergencia y enviarle alertas de seguridad."
+        },
+        whoFor: {
+          en: "U.S. citizens traveling internationally, especially older travelers or anyone visiting family overseas.",
+          es: "Ciudadanos de EE. UU. que viajan internacionalmente, especialmente viajeros mayores o cualquiera que visite a su familia en el extranjero."
+        },
+        esSite: false,
+        free: true
+      }
+    ]
+  },
+  {
+    id: "emergency",
+    icon: "LifeBuoy",
+    title: { en: "Emergency Help Now", es: "Ayuda de emergencia ahora" },
+    blurb: {
+      en: "Food, rent, utilities, legal aid, and crisis lines — real help today, all of it free.",
+      es: "Comida, renta, servicios, ayuda legal y líneas de crisis — ayuda real hoy mismo, toda gratuita."
+    },
+    tips: [
+      {
+        en: "Real emergency help is always free. If a website or caller asks for a fee, your bank account number, or a gift card to \"process\" rent, food, or utility assistance, it is a scam — hang up and call 211 instead.",
+        es: "La ayuda de emergencia real siempre es gratuita. Si un sitio web o una llamada le pide una cuota, su número de cuenta bancaria o una tarjeta de regalo para \"procesar\" ayuda de renta, comida o servicios, es una estafa — cuelgue y llame al 211."
+      },
+      {
+        en: "If you get a utility shutoff notice, call the utility company right away and ask for a payment plan — most states have rules that protect seniors, families with small children, and people with medical needs from disconnection, especially in extreme heat or cold.",
+        es: "Si recibe un aviso de corte de servicio, llame a la compañía de inmediato y pida un plan de pagos — la mayoría de los estados tienen reglas que protegen de la desconexión a los adultos mayores, las familias con niños pequeños y las personas con necesidades médicas, especialmente en calor o frío extremos."
+      },
+      {
+        en: "Apply before the crisis hits bottom: rental and utility assistance programs can take weeks to process, so reach out the first month you fall behind, not after the eviction notice arrives.",
+        es: "Aplique antes de que la crisis toque fondo: los programas de asistencia de renta y servicios pueden tardar semanas en procesarse, así que busque ayuda el primer mes que se atrase, no cuando llegue el aviso de desalojo."
+      },
+      {
+        en: "Bring paperwork when you ask for help — a photo ID, your lease or bill, and proof of income (pay stubs or benefit letters). Having these ready can cut approval time dramatically.",
+        es: "Lleve documentos cuando pida ayuda — una identificación con foto, su contrato de renta o factura, y comprobantes de ingresos (talones de pago o cartas de beneficios). Tenerlos listos puede acortar drásticamente el tiempo de aprobación."
+      }
+    ],
+    items: [
+      {
+        name: "211 (United Way)",
+        url: "https://www.211.org/",
+        what: {
+          en: "Dial 2-1-1 from any phone or use the website to reach a real person who connects you to local help with rent, utility bills, food, and shelter.",
+          es: "Marque 2-1-1 desde cualquier teléfono o use el sitio web para hablar con una persona real que lo conecta con ayuda local para renta, facturas de servicios, comida y albergue."
+        },
+        whoFor: {
+          en: "Anyone in a crisis right now who doesn't know where to start — the call is free, confidential, and works nationwide.",
+          es: "Cualquier persona en crisis ahora mismo que no sepa por dónde empezar — la llamada es gratuita, confidencial y funciona en todo el país."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "FindHelp.org",
+        url: "https://www.findhelp.org/",
+        what: {
+          en: "Type in your ZIP code to see a list of free and reduced-cost programs near you — food, housing, money help, health care, and more.",
+          es: "Escriba su código postal para ver una lista de programas gratuitos y de costo reducido cerca de usted — comida, vivienda, ayuda económica, atención médica y más."
+        },
+        whoFor: {
+          en: "People who prefer searching online instead of calling, or who want to see every local program in one place.",
+          es: "Personas que prefieren buscar en línea en vez de llamar, o que quieren ver todos los programas locales en un solo lugar."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Feeding America — Find Your Local Food Bank",
+        url: "https://www.feedingamerica.org/find-your-local-foodbank",
+        what: {
+          en: "Enter your ZIP code to find the nearest food bank where you can get free groceries — no questions about immigration status.",
+          es: "Ingrese su código postal para encontrar el banco de alimentos más cercano donde puede obtener comida gratis — sin preguntas sobre estatus migratorio."
+        },
+        whoFor: {
+          en: "Anyone struggling to put food on the table this week.",
+          es: "Cualquier persona con dificultades para poner comida en la mesa esta semana."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "CFPB — Get Help Paying Rent and Bills",
+        url: "https://www.consumerfinance.gov/housing/housing-insecurity/help-for-renters/get-help-paying-rent-and-bills/",
+        what: {
+          en: "A government guide that walks you through finding rental assistance, avoiding eviction, and knowing your rights as a renter.",
+          es: "Una guía del gobierno que lo lleva paso a paso para encontrar asistencia de renta, evitar el desalojo y conocer sus derechos como inquilino."
+        },
+        whoFor: {
+          en: "Renters who are behind on rent or worried about eviction.",
+          es: "Inquilinos atrasados con la renta o preocupados por un desalojo."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "USA.gov — Help With Energy Bills (LIHEAP)",
+        url: "https://www.usa.gov/help-with-energy-bills",
+        what: {
+          en: "Explains the government program (LIHEAP) that helps pay heating and cooling bills, and how to apply in your state before your power gets shut off.",
+          es: "Explica el programa del gobierno (LIHEAP) que ayuda a pagar las facturas de calefacción y aire acondicionado, y cómo aplicar en su estado antes de que le corten la luz."
+        },
+        whoFor: {
+          en: "Households that can't afford their electric or gas bill, or got a shutoff notice.",
+          es: "Hogares que no pueden pagar su factura de luz o gas, o que recibieron un aviso de corte."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Legal Services Corporation — Find Legal Aid",
+        url: "https://www.lsc.gov/about-lsc/what-legal-aid/i-need-legal-help",
+        what: {
+          en: "Enter your address to find a free legal aid office near you for problems like eviction, debt collection, or denied benefits.",
+          es: "Ingrese su dirección para encontrar una oficina de ayuda legal gratuita cerca de usted para problemas como desalojo, cobranza de deudas o beneficios negados."
+        },
+        whoFor: {
+          en: "Lower-income families who need a lawyer but can't pay for one (civil matters, not criminal).",
+          es: "Familias de bajos ingresos que necesitan un abogado pero no pueden pagarlo (asuntos civiles, no penales)."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "LawHelp.org",
+        url: "https://www.lawhelp.org/",
+        what: {
+          en: "Pick your state to get plain-language answers to legal questions, free legal forms, and links to free legal help nearby.",
+          es: "Elija su estado para obtener respuestas en lenguaje sencillo a preguntas legales, formularios legales gratuitos y enlaces a ayuda legal gratuita cercana."
+        },
+        whoFor: {
+          en: "People who want to understand their legal rights first, or handle a simple legal matter themselves.",
+          es: "Personas que quieren entender primero sus derechos legales, o resolver un asunto legal sencillo por sí mismas."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "National Domestic Violence Hotline — Financial Abuse",
+        url: "https://www.thehotline.org/resources/financial-abuse/",
+        what: {
+          en: "Explains how a partner controlling your money is a form of abuse, and how to safely rebuild your finances. Call 800-799-7233 or text START to 88788, day or night.",
+          es: "Explica cómo el control del dinero por parte de una pareja es una forma de abuso, y cómo reconstruir sus finanzas de manera segura. Llame al 800-799-7233 o envíe START por texto al 88788, de día o de noche."
+        },
+        whoFor: {
+          en: "Anyone whose partner controls their money, blocks them from working, or makes them afraid to leave for money reasons.",
+          es: "Cualquier persona cuya pareja controle su dinero, le impida trabajar o le haga temer irse por razones económicas."
+        },
+        esSite: true,
+        free: true
+      }
+    ]
+  },
+  {
+    id: "immigration-itin",
+    icon: "Globe",
+    title: { en: "Immigrants & ITIN Holders", es: "Inmigrantes y titulares de ITIN" },
+    blurb: {
+      en: "ITINs, credit and mortgages without an SSN, trusted legal help, and avoiding notario fraud.",
+      es: "El ITIN, crédito e hipotecas sin SSN, ayuda legal confiable y cómo evitar el fraude de notarios."
+    },
+    tips: [
+      {
+        en: "Never pay a 'notario público' or immigration consultant for legal advice. In the US, only licensed attorneys and DOJ-accredited representatives can legally help with immigration cases — anyone else may be a scam.",
+        es: "Nunca pague a un 'notario público' o consultor de inmigración por asesoría legal. En EE. UU., solo los abogados con licencia y los representantes acreditados por el DOJ pueden ayudar legalmente con casos de inmigración — cualquier otro puede ser una estafa."
+      },
+      {
+        en: "Getting or renewing an ITIN is always free. Free VITA tax sites with Certifying Acceptance Agents can check your passport in person, so you never mail your original documents or pay a preparer just to fill out Form W-7.",
+        es: "Obtener o renovar un ITIN siempre es gratis. Los sitios de impuestos VITA gratuitos con Agentes Tramitadores Certificados pueden revisar su pasaporte en persona, así nunca envía sus documentos originales por correo ni paga a un preparador solo por llenar el Formulario W-7."
+      },
+      {
+        en: "Don't give up benefits out of fear. Food assistance (SNAP), children's Medicaid, WIC, and school lunch do NOT count against almost anyone under public-charge rules — check Keep Your Benefits anonymously before dropping anything your family qualifies for.",
+        es: "No renuncie a los beneficios por miedo. La asistencia alimentaria (SNAP), el Medicaid de los niños, WIC y el almuerzo escolar NO cuentan en contra de casi nadie bajo las reglas de carga pública — consulte Keep Your Benefits de forma anónima antes de dejar algo para lo que su familia califica."
+      },
+      {
+        en: "When sending money home, compare the TOTAL cost: the fee plus the exchange-rate markup. A 'no fee' transfer often hides a worse exchange rate that costs you more than an honest fee would.",
+        es: "Al enviar dinero a su país, compare el costo TOTAL: la comisión más el margen del tipo de cambio. Una transferencia 'sin comisión' a menudo esconde un tipo de cambio peor que le cuesta más que una comisión honesta."
+      }
+    ],
+    items: [
+      {
+        name: "IRS — How to Apply for an ITIN (Form W-7)",
+        url: "https://www.irs.gov/tin/itin/how-to-apply-for-an-itin",
+        what: {
+          en: "The official government page that explains step by step how to get or renew an ITIN tax number — by mail, in person at an IRS office, or through an authorized helper. Applying is always free.",
+          es: "La página oficial del gobierno que explica paso a paso cómo obtener o renovar un número de impuestos ITIN — por correo, en persona en una oficina del IRS o a través de un asistente autorizado. Aplicar siempre es gratis."
+        },
+        whoFor: {
+          en: "Anyone who works and pays taxes but cannot get a Social Security number, and needs a tax ID to file returns.",
+          es: "Cualquier persona que trabaja y paga impuestos pero no puede obtener un número de Seguro Social, y necesita una identificación fiscal para declarar."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "IRS — Free Tax Help (VITA) Sites That Handle ITINs",
+        url: "https://www.irs.gov/tin/itin/volunteer-income-tax-assistance-vita-sites-with-itin-services",
+        what: {
+          en: "A list of free community tax-help sites where trained volunteers prepare your taxes AND process your ITIN application on the spot — they can check your passport in person so you never mail the original.",
+          es: "Una lista de sitios comunitarios gratuitos de ayuda con impuestos donde voluntarios capacitados preparan sus impuestos Y procesan su solicitud de ITIN en el momento — pueden revisar su pasaporte en persona para que nunca envíe el original por correo."
+        },
+        whoFor: {
+          en: "Families with modest incomes who need their taxes done free and need an ITIN at the same time.",
+          es: "Familias con ingresos modestos que necesitan que les hagan los impuestos gratis y necesitan un ITIN al mismo tiempo."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "NerdWallet — Credit Cards Without a Social Security Number",
+        url: "https://www.nerdwallet.com/credit-cards/learn/credit-cards-you-can-get-without-a-social-security-number",
+        what: {
+          en: "A plain-English guide to which banks and credit cards accept an ITIN instead of a Social Security number, so you can start building a US credit history.",
+          es: "Una guía en lenguaje sencillo sobre qué bancos y tarjetas de crédito aceptan un ITIN en lugar de un número de Seguro Social, para que pueda empezar a construir un historial de crédito en EE. UU."
+        },
+        whoFor: {
+          en: "ITIN holders and newcomers who want to build credit but have been told 'no' because they lack an SSN.",
+          es: "Titulares de ITIN y recién llegados que quieren construir crédito pero les han dicho que 'no' por no tener un SSN."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "NerdWallet — ITIN Mortgage Loans (Buy a Home Without an SSN)",
+        url: "https://www.nerdwallet.com/article/mortgages/itin-loan-how-to-get-a-mortgage-without-a-social-security-number",
+        what: {
+          en: "Explains how home loans for ITIN holders work — what down payment to expect, which lenders and credit unions offer them, and what documents (tax returns, rent and utility history) can replace an SSN.",
+          es: "Explica cómo funcionan los préstamos hipotecarios para titulares de ITIN — qué enganche esperar, qué prestamistas y cooperativas de crédito los ofrecen y qué documentos (declaraciones de impuestos, historial de renta y servicios) pueden reemplazar un SSN."
+        },
+        whoFor: {
+          en: "ITIN-holder families who dream of buying a house and don't know it is possible without a Social Security number.",
+          es: "Familias con ITIN que sueñan con comprar una casa y no saben que es posible sin un número de Seguro Social."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "USCIS — Form I-912, Request for Fee Waiver",
+        url: "https://www.uscis.gov/i-912",
+        what: {
+          en: "The official form to ask the government to waive immigration application fees if your income is low or you receive benefits like SNAP or Medicaid. Filing the request costs nothing.",
+          es: "El formulario oficial para pedirle al gobierno que exente las tarifas de las solicitudes de inmigración si sus ingresos son bajos o recibe beneficios como SNAP o Medicaid. Presentar la petición no cuesta nada."
+        },
+        whoFor: {
+          en: "Families who qualify for an immigration application but can't afford the filing fee — many never learn the fee can be waived.",
+          es: "Familias que califican para una solicitud de inmigración pero no pueden pagar la tarifa — muchas nunca se enteran de que la tarifa puede exentarse."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "ImmigrationLawHelp.org — Find Free or Low-Cost Immigration Legal Help",
+        url: "https://www.immigrationlawhelp.org/",
+        what: {
+          en: "A searchable directory of more than 1,000 trusted nonprofit immigration legal offices in all 50 states. Search by ZIP code, language spoken, and type of case. Only vetted nonprofits with real lawyers or accredited representatives are listed.",
+          es: "Un directorio con más de 1,000 oficinas legales de inmigración sin fines de lucro confiables en los 50 estados. Busque por código postal, idioma y tipo de caso. Solo se listan organizaciones verificadas con abogados reales o representantes acreditados."
+        },
+        whoFor: {
+          en: "Anyone with an immigration question who can't afford a private lawyer — and anyone unsure whether their current 'helper' is legitimate.",
+          es: "Cualquier persona con una pregunta de inmigración que no pueda pagar un abogado privado — y cualquiera que dude de si su 'ayudante' actual es legítimo."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "USCIS — Avoid Immigration Scams (Notario Fraud)",
+        url: "https://www.uscis.gov/avoid-scams",
+        what: {
+          en: "The official page on spotting and reporting immigration scams — fake 'notarios,' people who charge for blank government forms, and callers pretending to be officials. Explains who is legally allowed to give immigration advice.",
+          es: "La página oficial para detectar y reportar estafas de inmigración — 'notarios' falsos, personas que cobran por formularios gubernamentales en blanco y llamadas de falsos funcionarios. Explica quién puede dar asesoría de inmigración legalmente."
+        },
+        whoFor: {
+          en: "Anyone considering paying a notario, consultant, or 'fixer' for immigration help — read this first.",
+          es: "Cualquier persona que considere pagarle a un notario, consultor o 'gestor' por ayuda de inmigración — lea esto primero."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Keep Your Benefits (¿Recibo Beneficios Públicos?)",
+        url: "https://keepyourbenefits.org/en/na/",
+        what: {
+          en: "A free, anonymous question-and-answer tool that tells you whether using benefits like food assistance, Medicaid, or WIC could affect your immigration case. For most families the answer is: it will not.",
+          es: "Una herramienta gratuita y anónima de preguntas y respuestas que le dice si usar beneficios como asistencia alimentaria, Medicaid o WIC podría afectar su caso de inmigración. Para la mayoría de las familias la respuesta es: no lo afectará."
+        },
+        whoFor: {
+          en: "Mixed-status families who are afraid to claim benefits their children or household legally qualify for because of 'public charge' rumors.",
+          es: "Familias de estatus mixto que temen reclamar beneficios para los que sus hijos o su hogar califican legalmente por los rumores de 'carga pública'."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "World Bank — Remittance Prices Worldwide",
+        url: "https://remittanceprices.worldbank.org/",
+        what: {
+          en: "An independent World Bank tool that compares what banks, money-transfer companies, and apps really charge to send money to family abroad — including the hidden cost buried in the exchange rate.",
+          es: "Una herramienta independiente del Banco Mundial que compara lo que bancos, compañías de envío de dinero y apps realmente cobran por enviar dinero a la familia en el extranjero — incluyendo el costo oculto en el tipo de cambio."
+        },
+        whoFor: {
+          en: "Anyone who sends money home regularly and wants to stop overpaying — even one percent saved adds up over a year.",
+          es: "Cualquier persona que envía dinero a su país regularmente y quiere dejar de pagar de más — incluso un uno por ciento ahorrado suma a lo largo del año."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "World Education Services (WES) — Foreign Degree Evaluation",
+        url: "https://www.wes.org/",
+        what: {
+          en: "A long-established nonprofit that translates your foreign diploma or degree into its US equivalent, so employers, schools, and licensing boards recognize the education you already earned.",
+          es: "Una organización sin fines de lucro con larga trayectoria que convierte su diploma o título extranjero a su equivalente en EE. UU., para que empleadores, escuelas y juntas de licencias reconozcan la educación que ya obtuvo."
+        },
+        whoFor: {
+          en: "Immigrants with a degree or professional training from their home country who are stuck in jobs below their skill level.",
+          es: "Inmigrantes con un título o formación profesional de su país de origen que están atrapados en empleos por debajo de su nivel de habilidades."
+        },
+        esSite: false,
+        free: false
+      }
+    ]
+  },
+  {
+    id: "disability-ssi-ssdi",
+    icon: "Accessibility",
+    title: { en: "Disability Benefits (SSI & SSDI)", es: "Beneficios por discapacidad (SSI y SSDI)" },
+    blurb: {
+      en: "How to apply, how to appeal a denial, save without losing benefits, and afford your medications.",
+      es: "Cómo aplicar, cómo apelar una negación, ahorrar sin perder beneficios y pagar sus medicamentos."
+    },
+    tips: [
+      {
+        en: "Most first disability applications are denied — that is normal, not the end. Appeal within 60 days of the letter instead of filing a brand-new claim; many people win at the appeal hearing.",
+        es: "La mayoría de las primeras solicitudes de discapacidad son negadas — eso es normal, no el final. Apele dentro de los 60 días de la carta en lugar de presentar una solicitud nueva; muchas personas ganan en la audiencia de apelación."
+      },
+      {
+        en: "Never pay anyone up front to apply for disability. Applying is free, legal aid is free, and disability lawyers can only charge if you win — a capped fee taken from your back pay.",
+        es: "Nunca pague a nadie por adelantado para solicitar la discapacidad. Aplicar es gratis, la ayuda legal es gratis, y los abogados de discapacidad solo pueden cobrar si usted gana — una tarifa con tope que se toma de sus pagos retroactivos."
+      },
+      {
+        en: "If you are approved for SSI, in most states you automatically qualify for Medicaid health coverage. If your card doesn't arrive, contact your state Medicaid office — don't assume you're not covered.",
+        es: "Si le aprueban el SSI, en la mayoría de los estados califica automáticamente para la cobertura médica de Medicaid. Si su tarjeta no llega, contacte la oficina de Medicaid de su estado — no asuma que no está cubierto."
+      },
+      {
+        en: "Keep every letter from Social Security in one folder and write the date you received it on each one. Appeal deadlines run from that date, and missing one can cost you months of benefits.",
+        es: "Guarde cada carta del Seguro Social en una sola carpeta y escriba en cada una la fecha en que la recibió. Los plazos de apelación corren desde esa fecha, y perder uno puede costarle meses de beneficios."
+      }
+    ],
+    items: [
+      {
+        name: "USAGov — SSDI and SSI, Explained Simply",
+        url: "https://www.usa.gov/social-security-disability",
+        what: {
+          en: "A plain-language government page that explains the two disability programs: SSDI (for people who worked and paid Social Security taxes) and SSI (for people with little income, including disabled children).",
+          es: "Una página del gobierno en lenguaje sencillo que explica los dos programas de discapacidad: SSDI (para personas que trabajaron y pagaron impuestos del Seguro Social) y SSI (para personas con pocos ingresos, incluidos niños con discapacidades)."
+        },
+        whoFor: {
+          en: "Anyone who just became disabled, or has a disabled child, and doesn't know which program fits them.",
+          es: "Cualquier persona que acaba de quedar con una discapacidad, o tiene un hijo con discapacidad, y no sabe qué programa le corresponde."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Social Security — Apply for Disability Benefits",
+        url: "https://www.ssa.gov/disability",
+        what: {
+          en: "The official place to start a disability application — online, by phone at 1-800-772-1213, or at a local office. Free interpreters are provided if you call.",
+          es: "El lugar oficial para iniciar una solicitud de discapacidad — en línea, por teléfono al 1-800-772-1213 o en una oficina local. Se ofrecen intérpretes gratuitos si llama."
+        },
+        whoFor: {
+          en: "Anyone ready to apply for SSDI or SSI for themselves or their child. Never pay a website to apply — this is free.",
+          es: "Cualquier persona lista para solicitar SSDI o SSI para sí misma o para su hijo. Nunca pague a un sitio web por aplicar — esto es gratis."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Social Security — Appeal a Denied Claim",
+        url: "https://www.ssa.gov/apply/appeal-decision-we-made",
+        what: {
+          en: "The official page to appeal if your disability claim is denied. Most first applications are denied — appealing (not reapplying) is how many people eventually win.",
+          es: "La página oficial para apelar si su reclamo de discapacidad es negado. La mayoría de las primeras solicitudes son negadas — apelar (no volver a aplicar) es como muchas personas finalmente ganan."
+        },
+        whoFor: {
+          en: "Anyone who got a denial letter. You usually have only 60 days from the letter to appeal, so act fast.",
+          es: "Cualquier persona que recibió una carta de negación. Normalmente solo tiene 60 días desde la carta para apelar, así que actúe rápido."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "LawHelp.org — Free Legal Aid Finder",
+        url: "https://www.lawhelp.org/find-help",
+        what: {
+          en: "Pick your state and find nonprofit legal aid offices that help with disability claims and appeals at no cost.",
+          es: "Elija su estado y encuentre oficinas de ayuda legal sin fines de lucro que ayudan con reclamos y apelaciones de discapacidad sin costo."
+        },
+        whoFor: {
+          en: "Anyone denied benefits who can't afford a lawyer. Many legal aid offices handle SSI and SSDI appeals for free.",
+          es: "Cualquier persona a quien le negaron beneficios y no puede pagar un abogado. Muchas oficinas de ayuda legal manejan apelaciones de SSI y SSDI gratis."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "ABLE National Resource Center",
+        url: "https://www.ablenrc.org/",
+        what: {
+          en: "Explains ABLE accounts — a special savings account that lets a disabled person save money without losing SSI or Medicaid. Compares every state's program.",
+          es: "Explica las cuentas ABLE — una cuenta de ahorros especial que permite a una persona con discapacidad ahorrar dinero sin perder el SSI o Medicaid. Compara el programa de cada estado."
+        },
+        whoFor: {
+          en: "Families afraid that saving even a little money will cut off benefits. The disability must have started before age 46.",
+          es: "Familias que temen que ahorrar aunque sea un poco les corte los beneficios. La discapacidad debe haber comenzado antes de los 46 años."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Social Security — Extra Help with Prescription Costs",
+        url: "https://www.ssa.gov/medicare/part-d-extra-help",
+        what: {
+          en: "A program worth about $5,700 a year that pays most Medicare drug-plan costs for people with limited income. People on SSI or Medicaid get it automatically.",
+          es: "Un programa con un valor aproximado de $5,700 al año que paga la mayoría de los costos del plan de medicamentos de Medicare para personas con ingresos limitados. Quienes tienen SSI o Medicaid lo reciben automáticamente."
+        },
+        whoFor: {
+          en: "Anyone on Medicare who struggles to pay for medications. Applying is free, online or by phone.",
+          es: "Cualquier persona con Medicare que tenga dificultades para pagar sus medicamentos. Aplicar es gratis, en línea o por teléfono."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "GoodRx — Prescription Discount Coupons",
+        url: "https://www.goodrx.com/",
+        what: {
+          en: "Type in your medication and it shows the cheapest price at pharmacies near you, with a free coupon to show at the counter. No sign-up needed.",
+          es: "Escriba su medicamento y muestra el precio más barato en farmacias cercanas, con un cupón gratuito para mostrar en el mostrador. No requiere registro."
+        },
+        whoFor: {
+          en: "Anyone paying cash for a prescription, or whose insurance price seems too high — the coupon price is sometimes lower.",
+          es: "Cualquier persona que pague en efectivo por una receta, o cuyo precio con seguro parezca demasiado alto — el precio con cupón a veces es más bajo."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "NeedyMeds — Medicine Assistance Programs",
+        url: "https://www.needymeds.org/",
+        what: {
+          en: "A nonprofit directory of drug-maker programs that give brand-name medicines free or nearly free to people with low income. Free helpline: 1-800-503-6897.",
+          es: "Un directorio sin fines de lucro de programas de los fabricantes que dan medicamentos de marca gratis o casi gratis a personas de bajos ingresos. Línea de ayuda gratuita: 1-800-503-6897."
+        },
+        whoFor: {
+          en: "Anyone who can't afford an expensive brand-name medication — the manufacturer may give it to you directly.",
+          es: "Cualquier persona que no pueda pagar un medicamento de marca costoso — el fabricante puede dárselo directamente."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Ticket to Work (Social Security)",
+        url: "https://choosework.ssa.gov/",
+        what: {
+          en: "A free, voluntary program that helps people on disability try working again — with free job help — without instantly losing their cash benefits or Medicaid/Medicare. Help line: 1-866-968-7842.",
+          es: "Un programa gratuito y voluntario que ayuda a las personas con discapacidad a intentar trabajar de nuevo — con ayuda laboral gratuita — sin perder de inmediato sus beneficios en efectivo ni Medicaid/Medicare. Línea de ayuda: 1-866-968-7842."
+        },
+        whoFor: {
+          en: "Anyone 18–64 on SSDI or SSI who wants to work but is scared of losing benefits. There are safety nets if work doesn't last.",
+          es: "Cualquier persona de 18 a 64 años con SSDI o SSI que quiera trabajar pero tema perder sus beneficios. Hay redes de seguridad si el trabajo no dura."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "The Arc — Support for Families",
+        url: "https://thearc.org/",
+        what: {
+          en: "The largest nonprofit for people with intellectual and developmental disabilities, with about 550 local chapters offering family support, school help, and future planning.",
+          es: "La organización sin fines de lucro más grande para personas con discapacidades intelectuales y del desarrollo, con unas 550 sedes locales que ofrecen apoyo familiar, ayuda escolar y planificación del futuro."
+        },
+        whoFor: {
+          en: "Parents of a child with a developmental disability (like autism or Down syndrome) who need guidance and a local community.",
+          es: "Padres de un niño con una discapacidad del desarrollo (como autismo o síndrome de Down) que necesitan orientación y una comunidad local."
+        },
+        esSite: false,
+        free: true
+      }
+    ]
+  },
+  {
+    id: "seniors-medicare-scams",
+    icon: "ShieldCheck",
+    title: { en: "Seniors: Medicare & Scam Protection", es: "Adultos mayores: Medicare y protección contra estafas" },
+    blurb: {
+      en: "Medicare enrollment, free counseling, drug-cost help, and defending against fraud and identity theft.",
+      es: "Inscripción a Medicare, consejería gratuita, ayuda con medicamentos y defensa contra fraudes y robo de identidad."
+    },
+    tips: [
+      {
+        en: "Medicare, Social Security, and the IRS never call you to demand payment or ask for your Medicare or Social Security number. If someone calls claiming to be them, hang up and call the official number printed on your card or statement.",
+        es: "Medicare, el Seguro Social y el IRS nunca lo llaman para exigir un pago ni para pedirle su número de Medicare o de Seguro Social. Si alguien llama diciendo ser ellos, cuelgue y llame al número oficial impreso en su tarjeta o estado de cuenta."
+      },
+      {
+        en: "Anyone who demands payment by gift card, wire transfer, or cryptocurrency — or pressures you to act 'right now' — is a scammer. No real government agency or company collects money that way.",
+        es: "Cualquiera que exija pago con tarjeta de regalo, transferencia bancaria o criptomonedas — o lo presione a actuar 'ahora mismo' — es un estafador. Ninguna agencia de gobierno ni compañía real cobra dinero de esa manera."
+      },
+      {
+        en: "Freezing your credit is free at all three bureaus (Equifax, Experian, TransUnion) and stops thieves from opening accounts in your name. It takes minutes by phone or online, and you can unfreeze it anytime for free.",
+        es: "Congelar su crédito es gratis en los tres burós (Equifax, Experian, TransUnion) y evita que los ladrones abran cuentas a su nombre. Toma minutos por teléfono o en línea, y puede descongelarlo cuando quiera, gratis."
+      },
+      {
+        en: "Sign up for Medicare during the 7-month window around your 65th birthday — missing it can mean a penalty added to your premium for life. A free SHIP counselor can walk you through it in person, in English or Spanish.",
+        es: "Inscríbase en Medicare durante la ventana de 7 meses alrededor de su cumpleaños 65 — perderla puede significar una multa añadida a su prima de por vida. Un consejero gratuito de SHIP puede guiarlo en persona, en inglés o español."
+      }
+    ],
+    items: [
+      {
+        name: "Medicare.gov — Get Started with Medicare",
+        url: "https://www.medicare.gov/basics/get-started-with-medicare",
+        what: {
+          en: "The official government site that explains when to sign up for Medicare, what the deadlines are, and what late penalties to avoid.",
+          es: "El sitio oficial del gobierno que explica cuándo inscribirse en Medicare, cuáles son los plazos y qué multas por retraso evitar."
+        },
+        whoFor: {
+          en: "Anyone turning 65 soon, or helping a parent or spouse figure out when and how to enroll.",
+          es: "Cualquier persona que pronto cumpla 65 años, o que ayude a un padre o cónyuge a entender cuándo y cómo inscribirse."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "SHIP — Free Medicare Counseling (shiphelp.org)",
+        url: "https://www.shiphelp.org/",
+        what: {
+          en: "Finds you a free, trained Medicare counselor near you — a real person who sits with you, compares plans, and answers questions. They sell nothing. Spanish-speaking counselors are available in many areas.",
+          es: "Le encuentra un consejero de Medicare gratuito y capacitado cerca de usted — una persona real que se sienta con usted, compara planes y responde preguntas. No venden nada. Hay consejeros que hablan español en muchas áreas."
+        },
+        whoFor: {
+          en: "Anyone confused by Medicare choices who wants unbiased one-on-one help in every state.",
+          es: "Cualquier persona confundida por las opciones de Medicare que quiera ayuda imparcial y personalizada, disponible en todos los estados."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Extra Help with Drug Costs (Social Security)",
+        url: "https://www.ssa.gov/medicare/part-d-extra-help",
+        what: {
+          en: "A government program that lowers what you pay for prescription drugs on Medicare — in 2026, no more than about $13 per brand-name drug. You apply online or by phone.",
+          es: "Un programa del gobierno que reduce lo que paga por medicamentos recetados con Medicare — en 2026, no más de unos $13 por medicamento de marca. Se aplica en línea o por teléfono."
+        },
+        whoFor: {
+          en: "People on Medicare with limited income who struggle to afford their medications.",
+          es: "Personas con Medicare e ingresos limitados que tienen dificultades para pagar sus medicamentos."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Medicare Savings Programs",
+        url: "https://www.medicare.gov/basics/costs/help/medicare-savings-programs",
+        what: {
+          en: "State programs that pay your monthly Medicare Part B premium (about $203 in 2026) for you, and sometimes deductibles and copays too. You apply through your state.",
+          es: "Programas estatales que pagan por usted la prima mensual de la Parte B de Medicare (unos $203 en 2026), y a veces también deducibles y copagos. Se aplica a través de su estado."
+        },
+        whoFor: {
+          en: "People on Medicare with limited income — many who qualify never apply because they don't know it exists.",
+          es: "Personas con Medicare e ingresos limitados — muchos que califican nunca aplican porque no saben que existe."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "BenefitsCheckUp (National Council on Aging)",
+        url: "https://benefitscheckup.org/",
+        what: {
+          en: "Answer a few simple questions and it shows every benefit program you may qualify for — help with food, medicine, utilities, rent, and Medicare costs.",
+          es: "Responda unas preguntas sencillas y le muestra todos los programas de beneficios para los que puede calificar — ayuda con comida, medicinas, servicios, renta y costos de Medicare."
+        },
+        whoFor: {
+          en: "Older adults (and their families) who want one place to find all the help available to them.",
+          es: "Adultos mayores (y sus familias) que quieren un solo lugar para encontrar toda la ayuda disponible para ellos."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Senior Medicare Patrol (SMP)",
+        url: "https://www.smpresource.org/",
+        what: {
+          en: "A government-funded program that teaches you to spot Medicare fraud — like charges on your statement for services you never got — and helps you report it. Hotline: 877-808-2468.",
+          es: "Un programa financiado por el gobierno que le enseña a detectar el fraude de Medicare — como cargos en su estado de cuenta por servicios que nunca recibió — y le ayuda a reportarlo. Línea directa: 877-808-2468."
+        },
+        whoFor: {
+          en: "Anyone on Medicare who got a suspicious call, bill, or piece of medical equipment they never ordered.",
+          es: "Cualquier persona con Medicare que recibió una llamada o factura sospechosa, o un equipo médico que nunca ordenó."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "AARP Fraud Watch Network",
+        url: "https://www.aarp.org/money/scams-fraud/",
+        what: {
+          en: "Plain-English guides to every common scam — grandparent calls, romance scams, fake IRS and Medicare calls — plus a free helpline (877-908-3360) staffed by real people. No AARP membership needed.",
+          es: "Guías en lenguaje sencillo sobre todas las estafas comunes — llamadas del 'nieto', estafas románticas, llamadas falsas del IRS y de Medicare — más una línea de ayuda gratuita (877-908-3360) atendida por personas reales. No se necesita membresía de AARP."
+        },
+        whoFor: {
+          en: "Anyone who wants to recognize scams before falling for one, or just got a call that felt wrong.",
+          es: "Cualquier persona que quiera reconocer las estafas antes de caer en una, o que acaba de recibir una llamada que se sintió extraña."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "ReportFraud.ftc.gov",
+        url: "https://reportfraud.ftc.gov/",
+        what: {
+          en: "The government's official place to report a scam or fraud. Takes a few minutes, and they tell you what steps to take next. Spanish version: reportefraude.ftc.gov.",
+          es: "El lugar oficial del gobierno para reportar una estafa o fraude. Toma unos minutos, y le dicen qué pasos seguir. Versión en español: reportefraude.ftc.gov."
+        },
+        whoFor: {
+          en: "Anyone who was scammed, almost scammed, or got a suspicious call, text, or email.",
+          es: "Cualquier persona que fue estafada, casi estafada, o que recibió una llamada, mensaje o correo sospechoso."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "IdentityTheft.gov",
+        url: "https://www.identitytheft.gov/",
+        what: {
+          en: "If someone stole your identity — opened accounts, filed taxes, or used your Medicare number — this government site builds you a personal step-by-step recovery plan and the letters to send.",
+          es: "Si alguien robó su identidad — abrió cuentas, declaró impuestos o usó su número de Medicare — este sitio del gobierno le crea un plan de recuperación personal paso a paso y las cartas que debe enviar."
+        },
+        whoFor: {
+          en: "Anyone whose personal information was stolen or who sees accounts they never opened.",
+          es: "Cualquier persona cuya información personal fue robada o que ve cuentas que nunca abrió."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "AnnualCreditReport.com",
+        url: "https://www.annualcreditreport.com/",
+        what: {
+          en: "The only official site for your free credit reports from all three bureaus — check them weekly at no cost to catch accounts a thief opened in your name. Never pay anyone for this.",
+          es: "El único sitio oficial para sus reportes de crédito gratuitos de los tres burós — revíselos cada semana sin costo para detectar cuentas que un ladrón abrió a su nombre. Nunca pague a nadie por esto."
+        },
+        whoFor: {
+          en: "Everyone, at least a few times a year — especially after any suspicious call or data breach letter.",
+          es: "Todos, al menos unas cuantas veces al año — especialmente después de cualquier llamada sospechosa o carta de filtración de datos."
+        },
+        esSite: true,
+        free: true
+      }
+    ]
+  },
   //__NEXT_CATEGORY__
 ];
 

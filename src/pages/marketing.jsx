@@ -351,6 +351,7 @@ function PlanComparison({lang}){
   </table></div></div>;
 }
 /* v0.63.2 PricingPage: standalone (public from landing w/ line-field + EN/ES + modes, or app nav). */
+const REF_CAT_LBL={"insurance-car":["Car insurance","Seguro de auto"],"insurance-home":["Home insurance","Seguro de hogar"],realtor:["Realtor","Inmobiliario"],lender:["Lender","Prestamista"],tax:["Tax","Impuestos"],legal:["Legal","Legal"],other:["Other","Otro"]};
 /* MD-A (v0.74) — self-serve ladder: Free + Premium (choose-your-price) above the services. */
 function SelfServePlans({lang,variant,onSignIn}){
   const th=useTh();const es=lang==="es";
@@ -500,6 +501,23 @@ function AboutPage({t,settings,lang,isDark}){
           <div style={{fontSize:27,fontWeight:800,color:GOLD,letterSpacing:"0.1em",fontFamily:"'JetBrains Mono',ui-monospace,monospace"}}>GOLDEN-2026</div>
           <div style={{fontSize:11.5,color:th.muted,marginTop:9,lineHeight:1.55}}>{t.referralDesc}</div>
         </div>
+        {/* MD-K.2 (v0.75.3) — the advisor's trusted-contacts network, with disclosure. */}
+        {Array.isArray(settings&&settings.referralContacts)&&settings.referralContacts.filter(c=>c.name).length>0&&<div className="ga-lift" style={{...mCARD(th),padding:24}}>
+          <div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:4}}>{t.refTrustedHdr||"Trusted contacts"}</div>
+          <div style={{fontSize:11.5,color:th.muted,lineHeight:1.6,marginBottom:14}}>{t.refTrustedSub||"People we know and refer for needs beyond coaching."}</div>
+          <div style={{display:"flex",flexDirection:"column"}}>
+            {settings.referralContacts.filter(c=>c.name).map((c,i,arr)=><div key={c.id||i} style={{padding:"10px 2px",borderBottom:i<arr.length-1?("1px solid "+(th.glassBorder||th.cardBorder)):"none"}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:12.5,fontWeight:700,color:th.text}}>{c.name}</span>
+                {c.company&&<span style={{fontSize:11.5,color:th.muted}}>{c.company}</span>}
+                <span style={{fontSize:9,color:th.dim,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:"0.08em",marginLeft:"auto"}}>{(REF_CAT_LBL[c.cat]&&(_gaLang()==="es"?REF_CAT_LBL[c.cat][1]:REF_CAT_LBL[c.cat][0]))||c.cat}</span>
+              </div>
+              {(c.phone||c.email)&&<div style={{fontSize:11,color:th.muted,marginTop:3}}>{[c.phone,c.email].filter(Boolean).join(" · ")}</div>}
+              {c.note&&<div style={{fontSize:11,color:th.dim,marginTop:3,lineHeight:1.5}}>{c.note}</div>}
+            </div>)}
+          </div>
+          <div style={{fontSize:9.5,color:th.dim,fontStyle:"italic",lineHeight:1.55,marginTop:12,paddingTop:10,borderTop:"1px solid "+(th.glassBorder||th.cardBorder)}}>{t.refDisclosure||"Disclosure: we may receive referral compensation from some of these contacts. You never pay more for being referred, and you're always free to choose anyone else."}</div>
+        </div>}
       </div>
     </div>
   </div>;

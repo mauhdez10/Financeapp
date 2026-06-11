@@ -149,6 +149,48 @@ function BillingPage({settings,onSettingsChange,t}){
       </div>;})}
     </div>
     <div style={{marginTop:14,fontSize:11,color:th.dim,fontStyle:"italic",lineHeight:1.6}}>{t?.billingNote||"Stripe payment links are created in your Stripe dashboard. Paste the full URL into the field above — clients will be redirected there when they click \"Submit & pay now\" on the intake form."}</div>
+    {/* MD-K.2 (v0.75.3) — per-advisor referral network: editable here, shown on About
+        with a compensation disclosure. Lives "on services & stripe links" per owner. */}
+    <ReferralNetworkEditor settings={settings} onSettingsChange={onSettingsChange} t={t}/>
+  </div>;
+}
+const REF_CATS=[["insurance-car","Car insurance","Seguro de auto"],["insurance-home","Home insurance","Seguro de hogar"],["realtor","Realtor","Agente inmobiliario"],["lender","Lender / loans","Prestamista / préstamos"],["tax","Tax preparer","Preparador de impuestos"],["legal","Legal","Legal"],["other","Other","Otro"]];
+function ReferralNetworkEditor({settings,onSettingsChange,t}){
+  const th=useTh();
+  const[open,setOpen]=useState(false);const[rowOpen,setRowOpen]=useState({});
+  const list=Array.isArray(settings.referralContacts)?settings.referralContacts:[];
+  const INP={padding:"8px 10px",background:th.inp,border:"1px solid "+(th.inpBorder||th.cardBorder),color:th.text,borderRadius:6,fontSize:12,outline:"none",boxSizing:"border-box",width:"100%"};
+  const setC=(i,k,v)=>onSettingsChange({...settings,referralContacts:list.map((c,idx)=>idx===i?{...c,[k]:v}:c)});
+  const add=()=>{onSettingsChange({...settings,referralContacts:[...list,{id:"ref-"+Date.now(),cat:"other",name:"",company:"",phone:"",email:"",note:""}]});setOpen(true);};
+  const del=i=>{if(!confirm(t?.refConfirmRemove||"Remove this contact?"))return;onSettingsChange({...settings,referralContacts:list.filter((_,idx)=>idx!==i)});};
+  const es=(settings.lang==="es");
+  const catLbl=(id)=>{const c=REF_CATS.find(x=>x[0]===id);return c?(es?c[2]:c[1]):id;};
+  return <div style={{...mCARD(th),padding:0,overflow:"hidden",marginTop:14}}>
+    <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"13px 16px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+      <span style={{fontSize:15,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",width:16,textAlign:"center"}}>{open?"−":"+"}</span>
+      <span style={{flex:1,fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>{t?.refNetworkHdr||"Referral network"}</span>
+      <span style={{fontSize:10.5,color:th.dim,fontFamily:"'JetBrains Mono',monospace"}}>{list.length}</span>
+    </button>
+    {open&&<div style={{padding:"0 14px 14px"}}>
+      <div style={{fontSize:11,color:th.dim,lineHeight:1.6,marginBottom:10,fontStyle:"italic"}}>{t?.refNetworkHelp||"Your trusted contacts (car insurance, realtors, lenders…). They appear on your About page with a compensation disclosure. Each advisor manages their own list."}</div>
+      {list.map((c,i)=>{const ron=!!rowOpen[c.id];return<div key={c.id} style={{marginBottom:7,border:"1px solid "+th.cardBorder,borderRadius:9,overflow:"hidden"}}>
+        <button onClick={()=>setRowOpen(p=>({...p,[c.id]:!p[c.id]}))} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 12px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+          <span style={{fontSize:14,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",width:14,textAlign:"center"}}>{ron?"−":"+"}</span>
+          <span style={{flex:1,fontSize:12.5,fontWeight:600,color:th.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name||(t?.refUnnamed||"New contact")}{c.company?" · "+c.company:""}</span>
+          <span style={{fontSize:9.5,color:th.dim,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:"0.08em",flexShrink:0}}>{catLbl(c.cat)}</span>
+        </button>
+        {ron&&<div style={{padding:"4px 12px 12px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <input style={INP} value={c.name||""} onChange={e=>setC(i,"name",e.target.value)} placeholder={t?.refNamePh||"Contact name"}/>
+          <select value={c.cat||"other"} onChange={e=>setC(i,"cat",e.target.value)} style={INP}>{REF_CATS.map(([id,en2,es2])=><option key={id} value={id}>{es?es2:en2}</option>)}</select>
+          <input style={INP} value={c.company||""} onChange={e=>setC(i,"company",e.target.value)} placeholder={t?.refCompanyPh||"Company"}/>
+          <input style={INP} value={c.phone||""} onChange={e=>setC(i,"phone",e.target.value)} placeholder={t?.phoneLbl||"Phone"}/>
+          <input style={{...INP,gridColumn:"1 / -1"}} value={c.email||""} onChange={e=>setC(i,"email",e.target.value)} placeholder="email@…"/>
+          <input style={{...INP,gridColumn:"1 / -1"}} value={c.note||""} onChange={e=>setC(i,"note",e.target.value)} placeholder={t?.refNotePh||"One-line note clients see (optional)"}/>
+          <button onClick={()=>del(i)} style={{justifySelf:"start",padding:"5px 12px",borderRadius:6,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer",fontSize:11}}>{t?.delete||"Delete"}</button>
+        </div>}
+      </div>;})}
+      <button onClick={add} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}55`,cursor:"pointer",fontWeight:600}}>+ {t?.refAdd||"Add contact"}</button>
+    </div>}
   </div>;
 }
 
