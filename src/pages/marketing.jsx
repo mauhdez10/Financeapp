@@ -12,6 +12,10 @@ import { Field, useViewport, Row2, Btn, BSolid, MaskedNumInp, Modal, SaveBar } f
 function PromotionsPage({settings,onSettingsChange,t}){
   const th=useTh();
   const INP=mINP(th);
+  /* MD-H (v0.76.1) — live Stripe promotion codes, auto-synced (owner ask). Renders
+     only when the server endpoint has data; silently absent on dev / before env. */
+  const[livePromos,setLivePromos]=useState(null);
+  useEffect(()=>{let dead=false;fetch("/api/stripe-promos").then(r=>r.json()).then(j=>{if(!dead&&j&&j.ok&&j.configured&&(j.promos||[]).length)setLivePromos(j.promos);}).catch(()=>{});return()=>{dead=true;};},[]);
   const promos=Array.isArray(settings.promotions)?settings.promotions:[];
   const services=Array.isArray(settings.services)&&settings.services.length?settings.services:["initial","quarterly","monthly","all"];
   const[editing,setEditing]=useState(null);
@@ -44,6 +48,16 @@ function PromotionsPage({settings,onSettingsChange,t}){
       </div>
       <BSolid onClick={startNew}>＋ {t.newPromotion||"New Promotion"}</BSolid>
     </div>
+    {livePromos&&<div style={{...mCARD(th),padding:16,marginBottom:14,border:"1px solid "+th.accent+"44"}}>
+      <div style={{fontSize:10,fontWeight:600,color:th.accent,letterSpacing:"0.14em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",marginBottom:10}}>{t.livePromosHdr||"Live in Stripe right now"}</div>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        {livePromos.map(p=><div key={p.code} style={{padding:"9px 14px",borderRadius:10,background:th.inp,border:"1px solid "+th.cardBorder}}>
+          <span style={{fontSize:13,fontWeight:800,color:th.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.06em"}}>{p.code}</span>
+          <span style={{fontSize:11.5,color:th.muted,marginLeft:9}}>{p.percentOff?p.percentOff+"% off":p.amountOff?("$"+p.amountOff+" off"):""}{p.name?" · "+p.name:""}{p.expiresAt?" · "+(t.livePromoUntil||"until")+" "+p.expiresAt:""}</span>
+        </div>)}
+      </div>
+      <div style={{fontSize:10,color:th.dim,fontStyle:"italic",marginTop:8}}>{t.livePromosNote||"Synced automatically from your Stripe account — manage codes in the Stripe dashboard."}</div>
+    </div>}
     {/* v0.56 — stats strip at top so the page feels like an analytics surface,
        not just a CRUD list. Active / Expiring soon / Scheduled / Total. */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
