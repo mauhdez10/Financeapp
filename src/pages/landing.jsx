@@ -424,11 +424,42 @@ function HeroVideo({reducedMotion,onFail}){
     style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:0}}/>;
 }
 
-/* ── LandingPage — hero rebuilt v0.78 to the owner's liquid-glass-over-video
-   spec (capsule glass nav, Instrument Serif headline with gold period, glass
-   email-capture bar, floating glass card, grid lines + central glow, circular
-   glass social buttons). Hero is always cinematic-dark; sections below follow
-   the user's theme. Compliance stays one quiet footer line (D-17).            */
+/* ── GoldCube (v0.79) — the hero object, from the owner's Resend reference:
+   a Rubik's-style cube of gold and dark-glass tiles tumbling slowly in space.
+   Pure CSS 3D (no libs): 6 faces × 9 tiles, deterministic tile pattern so the
+   look is stable. Reduced motion → static angle (CSS handles it).             */
+function GoldCube({size=240}){
+  const s=size;const half=s/2;
+  // deterministic tile mix per face: g=gold, d=dark glass, h=glowing gold
+  const PATTERNS=[
+    ["g","d","d","d","h","g","d","g","d"],
+    ["d","g","d","g","d","d","d","d","g"],
+    ["d","d","g","d","g","d","h","d","d"],
+    ["g","d","h","d","d","g","d","g","d"],
+    ["d","h","d","g","d","d","g","d","g"],
+    ["d","g","d","d","g","h","d","d","g"],
+  ];
+  const tileStyle=(k)=>k==="g"
+    ?{background:"linear-gradient(145deg,#E8CC85 0%,#C9A84C 55%,#9C7B2C 100%)",boxShadow:"inset 0 1px 1px rgba(255,255,255,0.35)"}
+    :k==="h"
+    ?{background:"linear-gradient(145deg,#F5E0A6 0%,#E2C375 60%,#C9A84C 100%)",boxShadow:"0 0 18px rgba(226,195,117,0.55), inset 0 1px 1px rgba(255,255,255,0.5)"}
+    :{background:"rgba(255,255,255,0.05)",backdropFilter:"blur(2px)",boxShadow:"inset 0 1px 1px rgba(255,255,255,0.10)",border:"1px solid rgba(255,255,255,0.07)"};
+  const faceTf=[`translateZ(${half}px)`,`rotateY(180deg) translateZ(${half}px)`,`rotateY(90deg) translateZ(${half}px)`,`rotateY(-90deg) translateZ(${half}px)`,`rotateX(90deg) translateZ(${half}px)`,`rotateX(-90deg) translateZ(${half}px)`];
+  return <div className="ga-cube-wrap" style={{width:s,height:s,position:"relative"}} aria-hidden="true">
+    <div className="ga-cube" style={{width:s,height:s,position:"relative"}}>
+      {faceTf.map((tf,f)=><div key={f} style={{position:"absolute",inset:0,transform:tf,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gridTemplateRows:"1fr 1fr 1fr",gap:5,padding:5,boxSizing:"border-box",background:"rgba(5,6,8,0.92)",borderRadius:10,backfaceVisibility:"hidden"}}>
+        {PATTERNS[f].map((k,i)=><div key={i} style={{borderRadius:5,...tileStyle(k)}}/>)}
+      </div>)}
+    </div>
+    <div style={{position:"absolute",left:"50%",bottom:-s*0.42,transform:"translateX(-50%)",width:s*1.5,height:s*0.34,borderRadius:"50%",background:"radial-gradient(ellipse, rgba(201,168,76,0.18) 0%, rgba(0,0,0,0) 65%)",filter:"blur(8px)",pointerEvents:"none"}}/>
+  </div>;
+}
+
+/* ── LandingPage — hero v0.79 (owner-picked direction: Resend's cube + Letter's
+   luminous dark): near-black canvas, soft light from above, ONE object (the
+   gold cube) and the minimal text stack. Video/canvas heroes from v0.77–78
+   remain in this file for instant revert. Sections below follow the user's
+   theme; compliance stays one quiet footer line (D-17).                       */
 function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav}){
   const reducedMotion=useReducedMotion();
   const es=lang==="es";
@@ -502,20 +533,12 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
   return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
     <div style={{position:"relative",zIndex:2}}>
 
-      {/* ── LIQUID-GLASS VIDEO HERO (v0.78, owner's spec) ───────────────────── */}
-      <section style={{position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",background:"#070b0a",overflow:"hidden"}}>
-        {videoOk?<HeroVideo reducedMotion={reducedMotion} onFail={()=>setVideoOk(false)}/>:<GoldenTides reducedMotion={reducedMotion}/>}
-        {/* readability overlays: left + bottom-up gradients (spec) */}
-        <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(90deg, rgba(7,11,10,0.82) 0%, rgba(7,11,10,0.25) 45%, rgba(7,11,10,0) 70%)",pointerEvents:"none"}}/>
-        {/* bottom-up scrim fades INTO the page theme — light mode melts to cream, dark to navy */}
-        <div aria-hidden style={{position:"absolute",inset:0,background:`linear-gradient(0deg, ${P.bg} 0%, rgba(7,11,10,0.45) 22%, rgba(7,11,10,0.2) 40%, rgba(7,11,10,0) 60%)`,pointerEvents:"none"}}/>
-        {/* thin vertical grid lines at 25/50/75 (desktop) */}
-        <div className="ga-hero-grid" aria-hidden><span style={{left:"25%"}}/><span style={{left:"50%"}}/><span style={{left:"75%"}}/></div>
-        {/* central glow ellipse */}
-        <svg aria-hidden style={{position:"absolute",left:"50%",top:"18%",transform:"translateX(-50%)",width:900,height:340,pointerEvents:"none",opacity:0.5}} viewBox="0 0 900 340">
-          <defs><filter id="ga-hero-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="25"/></filter></defs>
-          <ellipse cx="450" cy="170" rx="330" ry="80" fill="rgba(201,168,76,0.30)" filter="url(#ga-hero-blur)"/>
-        </svg>
+      {/* ── CUBE HERO (v0.79 — Resend's object + Letter's luminous dark) ─────── */}
+      <section style={{position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",background:"#08090B",overflow:"hidden"}}>
+        {/* Letter-style "dark but light": soft warm light bleeding from above */}
+        <div aria-hidden style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 120% 60% at 50% -12%, rgba(250,244,230,0.10) 0%, rgba(226,195,117,0.05) 38%, rgba(0,0,0,0) 70%)",pointerEvents:"none"}}/>
+        {/* bottom melt into the active theme */}
+        <div aria-hidden style={{position:"absolute",inset:0,background:`linear-gradient(0deg, ${P.bg} 0%, rgba(8,9,11,0.4) 16%, rgba(8,9,11,0) 38%)`,pointerEvents:"none"}}/>
 
         {/* capsule glass nav */}
         <header style={{position:"relative",zIndex:4,padding:"22px 24px"}}>
@@ -536,9 +559,10 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
           </div>
         </header>
 
-        {/* hero content — minimal centered stack (v0.78.1, Origin-level: badge,
-            headline, one line, one action — nothing else on the first screen) */}
-        <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 8vh",textAlign:"center"}}>
+        {/* hero content — the cube, then the minimal stack (badge, headline,
+            one line, one action). Nothing else on the first screen. */}
+        <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 7vh",textAlign:"center"}}>
+          <div style={{marginBottom:58,marginTop:8}}><GoldCube size={Math.min(220,typeof window!=="undefined"?window.innerWidth*0.42:220)}/></div>
           <div className="ga-liquid" style={{borderRadius:999,padding:"7px 16px",marginBottom:24,background:"rgba(255,255,255,0.01)"}}>
             <span style={{fontSize:10.5,fontWeight:600,color:"#E2C375",fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.16em"}}>{es?"Gratis para empezar":"Free to start"}</span>
           </div>

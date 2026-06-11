@@ -6,6 +6,15 @@
 
 ## Finish-the-project run — 2026-06-11 (v0.75.2 → v0.76.1)
 
+### 🧊 The landing hero, take 3 — gold cube, Resend × Letter direction (v0.79)
+- [ ] Open https://finance.goldenanchor.life logged out: the video is gone — in its
+      place a slowly rotating **3D gold cube** (brushed gold / glowing gold / dark
+      glass tiles) floating over a warm top-light on near-black, Letter-style "dark
+      but light." Same minimal stack below it: badge → headline → one line → glass
+      email bar → caption. Theme toggle still in the capsule nav.
+- [ ] Not the cube you pictured? Tile colors, glow, size, spin speed, and tilt are
+      all minutes-level tweaks — or send me another reference and I'll iterate.
+
 ### 🎬 The landing redesign, take 2 — YOUR liquid-glass video spec (v0.78)
 - [ ] Open https://finance.goldenanchor.life logged out: **real cinematic video**
       now — golden dust swirling in dark water (licensed footage, self-hosted),

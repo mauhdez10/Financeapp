@@ -2,6 +2,24 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.79 — 2026-06-11 (Minor surface) — Gold CUBE hero (Resend × Letter.co direction)
+
+Owner direction: Resend's rotating Rubik's-cube hero ("simple, very open, not many
+things, dark, not busy") + Letter.co's "dark but light at the same time" luminosity.
+- **GoldCube** (`src/pages/landing.jsx`): pure-CSS 3D cube — 6 faces via
+  `rotateX/Y + translateZ`, each face a 3×3 grid of tiles in three finishes:
+  brushed gold gradient, glowing gold (soft 18px halo), and dark glass
+  (blur + hairline). Deterministic per-face patterns, elliptical gold floor-glow
+  beneath. Spins on `gaCubeSpin` (App.jsx stylesheet): 36s linear, rotateX(-24°)
+  base tilt; `prefers-reduced-motion` gets a static 3D pose.
+- **Letter-style luminous dark**: video removed from the hero (HeroVideo/GoldenTides
+  components kept in-file for revert); section is #08090B with a warm radial
+  top-light (cream→gold→transparent) so the dark "glows" instead of flattening.
+  Theme-aware bottom melt into `P.bg` unchanged from v0.78.1.
+- First screen stays the v0.78.1 minimal stack: cube → badge → headline →
+  subcopy → glass email bar (text button) → caption. Capsule nav with EN/ES +
+  Light/Dark + Sign in unchanged.
+
 ## v0.78.1 — 2026-06-11 (Patch) — Hero decluttered to Origin level (owner feedback)
 
 Owner notes on v0.78 ("less things on the first page, no arrows, light/dark missing"):

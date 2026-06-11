@@ -14,7 +14,7 @@ import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgra
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0781-hero-decluttered-origin-level";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0790-cube-hero-resend-letter";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -3563,6 +3563,11 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       .ga-spot>*{position:relative;z-index:1;}
       /* design pass 2026-06-10: ONE hover effect per surface — spotlight never stacks on lift */
       .ga-lift.ga-spot::after{display:none!important;}
+      /* v0.79 — the hero cube (Resend-reference): slow 3D tumble, reduced-motion = static */
+      @keyframes gaCubeSpin{from{transform:rotateX(-24deg) rotateY(0deg);}to{transform:rotateX(-24deg) rotateY(360deg);}}
+      .ga-cube-wrap{perspective:1100px;}
+      .ga-cube{transform-style:preserve-3d;animation:gaCubeSpin 36s linear infinite;}
+      @media (prefers-reduced-motion: reduce){.ga-cube{animation:none;transform:rotateX(-24deg) rotateY(-32deg);}}
       /* v0.78 — liquid glass (owner's spec: luminosity blend + masked gradient border) */
       .ga-liquid{background:rgba(255,255,255,0.01);background-blend-mode:luminosity;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:none;box-shadow:inset 0 1px 1px rgba(255,255,255,0.1);position:relative;overflow:hidden;}
       .ga-liquid::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.4px;background:linear-gradient(180deg,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.15) 20%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(255,255,255,0.15) 80%,rgba(255,255,255,0.45) 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
