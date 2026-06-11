@@ -62,7 +62,7 @@ function HeroVisual({palette,reducedMotion}){
   </svg>;
 }
 
-function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
+function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing,onBackToLanding}){
   const reducedMotion=useReducedMotion();
   const[em,setEm]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[busy,setBusy]=useState(false);const[mode,setMode]=useState("signin");const[info,setInfo]=useState("");const[showPw,setShowPw]=useState(false);const[signupRole,setSignupRole]=useState("client");
   // Detect Supabase password-recovery callback (URL hash contains type=recovery)
@@ -172,14 +172,15 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
 
     <div style={{position:"relative",zIndex:2}}>
       <header style={{padding:"24px 40px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:11}}>
+        <button onClick={onBackToLanding} title={lang==="es"?"Volver al inicio":"Back to home"} style={{display:"flex",alignItems:"center",gap:11,background:"transparent",border:"none",cursor:onBackToLanding?"pointer":"default",padding:0,textAlign:"left",fontFamily:"inherit"}}>
           <div style={{width:34,height:34,borderRadius:10,...glass,display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/anchor-monogram.svg" alt="" style={{width:20,height:20}}/></div>
           <div>
             <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.01em",color:P.text,lineHeight:1}}>Golden Anchor</div>
             <div style={{fontSize:8,color:P.dim,marginTop:3,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em"}}>{lang==="es"?"Asesoría Financiera":"Financial Advisory"}</div>
           </div>
-        </div>
+        </button>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {onBackToLanding&&<button onClick={onBackToLanding} style={pillTog}>← {lang==="es"?"Inicio":"Home"}</button>}
           {onShowPricing&&<button onClick={onShowPricing} style={pillTog}>{lang==="es"?"Precios":"Pricing"}</button>}{onLangToggle&&<button onClick={onLangToggle} aria-label="Toggle language" style={pillTog}>{lang==="es"?"EN":"ES"}</button>}
           <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={pillTog}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
         </div>
@@ -203,8 +204,8 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
               <h2 style={{fontWeight:600,fontSize:19,color:P.text,margin:0,letterSpacing:"-0.01em"}}>{title}</h2>
               {mode==="signin"&&<span style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
             </div>
-            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Acceso inmediato a tu tablero, sin tarjeta.":"Start free. Instant access to your dashboard, no card required."}</p>}
-            {mode==="verify"&&<p style={{fontSize:12.5,color:P.muted,margin:"-6px 0 18px",lineHeight:1.6}}>{lang==="es"?<>Te enviamos un enlace de confirmación{em?<> a <b style={{color:P.text}}>{em}</b></>:null}. Ábrelo para activar tu cuenta y entrar — revisa también la carpeta de spam.</>:<>We sent a confirmation link{em?<> to <b style={{color:P.text}}>{em}</b></>:null}. Open it to activate your account and sign in — check your spam folder too.</>}</p>}{mode==="signup"&&<div style={{marginBottom:16}}><label style={LBL}>{lang==="es"?"Tipo de cuenta":"Account type"}</label><div style={{display:"flex",gap:8}}>{[["client",lang==="es"?"Personal":"Personal",lang==="es"?"Mis finanzas":"My finances"],["advisor",lang==="es"?"Asesor":"Advisor",lang==="es"?"Gestiono clientes":"I manage clients"]].map(([v,tt,sub])=><button key={v} type="button" onClick={()=>setSignupRole(v)} style={{flex:1,textAlign:"left",padding:"10px 12px",borderRadius:11,cursor:"pointer",background:signupRole===v?P.gold+"1A":P.inp,border:"1px solid "+(signupRole===v?P.gold:P.border),color:P.text}}><div style={{fontSize:12.5,fontWeight:700}}>{tt}</div><div style={{fontSize:10.5,color:P.muted,marginTop:2}}>{sub}</div></button>)}</div></div>}
+            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Sin tarjeta. Una cuenta por correo — para un rol distinto usa otro correo.":"Start free. No card required. One account per email — use a different email for a second role."}</p>}
+            {mode==="verify"&&<p style={{fontSize:12.5,color:P.muted,margin:"-6px 0 18px",lineHeight:1.6}}>{lang==="es"?<>Te enviamos un enlace de confirmación{em?<> a <b style={{color:P.text}}>{em}</b></>:null}. Ábrelo para activar tu cuenta y entrar — revisa también la carpeta de spam. <span style={{color:P.dim}}>¿Ya tenías una cuenta con este correo? No llegará un correo nuevo — simplemente inicia sesión (cada correo admite UNA cuenta; usa otro correo para un segundo rol).</span></>:<>We sent a confirmation link{em?<> to <b style={{color:P.text}}>{em}</b></>:null}. Open it to activate your account and sign in — check your spam folder too. <span style={{color:P.dim}}>Already had an account with this email? No new email will arrive — just sign in (each email supports ONE account; use a different email for a second role).</span></>}</p>}{mode==="signup"&&<div style={{marginBottom:16}}><label style={LBL}>{lang==="es"?"Tipo de cuenta":"Account type"}</label><div style={{display:"flex",gap:8}}>{[["client",lang==="es"?"Personal":"Personal",lang==="es"?"Mis finanzas":"My finances"],["advisor",lang==="es"?"Asesor":"Advisor",lang==="es"?"Gestiono clientes":"I manage clients"]].map(([v,tt,sub])=><button key={v} type="button" onClick={()=>setSignupRole(v)} style={{flex:1,textAlign:"left",padding:"10px 12px",borderRadius:11,cursor:"pointer",background:signupRole===v?P.gold+"1A":P.inp,border:"1px solid "+(signupRole===v?P.gold:P.border),color:P.text}}><div style={{fontSize:12.5,fontWeight:700}}>{tt}</div><div style={{fontSize:10.5,color:P.muted,marginTop:2}}>{sub}</div></button>)}</div></div>}
             {mode!=="setNew"&&<div style={{marginBottom:14}}>
               <label style={LBL}>{t.email||"Email"}</label>
               <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>

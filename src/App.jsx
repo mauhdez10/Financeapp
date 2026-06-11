@@ -9,7 +9,8 @@ import { AVATAR_PRESETS, ArchivedClientsPage, AvatarImg, AvatarPickerModal, Back
 import { PortalShareModal, PublicPortal } from "./pages/portal";
 import { OnboardingWizard } from "./pages/onboarding";
 import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgrade, PremiumLockNote } from "./components/premium";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0743-page-title-deredundancy";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+import { MembersAdminPage, isGaAdmin } from "./pages/members";
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0750-members-admin-pwyw-webhook-smtp";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -3134,7 +3135,7 @@ return<HideCtx.Provider value={{hide:client.hideNumbers||false}}><div style={{fl
 // or local /public/*.json path). Mauricio: visit lottiefiles.com, search
 // "anchor" / "finance growth" / "chart drawing", pick one, copy its `.json`
 // URL, drop into LOTTIE_HERO_URL below. Reduced motion suppresses ALL motion.
-const _GA_NAVS=["dashboard","clients","intake-submissions","calculators","promotions","pricing","resources","about","settings","security","billing","backup","archived","whats-new","help"];
+const _GA_NAVS=["dashboard","clients","intake-submissions","calculators","promotions","pricing","resources","about","settings","security","billing","backup","archived","whats-new","help","members"];
 const _GA_CLIENT_TABS=["report","monthly","financialStatements","investments","plan","calculators","backfill","notes"];
 function buildGAPath(nav,selectedId,selectedTab,selectedCalc){
   if(selectedId!=null){
@@ -3694,10 +3695,10 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     if(role==="client"&&!allowed.includes(nav)){setNav("dashboard");setSelected(null);setSelectedCalc(null);}
   },[role,nav]);
   const displayName=role==="client"?((((clients[0]?.firstName||"")+" "+(clients[0]?.lastName||"")).trim())||authUser?.email||"You"):(settings.advisorName||authUser?.email||"Mauricio Hernandez");
-  const NAV=role==="client"?[{id:"dashboard",icon:"dashboard",l:(t.myOverview||"Overview")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"resources",icon:"resources",l:t.resources},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"about",icon:"about",l:t.about}]:[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
+  const NAV=role==="client"?[{id:"dashboard",icon:"dashboard",l:(t.myOverview||"Overview")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"resources",icon:"resources",l:t.resources},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"about",icon:"about",l:t.about}]:[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},...(isGaAdmin(authUser?.email)?[{id:"members",icon:"clients",l:(lang==="es"?"Miembros":"Members")}]:[]),{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;if(isPublicPortalRoute)return<PublicPortal/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
-  if(!authUser)return<ThemeCtx.Provider value={theme}>{preAuth==="pricing"?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>goPre("landing")} onSignIn={()=>goPre("login")} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>:preAuth==="login"?<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>goPre("pricing")}/>:<LandingPage lang={lang} isDark={isDark} onToggle={()=>setDark(d=>!d)} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onSignIn={()=>goPre("login")} onPricing={()=>goPre("pricing")}/>}</ThemeCtx.Provider>;
+  if(!authUser)return<ThemeCtx.Provider value={theme}>{preAuth==="pricing"?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>goPre("landing")} onSignIn={()=>goPre("login")} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>:preAuth==="login"?<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>goPre("pricing")} onBackToLanding={()=>goPre("landing")}/>:<LandingPage lang={lang} isDark={isDark} onToggle={()=>setDark(d=>!d)} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onSignIn={()=>goPre("login")} onPricing={()=>goPre("pricing")}/>}</ThemeCtx.Provider>;
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}gaClearLocalCache();setClients([]);setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;
@@ -3790,7 +3791,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           onOpenChartSettings={()=>setChartSettingsOpen(true)}
           onSignOut={async()=>{if(supabase){try{await supabase.auth.signOut();}catch{}}gaClearLocalCache();setSelected(null);setClients([]);setAuthUser(null);}}
           advisorName={displayName}
-          advisorEmail={settings.advisorEmail||authUser?.email||""}
+          advisorEmail={role==="client"?(authUser?.email||""):(settings.advisorEmail||authUser?.email||"")}
           avatarId={settings.avatarId||"mh-gold"}
           avatarInitials={(displayName||"MH").trim().split(/\s+/).slice(0,2).map(p=>p[0]).join("").toUpperCase().slice(0,2)||"MH"}
           th={theme}
@@ -3808,6 +3809,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
           nav==="pricing"?<PricingPage variant="app" t={t} lang={lang} settings={settings} onRequest={null}/>:nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="resources"?<ResourcesPage t={t}/>:
+          nav==="members"?(isGaAdmin(authUser?.email)&&role!=="client"?<MembersAdminPage t={t} lang={lang}/>:<div className="ga-np" style={{padding:40,textAlign:"center",color:theme.dim,fontSize:13}}>{lang==="es"?"Solo administradores.":"Admins only."}</div>):
           nav==="settings"?<SettingsPage role={role} onUpdateClient={upClient} settings={settings} clients={clients} onEdit={(sec)=>{setProfileSection(sec||null);setProfileOpen(true);}} onSave={patch=>{setSettings(s=>({...s,...patch}));if(patch.lang==="en"||patch.lang==="es")setLang(patch.lang);}} t={t}/>:
           nav==="security"?<SecurityPage t={t}/>:
           nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:

@@ -2,6 +2,27 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.75 — 2026-06-11 (Minor) — Members admin, TRUE choose-your-price, payment webhook, branded auth emails
+
+- **Members page** (admin advisors: nav "Members"): every client account with plan/
+  joined/onboarding/insurance-interest, counts row, Stripe MRR (lights up with the
+  STRIPE_SECRET_KEY env), and **complimentary Premium** grant/revoke by email
+  (api/admin-members.js — list is admin-allowlisted; grants stamped compedBy/compedAt).
+- **TRUE choose-your-price Premium**: amount input (any whole $ from 3) + dynamic
+  thank-you copy → api/create-premium-checkout.js finds/creates the recurring price
+  (lookup_key premium-m-<amt>) and opens Checkout with client_reference_id. Replaces
+  the fixed $3/$10/$20 buttons everywhere (upsell card, Settings, pricing page);
+  falls back to nearest tier link until the Stripe env vars are set.
+- **Payment → activation webhook** (api/stripe-webhook.js, endpoint registered in
+  Stripe): checkout.session.completed flips the account to premium;
+  subscription.deleted reverts to free. Manual-claim flow stays as backup.
+- **Auth emails now branded**: Supabase SMTP via Resend — sender "Mauricio Hernandez
+  <noreply@finance.goldenanchor.life>", no more 2/hr limit.
+- MDD fixes: client avatar menu showed the DEFAULT advisor email (mauricio@…) —
+  now the account's real email; verify screen explains the existing-account case;
+  signup notes one-account-per-email; Login gets logo-click + "← Home" back to the
+  landing page.
+
 ## v0.74.3 — 2026-06-11 (Patch) — Page-title de-redundancy (MD-G part 1)
 
 The top banner already names the page; in-page literal duplicates removed app-wide:

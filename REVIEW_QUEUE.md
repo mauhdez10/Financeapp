@@ -4,6 +4,44 @@
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
 > confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
 
+## Feedback batch — 2026-06-11 afternoon (v0.75)
+
+### ⚠️ ONE 2-MINUTE STEP: two Vercel env vars (unlocks 3 features at once)
+- [ ] Vercel → Financeapp → Settings → Environment Variables → add BOTH (Production):
+      1. `STRIPE_SECRET_KEY` = the sk_live key you pasted (in finance-credentials.md)
+      2. `STRIPE_WEBHOOK_SECRET` = whsec_… (saved at the bottom of finance-credentials.md)
+      Then Deployments → Redeploy. This activates: **payment → instant Premium**
+      (webhook), **true any-amount checkout** (no more fixed tiers), and **income/MRR
+      on the Members page**. Until then the app falls back gracefully.
+
+### Your asks from this morning — done
+- [ ] **Members page** (your master view): advisor login → "Members" in the sidebar
+      (only your firm's emails see it). Counts, every client account + plan, insurance
+      interests, and **Gift Premium / Revoke** by email or per row.
+- [ ] **Choose-your-price is REAL now**: the upsell shows a $ input (min 3, any whole
+      amount) with the thank-you message adapting to the amount.
+- [ ] **Verification emails are branded**: from "Mauricio Hernandez
+      <noreply@finance.goldenanchor.life>" (Resend SMTP wired into Supabase).
+- [ ] **mau.hdez10 bug fixed**: the avatar menu was showing the app's default
+      advisor email (mauricio@goldenanchor.life) for client accounts — now shows the
+      real account email. (Your profile card already used the right one.)
+- [ ] **Existing-email signups explained**: the verify screen now says no new email
+      arrives if the account already exists — just sign in; one account per email
+      (use a different email for a second role). Same note on the signup form.
+- [ ] **Sign-in page → landing**: logo click or "← Home". Pricing page logo/back also
+      returns to the landing.
+- [ ] Existing client accounts (created before the wizard) see onboarding ONCE on
+      their next login — that's the designed behavior you asked me to check.
+- [ ] Annual = $499/yr recurring ✓ (as you confirmed).
+
+### Still queued from your feedback (next batches)
+- Public About/Contact/Q&A pages + footer nav + clickables audit (MD-E part 3)
+- Landing motion/design iteration from your refero/mux references (design pass)
+- Calculators: ONLY non-duplicative adds (life-insurance needs, inflation) — your
+  pushback on emergency-fund/budget duplication is logged and agreed; no cost items
+  without asking first
+- Design resources (styles.refero.design, higgsfield.ai) → DESIGN-MODE docs + OS
+
 ## Master-directive batch 1 — 2026-06-11 (v0.72.4 → v0.73)
 
 ### MD-D: Signup is now real (verification + onboarding)

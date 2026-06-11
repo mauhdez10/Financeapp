@@ -5,6 +5,7 @@ import { Tag, Anchor, Shield, PiggyBank, TrendingUp, Home, TrendingDown, Globe, 
 import { GOLD, mINP, mCARD } from "../styles/theme";
 import { useTh } from "../contexts/theme";
 import { SVCS, CERTS, _gaLang, DEF_SETTINGS, PREMIUM_TIERS } from "../constants/meta";
+import { ChooseAmount } from "../components/premium";
 import { bE, gid } from "../utils/finance";
 import { Field, useViewport, Row2, Btn, BSolid, MaskedNumInp, Modal, SaveBar } from "../components/primitives";
 
@@ -376,7 +377,7 @@ function SelfServePlans({lang,variant,onSignIn}){
         <div style={{display:"flex",flexDirection:"column",gap:10,flex:1,marginBottom:18}}>{premFeats.map((f,i)=><div key={i} style={{display:"flex",gap:9,fontSize:12.5,color:th.muted,lineHeight:1.4}}><Ck/>{f}</div>)}</div>
         {variant==="public"
           ?<button className="ga-press" onClick={onSignIn} style={{display:"block",width:"100%",textAlign:"center",fontSize:12.5,fontWeight:600,padding:"11px 16px",borderRadius:9,background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",border:"none",cursor:"pointer",fontFamily:"inherit",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32), 0 6px 16px rgba(201,168,76,0.22)"}}>{es?"Empezar gratis y mejorar":"Start free, then upgrade"}</button>
-          :<div style={{display:"flex",gap:7}}>{PREMIUM_TIERS.map(tr=><a key={tr.id} className="ga-press" href={tr.link+(_ref?"?client_reference_id="+encodeURIComponent(_ref):"")} target="_blank" rel="noopener noreferrer" style={{flex:1,textAlign:"center",fontSize:12,fontWeight:700,padding:"10px 6px",borderRadius:9,background:th.accent+"14",color:th.accent,border:"1px solid "+th.accent+"33",textDecoration:"none",fontFamily:"'JetBrains Mono',monospace"}}>${tr.amount}</a>)}</div>}
+          :<ChooseAmount lang={es?"es":"en"} onFallbackTier={tr=>window.open(tr.link+(_ref?"?client_reference_id="+encodeURIComponent(_ref):""),"_blank","noopener")}/>}
       </div>
     </div>
   </div>;
