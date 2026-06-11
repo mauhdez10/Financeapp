@@ -37,16 +37,21 @@
 ### A. Pricing audit — ✅ DECIDED (F1 yes / F2 catalog / F5 flat) & EXECUTED app-side
 - [x] D-13 re-locked at catalog prices; `client-checkup` retired from the app; pricing
       card now tells returning clients to ask you for their code.
-- [ ] **YOUR 10-MIN STRIPE CHECKLIST** (dashboard.stripe.com, any PC):
-      1. Products → find "Financial Checkup — Golden Anchor Client" → **Archive** it
-         (its payment link dies with it — that's intended).
-      2. Coupons → **+ New**: $50 off, duration "once", name `GACLIENT50` → then
-         Promotion codes → create code `GACLIENT50` from that coupon.
-      3. Payment links → open the **Initial Financial Checkup** link → toggle
-         **"Allow promotion codes"** ON.
-      4. Sanity-check live prices = $149 / $199 / $129 / $49 / $79 / $499.
-      (Alternative: paste a live restricted key — write on Products, Prices, Coupons,
-      Promotion codes, Payment links — in the chat and I do all four via API.)
+- [x] ~~Stripe checklist~~ **DONE VIA API with your key (2026-06-11).** What I found
+      and fixed: live prices were still the OLD numbers (Quarterly $99, Lite $29,
+      Annual $299 one-time, Strategy split) — buyers were being undercharged vs the
+      page. Now: $149/$199/$129/$49/$79/**$499-per-year (recurring — flag me if you
+      wanted one-time)**; real Lite+ product (the old "Lite+" link actually sold
+      Lite + a $149 checkup!); duplicate checkup + Car-strategy products archived;
+      **GACLIENT50 live** ($50 off the $149 Checkup, returning clients); 6 dead links
+      replaced everywhere (code + your saved settings). **Golden Anchor Premium**
+      created at $3/$10/$20-a-month choose-your-price for the coming Free/Premium
+      ladder. Zero existing subscribers were affected (there were none).
+- [ ] ⚠️ **Rotate both Stripe keys before launch** (they were pasted in chat) —
+      Stripe dashboard → Developers → API keys → roll. Update finance-credentials.md.
+- [ ] **Resend MCP re-auth** (for verification-email SMTP): in Claude Code type
+      `/mcp` → resend → Authenticate. Once green I mint the SMTP key and finish
+      email setup myself (your FROM/REPLY-TO values are saved).
 
 ### B. Client "Your plan" card now has real Upgrade buttons
 - [ ] Log in as clientdemo@goldenanchor.life → Settings → flip the **Your plan** card:

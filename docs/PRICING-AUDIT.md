@@ -79,9 +79,24 @@ resolved.
    discount code" (EN+ES) — safe wording until the code exists in Stripe.
 2. **F2 = CATALOG.** D-13 re-locked in AGENT.md at $149/$199/$129/$49/$79/$499.
 3. **F5 = ONE FLAT PRICE.** Strategy Session $129; Home/Job/Car split retired.
-4. **Stripe dashboard (owner, ~10 min, any PC):** see the checklist in REVIEW_QUEUE.md —
-   create the `GACLIENT50` promo code, archive the old Golden-Anchor-Client checkup
-   product/link, confirm live prices match the re-locked D-13, enable "allow promotion
-   codes" on the Checkup payment link.
-5. **NEXT (master directive §A):** add Free + Premium (choose-your-price, $3 floor)
-   products in Stripe when the plan-ladder build ships.
+4. **Stripe-side — EXECUTED VIA API 2026-06-11** (owner provided the live key):
+   - ⚠️ The dashboard audit found the live prices were still the OLD D-13 numbers
+     (Quarterly $99, Lite $29/mo, Annual $299 one-time, Strategy split $99/$79) while
+     the app displayed catalog prices — buyers were being charged the old amounts.
+     Zero active subscriptions existed, so no grandfathering was needed.
+   - New prices created + set as defaults: Quarterly **$199**, Strategy **$129** flat,
+     Lite **$49/mo**, Annual **$499/yr (now RECURRING yearly** — was a $299 one-time;
+     flag if you want one-time instead). Old prices archived.
+   - **Real Lite+ product created** ($79/mo) — the old "Lite+" payment link actually
+     sold Lite $29/mo + a $149 checkup (auto-named "…and 1 more"). It's dead now.
+   - Products archived: "Financial Checkup — Golden Anchor Client", "Strategy Session:
+     Car / Insurance Review". 6 superseded payment links deactivated; 5 new links
+     created (promo codes enabled) and wired into DEF_SETTINGS + all 3 stored advisor
+     settings rows in the DB.
+   - **GACLIENT50 live**: $50 off, once, restricted to the Initial Financial Checkup
+     product ($149 → $99 net for returning clients).
+5. **Premium created (master directive §A):** product "Golden Anchor Premium" with
+   choose-your-price tiers $3/$10/$20 per month + 3 payment links (in
+   `PREMIUM_TIERS`, src/constants/meta.js). App-side gating ships with MD-A.
+6. ⚠️ Rotation: the live keys were pasted in chat — rotate both in the Stripe
+   dashboard before launch (tracked in finance-credentials.md).

@@ -2,6 +2,17 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.73.2 — 2026-06-11 (Patch) — Live Stripe realigned to catalog (executed via API)
+
+Audit found live Stripe still charged OLD prices (Quarterly $99, Lite $29/mo, Annual
+$299 once, Strategy $99/$79 split) while the app displayed catalog prices. Fixed via
+API with the owner's key: new default prices ($199/$129/$49/mo/$499-yr recurring),
+real Lite+ product $79/mo (old link sold Lite+Checkup!), duplicate-checkup + Car
+products archived, GACLIENT50 promo live (restricted to the $149 Checkup), 6 dead
+payment links replaced in DEF_SETTINGS + all 3 stored advisor settings rows, and
+"Golden Anchor Premium" created ($3/$10/$20 choose-your-price, `PREMIUM_TIERS`).
+Zero active subscriptions existed. Keys stored gitignored; rotation flagged pre-launch.
+
 ## v0.73.1 — 2026-06-11 (Patch) — Pre-auth routes: /login and /pricing are real URLs (MD-E part 1)
 
 `/login` shows the sign-in page, `/pricing` deep-links to the public pricing page (Back

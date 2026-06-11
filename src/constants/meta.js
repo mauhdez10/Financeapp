@@ -18,6 +18,13 @@ const SVCS=[{id:"initial-checkup",icon:"🩺",en:"Initial Financial Checkup",es:
 // wins over catalog defaults so the advisor can configure links without code changes.
 // Free services (price === "Free") never return a payUrl — "Pay now" should disable.
 const svcPayUrl=(svc,settings)=>{if(!svc||svc.price==="Free")return "";return settings?.stripeLinks?.[svc.id]||svc.payUrl||svc.stripeUrl||"";};
+// Premium self-serve tier (MD-A, 2026-06-11) — choose-your-price monthly, $3 floor.
+// Stripe product prod_UgX7bm2AANaxez; one live payment link per suggested tier.
+const PREMIUM_TIERS=[
+  {id:"premium-3",amount:3,link:"https://buy.stripe.com/dRmeVe2BI2f98VSgyjfrW0d",en:"Coffee supporter",es:"Apoyo cafecito",noteEn:"You're gifting us a coffee a month — thank you.",noteEs:"Nos regalas un cafecito al mes — gracias."},
+  {id:"premium-10",amount:10,link:"https://buy.stripe.com/bJe3cwekq1b54FCa9VfrW0e",en:"Sustainer",es:"Sostenedor",noteEn:"You're helping us maintain the platform — you're amazing.",noteEs:"Nos ayudas a mantener la plataforma — eres increíble."},
+  {id:"premium-20",amount:20,link:"https://buy.stripe.com/fZu28sdgm5rlfkgbdZfrW0f",en:"Champion",es:"Campeón",noteEn:"You're funding free tools for families who need them most.",noteEs:"Financias herramientas gratis para las familias que más las necesitan."},
+];
 const DEF_PORT_RATES={conservative:5.5,growth:8.5,aggressive:11.0};
 const TICKER_META={
   FXAIX:{name:"Fidelity 500 Index",desc:"Tracks S&P 500 — broad U.S. large-cap core holding.",cat:"US Large Cap"},
@@ -52,6 +59,6 @@ const acctL=k=>(_gaLang()==="es"&&ACCT_L_ES[k])||(ACCT_META[k]&&ACCT_META[k].l)|
 const loanL=k=>(_gaLang()==="es"&&LOAN_L_ES[k])||(LOAN_META[k]&&LOAN_META[k].l)||k;
 const physL=v=>(_gaLang()==="es"&&PHYS_L_ES[v])||v;
 
-const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#C9A84C",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#FAF6EC",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","quarterly-review":"https://buy.stripe.com/cNieVe6RY7ztdc86XJfrW05","strategy-session":"https://buy.stripe.com/14A9AU1xE2f98VSgyjfrW02","monthly-lite":"https://buy.stripe.com/9B68wQ9062f91tq95RfrW00","monthly-lite-plus":"https://buy.stripe.com/eVq3cw1xEg5Z8VS3LxfrW07","annual-bundle":"https://buy.stripe.com/aFa00kekqg5Z7ROa9VfrW01","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null,dashboardSlots:["incomeVsSpending","sankey","netWorthDonut"],chartCustomizations:{}};
+const DEF_SETTINGS={baseFontSize:14,appZoom:1,ig:"golden_anchor_inc",advisorName:"Mauricio Hernandez",advisorEmail:"mauricio@goldenanchor.life",noContactDays:30,darkAccent:GOLD,lightAccent:"#C9A84C",darkBg:"#111827",darkCard:"#1F2937",lightBg:"#FAF6EC",lightCard:"#FFFFFF",hideNumbers:false,lang:"en",isDark:true,reminderAdvisor:{noContact:true,highDebt:true,promoExpiring:true,debtIncreasing:false},stripeLinks:{"initial-checkup":"https://buy.stripe.com/fZu3cw5NUaLF9ZW81NfrW04","quarterly-review":"https://buy.stripe.com/aFa5kEcci2f9gokci3frW08","strategy-session":"https://buy.stripe.com/6oUbJ2fou8Dx3By0zlfrW09","monthly-lite":"https://buy.stripe.com/14AaEYcci3jd3By81NfrW0a","monthly-lite-plus":"https://buy.stripe.com/4gMbJ25NU8Dx4FCeqbfrW0c","annual-bundle":"https://buy.stripe.com/aFa9AU0tAaLF5JG5TFfrW0b","insurance-consult":"","donation":"https://buy.stripe.com/14A7sMgsyg5ZgokeqbfrW06"},lastBackupVerified:null,dashboardSlots:["incomeVsSpending","sankey","netWorthDonut"],chartCustomizations:{}};
 
-export { ACCT_META, LOAN_META, ACCA, LOKA, CP, PC, SVCS, svcPayUrl, DEF_PORT_RATES, TICKER_META, PORTFOLIOS, ALT_PACKS, MAIN_PACKS, MS, MS_ES, ML_ES, mLabel, ML, CERTS, PHYS_CATS, ACCT_L_ES, LOAN_L_ES, PHYS_L_ES, _gaLang, acctL, loanL, physL, DEF_SETTINGS };
+export { ACCT_META, LOAN_META, ACCA, LOKA, CP, PC, SVCS, svcPayUrl, PREMIUM_TIERS, DEF_PORT_RATES, TICKER_META, PORTFOLIOS, ALT_PACKS, MAIN_PACKS, MS, MS_ES, ML_ES, mLabel, ML, CERTS, PHYS_CATS, ACCT_L_ES, LOAN_L_ES, PHYS_L_ES, _gaLang, acctL, loanL, physL, DEF_SETTINGS };
