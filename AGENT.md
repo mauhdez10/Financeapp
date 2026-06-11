@@ -274,6 +274,8 @@ These are mistakes we've made and learned from. **Don't repeat them.**
 
 19. **lucide-react exports vary — verify before importing.** This repo's lucide-react does not export `Instagram` (build fails with MISSING_EXPORT at bundle time, not in dev). Before adding an icon import, confirm the export exists (grep `node_modules/lucide-react/dist/esm/lucide-react.mjs`); pick an alternative when absent (we use `AtSign` for the Instagram handle).
 
+20. **Vercel Hobby caps serverless functions at 12 per deploy — and the failure is silent locally.** v0.76 added 4 endpoints (15 total), local build passed, prod deploy FAILED (only visible via GitHub deployment status: `gh api repos/mauhdez10/Financeapp/commits/<sha>/status`). Files in `api/` prefixed with `_` (shared modules like `_sanitize.js`, `_ratelimit.js`) don't count. We sit at EXACTLY 12 (v0.76.2): any new endpoint must merge into an action-router (`api/link.js`, `api/billing.js`, `api/admin-members.js` are the patterns) or the plan must upgrade. After every push that touches `api/`, verify the deploy actually succeeded (marker check or the gh status command).
+
 ---
 
 ## 8. Build & deploy workflow

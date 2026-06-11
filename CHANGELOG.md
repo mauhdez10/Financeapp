@@ -2,6 +2,17 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.76.2 — 2026-06-11 (Patch) — Function consolidation (Vercel 12-cap) + Link-R prod-verified
+
+The v0.76/v0.76.1 deploys FAILED silently: 15 serverless functions > Vercel Hobby's
+12-function cap (pitfall #20 — check `gh api …/commits/<sha>/status` after api/
+pushes). Consolidated into action-routers: `api/link.js` (invite-email/accept/
+overview) + `api/billing.js` (GET promos / POST checkout); count now exactly 12.
+**Link-R E2E-verified on production**: invite → accept (email match) → island
+snapshotted → test advisor's portal tokens auto-revoked (other advisors' untouched) →
+sanitized overview (no SSN/DOB, incomes present, advisor branding) → revoke →
+frozen island returns. Demo account restored to its island for the owner walkthrough.
+
 ## v0.76 — 2026-06-11 (Major feature) — Account linking (Link-R) + the Useful-Links directory
 
 - **Advisor ↔ client account linking, phase Link-R** (MD-C, all 6 owner answers):
