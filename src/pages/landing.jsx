@@ -507,7 +507,8 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
         {videoOk?<HeroVideo reducedMotion={reducedMotion} onFail={()=>setVideoOk(false)}/>:<GoldenTides reducedMotion={reducedMotion}/>}
         {/* readability overlays: left + bottom-up gradients (spec) */}
         <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(90deg, rgba(7,11,10,0.82) 0%, rgba(7,11,10,0.25) 45%, rgba(7,11,10,0) 70%)",pointerEvents:"none"}}/>
-        <div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(0deg, rgba(7,11,10,0.92) 0%, rgba(7,11,10,0.25) 36%, rgba(7,11,10,0) 60%)",pointerEvents:"none"}}/>
+        {/* bottom-up scrim fades INTO the page theme — light mode melts to cream, dark to navy */}
+        <div aria-hidden style={{position:"absolute",inset:0,background:`linear-gradient(0deg, ${P.bg} 0%, rgba(7,11,10,0.45) 22%, rgba(7,11,10,0.2) 40%, rgba(7,11,10,0) 60%)`,pointerEvents:"none"}}/>
         {/* thin vertical grid lines at 25/50/75 (desktop) */}
         <div className="ga-hero-grid" aria-hidden><span style={{left:"25%"}}/><span style={{left:"50%"}}/><span style={{left:"75%"}}/></div>
         {/* central glow ellipse */}
@@ -529,47 +530,32 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
             </nav>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
               <button onClick={onLangToggle} className="ga-liquid" style={{borderRadius:999,padding:"8px 14px",color:"rgba(255,255,255,0.85)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"EN":"ES"}</button>
+              <button onClick={onToggle} aria-label="Toggle theme" className="ga-liquid" style={{borderRadius:999,padding:"8px 14px",color:"rgba(255,255,255,0.85)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
               <button onClick={onSignIn} className="ga-liquid ga-press" style={{borderRadius:999,padding:"8px 20px",color:"#fff",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"Iniciar sesión":"Sign in"}</button>
             </div>
           </div>
         </header>
 
-        {/* hero content, centered */}
-        <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 0",textAlign:"center",transform:"translateY(-3%)"}}>
-          {/* floating liquid-glass card */}
-          <div className="ga-liquid" style={{borderRadius:18,padding:"18px 20px",maxWidth:240,marginBottom:32,textAlign:"left",background:"rgba(255,255,255,0.01)"}}>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",fontFamily:MONO,letterSpacing:"0.12em",marginBottom:8}}>[ 2026 ]</div>
-            <div style={{fontSize:17,color:"#F2EFE6",lineHeight:1.3,fontWeight:600}}>
-              {es?<>Guiado por <span style={{fontFamily:"'Instrument Serif',serif",fontStyle:"italic",fontWeight:400,color:"#E2C375"}}>profesionales</span> con licencia</>
-                 :<>Guided by licensed <span style={{fontFamily:"'Instrument Serif',serif",fontStyle:"italic",fontWeight:400,color:"#E2C375"}}>professionals</span></>}
-            </div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",lineHeight:1.55,marginTop:8}}>{es?"Educación financiera bilingüe — humana cuando la necesitas.":"Bilingual financial coaching — human when you need it."}</div>
+        {/* hero content — minimal centered stack (v0.78.1, Origin-level: badge,
+            headline, one line, one action — nothing else on the first screen) */}
+        <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 8vh",textAlign:"center"}}>
+          <div className="ga-liquid" style={{borderRadius:999,padding:"7px 16px",marginBottom:24,background:"rgba(255,255,255,0.01)"}}>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#E2C375",fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.16em"}}>{es?"Gratis para empezar":"Free to start"}</span>
           </div>
-
-          <div style={{fontSize:11,fontWeight:700,color:"#E2C375",textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:18}}>{es?"Coaching financiero bilingüe":"Bilingual financial coaching"}</div>
-          <h1 style={{margin:"0 0 22px",fontFamily:"'Instrument Serif',serif",fontWeight:400,fontSize:"clamp(2.9rem,7.2vw,5.4rem)",lineHeight:1.04,letterSpacing:"-0.01em",color:"#F4F1E8",textShadow:"0 2px 50px rgba(0,0,0,0.5)"}}>
-            {es?<>Tu dinero, <em style={{fontStyle:"italic",color:"#E2C375"}}>claro</em> por fin<span style={{color:"#C9A84C"}}>.</span></>
-               :<>Your money, finally <em style={{fontStyle:"italic",color:"#E2C375"}}>clear</em><span style={{color:"#C9A84C"}}>.</span></>}
+          <h1 style={{margin:"0 0 18px",fontFamily:"'Instrument Serif',serif",fontWeight:400,fontSize:"clamp(2.9rem,7.2vw,5.4rem)",lineHeight:1.04,letterSpacing:"-0.01em",color:"#F4F1E8",textShadow:"0 2px 50px rgba(0,0,0,0.5)"}}>
+            {es?<><em style={{fontStyle:"italic"}}>Tu dinero,</em> claro por fin<span style={{color:"#C9A84C"}}>.</span></>
+               :<><em style={{fontStyle:"italic"}}>Your money,</em> finally clear<span style={{color:"#C9A84C"}}>.</span></>}
           </h1>
-          <p style={{fontSize:14,lineHeight:1.7,color:"rgba(255,255,255,0.7)",maxWidth:512,margin:"0 0 26px"}}>
-            {es?"Un tablero que muestra a dónde va cada dólar y el siguiente paso — solo, o con un asesor bilingüe a tu lado. Gratis para empezar; Premium desde $3 al mes.":"One dashboard that shows where every dollar goes and what to do next — on your own, or with a bilingual advisor by your side. Free to start; Premium from $3 a month."}
+          <p style={{fontSize:14.5,lineHeight:1.65,color:"rgba(255,255,255,0.72)",maxWidth:440,margin:"0 0 30px"}}>
+            {es?"Mira a dónde va cada dólar — y el siguiente paso — con un asesor bilingüe cuando lo necesites.":"See where every dollar goes — and what to do next — with a bilingual advisor whenever you need one."}
           </p>
-
-          {/* glass email-capture bar */}
-          <form onSubmit={e=>{e.preventDefault();try{sessionStorage.setItem("ga_signup_email",heroEmail.trim());}catch(_e){}onSignIn();}} style={{width:"100%",maxWidth:480}}>
+          <form onSubmit={e=>{e.preventDefault();try{sessionStorage.setItem("ga_signup_email",heroEmail.trim());}catch(_e){}onSignIn();}} style={{width:"100%",maxWidth:460}}>
             <div className="ga-liquid" style={{borderRadius:999,padding:"6px 6px 6px 22px",display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.01)"}}>
               <input value={heroEmail} onChange={e=>setHeroEmail(e.target.value)} type="email" inputMode="email" placeholder={es?"Tu correo electrónico":"Enter your email"} style={{flex:1,minWidth:0,background:"transparent",border:"none",outline:"none",color:"#fff",fontSize:14.5,fontFamily:"inherit"}}/>
-              <button type="submit" className="ga-press" aria-label={es?"Crear cuenta":"Create account"} style={{flexShrink:0,width:44,height:44,borderRadius:999,border:"none",cursor:"pointer",background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32)",fontSize:18,fontWeight:700}}>→</button>
+              <button type="submit" className="ga-press" style={{flexShrink:0,borderRadius:999,border:"none",cursor:"pointer",background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",padding:"12px 24px",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32)",fontSize:13,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap"}}>{es?"Empezar":"Get started"}</button>
             </div>
           </form>
-          <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:12}}>{es?"Cuenta gratis al instante — sin tarjeta, cancela cuando sea.":"Instant free account — no card, cancel anytime."}</div>
-          <button className="ga-liquid ga-press" onClick={onPricing} style={{marginTop:18,borderRadius:999,padding:"11px 30px",color:"#fff",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"Ver precios":"See pricing"}</button>
-        </div>
-
-        {/* circular glass social buttons */}
-        <div style={{position:"relative",zIndex:4,display:"flex",justifyContent:"center",gap:14,padding:"30px 0 36px"}}>
-          {[["https://instagram.com/golden_anchor_inc","Instagram","@"],["mailto:mauricio@goldenanchor.life","Email","✉"],["https://goldenanchor.life","Website","◍"]].map(([href,label,glyph])=>
-            <a key={label} href={href} target={href.startsWith("http")?"_blank":"_self"} rel="noreferrer" aria-label={label} className="ga-liquid ga-press" style={{width:48,height:48,borderRadius:999,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.85)",textDecoration:"none",fontSize:17,background:"rgba(255,255,255,0.01)"}}>{glyph}</a>)}
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:14}}>{es?"Sin tarjeta. Cancela cuando sea.":"No card required. Cancel anytime."}</div>
         </div>
       </section>
 

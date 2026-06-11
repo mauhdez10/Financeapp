@@ -2,6 +2,17 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.78.1 — 2026-06-11 (Patch) — Hero decluttered to Origin level (owner feedback)
+
+Owner notes on v0.78 ("less things on the first page, no arrows, light/dark missing"):
+- First screen is now ONLY: badge pill ("Free to start") → Instrument Serif headline →
+  one-line subcopy → glass email bar with a TEXT "Get started" button (no arrow) →
+  one tiny caption. Removed from the hero: the [ 2026 ] floating card, the uppercase
+  eyebrow, the "See pricing" pill, the social circles, all arrow glyphs.
+- Theme toggle RESTORED in the capsule nav (was dropped in v0.78), and the hero's
+  bottom scrim now fades into the active theme background — light mode melts into
+  cream, dark into navy (no hard seam).
+
 ## v0.78 — 2026-06-11 (Minor surface) — Liquid-glass VIDEO hero (owner's exact spec)
 
 Owner rejected the canvas-line hero; his two pasted specs define the target: cinematic
