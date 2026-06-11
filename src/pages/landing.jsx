@@ -73,7 +73,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
     try{
       if(mode==="signin"){
         const{data,error}=await supabase.auth.signInWithPassword({email:em,password:pw});
-        if(error){setErr(error.message||"Invalid credentials.");setBusy(false);return;}
+        if(error){const m=error.message||"";if(/confirm/i.test(m)){setMode("verify");setInfo("");setBusy(false);return;}setErr(m||"Invalid credentials.");setBusy(false);return;}
         if(data?.session?.user){onLogin(data.session.user);}else{setErr("No session.");setBusy(false);}
       }else if(mode==="forgot"){
         if(!em){setErr(t.emailRequired||"Email required.");setBusy(false);return;}
@@ -94,14 +94,21 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
         const redirectTo=(typeof window!=="undefined")?window.location.origin:undefined;
         const{data,error}=await supabase.auth.signUp({email:em,password:pw,options:{emailRedirectTo:redirectTo,data:{role:signupRole}}});
         if(error){setErr(error.message||"Sign-up failed.");setBusy(false);return;}
-        if(data?.session?.user){onLogin(data.session.user);}else{setInfo(lang==="es"?"¡Cuenta creada! Revisa tu correo para confirmar, luego inicia sesión.":"Account created. Check your email to confirm, then sign in.");setMode("signin");setBusy(false);}
+        if(data?.session?.user){onLogin(data.session.user);}else{setMode("verify");setInfo("");setBusy(false);}
+      }else if(mode==="verify"){
+        if(!em){setErr(t.emailRequired||"Email required.");setBusy(false);return;}
+        const redirectTo=(typeof window!=="undefined")?window.location.origin:undefined;
+        const{error}=await supabase.auth.resend({type:"signup",email:em,options:{emailRedirectTo:redirectTo}});
+        if(error){setErr(error.message||"Resend failed.");setBusy(false);return;}
+        setInfo(lang==="es"?"Correo de confirmación reenviado. Revisa tu bandeja (y spam).":"Confirmation email re-sent. Check your inbox (and spam).");
+        setBusy(false);
       }
     }catch(e){setErr(e?.message||"Operation failed.");setBusy(false);}
   };
   const INP={background:isDark?"#111827":"#F0F7FF",border:`1px solid ${isDark?"#4B5563":"#CBD5E1"}`,color:isDark?"#F1F5F9":"#0F172A",borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"};
   const switchMode=(m)=>{setMode(m);setErr("");setInfo("");setPw("");};
-  const title=mode==="forgot"?(t.resetPassword||"Reset Password"):mode==="setNew"?(t.setNewPassword||"Set New Password"):mode==="signup"?(lang==="es"?"Crear cuenta":"Create account"):(t.signIn||"Sign In");
-  const btnLabel=mode==="forgot"?(t.sendResetLink||"Send Reset Link"):mode==="setNew"?(t.updatePassword||"Update Password"):mode==="signup"?(lang==="es"?"Crear cuenta":"Create account"):(t.signIn||"Sign In");
+  const title=mode==="forgot"?(t.resetPassword||"Reset Password"):mode==="setNew"?(t.setNewPassword||"Set New Password"):mode==="signup"?(lang==="es"?"Crear cuenta":"Create account"):mode==="verify"?(lang==="es"?"Confirma tu correo":"Confirm your email"):(t.signIn||"Sign In");
+  const btnLabel=mode==="forgot"?(t.sendResetLink||"Send Reset Link"):mode==="setNew"?(t.updatePassword||"Update Password"):mode==="signup"?(lang==="es"?"Crear cuenta":"Create account"):mode==="verify"?(lang==="es"?"Reenviar correo de confirmación":"Resend confirmation email"):(t.signIn||"Sign In");
   // v0.54.0 (PR 1 from HANDOFF-v0.46) — landing page rework:
   //   - Personal credentials stripped (no MBA/FPWMP/FL0215/Mauricio name).
   //     The hero is about the product, not the advisor.
@@ -195,12 +202,13 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
               <h2 style={{fontWeight:600,fontSize:19,color:P.text,margin:0,letterSpacing:"-0.01em"}}>{title}</h2>
               {mode==="signin"&&<span style={{fontSize:8.5,color:P.dim,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>{lang==="es"?"Portal seguro":"Secure portal"}</span>}
             </div>
-            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Acceso inmediato a tu tablero, sin tarjeta.":"Start free. Instant access to your dashboard, no card required."}</p>}{mode==="signup"&&<div style={{marginBottom:16}}><label style={LBL}>{lang==="es"?"Tipo de cuenta":"Account type"}</label><div style={{display:"flex",gap:8}}>{[["client",lang==="es"?"Personal":"Personal",lang==="es"?"Mis finanzas":"My finances"],["advisor",lang==="es"?"Asesor":"Advisor",lang==="es"?"Gestiono clientes":"I manage clients"]].map(([v,tt,sub])=><button key={v} type="button" onClick={()=>setSignupRole(v)} style={{flex:1,textAlign:"left",padding:"10px 12px",borderRadius:11,cursor:"pointer",background:signupRole===v?P.gold+"1A":P.inp,border:"1px solid "+(signupRole===v?P.gold:P.border),color:P.text}}><div style={{fontSize:12.5,fontWeight:700}}>{tt}</div><div style={{fontSize:10.5,color:P.muted,marginTop:2}}>{sub}</div></button>)}</div></div>}
+            {mode==="signup"&&<p style={{fontSize:12,color:P.muted,margin:"-6px 0 18px",lineHeight:1.55}}>{lang==="es"?"Empieza gratis. Acceso inmediato a tu tablero, sin tarjeta.":"Start free. Instant access to your dashboard, no card required."}</p>}
+            {mode==="verify"&&<p style={{fontSize:12.5,color:P.muted,margin:"-6px 0 18px",lineHeight:1.6}}>{lang==="es"?<>Te enviamos un enlace de confirmación{em?<> a <b style={{color:P.text}}>{em}</b></>:null}. Ábrelo para activar tu cuenta y entrar — revisa también la carpeta de spam.</>:<>We sent a confirmation link{em?<> to <b style={{color:P.text}}>{em}</b></>:null}. Open it to activate your account and sign in — check your spam folder too.</>}</p>}{mode==="signup"&&<div style={{marginBottom:16}}><label style={LBL}>{lang==="es"?"Tipo de cuenta":"Account type"}</label><div style={{display:"flex",gap:8}}>{[["client",lang==="es"?"Personal":"Personal",lang==="es"?"Mis finanzas":"My finances"],["advisor",lang==="es"?"Asesor":"Advisor",lang==="es"?"Gestiono clientes":"I manage clients"]].map(([v,tt,sub])=><button key={v} type="button" onClick={()=>setSignupRole(v)} style={{flex:1,textAlign:"left",padding:"10px 12px",borderRadius:11,cursor:"pointer",background:signupRole===v?P.gold+"1A":P.inp,border:"1px solid "+(signupRole===v?P.gold:P.border),color:P.text}}><div style={{fontSize:12.5,fontWeight:700}}>{tt}</div><div style={{fontSize:10.5,color:P.muted,marginTop:2}}>{sub}</div></button>)}</div></div>}
             {mode!=="setNew"&&<div style={{marginBottom:14}}>
               <label style={LBL}>{t.email||"Email"}</label>
               <input type="email" inputMode="email" value={em} onChange={ev=>setEm(ev.target.value)} style={INP_L} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete="email" placeholder="you@email.com"/>
             </div>}
-            {mode!=="forgot"&&<div style={{marginBottom:(mode==="signup"||mode==="setNew")?16:18}}>
+            {mode!=="forgot"&&mode!=="verify"&&<div style={{marginBottom:(mode==="signup"||mode==="setNew")?16:18}}>
               <label style={LBL}>{mode==="setNew"?(t.newPassword||"New Password"):t.password||"Password"}</label>
               <div style={{position:"relative"}}>
                 <input type={showPw?"text":"password"} value={pw} onChange={ev=>setPw(ev.target.value)} style={{...INP_L,paddingRight:62}} onKeyDown={ev=>ev.key==="Enter"&&!busy&&go()} autoComplete={(mode==="setNew"||mode==="signup")?"new-password":"current-password"} placeholder="••••••••"/>
@@ -217,7 +225,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing}){
             {mode==="forgot"&&<div style={{textAlign:"center",marginTop:15}}>
               <button onClick={()=>switchMode("signin")} style={{background:"transparent",border:"none",color:P.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"8px 12px",minHeight:40}}>← {t.backToSignIn||"Back to Sign In"}</button>
             </div>}
-            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{mode==="signup"?<>{lang==="es"?"¿Ya tienes cuenta? ":"Already have an account? "}<a onClick={()=>switchMode("signin")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Iniciar sesión":"Sign in"}</a></>:mode==="signin"?<>{lang==="es"?"¿Sin cuenta? ":"No account yet? "}<a onClick={()=>switchMode("signup")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Crear cuenta":"Create account"}</a></>:null}</div>
+            <div style={{marginTop:18,paddingTop:15,borderTop:`1px solid ${P.border}`,fontSize:11,color:P.dim,textAlign:"center"}}>{mode==="signup"?<>{lang==="es"?"¿Ya tienes cuenta? ":"Already have an account? "}<a onClick={()=>switchMode("signin")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Iniciar sesión":"Sign in"}</a></>:mode==="signin"?<>{lang==="es"?"¿Sin cuenta? ":"No account yet? "}<a onClick={()=>switchMode("signup")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Crear cuenta":"Create account"}</a></>:mode==="verify"?<>{lang==="es"?"¿Ya confirmaste? ":"Already confirmed? "}<a onClick={()=>switchMode("signin")} style={{color:P.accent,fontWeight:600,textDecoration:"none",cursor:"pointer"}}>{lang==="es"?"Iniciar sesión":"Sign in"}</a></>:null}</div>
           </div>
         </div>
       </section>

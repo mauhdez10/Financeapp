@@ -75,26 +75,27 @@ function SignaturePad({value,onChange,t,theme,label,defaultName,typedOnly=false}
 /* ── ToSModal — mandatory acceptance gate on first login ── */
 function ToSModal({onAccept,onCancel,t,theme}){
   const[checked,setChecked]=useState(false);
-  return <div style={{position:"fixed",inset:0,background:"#000a",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:14}}>
-    <div style={{background:theme.card,border:`2px solid ${theme.accent}`,borderRadius:16,padding:24,maxWidth:520,width:"100%",boxShadow:"0 32px 80px #0009",maxHeight:"90vh",overflowY:"auto"}}>
-      <div style={{fontSize:22,fontWeight:800,color:theme.text,marginBottom:14}}>⚓ {t.tosTitle||"Terms of Service & Privacy"}</div>
-      <div style={{fontSize:12,color:theme.muted,lineHeight:1.7,marginBottom:16,padding:"12px",background:theme.bg,borderRadius:8,maxHeight:220,overflowY:"auto"}}>
-        <p style={{margin:"0 0 8px"}}><b>Golden Anchor Financial Advisory</b></p>
+  const MONO="'JetBrains Mono',monospace";
+  return <div style={{position:"fixed",inset:0,background:theme.bg,display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:14,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+    <div style={{background:theme.card,border:`1px solid ${theme.cardBorder}`,borderRadius:18,padding:"26px 26px 22px",maxWidth:520,width:"100%",boxShadow:"0 24px 70px rgba(0,0,0,0.35)",maxHeight:"90vh",overflowY:"auto"}}>
+      <div style={{fontSize:9.5,color:theme.accent,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em",marginBottom:12}}>Golden Anchor</div>
+      <div style={{fontSize:21,fontWeight:600,color:theme.text,letterSpacing:"-0.02em",marginBottom:14,lineHeight:1.25}}>{t.tosTitle||"Terms of Service & Privacy"}</div>
+      <div style={{fontSize:12.5,color:theme.muted,lineHeight:1.7,marginBottom:16,padding:"14px 15px",background:theme.inp,border:`1px solid ${theme.cardBorder}`,borderRadius:12,maxHeight:220,overflowY:"auto"}}>
         <p style={{margin:"0 0 8px"}}>{t.tosBody1||"Welcome. By using this application, you agree to our Terms of Service and Privacy Policy. Golden Anchor provides financial education and coaching. Mauricio Hernandez (FL License FL0215) does not provide investment advisory services, manage securities, or act as a fiduciary unless separately agreed in writing."}</p>
-        <p style={{margin:"0 0 4px",fontWeight:600}}>{t.tosKeyTerms||"Key terms:"}</p>
+        <p style={{margin:"0 0 4px",fontWeight:600,color:theme.text}}>{t.tosKeyTerms||"Key terms:"}</p>
         <ul style={{margin:"4px 0 0 18px",padding:0}}>
           <li>{t.tosBullet1||"Education and coaching — not investment advice"}</li>
           <li>{t.tosBullet2||"Your data is encrypted and confidential"}</li>
           <li>{t.tosBullet3||"Consult professionals for tax, legal, or investment decisions"}</li>
         </ul>
       </div>
-      <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:18,padding:"10px 12px",background:theme.bg,borderRadius:8,cursor:"pointer"}}>
-        <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:18,height:18,cursor:"pointer",marginTop:2,flexShrink:0}}/>
-        <span style={{fontSize:12,color:theme.text,lineHeight:1.5}}>{t.tosAcceptMsg||"I have read and accept the Terms of Service and Privacy Policy"}</span>
+      <label style={{display:"flex",alignItems:"flex-start",gap:11,marginBottom:18,padding:"12px 14px",background:checked?theme.accent+"14":theme.inp,border:`1px solid ${checked?theme.accent:theme.cardBorder}`,borderRadius:12,cursor:"pointer",transition:"border-color .15s,background .15s"}}>
+        <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:18,height:18,cursor:"pointer",marginTop:1,flexShrink:0,accentColor:GOLD}}/>
+        <span style={{fontSize:12.5,color:theme.text,lineHeight:1.5}}>{t.tosAcceptMsg||"I have read and accept the Terms of Service and Privacy Policy"}</span>
       </label>
-      <div style={{display:"flex",gap:8}}>
-        <button type="button" onClick={onCancel} style={{flex:1,padding:"14px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",background:"transparent",color:theme.muted,border:`1px solid ${theme.cardBorder}`,minHeight:48}}>{t.tosRejectBtn||"Cancel"}</button>
-        <button type="button" onClick={()=>{ if(checked) onAccept(); }} style={{flex:1,padding:"14px 16px",borderRadius:10,fontWeight:800,fontSize:14,cursor:checked?"pointer":"not-allowed",background:checked?GOLD:theme.cardBorder,color:checked?"#0D1B2A":"#fff",border:"none",opacity:checked?1:0.55,minHeight:48,touchAction:"manipulation"}}>{t.tosAcceptBtn||"Accept & Continue"}</button>
+      <div style={{display:"flex",gap:9}}>
+        <button type="button" onClick={onCancel} style={{flex:1,padding:"13px 16px",borderRadius:10,fontWeight:600,fontSize:12.5,cursor:"pointer",background:"transparent",color:theme.muted,border:`1px solid ${theme.cardBorder}`,minHeight:48,fontFamily:"inherit"}}>{t.tosRejectBtn||"Cancel"}</button>
+        <button type="button" className="ga-press" onClick={()=>{ if(checked) onAccept(); }} style={{flex:1.4,padding:"13px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:checked?"pointer":"not-allowed",background:checked?"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)":theme.cardBorder,color:checked?"#1A1405":theme.dim,border:"none",opacity:checked?1:0.55,minHeight:48,touchAction:"manipulation",fontFamily:"inherit",boxShadow:checked?"inset 0 1px 0 rgba(255,255,255,0.32)":"none"}}>{t.tosAcceptBtn||"Accept & Continue"}</button>
       </div>
     </div>
   </div>;

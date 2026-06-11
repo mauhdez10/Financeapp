@@ -2,6 +2,25 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.73 — 2026-06-11 (Minor) — Email verification + client onboarding wizard (MD-D)
+
+- **Email verification is ON** (Supabase `mailer_autoconfirm:false`; site_url fixed from
+  localhost:3000 → production; redirect allow-list set). New signups must confirm email.
+  ⚠️ Built-in Supabase sender for now (rate-limited ~2/hr) — paste RESEND_API_KEY to
+  upgrade to custom SMTP (REVIEW_QUEUE).
+- **Verify-email screen** in the login card: shows the address, resend button (60s
+  server cooldown), "already confirmed → sign in"; unconfirmed sign-ins bounce here.
+- **Client onboarding wizard** (new `src/pages/onboarding.jsx`, once per account after
+  ToS): name → goal chips + free text (lands in notes.goals) → owner-specified
+  checkboxes for FREE health-insurance consultation + car insurance (checked boxes
+  email a lead to finance@goldenanchor.life via send-support-email) → done. Skippable;
+  sets `onboardedAt`.
+- **ToS gate restyled** to the modern token language (was the old heavy gold-border look).
+- v0.72.4 (same day): client-checkup retired, D-13 re-locked at catalog prices,
+  returning-client code note on the Checkup card; master directive logged
+  (docs/MASTER-DIRECTIVE.md); research docs added (USEFUL-LINKS-DIRECTORY 147 links/16
+  categories, DIFFERENTIATION-IDEAS, CALCULATOR-ROADMAP).
+
 ## v0.72.3 — 2026-06-11 (Patch) — Pricing audit, client Upgrade buttons, InterestCalc frequency, touch pass
 
 - **Pricing audit** (`docs/PRICING-AUDIT.md`): 3-way comparison of locked D-13 prices vs the

@@ -4,6 +4,34 @@
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
 > confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
 
+## Master-directive batch 1 — 2026-06-11 (v0.72.4 → v0.73)
+
+### MD-D: Signup is now real (verification + onboarding)
+- [ ] **Sign up with a fresh email** (any address you own): you now land on a
+      "Confirm your email" screen with a resend button; the account can't sign in
+      until you click the link in the email. (Before: instant unverified account.)
+- [ ] **Log in as clientdemo** (clientdemo@goldenanchor.life / `Miami2026!demo` —
+      password you asked for): the new 4-step onboarding wizard appears (I reset the
+      flag so YOU get to see it): name → goals → the **health-consult + car-insurance
+      checkboxes you asked for** → done. Checking either box emails a lead to
+      finance@goldenanchor.life. Also: the first-login Terms gate got the modern look.
+- [ ] ⚠️ **One paste from you**: verification emails currently use Supabase's built-in
+      sender (rate-limited ~2/hour, plain look). Paste the **RESEND_API_KEY** (Vercel →
+      Financeapp → Settings → Environment Variables) in chat and I wire custom SMTP so
+      they come from noreply@finance.goldenanchor.life, unlimited. (The Resend MCP key
+      expired, so I can't mint one myself.)
+
+### MD research docs ready for your read (no decisions blocking)
+- [ ] `docs/USEFUL-LINKS-DIRECTORY.md` — 147 vetted links, 16 life situations (incl.
+      the critic-added immigration/ITIN, disability, seniors+scams, life events,
+      Florida disasters). This becomes the Premium in-app page (MD-K).
+- [ ] `docs/DIFFERENTIATION-IDEAS.md` — 16 growth ideas, top-5 sequenced (WhatsApp
+      coaching channel, benefits-screener SEO play, "Modo Sencillo" senior mode,
+      referral network v2, Advisor-in-a-Box SaaS).
+- [ ] `docs/CALCULATOR-ROADMAP.md` — P1: credit-card payoff (avalanche/snowball),
+      life-insurance needs (feeds your insurance funnel), 50/30/20 budget, emergency
+      fund, inflation. Plus the blank-space layout fix pick.
+
 ## Finish-everything batch 2026-06-11 (v0.72.3)
 
 ### A. Pricing audit — ✅ DECIDED (F1 yes / F2 catalog / F5 flat) & EXECUTED app-side
