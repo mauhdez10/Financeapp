@@ -2,6 +2,18 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.74.2 — 2026-06-11 (Patch) — MD-F named design fixes (About + public pricing)
+
+- Public pricing background: cursor line-field canvas → the landing's quiet radial glow
+  (consistent pre-login family).
+- About: "Coaching, not management" pill removed (said elsewhere); "What we do" header
+  block removed (cards stand alone); spinning dashed orbit hero visual → calm static
+  hairline rings; badge-style social dots → clean hairline contact ROWS (icon · label ·
+  value, gold accent).
+- Contact links: Website now editable in Settings → Advisor information
+  (`settings.websiteUrl`); About reads it (with the IG/email/phone that were already
+  editable).
+
 ## v0.74.1 — 2026-06-11 (Minor surface) — Marketing landing page at / (MD-E part 2)
 
 New `LandingPage` (src/pages/landing.jsx): advertising-voice front door — hero with the

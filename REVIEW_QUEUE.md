@@ -21,6 +21,13 @@
       they come from noreply@finance.goldenanchor.life, unlimited. (The Resend MCP key
       expired, so I can't mint one myself.)
 
+### MD-F (named fixes): About + public pricing (v0.74.2)
+- [ ] About Us: "not management" pill gone, "What we do" header gone, the spinning
+      orbit on the right is now calm static rings, and Contact is clean rows showing
+      the actual values. Your **Website link is now editable**: Settings → Advisor
+      information → Website.
+- [ ] Logged-out /pricing: background is the quiet glow now (no more cursor lines).
+
 ### MD-E: The marketing landing page is live at / (v0.74.1)
 - [ ] Open https://finance.goldenanchor.life **logged out**: real landing page now —
       hero with live charts (not screenshots), how-it-works, features, the

@@ -403,7 +403,8 @@ function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest,is
   if(variant!=="public")return inner;
   const pill={fontSize:12,fontWeight:600,padding:"8px 13px",borderRadius:99,border:"1px solid "+th.cardBorder,background:"transparent",color:th.muted,cursor:"pointer",fontFamily:"inherit"};
   return <div style={{minHeight:"100vh",position:"relative",overflow:"hidden",background:th.bg,color:th.text}}>
-    <LineField color={isDark?"226,195,117":"184,144,30"} dark={!!isDark}/>
+    {/* MD-F (v0.74.2): quiet radial glow — matches the landing page; the cursor line-field read as noise here */}
+    <div aria-hidden style={{position:"fixed",top:-200,right:60,width:620,height:620,borderRadius:"50%",background:`radial-gradient(circle,${isDark?"rgba(203,168,90,0.12)":"rgba(184,144,30,0.08)"},transparent 70%)`,filter:"blur(50px)",pointerEvents:"none",zIndex:0}}/>
     <div style={{position:"relative",zIndex:1}}>
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 26px",maxWidth:1240,margin:"0 auto"}}>
         <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:11,background:"transparent",border:"none",cursor:"pointer",padding:0}}><div style={{width:36,height:36,borderRadius:10,background:th.glassBg,border:"1px solid "+th.cardBorder,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={th.navAcc||GOLD} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M5 13H3M19 13h2"/></svg></div><div style={{textAlign:"left"}}><div style={{fontSize:14.5,fontWeight:700,color:th.text,letterSpacing:"-0.01em",lineHeight:1.1}}>Golden Anchor</div><div style={{fontSize:8.5,letterSpacing:"0.16em",color:th.dim,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",marginTop:3}}>{L==="es"?"Asesoría Financiera":"Financial Advisory"}</div></div></button>
@@ -432,8 +433,10 @@ function AboutPage({t,settings,lang,isDark}){
     {Icon:ShieldCheck,ti:t.featInsuranceT||"Insurance advisory",de:t.featInsuranceD||"Life and health coverage matched to your stage.",span:1},
     {Icon:CalendarCheck,ti:t.featCheckinT||"Monthly check-ins",de:t.featCheckinD||"We track progress together, every single month.",span:3},
   ];
+  const _site=((settings&&settings.websiteUrl)||"https://goldenanchor.life").trim();
+  const _siteHref=_site.startsWith("http")?_site:"https://"+_site;
   const socials=[
-    {Icon:Globe,label:t.website||"Website",val:"goldenanchor.life",href:"https://goldenanchor.life"},
+    {Icon:Globe,label:t.website||"Website",val:_site.replace(/^https?:\/\//,""),href:_siteHref},
     {Icon:AtSign,label:"Instagram",val:"@"+ig,href:"https://instagram.com/"+ig},
     {Icon:Mail,label:t.lblEmail||"Email",val:email,href:"mailto:"+email},
   ];
@@ -447,23 +450,22 @@ function AboutPage({t,settings,lang,isDark}){
         <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.2em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:18}}>{t.aboutEyebrow||"EDUCATIONAL FINANCIAL COACHING"}</div>
         <h1 style={{margin:0,fontFamily:"'Newsreader',Georgia,serif",fontWeight:500,fontSize:"clamp(30px,4.4vw,48px)",lineHeight:1.1,letterSpacing:"-0.01em",color:th.text}}><span style={{fontStyle:"italic",...clip}}>{t.aboutHeroTitle||"Anchored in your financial future."}</span></h1>
         <p style={{fontSize:14,color:th.muted,lineHeight:1.8,maxWidth:540,margin:"20px 0 0"}}>{t.aboutDesc}</p>
-        <div style={{display:"flex",gap:9,marginTop:24,flexWrap:"wrap"}}>{[(t.aboutChipCoaching||"Coaching, not management"),"EN · ES","Miami, FL"].map((c,i)=><span key={i} style={{fontSize:11,fontWeight:600,color:th.muted,padding:"6px 13px",borderRadius:99,background:th.card,border:"1px solid "+th.cardBorder,letterSpacing:"0.02em"}}>{c}</span>)}</div>
+        <div style={{display:"flex",gap:9,marginTop:24,flexWrap:"wrap"}}>{["EN · ES","Miami, FL"].map((c,i)=><span key={i} style={{fontSize:11,fontWeight:600,color:th.muted,padding:"6px 13px",borderRadius:99,background:th.card,border:"1px solid "+th.cardBorder,letterSpacing:"0.02em"}}>{c}</span>)}</div>
       </div>
+      {/* MD-F (v0.74.2): spinning dashed orbits read as clip-art — replaced with calm
+          static hairline rings + soft glow. Quieter, more Linear/Mercury. */}
       <div style={{position:"relative",width:"100%",maxWidth:330,aspectRatio:"1",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{position:"absolute",inset:"10%",borderRadius:"50%",background:"radial-gradient(circle at 50% 45%, "+GOLD+"2E, transparent 66%)"}}/>
-        <svg viewBox="0 0 200 200" style={{position:"absolute",inset:0,width:"100%",height:"100%",overflow:"visible"}}>
-          <circle className="ga-orbit" cx="100" cy="100" r="88" fill="none" stroke={GOLD} strokeWidth="0.6" strokeDasharray="1.5 7" opacity="0.55"/>
-          <circle className="ga-orbit-rev" cx="100" cy="100" r="66" fill="none" stroke={th.muted} strokeWidth="0.5" strokeDasharray="1 7" opacity="0.45"/>
+        <div style={{position:"absolute",inset:"12%",borderRadius:"50%",background:"radial-gradient(circle at 50% 45%, "+GOLD+"26, transparent 64%)"}}/>
+        <svg viewBox="0 0 200 200" style={{position:"absolute",inset:0,width:"100%",height:"100%"}} aria-hidden="true">
+          <circle cx="100" cy="100" r="88" fill="none" stroke={GOLD} strokeWidth="0.5" opacity="0.30"/>
+          <circle cx="100" cy="100" r="68" fill="none" stroke={th.muted} strokeWidth="0.4" opacity="0.18"/>
+          <circle cx="100" cy="12" r="2.2" fill={GOLD} opacity="0.8"/>
         </svg>
         <div style={{position:"relative",width:"44%",height:"44%",borderRadius:26,background:th.card,border:"1px solid "+th.cardBorder,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 22px 60px "+GOLD+"22"}}><img src="/anchor-monogram.svg" style={{width:"60%",height:"60%"}} alt="Golden Anchor"/></div>
       </div>
     </div>
 
-    {/* WHAT WE DO */}
-    <div style={{marginBottom:16}}>
-      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.16em",color:th.dim,fontFamily:"'JetBrains Mono',ui-monospace,monospace",marginBottom:7,textTransform:"uppercase"}}>{t.aboutWhatWeDo||"What we do"}</div>
-      <div style={{fontSize:14,color:th.muted,lineHeight:1.6,maxWidth:580}}>{t.aboutWhatWeDoSub||"Coaching and advisory built around your life, not a product to sell."}</div>
-    </div>
+    {/* feature bento — "What we do" header removed (MD-F, owner: it's said elsewhere) */}
     <div data-ga-grid="bento" style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:14,marginBottom:34}}>
       {feats.map((f,i)=><div key={i} className="ga-lift ga-spot" style={{...mCARD(th),gridColumn:"span "+f.span,padding:22,display:"flex",flexDirection:"column",gap:13,minHeight:140}}>
         <div style={{width:42,height:42,borderRadius:12,background:GOLD+"1A",border:"1px solid "+GOLD+"3A",display:"flex",alignItems:"center",justifyContent:"center",color:GOLD,flexShrink:0}}><f.Icon size={20} strokeWidth={1.6}/></div>
@@ -484,7 +486,13 @@ function AboutPage({t,settings,lang,isDark}){
         <div className="ga-lift" style={{...mCARD(th),padding:24}}>
           <div style={{fontSize:14,fontWeight:700,color:th.text,marginBottom:4}}>{t.aboutConnectHdr||"Connect with us"}</div>
           <div style={{fontSize:12,color:th.muted,lineHeight:1.6,marginBottom:18}}>{t.aboutConnectSub||"Questions, or ready to start? Reach out."}</div>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>{socials.map((so,i)=><a key={i} href={so.href} target={so.href.startsWith("http")?"_blank":"_self"} rel="noreferrer" title={so.label+": "+so.val} className="ga-social-dot" style={{display:"flex",flexDirection:"column",alignItems:"center",gap:7,textDecoration:"none",width:64}}><span className="ga-social-ring" style={{width:52,height:52,borderRadius:16,background:th.card,border:"1px solid "+GOLD+"55",display:"flex",alignItems:"center",justifyContent:"center",color:GOLD,transition:"box-shadow .25s ease,border-color .25s ease"}}><so.Icon size={21} strokeWidth={1.6}/></span><span style={{fontSize:10,color:th.muted,fontWeight:600,textAlign:"center",whiteSpace:"nowrap"}}>{so.label}</span></a>)}</div>
+          {/* MD-F (v0.74.2): badge-style social dots → clean hairline rows (icon · label · value).
+              Values are editable in Settings → Advisor information. */}
+          <div style={{display:"flex",flexDirection:"column"}}>{socials.map((so,i)=><a key={i} href={so.href} target={so.href.startsWith("http")?"_blank":"_self"} rel="noreferrer" className="ga-press" style={{display:"flex",alignItems:"center",gap:12,padding:"11px 2px",textDecoration:"none",borderBottom:i<socials.length-1?("1px solid "+(th.glassBorder||th.cardBorder)):"none"}}>
+            <span style={{width:30,height:30,borderRadius:9,background:th.accent+"12",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><so.Icon size={14} strokeWidth={1.7} color={th.accent}/></span>
+            <span style={{fontSize:10,color:th.dim,fontWeight:500,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:"0.1em",width:74,flexShrink:0}}>{so.label}</span>
+            <span style={{fontSize:12.5,color:th.text,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{so.val}</span>
+          </a>)}</div>
         </div>
         <div className="ga-lift" style={{...mCARD(th),padding:24,background:"linear-gradient(135deg,"+GOLD+"1F,"+GOLD+"08)",border:"1px solid "+GOLD+"55"}}>
           <div style={{fontSize:10.5,fontWeight:700,color:GOLD,marginBottom:10,letterSpacing:"0.14em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}><Tag size={14} strokeWidth={1.8}/>{t.referralCode||"Referral code"}</div>
