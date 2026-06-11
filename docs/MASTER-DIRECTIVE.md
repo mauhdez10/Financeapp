@@ -166,15 +166,28 @@ codebase, design token system. What's missing vs the vision: the self-serve ladd
 onboarding/verification (D), real landing+routes (E), premium gating, Stripe sync (H),
 linking (C), the differentiator content (K), and the final design polish (F/G).
 
-Sequence (dependencies first, quick wins early):
-1. **B** pricing alignment (decided, small) ✅ → ships immediately
-2. **D** signup verification + onboarding wizard + insurance checkboxes (trust + legal)
-3. **E** landing page + routing (the public face; feeds A's funnel)
-4. **A** plan ladder + premium gating (needs D for clean signup; Stripe products ❓)
-5. **C** linking Link-R → Link-W (spec ready)
-6. **F+G** design excellence + calculators pass (continuous, design pipeline)
-7. **H** Stripe sync (after A's products exist)
-8. **I** What's New split (small)
-9. **J** reports + questionnaire + SOP (advisor side)
-10. **K** research-heavy content (parallel agents/workflows anytime)
-11. **L** GTM docs (last)
+Status at end of the 2026-06-11 finish-the-project run (v0.72.4 → v0.76.1, all live):
+1. **B** pricing alignment ✅ (v0.72.4 + Stripe realigned via API v0.73.2 — GACLIENT50
+   live, real Lite+, Premium product, dead links replaced)
+2. **D** signup verification + onboarding wizard ✅ (v0.73; SMTP via Resend; profile
+   email bug + one-account-per-email notes v0.75)
+3. **E** routing + landing + public About/Contact/FAQ ✅ (v0.73.1/v0.74.1/v0.75.1);
+   landing MOTION iteration from the owner's refero/mux refs = next design pass
+4. **A** plan ladder + Premium gating ✅ (v0.74) + TRUE choose-your-price ✅ (v0.75)
+5. **C** linking Link-R ✅ (v0.76 — invites, accept, sanitized mirror, auto-revoke);
+   Link-W (contact + goals edits) = future
+6. **F** named fixes ✅ (v0.74.2) + title de-redundancy ✅ (v0.74.3); holistic
+   "master designers" + landing-motion pass = the one open design workstream
+7. **G** calculators ✅ (v0.75.2 — DIME + Inflation, 4/4/3 layout; owner's
+   no-duplicates rule honored)
+8. **H** Stripe sync ✅ (webhook + any-amount checkout + promos auto-sync + collapsible
+   links; ⚠️ activates fully when the 2 Vercel env vars are pasted)
+9. **I** What's New per role ✅ (v0.75.2)
+10. **J** AI export ✅ + MASTER-QUESTIONNAIRE + ADVISOR-SOP ✅ (v0.75.2)
+11. **K** Useful-Links directory page ✅ + referral network ✅ (v0.76); own how-to
+    docs in Resources = nice-to-have backlog
+12. **L** GTM docs ✅ (v0.75.2 — [OWNER: fill] spots remain)
+
+Open after this run: landing motion/design iteration (F), Link-W, Phase 2c extraction,
+full PWA, Resources how-to docs, owner items in REVIEW_QUEUE (2 Vercel env vars,
+key rotation, GTM fills).

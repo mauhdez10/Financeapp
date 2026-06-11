@@ -15,7 +15,7 @@ function PromotionsPage({settings,onSettingsChange,t}){
   /* MD-H (v0.76.1) — live Stripe promotion codes, auto-synced (owner ask). Renders
      only when the server endpoint has data; silently absent on dev / before env. */
   const[livePromos,setLivePromos]=useState(null);
-  useEffect(()=>{let dead=false;fetch("/api/stripe-promos").then(r=>r.json()).then(j=>{if(!dead&&j&&j.ok&&j.configured&&(j.promos||[]).length)setLivePromos(j.promos);}).catch(()=>{});return()=>{dead=true;};},[]);
+  useEffect(()=>{let dead=false;fetch("/api/billing").then(r=>r.json()).then(j=>{if(!dead&&j&&j.ok&&j.configured&&(j.promos||[]).length)setLivePromos(j.promos);}).catch(()=>{});return()=>{dead=true;};},[]);
   const promos=Array.isArray(settings.promotions)?settings.promotions:[];
   const services=Array.isArray(settings.services)&&settings.services.length?settings.services:["initial","quarterly","monthly","all"];
   const[editing,setEditing]=useState(null);

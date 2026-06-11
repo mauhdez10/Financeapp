@@ -4,6 +4,44 @@
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
 > confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
 
+## Finish-the-project run — 2026-06-11 (v0.75.2 → v0.76.1)
+
+### The big one: clients can now LINK to your records (Link-R)
+- [ ] Open any client → ☰ kebab → **"Link client account"** → their email → Send
+      invite. They get a branded email; they sign in (or create a free account) with
+      THAT email and accept. Their Overview becomes a **read-only mirror of YOUR
+      record** — sensitive fields stripped server-side (same boundary as the portal),
+      with a "managed by your advisor" banner, your contact button, and your trusted
+      contacts. Revoke (same modal) → they fall back to their own self-entered data
+      (the frozen copy you chose). Portal share-links auto-revoke when they accept.
+      Their self-entered data is snapshotted on the link for your review.
+- [ ] Advisor record stays the source of truth; client edits come in Link-W (later).
+
+### Useful Links — the differentiator directory is IN the app
+- [ ] New sidebar item **"Useful Links"** (clients: Premium-gated; you: always):
+      147 vetted resources in 16 life situations — benefits/food stamps, fair credit,
+      housing programs, immigration/ITIN, disability, seniors + scam protection,
+      Florida disasters, travel (with the slot for YOUR travel app) — fully bilingual,
+      searchable, with "good to know" tips per category.
+- [ ] **Referral network**: Billing page → "Referral network" (+/−) — add your car-
+      insurance/realtor/lender contacts; they show on About (and to linked clients)
+      with the compensation disclosure.
+
+### Advisor power tools
+- [ ] Any client → kebab → **"Copy AI summary"**: the ENTIRE profile as clean
+      markdown + an analysis prompt — paste into any AI to speed your advisement.
+- [ ] Calculators: **Life-Insurance Needs (DIME)** (ends in your free-consult CTA) and
+      **Inflation Impact** added; categories rebalanced so the blank space is gone.
+      Per your pushback: NO duplicate emergency-fund/budget calculators.
+- [ ] **What's New** now shows clients their updates and you yours.
+- [ ] **Billing/services**: collapsible twice (sections + per-service, +/−) as you specced.
+- [ ] **Promotions**: once STRIPE_SECRET_KEY is in Vercel, a "Live in Stripe right now"
+      strip auto-shows your active discount codes (GACLIENT50 etc.).
+- [ ] Docs for you: `docs/MASTER-QUESTIONNAIRE.md` (every question EN/ES, mapped to
+      app fields, 15-min quick version), `docs/ADVISOR-SOP.md` (your full operating
+      procedure), and the three GTM docs (client pitch / agent recruit / investor
+      brief — fill the [OWNER: fill] spots).
+
 ## Feedback batch — 2026-06-11 afternoon (v0.75)
 
 ### ⚠️ ONE 2-MINUTE STEP: two Vercel env vars (unlocks 3 features at once)

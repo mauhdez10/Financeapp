@@ -56,6 +56,28 @@ description: The canonical domain logic of Golden Anchor Finance — role/permis
   security boundary** — the advisor picks which sections render; unchecked ≠ secret.
 - Emailing the link (`api/send-portal-link.js`) requires the advisor's JWT AND verifies the
   token belongs to that advisor and is active — the endpoint cannot relay arbitrary links.
+- **v0.76:** the allow-list moved to `api/_sanitize.js` — ONE shared boundary for the
+  token portal AND account-link reads. Edit it there only.
+
+## 2b. Account linking (Link-R, v0.76 — owner answers 2026-06-11)
+
+- `client_links` row: advisor_uid, client_local_id, invited_email, token, status
+  (pending/accepted/revoked/expired), island_snapshot, expires_at (+14 days). RLS:
+  advisor manages own; accepted client may SELECT their own row; **acceptance is
+  service-role-only** (`api/accept-link.js`).
+- **Accept rules:** caller must be a client-role JWT whose auth email EQUALS
+  invited_email (hard reject), token pending + unexpired. On accept: the client's
+  island self-profile is snapshotted to `island_snapshot` (advisor review), the
+  advisor's portal tokens for that record are auto-revoked, 1:1 enforced by partial
+  unique indexes (one accepted link per account AND per record).
+- **Linked reads:** ONLY via `api/linked-overview.js` → `sanitizeClient` (same
+  allow-list as the portal). Never a direct RLS SELECT on the advisor's blob.
+- **Advisor record = source of truth.** The linked client's Overview is the read-only
+  mirror (`LinkedOverview`, src/pages/portal.jsx). On revoke the client falls back to
+  their own untouched island row (the "frozen copy"). Client edits = Link-W (future):
+  contact group + goals notes only, server-side key-scoped patch.
+- **Plan gating still keys off the client's OWN row** (`accountPlan`) — linking does
+  not change Premium status.
 
 ## 3. Derived metrics — exact formulas (implementation: `src/utils/finance.js`)
 

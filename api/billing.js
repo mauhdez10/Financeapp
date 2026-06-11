@@ -1,20 +1,7 @@
-// api/create-premium-checkout.js — MD-A/B (v0.75)
-// ============================================================================
-// TRUE choose-your-price Premium (owner: "I want them to choose whatever they
-// want starting from 3 bucks"). Stripe payment links can't do customer-chosen
-// amounts on subscriptions, so: the app collects any whole-dollar amount >= $3,
-// we find-or-create a monthly recurring price for that amount on the Premium
-// product (lookup_key premium-m-<amount>, so prices are reused), and open a
-// Checkout Session carrying client_reference_id = the account uid (the webhook
-// auto-activates Premium on completion).
-//
-// Auth: client JWT in Authorization header — verified server-side.
-// Env vars required:
-//   STRIPE_SECRET_KEY         — sk_live_…
-//   SUPABASE_URL              — same as VITE_SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY — service_role secret
-// ============================================================================
-
+// api/billing.js — Stripe app endpoints consolidated (v0.76.2; Vercel 12-function
+// limit, pitfall #20). GET → live promotion codes (public, cached). POST {action:
+// "checkout", amount} → choose-your-price Premium Checkout Session (client JWT).
+// Logic unchanged from stripe-promos.js / create-premium-checkout.js (git history).
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -23,7 +10,7 @@ const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 const PREMIUM_PRODUCT = "prod_UgX7bm2AANaxez";
 const SITE = "https://finance.goldenanchor.life";
 
-async function stripe(path, params) {
+async function stripePost(path, params) {
   const r = await fetch("https://api.stripe.com/v1/" + path, {
     method: "POST",
     headers: { Authorization: "Bearer " + STRIPE_KEY, "Content-Type": "application/x-www-form-urlencoded" },
@@ -41,11 +28,33 @@ async function stripeGet(path) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "POST only" });
+  /* ── GET: public live promo codes (cached) ─────────────────────────────── */
+  if (req.method === "GET") {
+    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
+    if (!STRIPE_KEY) return res.status(200).json({ ok: true, configured: false, promos: [] });
+    try {
+      const j = await stripeGet("promotion_codes?active=true&limit=20");
+      const promos = (j.data || []).map(p => {
+        const coupon = p.coupon || (p.promotion && p.promotion.coupon) || {};
+        return {
+          code: p.code,
+          percentOff: coupon.percent_off || null,
+          amountOff: coupon.amount_off != null ? coupon.amount_off / 100 : null,
+          name: coupon.name || null,
+          expiresAt: p.expires_at ? new Date(p.expires_at * 1000).toISOString().slice(0, 10) : null,
+        };
+      });
+      return res.status(200).json({ ok: true, configured: true, promos });
+    } catch (e) {
+      return res.status(200).json({ ok: true, configured: false, promos: [], note: String(e?.message || e) });
+    }
+  }
+
+  /* ── POST {action:"checkout", amount}: any-amount Premium subscription ──── */
+  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "GET or POST" });
   if (!STRIPE_KEY) return res.status(503).json({ ok: false, code: "no-stripe-key", error: "Stripe key not configured — using fallback links." });
   if (!SUPABASE_URL || !SERVICE_ROLE) return res.status(500).json({ ok: false, error: "supabase env missing" });
 
-  // verify the caller
   const jwt = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!jwt) return res.status(401).json({ ok: false, error: "auth required" });
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
@@ -55,6 +64,7 @@ export default async function handler(req, res) {
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
+  if (body?.action && body.action !== "checkout") return res.status(400).json({ ok: false, error: "unknown action" });
   const amount = Math.round(Number(body?.amount));
   if (!Number.isFinite(amount) || amount < 3 || amount > 500) {
     return res.status(400).json({ ok: false, error: "amount must be a whole number of dollars between 3 and 500" });
@@ -62,22 +72,18 @@ export default async function handler(req, res) {
 
   try {
     const lookup = "premium-m-" + amount;
-    // reuse an existing price for this amount, else create one
     let priceId = null;
     const existing = await stripeGet("prices?lookup_keys[]=" + encodeURIComponent(lookup) + "&active=true&limit=1");
     if (existing.data && existing.data.length) priceId = existing.data[0].id;
     if (!priceId) {
-      const p = await stripe("prices", {
-        product: PREMIUM_PRODUCT,
-        unit_amount: String(amount * 100),
-        currency: "usd",
-        "recurring[interval]": "month",
-        lookup_key: lookup,
+      const p = await stripePost("prices", {
+        product: PREMIUM_PRODUCT, unit_amount: String(amount * 100), currency: "usd",
+        "recurring[interval]": "month", lookup_key: lookup,
         nickname: "Premium choose-your-price $" + amount + "/mo",
       });
       priceId = p.id;
     }
-    const session = await stripe("checkout/sessions", {
+    const session = await stripePost("checkout/sessions", {
       mode: "subscription",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
@@ -89,7 +95,7 @@ export default async function handler(req, res) {
     });
     return res.status(200).json({ ok: true, url: session.url });
   } catch (e) {
-    console.error("[GA premium-checkout] error", e);
+    console.error("[GA billing checkout] error", e);
     return res.status(502).json({ ok: false, error: String(e?.message || e) });
   }
 }
