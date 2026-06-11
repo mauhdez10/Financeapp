@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.79.1 — 2026-06-11 (Patch) — `?hero=` live comparison switch
+
+Owner asked to see the earlier heroes again. URL param on the landing page:
+`?hero=tides` → v0.77 golden canvas waves · `?hero=video` → v0.78 golden-particles
+video (falls back to tides on error) · default (no param) → the v0.79 cube.
+Backgrounds render under the same gradient overlays + minimal stack.
+
 ## v0.79 — 2026-06-11 (Minor surface) — Gold CUBE hero (Resend × Letter.co direction)
 
 Owner direction: Resend's rotating Rubik's-cube hero ("simple, very open, not many

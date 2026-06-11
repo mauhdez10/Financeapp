@@ -530,11 +530,18 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
   // v0.78 — liquid-glass video hero state (video falls back to GoldenTides on error)
   const[videoOk,setVideoOk]=useState(true);
   const[heroEmail,setHeroEmail]=useState("");
+  // v0.79.1 — owner comparison switch: ?hero=tides (v0.77 canvas) | ?hero=video (v0.78) | default cube (v0.79)
+  const heroMode=(()=>{try{const m=new URLSearchParams(window.location.search).get("hero");return m==="tides"||m==="video"?m:"cube";}catch(_e){return"cube";}})();
   return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
     <div style={{position:"relative",zIndex:2}}>
 
       {/* ── CUBE HERO (v0.79 — Resend's object + Letter's luminous dark) ─────── */}
       <section style={{position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",background:"#08090B",overflow:"hidden"}}>
+        {/* ?hero= comparison backgrounds (under the gradient overlays) */}
+        {heroMode==="tides"&&<GoldenTides reducedMotion={reducedMotion}/>}
+        {heroMode==="video"&&(videoOk
+          ?<HeroVideo reducedMotion={reducedMotion} onFail={()=>setVideoOk(false)}/>
+          :<GoldenTides reducedMotion={reducedMotion}/>)}
         {/* Letter-style "dark but light": soft warm light bleeding from above */}
         <div aria-hidden style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 120% 60% at 50% -12%, rgba(250,244,230,0.10) 0%, rgba(226,195,117,0.05) 38%, rgba(0,0,0,0) 70%)",pointerEvents:"none"}}/>
         {/* bottom melt into the active theme */}
@@ -562,7 +569,7 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
         {/* hero content — the cube, then the minimal stack (badge, headline,
             one line, one action). Nothing else on the first screen. */}
         <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 7vh",textAlign:"center"}}>
-          <div style={{marginBottom:58,marginTop:8}}><GoldCube size={Math.min(220,typeof window!=="undefined"?window.innerWidth*0.42:220)}/></div>
+          {heroMode==="cube"&&<div style={{marginBottom:58,marginTop:8}}><GoldCube size={Math.min(220,typeof window!=="undefined"?window.innerWidth*0.42:220)}/></div>}
           <div className="ga-liquid" style={{borderRadius:999,padding:"7px 16px",marginBottom:24,background:"rgba(255,255,255,0.01)"}}>
             <span style={{fontSize:10.5,fontWeight:600,color:"#E2C375",fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.16em"}}>{es?"Gratis para empezar":"Free to start"}</span>
           </div>
