@@ -241,3 +241,142 @@ project originated):
 | Settings/admin pages (Security/Billing/Backup/Help/SettingsCard/TopBar) | 7214–7788 | component | 2 | `pages/Settings/` |
 | **ClientDetail (shell + tabs + embedded sections)** | **5841–7863** | component | **2** | `pages/ClientDetail/` |
 | PublicPortal + App router shell | 7863–8502 | component | 2 | `pages/PublicPortal.jsx` + `App.jsx` (shell) |
+
+---
+
+## Advisor ↔ Client account linking — DESIGN ONLY (approved 2026-06-11, not built)
+
+> **Status: DESIGN ONLY.** Owner decision: keep the two islands as they are today, build
+> nothing yet — but lock the design now so the eventual build doesn't improvise. Today
+> (per `golden-anchor-logic` §1) an advisor's client *record* and that person's own client
+> *account* are completely separate: the client account owns its own `clients` row
+> (`auth.uid()=user_id` RLS), and nothing connects it to the advisor's row for the same
+> human. This section designs the bridge.
+
+### L0. Principles
+
+- **The advisor's client row is the source of truth** after linking. The client's island
+  row is archived, not merged (no silent data mixing — same bug class as pitfall #18).
+- **RLS alone cannot sanitize.** `clients.data` is ONE jsonb blob including SSN/DOB/
+  internal notes. A direct cross-account SELECT policy would hand the client the whole
+  blob. Therefore **linked reads go through a service-role endpoint that reuses the
+  `resolve-portal.js` allow-list** — one sanitize boundary, not two that drift.
+- **Single-writer per field group.** Disjoint ownership, no merge logic: client owns the
+  contact group; advisor owns everything else. No field is two-writer.
+
+### L1. Schema — `client_links`
+
+Mirrors `portal_links` (advisor uid + `client_local_id` text key + unguessable token),
+plus the accepting account's uid and a status lifecycle.
+
+```sql
+-- supabase-migrations/<date>-client-links.sql (SKETCH — not created)
+-- Idempotent — safe to re-run. Paste into Supabase → SQL Editor → Run.
+CREATE TABLE IF NOT EXISTS public.client_links (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  advisor_uid      uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  client_local_id  text NOT NULL,            -- matches public.clients.local_id (advisor's record)
+  client_uid       uuid REFERENCES auth.users(id) ON DELETE SET NULL,  -- NULL until accepted
+  invited_email    text NOT NULL,            -- must match the accepting account's auth email
+  token            text NOT NULL UNIQUE,     -- 24-byte base64url, same as intake invites
+  status           text NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('pending','accepted','revoked','expired')),
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  expires_at       timestamptz,              -- default now()+interval '14 days' at insert
+  accepted_at      timestamptz
+);
+CREATE INDEX IF NOT EXISTS client_links_token_idx  ON public.client_links(token);
+CREATE INDEX IF NOT EXISTS client_links_client_idx ON public.client_links(client_uid);
+-- One ACCEPTED link per advisor record, and per client account (1:1 both ways for v1):
+CREATE UNIQUE INDEX IF NOT EXISTS client_links_one_per_record
+  ON public.client_links(advisor_uid, client_local_id) WHERE status = 'accepted';
+CREATE UNIQUE INDEX IF NOT EXISTS client_links_one_per_account
+  ON public.client_links(client_uid) WHERE status = 'accepted';
+
+ALTER TABLE public.client_links ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS client_links_advisor_all ON public.client_links;
+CREATE POLICY client_links_advisor_all ON public.client_links
+  FOR ALL USING (auth.uid() = advisor_uid) WITH CHECK (auth.uid() = advisor_uid);
+DROP POLICY IF EXISTS client_links_client_read ON public.client_links;
+CREATE POLICY client_links_client_read ON public.client_links
+  FOR SELECT USING (auth.uid() = client_uid AND status = 'accepted');
+-- Acceptance (setting client_uid) happens via SERVICE ROLE in api/accept-client-link.js,
+-- never via an anon/client policy — same posture as portal_links.
+```
+
+Considered and rejected: an FK to `clients.id` (uuid) instead of `client_local_id` — the
+whole app + `portal_links` key on `local_id`, and the save path re-resolves rows by it;
+matching that convention avoids a second identity scheme.
+
+### L2. Invite flow (the intake-invite pattern, reused)
+
+1. **Advisor sends** — client kebab → "Invite to portal account". New
+   `api/send-client-link-invite.js`, clone of `send-intake-invite.js`: verify advisor JWT
+   → insert `client_links` row (`status='pending'`, token via `crypto.randomBytes(24)`,
+   `invited_email` = the record's email) → Resend email with `/link?token=…` (EN/ES,
+   advisor signature, same template skeleton).
+2. **Client opens the link** — `/link?token=…` resolves via a rate-limited service-role
+   endpoint (clone of `resolve-intake-invite.js`): returns advisor branding + invited
+   email + first name only. If not signed in → signup (role `client` in `user_metadata`,
+   email pre-filled and locked) or login.
+3. **Accept** — `api/accept-client-link.js` (service-role): verify the client's JWT, check
+   token is pending + unexpired, check `auth.email === invited_email` (case-insensitive)
+   → set `client_uid = auth.uid()`, `status='accepted'`, `accepted_at=now()`. Email
+   mismatch = hard reject (the token alone must not bind an arbitrary account).
+4. **Island archive** — same endpoint soft-deletes the client account's own self-profile
+   row (`deleted_at = now()` on `clients` where `user_id = client_uid`). Nothing is
+   merged; the advisor can eyeball the archived row later if the client claims lost data.
+
+### L3. Data flow after linking
+
+- **Source of truth:** the advisor's `clients` row. The client's Overview stops rendering
+  their island row and instead renders the **linked snapshot**.
+- **Linked read:** `api/resolve-client-link.js` (service-role; client JWT required) —
+  looks up the accepted link for `auth.uid()`, loads the advisor's row, returns it through
+  the **same `ALLOW` set as `resolve-portal.js`** (factor the allow-list into a shared
+  `api/_sanitize.js` so portal and link can't drift). SSN/DOB/internal notes still never
+  leave the server, even to the linked client.
+- **No direct RLS read on `clients`** for linked clients (see L0). If serverless latency
+  ever hurts, the fallback is a `SECURITY DEFINER` RPC that returns the sanitized jsonb —
+  same allow-list, still one boundary — not a SELECT policy.
+- **Client-side cache:** the linked snapshot caches under the client's own
+  `ga_cache_uid` tag like any other data; existing purge rules apply unchanged.
+
+### L4. Edit policy (single-writer field groups)
+
+| Group | Fields | Writer |
+|---|---|---|
+| **Contact** | email, phone, address (their own values) | **Client** — via `api/update-linked-client.js` with a server-side EDIT allow-list (seed from `docs/CLIENT-PORTAL-EDIT-ALLOWLIST.md`); server loads the row, patches ONLY these keys, saves. Advisor sees a "client updated contact info" flag. |
+| **Goals notes** | notes.goals/shortTerm/midTerm/longTerm | **Client-editable candidate** — owner to confirm (open question 3). |
+| **Everything else** | all financial data, plan, snapshots, internal notes, names, DOB/SSN | **Advisor only.** Client sees the sanitized subset read-only. |
+
+Conflicts are avoided structurally: groups are disjoint, and the client's writes are a
+server-side key-scoped patch (never a whole-blob save), so an advisor save and a client
+contact edit can interleave without clobbering — worst case is last-write within the
+same group by the same single writer.
+
+### L5. Rollout (phased, each shippable)
+
+1. **Link-R (read-only mirror):** migration + invite/accept endpoints + linked Overview
+   read. Client gets zero new edit rights. Adversarial role proof re-run (logic skill §1):
+   advisor, linked client, UNLINKED client, and a revoked link each see exactly their own.
+2. **Link-W (scoped edits):** contact-group endpoint + advisor-side "updated" flag.
+3. **Portal coexistence:** token portal (`portal_links`) stays for the unlinked —
+   prospects, spouses, "just look at this" shares. For a linked client the share-portal
+   modal shows "this client has an account" and de-emphasizes new tokens. Retire-per-client
+   (auto-revoke tokens on accept) is open question 5. The portal feature itself is NOT
+   retired.
+
+### L6. Open questions for the owner
+
+1. **Unlink/revoke semantics** — when an advisor revokes an accepted link, does the client
+   account revert to an empty island (new blank self-profile) or keep a frozen copy?
+2. **Island data on accept** — archive silently (designed above), or show the advisor a
+   one-time "client had self-entered data, import anything?" review screen?
+3. **Goals notes** — client-editable (it's their goals) or advisor-only like the rest?
+4. **1:1 constraint** — is one advisor per client account permanent, or will households /
+   second-opinion advisors eventually need 1:N (drop the `client_links_one_per_account`
+   unique index then)?
+5. **Auto-revoke portal tokens** for a client once their account link is accepted?
+6. **Invite expiry** — 14 days proposed; confirm, and whether advisors can re-send (new
+   token, old one expired — same rotation rule as portal regenerate).

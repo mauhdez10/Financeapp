@@ -104,8 +104,8 @@ latest snapshot debt > first snapshot debt.
 > `DEF_PORT_RATES` conservative 5.5% / growth 8.5% / aggressive 11.0%; holdings in
 > `PORTFOLIOS` (constants/meta.js).
 >
-> ⚠️ **Known quirk (surface to owner before "fixing"):** InterestCalc's compound-frequency
-> selector (Monthly/Quarterly/Annual) is decorative — the math always compounds monthly.
+> InterestCalc's compound-frequency selector was decorative until v0.72.3 — it is WIRED
+> now (owner-approved 2026-06-11): periods/year pf ∈ {12,4,1}; see InterestCalc below.
 
 ### RetirementCalc
 - **Inputs:** current age (30), retire age (65), balance ($25,000), monthly contribution ($500), employer match % (50), match limit (6% of salary), monthly gross salary ($5,000), worst/base/best annual returns (5/8/11%).
@@ -165,8 +165,8 @@ latest snapshot debt > first snapshot debt.
 
 ### InterestCalc
 - **Inputs:** principal ($10,000), rate (5%), years (5), type (compound/simple), monthly contribution, compound frequency selector (see quirk above).
-- **Method:** compound: FV = `P·(1+r/12)^(y×12) + monthly·((1+r/12)^(y×12)−1)/(r/12)`; simple: FV = P·(1+r·y) (contributions ignored in simple mode). Real value = total/(1.03)^years.
-- **Assumptions:** always monthly compounding in compound mode (the frequency dropdown is not wired); 3% inflation for real value.
+- **Method:** compound (v0.72.3): pf = selected periods/year (12/4/1); per-period deposit = monthly·(12/pf); FV = `P·(1+r/pf)^(y×pf) + perDep·((1+r/pf)^(y×pf)−1)/(r/pf)`. Simple: FV = P·(1+r·y) (contributions ignored). Real value = total/(1.03)^years. The growth-stack chart still draws the monthly approximation.
+- **Assumptions:** deposits accumulate into each compounding period; 3% inflation for real value.
 - **Outputs:** final value, interest earned, inflation-adjusted value, CompoundGrowthStack (principal/contributions/interest layers).
 - **Edge cases:** zero-rate → arithmetic sums; division-by-zero guarded.
 - **Plain-English:** how money grows with compounding versus simple interest, and what that growth is worth after inflation.
@@ -179,10 +179,83 @@ latest snapshot debt > first snapshot debt.
 - **Edge cases:** zero APY/monthly degrade to simple sums; zero years → empty chart.
 - **Plain-English:** what a high-yield savings account earns you over time beyond what you put in.
 
-## 5. Chart & field buckets — staged
+## 5. Chart catalog — the 23 pure-SVG components (`src/components/charts.jsx`)
 
-- Charts: what each of the 23 components in `src/components/charts.jsx` derives and the
-  one-line takeaway (for captions/tooltips). Stage with the chart-grammar work
-  (DESIGN-POLISH-PUNCHLIST item 20).
-- Field dictionary: every client field + validation (source: `mk()` in utils/finance.js +
-  `docs/CLIENT-PORTAL-EDIT-ALLOWLIST.md`).
+> Documented from code 2026-06-11. All are theme-aware (`useTh()`), tween values via
+> `useTweenedData`, and render empty-state placeholders on no data. "Gallery" = the
+> ChartGallery previews in ChartSettingsModal (App.jsx ~2395); "Dashboard slot" = the
+> DashSlotPicker slot renderer in Dashboard (App.jsx ~2605); calculators per §4.
+
+- **Donut** — proportional slices with optional center KPI, per-slice radial gradient; props `{data:[{label,value,color}], centerLabel, centerValue}`; used: Cash Flow Statement, Dashboard slots (net-worth donut etc.), IncomeCalc paycheck breakdown, AffordabilityCalc PITI, HomeEquityCalc, gallery, share portal.
+- **Waterfall** — signed cash-flow steps (Income → −Bills → −Debt → Net) with running cumulative and `kind:"total"` bars resetting to zero; props `{segments:[{label,value,kind?,color}]}`; used: Cash Flow Statement, Dashboard slot, gallery, share portal.
+- **PairedBars** — combo: savings/income bars above zero, debt/bills mirrored below, dashed gold cumulative-net line; props `{data, debtKey, savingsKey, debtColor, savingsColor}`; used: LiveTrendCard bar mode only.
+- **LiveTrendCard** — wrapper card: line/bar toggle persisted to `localStorage[client.{id}.live-view.{templateId}]`, footer row = last debt/savings + first→last % deltas + crossover month or net; props `{client, trendData, debtKey, savingsKey, templateId, t}`; used: ClientDetail header trend cards.
+- **SmoothAreaLine** — two Catmull-Rom area curves (debt vs savings), crossover dots where the series flip, pulsing live dot when last label matches /Now|▶/; colors/stroke/legend overridable per `templateId` via chart-config context; props `{data:[{label,debt,savings}], debtKey, savingsKey, templateId}`; used: SummarySection trend, Dashboard trend slots (×2), LiveTrendCard line mode, gallery, share portal.
+- **Sankey** — layered flow bands (nodes carry `layer` column index), node height ∝ max(in,out); props `{nodes:[{id,layer,label,color}], links:[{from,to,value}]}`; used: Dashboard income→spending→savings flow slot.
+- **Treemap** — squarified proportional tiles, labels render only when the tile fits; props `{data:[{label,value,color}], valuePrefix}`; used: Dashboard allocation slot, gallery.
+- **RadialGauge** — 270° arc with optional target tick; threshold coloring `thresholds:[good,warn]` + `direction:"higher"|"lower"`; props `{value, max, target, label, fmt}`; used: SummarySection ratio trio, Dashboard ratio trio, IncomeCalc effective-tax, AffordabilityCalc DTI, gallery, share portal EF gauge.
+- **RankedHBars** — horizontal bars sorted desc, top `maxBars=10`; props `{data:[{label,value,color}]}`; used: ClientDebtCalc debt ranking, AssetsLiabilitiesTab (assets + liabilities ×2), Dashboard slot, gallery.
+- **BulletChart** — Tufte bullet: progress fill vs target tick on a range bar; props `{value, target, max, label, sublabel}`; used: gallery only (goal-progress preview — no live surface yet).
+- **Sparkline** — axis-less mini trend with endpoint dot, optional area fill; props `{data:[number], color, fill, strokeWidth}`; used: KpiTile (primitives.jsx) KPI strips, Dashboard KPI row, gallery.
+- **Radar5** — up-to-5-axis polygon, values clamped 0–1, optional dashed target ring; props `{axes:[string], values:[0..1], target}`; used: SummarySection financial-health (DSR/Savings/EF/D-A/Cash), Dashboard slot, gallery.
+- **NetWorthBridge** — stacked asset bands above zero, liability bands below, gold net-worth line on top; props `{data:[{label, assets:{checking,savings,...}, liabilities:{cards,loans,...}}]}`; used: Dashboard slot, gallery.
+- **PayoffProgression** — simulates monthly interest + min payments (extra applied avalanche-order, cap `maxMonths=120`), stacked declining balance bands; props `{debts:[{name,balance,apr,min,color}], extraPay}`; used: ClientDebtCalc, DebtReductionCalc, Dashboard slot, gallery.
+- **AmortizationArea** — single loan balance decay area; computes the payment internally from principal/apr/term; props `{principal, apr, termMonths, extraPay}`; used: ClientCarLoanCalc, CarLoanCalc, gallery.
+- **CompoundGrowthStack** — three stacked bands (principal flat / contributions linear / interest exponential) + marker at the year interest > principal+contributions; props `{principal, monthly, rate, years, simple}`; used: InterestCalc only.
+- **StackedBars** — vertical stacked bars per period across category keys; props `{data:[{label, ...categoryValues}], categories:[keys], colors:{}}`; used: Dashboard bills-by-category slot, gallery.
+- **HeatmapCalendar** — year-rows × month-cols intensity grid, cream→amber lerp by value/max; props `{data:[{year, month(1-12), value}], colorScale}`; used: Dashboard spending-heatmap slot, gallery.
+- **GroupedYoY** — side-by-side current-vs-prior bars per category with legend; props `{data:[{label,current,prior}], curLabel, priorLabel}`; used: Dashboard slot, gallery.
+- **ForecastCone** — solid history line + dashed projection with confidence band widening ∝ value·confidence·√months; props `{history:[{label,value}], projection:[{label,value}], confidence=0.2}`; used: RetirementCalc (18% band), Dashboard projection slot, gallery.
+- **SlopeGraph** — two-period per-category slope lines, sorted by current value, right side shows value + % change; props `{data:[{label,a,b,color}], leftLabel, rightLabel}`; used: Dashboard month-compare slot, gallery.
+- **Sunburst** — two-ring nested radial: inner = parent categories, outer = children proportioned within the parent arc; props `{data:[{label,color,children:[{label,value,color}]}]}`; used: Dashboard nested-allocation slot, gallery.
+- **Dumbbell** — was→now dot pairs per row (max 8), green connector when decreasing (good for debt), red when increasing; props `{data:[{label,a,b,color}], leftLabel, rightLabel}`; used: Dashboard debt-progress slot, gallery.
+
+## 6. Client field dictionary (source: `mk()`/`mig()` in `src/utils/finance.js`)
+
+> Every client record passes through `mig()` on load — it back-fills missing keys with
+> `mk()` defaults, so the shapes below are guaranteed at runtime. Ids come from
+> `gid() = Date.now()+random` (numbers, not uuids). **Money math laws:** every currency
+> field is a plain number (USD; `fmt` renders 0 decimals); every `apr`/`rate` is an
+> ANNUAL percent (28 = 28%, monthly = apr/100/12); every `freq` ∈
+> `{weekly, biweekly, semimonthly, monthly2, annual}` — monthly is spelled **`monthly2`**
+> (legacy name; do not "fix" it). Validation helpers: `vEmail`, `fmtPh` (10-digit US),
+> `fmtSSN`, `bE` (blocks e/E/+/− in number inputs).
+
+**Identity & contact** — edited via ClientForm / ProfileModal / intake form; portal-editable per `docs/CLIENT-PORTAL-EDIT-ALLOWLIST.md` (contact only, Option A):
+- `id` num — system id, never edited. `firstName`/`lastName` str. `partnerFirst`/`partnerLast` str|null — null ⇒ single (p2 surfaces hidden).
+- `email`, `phone`, `address`, `dob` str — primary contact. `social` str — SSN; **NEVER leaves the server in the portal (§2)**.
+- `p1Phone/p1Email/p1Dob/p1Social` + `p2*` str — per-person variants (intake captures both partners).
+- `clientType` `"financeOnly"|"financeAndHealth"` — service scope; advisor-only. `recommendedBy` str — referral; advisor-only, never in portal.
+- `color1` (#4472C4) / `color2` (#ED7D31) — person tag colors used by PTag/charts.
+
+**Income** — IncomeModal/IncomeSection: `incomeStreams[]` `{id, person:"p1"|"p2", label, gross, net, freq}` — gross/net are per-`freq` amounts; all metrics use `toM()` monthly normalization (§3).
+
+**Bills** — BillModal/BillsSection: `bills[]` `{id, name, assignedTo:"p1"|"p2"|"joint", dueDay(1-31), cost, type:"regular"|"temporary"|"annual", freq, split:{p1,p2}}` — `split` = % shares (mig defaults 50/50); `maturity` (date) ends a temporary bill; `dueMonth` (1-12) scopes an annual bill; activity rule = `actB` (§3).
+
+**Cards (revolving debt)** — CardModal/DebtSection: `cards[]` `{id, name, balance, apr, min, limit, owedBy:"p1"|"p2"|"joint", dueDay, promos:[]}` — `min` is the stated minimum (`effectiveMin` floors $25 and caps at balance); `promos[]` `{id, label, balance, rate, end(date)}` accrue at their own rate (§3 cardMoInt). `migrateCard` converts legacy single `promo*` fields into `promos[]`.
+
+**Loans (installment debt)** — LoanModal/LoansSection: `loans[]` `{id, name, type:vehicle|student|personal|mortgage|business|other (LOAN_META), balance, owner, apr, term?, linkedAssetId?}` — loans with `linkedAssetId` are auto-managed by `syncAssetLoans` from physical-asset debt; loan *payments* live in bills, only card mins count in `sumMin`.
+
+**Accounts (financial assets)** — AccountModal/AccountsSection, `mkAcct` factory: `accounts[]` `{id, name, type, value, owner}` — `type` ∈ ACCT_META: `checking/savings/money_market` are `liquid:true` (count toward EF + currentRatio); `retirement/ira/brokerage` are `invest:true` (NOT liquid); `other`. Legacy `vehicle`/`realEstate` account types are migrated out to customAssets; legacy `investment` → `brokerage`.
+
+**Physical assets** — AssetModal/CustomAssetsSection: `customAssets[]` `{id, name, value, desc, cat ∈ PHYS_CATS (Real Estate|Vehicle|Precious Metals|Business|Collectible|Other), currentDebt?, debtApr?}` — `currentDebt > 0` spawns/updates a linked loan named "{name} (Asset Debt)" via `syncAssetLoans`. `properties[]` is the newer alias — `getProperties(c)` prefers `properties`, falls back to `customAssets`; totalA counts properties-or-customAssets once, never both.
+
+**Market investments** — MarketInvestmentModal: `marketInvestments[]` `{id, ticker (required, uppercased), name (required), value, cat ("US Large Cap"…"Crypto"|"Individual Stock"|"Investment"), shares, costBasis}` — `value` counts in totalA; not liquid.
+
+**Goals & notes** — NotesSection: `notes` `{shortTerm, midTerm, longTerm, goals, setbacks, general}` str — portal sees ONLY goals/shortTerm/midTerm/longTerm; **setbacks + general are advisor-private (§2 sanitize)**.
+
+**Plan & allocation** — SavingsSection / FinancialPlanTab / InvestmentsTab:
+- `alloc` `{stocks,retirement,realEstate,savings,vacation,other,debtRepayment}` — % split of leftover cash, defaults 25/15/15/15/5/5/20.
+- `committed` — same keys, booleans (advisor marks an allocation as committed).
+- `savedPortfolio` null|obj, `portfolioCustom` `{holdings:[], overrides:{}, rates:{}}`, `savedCalcs:[]`, `savedCompare:null` — saved advisor work artifacts; exact inner shapes are defined by their save flows (Portfolio/Compare/Calculators report blocks), not by `mk()`.
+- Runtime-added keys (absent from `mk()`, appear after first touch, advisor-set): `servicePlan` (ClientForm), `planStrategy` + `planOverrides` (FinancialPlanTab), `reportInclude` (report section toggles).
+
+**History** — Monthly tab save / BulkSnapModal; **client never edits (read-only law, allowlist doc)**: `monthSnapshots[]` month-record shape:
+`{label:"Mon YYYY", year, month(1-12), income, bills, debt, savings, cashFlow, savedAt(ISO), previousVersions:[], data:null|object}`
+— income/bills/debt/savings/cashFlow are MONTHLY totals frozen at save time (the live formulas in §3 produce them); `data` holds an optional full client deep-copy for the detail view (null ⇒ summary-only, NoDataMsg renders); `previousVersions[]` keeps overwritten saves.
+
+**Per-client flags** — Settings-ish, advisor-set:
+- `efMonths` num, default 3 — emergency-fund target multiplier (§3).
+- `currentMonthLabel` str (e.g. "May 2026") — the working month shown in MonthSelector.
+- `archived` bool — moves the client to ArchivedSection.
+- `hideNumbers` bool — blurs all money values for this client (FH component).

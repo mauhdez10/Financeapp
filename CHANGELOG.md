@@ -2,6 +2,44 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.72.3 — 2026-06-11 (Patch) — Pricing audit, client Upgrade buttons, InterestCalc frequency, touch pass
+
+- **Pricing audit** (`docs/PRICING-AUDIT.md`): 3-way comparison of locked D-13 prices vs the
+  shipped catalog vs Stripe links. Found the duplicate initiation (initial-checkup $149 vs
+  client-checkup $99 — recommend one product + a `GACLIENT50` code) and 4-service price
+  drift. Owner decisions listed in §4.
+- **Client "Your plan" Upgrade buttons**: the client-role Settings plan card's detail face
+  now shows three Stripe payment-link buttons (Monthly Lite / Lite+ / Annual) with catalog
+  prices, bilingual, via a new `actions` prop on `SettingsCard`. Light flow — advisor marks
+  the plan manually after payment.
+- **InterestCalc compound frequency wired**: the Monthly/Quarterly/Annual dropdown was
+  decorative (always compounded monthly); now real math (`pr=r/pf`, `n=years*pf`,
+  deposits scaled `12/pf`). Verified $12,834 (monthly) vs $12,763 (annual) on same inputs.
+- **Touch pass (moderate)**: `@media(pointer:coarse)` block — 40px button / 44px form-control
+  floors, taller table rows, spotlight hover disabled. Touch devices only; desktop unchanged.
+- **Portal email live-tested** through prod (Resend message `d08de40d-…`); SVG
+  `fontVariantNumeric` DOM-prop warning fixed in charts.jsx.
+- Docs: advisor↔client linking design (design only) appended to `docs/ARCHITECTURE-PLAN.md`;
+  charts + field-dictionary buckets completed in the golden-anchor-logic skill.
+
+## v0.72 → v0.72.2b — 2026-06-10/11 — D-37 decomposition phases 1b–2b (see git log)
+
+App.jsx 8,502 → ~3,790 lines (−55%). Phase 1b: 33 UI primitives + 9 standalone calculators →
+`src/components/`. Phase 2a: marketing + landing → `src/pages/`. Phase 2b: legal, intake,
+admin/settings, portal → `src/pages` + `src/components`; fixed the since-v0.13
+`/intake-submissions` deep-link bounce (parseGAPath prefix swallow) and rehomed the
+`__GA_BUILD__` marker to App.jsx. Every extracted surface driven live after each move.
+
+## v0.70 → v0.71.3 — 2026-06-10 — Sprint: design system, portal v2, client role, logic skill
+
+Phase 0/1a extraction (services/styles/contexts/constants/utils + charts/anim hooks).
+Design-system pass per `docs/DESIGN-POLISH-PUNCHLIST.md` (alpha-overlay borders, 3-step text,
+Mercury number style, desaturated semantics, one-hover-per-surface, motion tokens; KPI deltas
+as tinted mono chips; table/button spec; gold light-accent fallback). Share-portal v2 (expiry,
+module checkboxes server-sanitized in `api/resolve-portal.js`, email via Resend, preview-as-
+client; migration `2026-06-10-portal-link-modules.sql`). Client-role Settings page + nav
+guard + adversarial role-access proof. New consulted skill `.claude/skills/golden-anchor-logic/`.
+
 ## v0.69.8 — 2026-06-09 (Patch) — Settings flip-card 3D clipped to the card (no page jump)
 
 `overflow:hidden` on the flip card's outer (perspective) element so the rotateY projection no

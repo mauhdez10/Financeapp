@@ -2,7 +2,40 @@
 
 > Running owner checklist (cross-project playbook §2). I append on every batch; items
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
-> confirm `window.__GA_BUILD__` ends in `v0711-…` in DevTools console.
+> confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
+
+## Finish-everything batch 2026-06-11 (v0.72.3)
+
+### A. Pricing audit (you asked for this before wiring billing) — DECISIONS NEEDED
+- [ ] Read `docs/PRICING-AUDIT.md` (5 min). Your calls: **F1** merge the two checkup
+      products into one $149 + a `GACLIENT50`-style code? **F2** which prices are truth —
+      catalog ($199/$129/$49/$499) or the locked D-13 plan ($99/$99-79/$29/$299)?
+      **F5** flat Strategy price or restore the Car discount via code?
+- [ ] Owner-only: open the Stripe dashboard, confirm product prices match the catalog,
+      create the promo code(s), and tick "allow promotion codes" on the payment links.
+
+### B. Client "Your plan" card now has real Upgrade buttons
+- [ ] Log in as clientdemo@goldenanchor.life → Settings → flip the **Your plan** card:
+      three buttons (Monthly Lite $49/mo, Lite+ $79/mo, Annual $499/yr) open your real
+      Stripe payment links in a new tab. Verified live in EN and ES. You mark the plan
+      manually after payment (webhook-synced subscriptions are a later build).
+
+### C. Portal email LIVE-TESTED ✅ (closes the ⚠️ in §2 below)
+- [ ] Sent through prod `api/send-portal-link.js` to finance@goldenanchor.life —
+      Resend accepted it (message `d08de40d-515c-4d24-a0f7-6d0e452e0ca1`). Check that
+      inbox once to eyeball the branded email; the client's address was reverted after.
+
+### D. InterestCalc frequency is now real math (closes the §4b finding)
+- [ ] Calculators → Interest: switching Monthly/Quarterly/Annual now changes the result
+      (verified: $12,834 monthly vs $12,763 annual on the same inputs).
+
+### E. Touch pass (moderate) + housekeeping
+- [ ] On your phone: buttons/inputs are comfortably tappable (40-44px floors, touch
+      devices only — desktop density unchanged). Worth a 2-minute phone smoke test.
+- [ ] Advisor↔client linking: **design doc only** (your call — islands stay) appended to
+      `docs/ARCHITECTURE-PLAN.md`; nothing shipped.
+- [ ] Logic skill: charts + field-dictionary buckets filled in
+      `.claude/skills/golden-anchor-logic/SKILL.md`.
 
 ## Sprint 2026-06-10 (Fable 5 autonomous run, v0.70 → v0.71.1)
 

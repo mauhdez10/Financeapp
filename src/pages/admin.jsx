@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Users, BookOpen, Anchor, Receipt, HardDriveDownload, Archive, Sparkles, Bell, Phone } from "lucide-react";
 import { GOLD, stripLeadEmoji, mINP, mCARD } from "../styles/theme";
+import { SVCS, svcPayUrl, DEF_SETTINGS } from "../constants/meta";
 import { useTh } from "../contexts/theme";
 import { fmtPh } from "../utils/finance";
 import { useReducedMotion } from "../hooks/anim";
@@ -413,7 +414,7 @@ function HelpSupportPage({t,settings,authUser}){
 
 /* ── SettingsCard — 2-col read-only card for the Profile & Settings page.
    Click "Edit" to open the ProfileModal scoped to that section.            */
-function SettingsCard({title,icon:Icon,desc,rows,fields,onSave,onEdit,settings,t,th,flipOn}){
+function SettingsCard({title,icon:Icon,desc,rows,fields,onSave,onEdit,settings,t,th,flipOn,actions}){
   const[editing,setEditing]=useState(false);const[draft,setDraft]=useState({});
   const rm=useReducedMotion();const[flip,setFlip]=useState(false);
   const _flipOn=flipOn!==false;const showBack=_flipOn?(flip||editing):true;
@@ -443,6 +444,7 @@ function SettingsCard({title,icon:Icon,desc,rows,fields,onSave,onEdit,settings,t
         <div style={{boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",padding:16,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>{Icon&&<div style={{width:28,height:28,borderRadius:8,background:th.accent+"14",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={14} strokeWidth={1.6} color={th.accent}/></div>}<div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</div></div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>{rows.map(([k,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",fontSize:12,paddingBottom:8,borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),gap:10}}><span style={{color:th.muted,flex:"0 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k}</span><span style={{color:th.text,fontWeight:600,fontVariantNumeric:"tabular-nums",textAlign:"right",flex:"1 1 auto",minWidth:0,wordBreak:"break-word"}}>{v}</span></div>)}</div>
+          {actions&&<div onClick={e=>e.stopPropagation()} style={{marginTop:12}}>{actions}</div>}
           {canEdit&&<div style={{marginTop:12,textAlign:"right"}}><button className="ga-press" onClick={(e)=>{e.stopPropagation();begin();}} style={{fontSize:11,padding:"5px 14px",borderRadius:8,background:th.accent+"22",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontWeight:700}}>{t?.edit||"Edit"}</button></div>}
         </div>
         <div style={{position:"absolute",inset:0,boxSizing:"border-box",backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",padding:18,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",textAlign:"center",gap:10}}>
@@ -529,6 +531,20 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
     const profRows=[[t?.nameLbl||"Name",(((me.firstName||"")+" "+(me.lastName||"")).trim())||"—"],[t?.emailLbl||"Email",me.email||"—"]];
     const profFields=[{k:"firstName",l:t?.firstName||"First name",type:"text"},{k:"lastName",l:t?.lastName||"Last name",type:"text"},{k:"email",l:t?.emailLbl||"Email",type:"text"}];
     const planRows=[[t?.planLbl||"Plan",t?.planFree||"Free"],[t?.planIncludesLbl||"Includes",t?.planIncludesVal||"Profile, calculators & resources"]];
+    const isEs=settings.lang==="es";
+    const upgradeBtns=["monthly-lite","monthly-lite-plus","annual-bundle"].map(id=>{
+      const svc=SVCS.find(s=>s.id===id);if(!svc)return null;
+      const url=svcPayUrl(svc,settings)||DEF_SETTINGS.stripeLinks?.[id]||"";if(!url)return null;
+      return <a key={id} className="ga-press" href={url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"7px 12px",borderRadius:8,background:th.accent+"14",border:"1px solid "+th.accent+"33",textDecoration:"none",cursor:"pointer"}}>
+        <span style={{fontSize:11.5,fontWeight:600,color:th.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isEs?svc.es:svc.en}</span>
+        <span style={{fontSize:11.5,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}}>{svc.price}</span>
+      </a>;
+    }).filter(Boolean);
+    const planActions=upgradeBtns.length?<div style={{display:"flex",flexDirection:"column",gap:7}}>
+      <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{t?.upgradeOptions||"Upgrade options"}</div>
+      {upgradeBtns}
+      <div style={{fontSize:10,color:th.dim,fontStyle:"italic"}}>{t?.upgradeNote||"Opens secure Stripe checkout in a new tab."}</div>
+    </div>:null;
     return <div className="ga-np" style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
       <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.clientSettingsSub||"Manage your profile, appearance and language."}</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:11,marginBottom:14}}><span style={{fontSize:11.5,color:th.muted,fontWeight:600}}>{t?.flipCards||"Flip cards"}</span><div onClick={()=>onSave({cardsFlip:!flipOn})} role="switch" aria-checked={flipOn} style={{width:42,height:24,borderRadius:99,background:flipOn?th.accent:th.cardBorder,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:flipOn?20:2,width:20,height:20,borderRadius:99,background:"#fff",transition:"left .2s"}}/></div></div>
@@ -536,7 +552,7 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
         <SettingsCard icon={Users} title={t?.myProfile||"My profile"} desc={t?.myProfileDesc||"Your name & contact email"} rows={profRows} fields={profFields} onSave={patch=>onUpdateClient&&onUpdateClient({...me,...patch})} settings={me} t={t} th={th} flipOn={flipOn}/>
         <SettingsCard icon={Sparkles} title={t?.appearance||"Appearance"} desc={t?.descAppearance||"Theme accent & app zoom"} rows={appearanceRows} fields={appearanceFields} onSave={onSave} settings={settings} t={t} th={th} flipOn={flipOn}/>
         <SettingsCard icon={BookOpen} title={t?.localization||"Localization"} desc={t?.descLocalization||"Language, date format & currency"} rows={localizationRows} fields={localizationFields} onSave={onSave} settings={settings} t={t} th={th} flipOn={flipOn}/>
-        <SettingsCard icon={Receipt} title={t?.yourPlan||"Your plan"} desc={t?.yourPlanDesc||"What's included today"} rows={planRows} t={t} th={th} flipOn={flipOn}/>
+        <SettingsCard icon={Receipt} title={t?.yourPlan||"Your plan"} desc={t?.yourPlanDesc||"What's included today"} rows={planRows} actions={planActions} t={t} th={th} flipOn={flipOn}/>
       </div>
     </div>;
   }

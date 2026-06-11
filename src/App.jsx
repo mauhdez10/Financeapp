@@ -7,7 +7,7 @@ import { EngagementLetter, LogoImg, SignaturePad, ToSModal } from "./components/
 import { IntakeCurrencyInput, IntakeDoneModal, IntakeFieldLabel, IntakeFormBody, IntakeFormSection, IntakeSelectedServiceCard, IntakeStepRail, IntakeSubmissionEditor, IntakeSubmissionsPage, IntakeWelcomeStage, NewInviteModal, PublicIntake, isMobileViewport } from "./pages/intake";
 import { AVATAR_PRESETS, ArchivedClientsPage, AvatarImg, AvatarPickerModal, BackupPage, BillingPage, EmailSupportModal, FAQ_ENTRIES, HelpSupportPage, SecurityPage, SettingsCard, SettingsPage, WHATS_NEW_ENTRIES, WhatsNewPage } from "./pages/admin";
 import { PortalShareModal, PublicPortal } from "./pages/portal";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0722-phase2b-intake-admin-portal-legal";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0723-pricing-audit-upgrade-buttons-interest-freq-touch";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -3568,6 +3568,16 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
            otherwise their fixed-ish content keeps them at desktop width. */
         .ga-sc,.ga-sc *{min-width:0!important}
         .ga-sc{overflow:hidden}
+      }
+      /* v0.72.3 — touch pass (moderate): comfortable tap targets on touch devices only.
+         pointer:coarse matches phones/tablets, never mouse laptops, so desktop density
+         is untouched. 40px floor (HIG asks 44; 40 keeps dense rows from ballooning),
+         44px on form controls where mis-taps hurt most. */
+      @media(pointer:coarse){
+        button,[role="button"]{min-height:40px;min-width:40px;touch-action:manipulation}
+        select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]){min-height:44px}
+        td,th{padding-top:9px!important;padding-bottom:9px!important}
+        .ga-spot::after{display:none!important}
       }
       @media print{
         /* v0.45.0 — Compact Print: matches preview/18-pdf-reports.html. Multi-section

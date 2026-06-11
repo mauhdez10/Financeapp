@@ -286,9 +286,12 @@ function InterestCalc({t}){
   const monthly=Math.max(0,+f.monthly||0);
   const interest=(()=>{
     if(f.type==="simple")return (+f.principal||0)*r*(+f.years||0)+monthly*0; // simple ignores monthly drip
-    const mr=r/12,n=(+f.years||0)*12;
-    const total=(+f.principal||0)*Math.pow(1+mr,n)+(mr>0?monthly*((Math.pow(1+mr,n)-1)/mr):monthly*n);
-    return total-(+f.principal||0)-monthly*n;
+    // v0.72.3 — the compound-frequency selector is WIRED now (was decorative, always
+    // monthly). pf periods/year; deposits accumulate into each compounding period.
+    const pf=+f.freq||12;
+    const pr=r/pf,n=(+f.years||0)*pf,perDep=monthly*(12/pf);
+    const total=(+f.principal||0)*Math.pow(1+pr,n)+(pr>0?perDep*((Math.pow(1+pr,n)-1)/pr):perDep*n);
+    return total-(+f.principal||0)-monthly*(+f.years||0)*12;
   })();
   const totalContrib=monthly*(+f.years||0)*12;
   const total=(+f.principal||0)+totalContrib+interest;

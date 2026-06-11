@@ -1043,7 +1043,7 @@ function CompoundGrowthStack({principal=0,monthly=0,rate=0,years=25,height=220,w
         <text x={sx} y={padT+innerH+18} textAnchor="middle" fontSize="10" fontWeight="700" fill={GOLD} style={{fontFamily:"'Plus Jakarta Sans',sans-serif"}}>interest &gt; contributions · yr {crossoverYr}</text>
       </g>;})()}
       {/* End labels */}
-      {(()=>{const last=series[series.length-1];const lx=width-padR-6;return<g fontSize="9" fontVariantNumeric="tabular-nums">
+      {(()=>{const last=series[series.length-1];const lx=width-padR-6;return<g fontSize="9" style={{fontVariantNumeric:"tabular-nums"}}>
         {last.principal>0&&<text x={lx} y={yAt(last.principal/2)} textAnchor="end" fill="#94CDE3">P ${fmtT(last.principal)}</text>}
         {last.contrib>0&&<text x={lx} y={yAt(last.principal+last.contrib/2)} textAnchor="end" fill="#A8C5E8">C ${fmtT(last.contrib)}</text>}
         {last.interest>0&&<text x={lx} y={yAt(last.principal+last.contrib+last.interest/2)} textAnchor="end" fill={GOLD} fontWeight="700">I ${fmtT(last.interest)}</text>}
