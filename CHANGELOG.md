@@ -2,6 +2,144 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.69.8 — 2026-06-09 (Patch) — Settings flip-card 3D clipped to the card (no page jump)
+
+`overflow:hidden` on the flip card's outer (perspective) element so the rotateY projection no
+longer adds document scroll-height — hovering the last Settings row stopped shoving the page.
+Inner `preserve-3d` untouched; flip still works. Marker `2026-06-09-v0698-settings-card-clip-3d-no-page-jump`.
+
+## v0.69.7 — 2026-06-09 (Patch) — No dashboard flash on refresh
+
+`nav`/`selectedTab`/`selectedCalc` now seed from `parseGAPath(location.pathname)` in their
+useState initializers, so the FIRST render is already the right page (the route used to apply in a
+post-paint effect → one-frame dashboard flash). Verified: 20 rapid samples after reload on
+/settings, dashboard never rendered.
+
+## v0.69.6 — 2026-06-09 (Patch) — Refresh keeps the page; Settings cards natural height
+
+- The avatar-menu pages (settings/security/billing/backup/archived/whats-new/help) + pricing were
+  missing from `_GA_NAVS`, so their URL stayed `/dashboard` and refresh bounced there. Added.
+- Reverted the fixed-224px card height + scroll: cards are natural height equalized per grid row
+  (shorter cards get blank space), ALL info visible, no scroll. Card bg/halo moved to the outer
+  element; flip faces transparent over it (no gap).
+
+## v0.69.5 — 2026-06-09 (Minor) — Settings flip cards: uniform, centered, edit-popup polish, global toggle
+
+Uniform card sizing, centered cover content (icon+title+desc), full-width uniform popup inputs,
+card stays flipped while its edit popup is open, and a "Flip cards" on/off switch above the grid
+(persists to `settings.cardsFlip`; off = always show details).
+
+## v0.69.4 — 2026-06-09 (Minor) — Settings flip cards done right (cover → details; Edit = popup)
+
+Per owner correction: card FRONT = icon + short description (cover); HOVER flips (rotateY 180) to
+the BACK = detail rows; EDIT opens a Modal popup with the fields. Back face in normal flow defines
+height; front absolute; grid start-aligned. 6 bilingual card descriptions added.
+(v0.69.2 flip-to-edit-inline was the wrong interaction + left a black gap; reverted in v0.69.3.)
+
+## v0.69.1 — 2026-06-09 (Minor) — Localization editable & wired; backup destination picker
+
+- Localization card: inline-edit selects for Language (EN/ES), Date format, Currency
+  (USD/EUR/GBP/MXN/CAD). Genuinely wired: `fmt()`/`fmtDate()` read module globals synced from
+  settings; Language flips the live app language; topbar EN/ES keeps `settings.lang` in sync.
+- Backup popup: "Save backup (.json)" via the File System Access API (`showSaveFilePicker`) so the
+  owner picks the destination (PC folder or synced Drive folder); download fallback.
+
+## v0.69 — 2026-06-09 (MINOR) — Account-based client portal: advisor vs client roles + isolation hardening
+
+- Signup chooses **Personal (client)** or **Advisor**; role stored in auth `user_metadata.role`
+  (server-trusted — NEVER in settings, which is client-cached and can bleed).
+- `role==="client"` → restricted shell: nav Overview/Calculators/Resources/Pricing/About;
+  "CLIENT PORTAL" sidebar; avatar menu trimmed to Profile settings/Security/Billing/Help/Sign out;
+  Overview = the client's own single self-profile (ClientDetail `clientMode`: no Back, kebab =
+  Edit/Export only); self-profile auto-created on first login; display name = the client's own.
+- Isolation hardening: `ga_cache_uid` owner tag on localStorage (absent tag = foreign → purge);
+  session draft uid-tagged + never restored for a client account; caches cleared on sign-out.
+  Caught + fixed in testing: a stale draft briefly bled another account's client into a new login.
+- Verified live with a real client signup (clientdemo@) + the advisor account.
+
+## v0.68.1 — 2026-06-09 (SECURITY) — Cross-account localStorage bleed fixed
+
+clients/settings were cached in GLOBAL localStorage keys; a second account on the same browser
+booted with the first account's data, and the localStorage→cloud migration could upload it into
+the new account. Fix: owner-tag the cache (`ga_cache_uid`), purge all per-account keys on identity
+mismatch BEFORE migrate/load, skip migration for foreign caches, clear on sign-out. Server RLS was
+always correct — this was purely client-side. (Pitfall #18.)
+
+## v0.68 — 2026-06-08 (MINOR) — Token-based read-only share portal
+
+`portal_links` table (RLS owner-only; migration `2026-06-08-portal-links.sql`, applied 2026-06-09)
++ anonymous rate-limited `api/resolve-portal.js` (service-role; explicit ALLOW-list sanitization —
+drops SSN/DOB/phone/address/internal notes) + `PublicPortal` at `/portal?token=…` (branded
+read-only overview: KPIs, cash-flow waterfall, asset donut, debt-vs-savings trend, EF gauge,
+goals, EN/ES + theme toggles) + `PortalShareModal` ("Share portal" in the client kebab:
+generate/copy/revoke; regenerate rotates the token).
+
+## v0.67.1 — 2026-06-08 (Patch) — Promotions header aligned to the editorial system
+
+Mono "Offers" eyebrow + bold sans title (was a lone Newsreader italic). Stats strip + CRUD untouched.
+
+## v0.67 — 2026-06-08 (MINOR) — Calculators page rebuild
+
+Editorial header + four category sections (Plan & grow / Tackle debt / Home & affordability /
+Income) with mono hairline headers; vertical cards with gold Lucide icon, bilingual one-line
+descriptions (previously hardcoded English), "Open →" affordance. 15 new EN+ES keys.
+
+## v0.66.1 — 2026-06-08 (Patch) — Designed Create-account form
+
+Show/hide password toggle (all auth modes), signup subtitle, live 3-segment strength meter
+(Weak/Fair/Strong) + min-8 hint in signup/set-new modes.
+
+## v0.66 — 2026-06-08 (MINOR) — About Us real rebuild
+
+Editorial split hero (Newsreader gold-gradient italic headline — mode-aware gradient for AA
+contrast; anchor monogram in dual counter-rotating dashed orbital rings, reduced-motion safe),
+"What we do" features bento (6 Lucide tiles, varied spans), certifications with icons,
+Connect-with-us glowing social dots (Globe/AtSign/Mail/Phone), restyled referral card. 20 new
+EN+ES keys. NOTE: this repo's lucide-react does NOT export `Instagram` — use `AtSign` (pitfall #19).
+
+## v0.65.x — 2026-06-08 (MINOR) — Resources + Settings real rebuilds
+
+- **v0.65** Resources: Gallery4-style horizontal snap-carousel of tall topic-gradient cover cards
+  (line icons, overlay text, arrows). **v0.65.2** bigger cards (400×460).
+- **v0.65.1** Settings: per-card section icons + inline edit per card (Edit → fields form →
+  Save/Cancel, saves only that section). **v0.65.2** Advisor Information card also carries the two
+  logo uploaders + the SignaturePad; ProfileModal gained a `section` prop so Services and Backup
+  open SCOPED single-section popups instead of the monolithic modal.
+
+## v0.64.x — 2026-06-08 (MINOR) — Spotlight cards + real sign-up
+
+- **v0.64** `.ga-spot` cursor-follow gold spotlight (21st.dev GlowCard translated to vanilla
+  CSS/JS) on Settings + Pricing cards; **v0.64.1** rolled to Calculators/Promotions/Resources/
+  About; Resources emoji → line icons; Client-Due "—" → "·".
+- **v0.64.2** real Supabase sign-up on the landing ("Create account" ↔ "Sign in" mode toggle).
+
+## v0.63.x — 2026-06-08 (MINOR) — Standalone Pricing page
+
+`PricingPage` (public + in-app variants): membership-first carousel of long cards (3 visible,
+arrows), glossy gold CTAs, grouped "everything you can do, by plan" comparison table, public top
+bar with the dashboard logo block + EN/ES + theme toggles, ambient gold line-field. Reached from a
+landing "Pricing" button AND an in-app nav item. No fake monthly/annual toggle (different products).
+
+## v0.62.x — 2026-06-07/08 (MINOR) — Direction B + C rollout (the modern redesign)
+
+Owner picked **Direction B (Linear/Vercel flat dark-tech) + C (springy/halo motion)** from a
+4-direction exploration lab. Rolled across dashboard, Client Detail, Clients list, Calculators,
+Settings, report headers, About: flat near-black tokens (bg #0C0D11, card #16181C, hairline
+#2A2E35), gold halo hover (`.ga-lift`), press scale (`.ga-press`), stagger reveal (`.ga-rise`),
+diagonal bgHi→bgLo background + gold top-right glow, compact KPI tiles, light mode warm cream.
+
+## v0.61.x — 2026-06-07 (MINOR) — Glass groundwork + emoji strip
+
+Glass cards + atmospheric glow app-wide; thin chart strokes; slim gradient paired bars for Income
+vs Spending; emoji-as-iconography stripped from headers/labels/tabs (`stripLeadEmoji`); calculator
+tiles get thin line icons.
+
+## v0.60 — 2026-06-07 (MAJOR-ish) — Modern redesign port (Origin-inspired)
+
+Modern near-black/off-white global theme; rebuilt Login/landing (glass, clean sans + mono labels,
+thin reactive gold line-field canvas, EN/ES + theme toggles); KPI tiles rebuilt (neutral sans
+value, mono label, thin sparks, no emoji); SmoothAreaLine thinned. Auth handlers untouched.
+
 ## v0.59.6 — 2026-06-04 (Patch) — Rate-limit the public intake endpoints (audit §3c)
 
 The two un-authenticated public endpoints (`resolve-intake-invite`,

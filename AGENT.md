@@ -2,6 +2,8 @@
 
 > **Read this file at the start of every conversation.** It is the source of truth for what this project is, what's been decided, what's working, and what to avoid touching. Do not propose changes that contradict the Locked Decisions section below without explicit confirmation from the user.
 
+> **Cross-project playbook (inherited, not duplicated).** The portable way-of-working — core principles, verification discipline, deploy/migration habits — lives in the canonical **`C:\Users\mauhd\Projects\mauricio-os\PLAYBOOK.md`** (single source of truth; do not copy it here). This AGENT.md holds finance's locked architecture + specifics and inherits those disciplines. The playbook's situational items for bulk edits / atomic scripted writes / client-cache namespacing (§6) and batch-verify-all / build-version markers (§7) originated in this project (see Locked Decisions D-36, Pitfalls #4/#7/#12, and `__GA_BUILD__`). **Newly applicable since roles shipped:** §6 adversarial per-role access proof + §5 role-rules-as-a-skill.
+
 ---
 
 ## 1. Project identity
@@ -35,464 +37,23 @@ When working in a fresh session, **read App.jsx before proposing changes**. Don'
 
 ## 3. Current version
 
-**v0.36.0** — established 2026-05-23 (Minor — Doc hygiene + dead code cleanup; no behavior changes).
+**v0.69.8** — 2026-06-09. Account-based client portal (advisor/client roles from auth
+`user_metadata`), token share-portal, Settings flip cards, editable Localization, URL-stable
+routing, cross-account cache-leak fixes.
 
-**Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` should return `2026-05-23-v0360-doc-hygiene`. If it doesn't, refresh before working.
+**Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` — **trust the marker over any
+doc.** The full per-version history lives in `CHANGELOG.md` (newest on top).
 
-For the per-version log (v0.17.0 → v0.36.0 and everything before), read `CHANGELOG.md` — newest entry on top. This section preserves only the v0.16.0 deep-dive below as a historical reference; for current-state work, trust the CHANGELOG and the build marker.
+**Architecture status (2026-06-10):** **D-37 locked** — D-1's single-file rule is relaxed; the app
+is being modularized per `docs/ARCHITECTURE-PLAN.md` (constants/styles/utils/services first, then
+components/charts/calculators, then pages). App.jsx remains the source of truth for anything not
+yet extracted.
 
-**Highlights since v0.16.0** (full detail in CHANGELOG.md):
-
-| Version | What shipped |
-|---|---|
-| v0.36.0 | Doc hygiene + dead-code pass. Deduped 3 silent-overwrite translation keys (totalLbl / partnerEmailLbl / close). Added 11 missing EN+ES keys (D-3). Backfilled WHATS_NEW_ENTRIES for v0.29-v0.35. Deleted dead IntakeFormV2 (~64 lines). Refreshed AGENT.md §3 + CLAUDE.md session handoff. No behavior changes. |
-| v0.35.1 | Hotfix: hoisted `fmtSSN` to module scope. Was throwing ReferenceError on every keystroke into the prospect's SSN field on public intake step 4 (defensive `fmtSSN?` ternary still does a bare identifier read). |
-| v0.35.0 | Phase 5 + 6. New pure-SVG `Donut` (replaces Recharts PieChart on Dashboard's Net Worth Distribution) + `Waterfall` (component ready, not yet wired). Phase 6: `.ga-print-page` wrappers around the 6 FullMonthView sections — each prints on its own page. |
-| v0.34.0 | Phase 5 first chart. New pure-SVG `SmoothAreaLine` (Catmull-Rom-to-Bezier, gold area gradient, JetBrains Mono Y-ticks, crossover dot marker). Replaces 3 Recharts AreaCharts: SummarySection's Debt vs Savings + ClientDetail's "● live" Debt vs Savings + Cash Flow Trend pair. |
-| v0.33.0 | Public intake unified on the gold palette regardless of light/dark mode. `synthTheme.accent` and `synthTheme.blue` hard-pinned to `GOLD` (#C9A84C) so the restored IntakeFormBody chrome matches the welcome/service/engagement stages. |
-| v0.32.0 | Couple invites end-to-end. New Invite modal gains a Just-me / Partner & me toggle + partner fields. `api/send-intake-invite.js` and `api/resolve-intake-invite.js` ferry the partner data through. Engagement letter copy email cleaned up (removed duplicate FL Lic + bottom disclaimer). Required Supabase migration `2026-05-23-invite-partner.sql`. |
-| v0.31.0 | Public-intake hardening pass — typed-only signature with inline cursive display, Pay Now always clickable, Done modal cleanup (no ref token, no Submit-another, added "you can close this tab"), Welcome whitespace tightened, New Invite phone format, browser back navigates stages, post-submit engagement-copy email (`api/send-engagement-copy.js`), Tab 4 restored to the line-item advisor-style IntakeFormBody. Required Supabase migration `2026-05-22-engagement-emailed.sql`. |
-| v0.30.0 | Public intake redesign — 5-stage flow (Welcome → Service → Engagement → Your information → Done modal). New top-level helpers: `IntakeWelcomeStage`, `IntakeStepRail`, `IntakeSelectedServiceCard`, `IntakeFormSection`, `IntakeCurrencyInput`, `IntakeDoneModal`. Sticky service sidebar on web. ~50 new EN+ES translation keys. |
-| v0.29.1 | Hotfix: SignaturePad auto-commits the prefilled `defaultName` to parent state on mount. Prospects were seeing their name in the typed-mode input but hitting "signature required" because no onChange had fired. Stronger validation rejects empty typed text + empty drawn dataUrl. |
-| v0.29.0 | Intake Forms admin rebuild + New Invite modal. Phase 1+2+3 of Claude Design workplan. Public URL collapsible card. Filter pills (All/Pending/Reviewed/Approved). Per-row ⋯ kebab with 10 actions. SERVICES catalog now carries `payUrl`. Brand-tokens CSS file. Required Supabase migration `2026-05-22-intake-status.sql`. |
-| v0.28.0 | Per-row ✕ dismiss on advisor + client-due alerts. Month-keyed dismissals so "paid the credit card" auto-recycles next billing cycle. `▾ (N muted)` expander per panel with one-click restore. Toast feedback via new global `ga-toast` event. |
-| v0.27.0 | Bootstrap shimmer skeleton (replaces ⚓ loading text). Count-up tween on KPI tiles via `useAnimatedDisplay` hook. Pulse animation on high-priority "No Contact" + "Promo Expiring" pills. `aria-label` on 8 placeholder-only search inputs. |
-| v0.26.0 | UI/UX Pro Max audit batch (10 items): ARIA labels on TopBar icon-buttons, dark-mode contrast bump to WCAG AA, z-index CSS-var scale, ✓ Saved toast on client save/add/archive/restore/delete, `th{font-size:12px}`, `prefers-reduced-motion` guard, 150ms hover baseline, focus-visible gold ring. |
-| v0.25.x | Clients-page polish — single horizontal header row, per-row kebab → removed (visual noise), sort dropdown shrunk to 190px with `⇅`-prefix labels. |
-| v0.24.0 | Audit pass — removed duplicate page titles from 11 pages (TopBar already shows them), disambiguated X-axis duplicate "Jan", emoji-stripped alert pill titles, Settings phone formats via fmtPh, EmailSupport "Recipient" → "Reply-to". |
-| v0.23.0 | Header dedup, Client Due search, T&C gate ordering, public-intake Welcome screen, Calculators 3-col compact grid, Promotions countdown pill. (Shipped from a parallel chat; CHANGELOG backfilled 2026-05-22.) |
-| v0.22.0 | _Skipped_ — never on `main`. |
-| v0.21.0 | PDF / print rebuild — Source Serif 4 body, Newsreader italic titles, JetBrains Mono currency cells, branded `.ga-print-header` + `.ga-print-footer`, intake-form PDF template rebuilt. |
-| v0.17.0–v0.20.0 | TopBar with avatar dropdown, 6 new dropdown pages (Settings/Security/Billing/Backup/Archived/WhatsNew/Help), 12-preset avatar picker, in-app Email Support modal via Resend (`api/send-support-email.js`), Dashboard Net Worth Distribution donut, side-by-side Advisor Alerts + Client Due cards. |
+> The per-version deep-dives (v0.12.3–v0.16.0) that used to live in this section were removed
+> 2026-06-10: every version is covered in `CHANGELOG.md`, and the original long-form write-ups are
+> preserved in this file's git history.
 
 ---
-
-### Historical reference: v0.16.0 — Phase 8 dashboard restructure (2026-05-21)
-
-Retained verbatim for context on the v0.16.0 architecture decisions; current behavior may differ slightly per the per-version entries above.
-
-**Phase 8 — Dashboard restructure (visual match to `ui_kits/advisor_app/index.html`).**
-- **6 narrow KPIs → 4 wide KPIs.** Replaced `Total / Net Income / Total Debt / Improving / Stable / Underperforming` with `Clients (X active · Y archived) / Combined Net / mo / Combined Debt / Liquid Assets (checking + savings)`. Liquid Assets value computed via existing `liquidA(client)` summed across active clients. Grid switches `repeat(auto-fit,minmax(140px,1fr))` → `repeat(4,1fr)` desktop, `repeat(2,1fr)` mobile. Tagged `data-ga-grid="kpi-4"` so the existing v0.9.3 mobile-collapse rule applies.
-- **Income vs Spending composed chart.** Replaced the 3-column row (2 small donut cards + 100px AreaChart) with a single ~260px Recharts `<ComposedChart>` showing two `<Bar>` series (income green, spending red) plus a `<Line>` net overlay in gold. Data computed per-month from `monthSnapshots` (income from `sn.income`, spending = `sn.bills + min payments from sn.data.cards`). Mono Y-axis with `fmtS()` ticks. Light cartesian grid via `strokeDasharray="2 4"`. Inline legend chips above the chart match the Claude mockup. Range + filter pills retained.
-- **Recharts imports extended.** Added `ComposedChart, Line, Legend` to the existing import line. No other chart sites changed (Phase 4's area charts elsewhere are intentional — only the dashboard's main chart switches to bars+line per the Claude mockup).
-- **Sidebar advisor profile widget at bottom.** Replaced the "⚙️ Profile & Settings" button + tiny green-dot name row with a single tile: gold-bordered avatar circle (first two letters of `settings.advisorName` or auth email) + name + small gold "⚙️ Profile & settings" sub-label. Click opens ProfileModal. Mobile drawer + desktop sidebar both updated. Desktop sidebar collapses cleanly when `sidebarCollapsed` (just the avatar). Theme + Language buttons moved above the profile widget.
-
-**Bugfix pass (7 real bugs Mauricio reported in v0.15.0 / v0.15.1 smoke tests).**
-
-1. **One-character-at-a-time on `ToggleField` inputs.** `ToggleField` was defined inside `ProfileModal`'s body as `const ToggleField=({k,label})=>...`. Every parent re-render created a new component function reference → React saw a type change → unmounted + remounted the entire `<input>` subtree → focus lost after each keystroke → user could only type one character at a time. Extracted to a top-level `ProfileToggleField({k,label,s,setS,th,INP})` component above `ProfileModal`. All 4 call sites updated to pass `s={s} setS={setS} th={th} INP={INP}` explicitly. **New pitfall #17 candidate** (defining components inside other components' bodies) — see WORKPLAN.
-
-2. **Profile & Settings backdrop click closed the modal, losing draft changes.** Added `disableBackdropClose={true}` to the `<Modal>` in `ProfileModal`. The Modal component already supported this prop (v0.12.5, used by EmailReportModal). User must click the ✕ button or Save explicitly.
-
-3. **Profile reorg into collapsible sections.** "OPTIONAL" + "LOGOS" + "YOUR SIGNATURE" were always-expanded inline blocks. Two new collapsible cards:
-   - **➕ Optional fields** (collapsed by default) — wraps the 4 ProfileToggleField checkboxes (companyPhone / businessAddress / googleMapsUrl / website)
-   - **🎨 Branding** (collapsed by default) — wraps the Logos (light + dark, with upload + clear), the dashed "SIGNATURE FOR ENGAGEMENT LETTERS" header, and the SignaturePad
-   Both use the same card chrome pattern as Theme Colors / Background Colors (light gold tint background, accent border, ▲/▼ toggle).
-
-4. **Advisor signature didn't show on the public intake engagement letter.** Root cause: `api/resolve-intake-invite.js` returned only `{advisorId, prospectName, prospectEmail, prospectPhone, lang}` — the advisor's `settings.advisorSignature` was never exposed to the public intake. PublicIntake's `advisorSettings` was effectively empty, so EngagementLetter's `settings.advisorSignature` check always fell to the placeholder. Fix:
-   - Server endpoint now does a service-role `from("settings").select("data").eq("user_id", row.user_id).maybeSingle()` after resolving the invite, then returns a **curated public subset** as `advisorProfile`: advisorName, advisorEmail, advisorPhone, companyName, companyPhone, has_companyPhone, businessAddress, has_businessAddress, website, has_website, ig, logoLight, logoDark, advisorSignature, services, stripeLinks, ongoingFeeAmount, ongoingFeeMonthlyLite. **No sensitive fields** (no SSN, no DOB, no client lists, no internal flags).
-   - PublicIntake's resolve handler reads `r.advisorProfile` (falls back to legacy `r.advisorSettings` if present).
-   - EngagementLetter now correctly renders the advisor's signature from `settings.advisorSignature` (drawn dataUrl, typed object, or legacy string — all 3 handled per v0.15.1).
-
-5. **Engagement letter header redesigned.** The old top read: anchor logo + `headerFirm` (big bold) + `headerSub` (italic). Then below: a centered block with `Firm: …` / `Phone: …` / `Email: …` / `Tagline: …` — labeled `Firm:`/`Phone:`/etc. lines that read like a form. New header per Mauricio:
-   - Anchor logo
-   - **Advisor name** big bold (was: firm name)
-   - Firm name below in lighter weight
-   - Document subtitle italic
-   - Gold rule
-   - Contact line: `(305) 555-1234 · advisor@example.com` (phone · email, no labels)
-   - Tagline below in italic muted, if set
-   The `firmBlock` array in `engagementLetterTemplate.js` is no longer rendered (kept in the template for future use; can be deleted later if confirmed unused).
-
-6. **Public intake submit/pay flow split.** `goSubmit()` previously auto-redirected to Stripe whenever `selectedService.stripeUrl` was set — gave the client no choice. Now `goSubmit(payNow)` is parameterized:
-   - **Submit intake** (gold button) → records intake, advisor follows up out-of-band.
-   - **💳 Submit & pay now** (gold-outlined button, only when stripeUrl is set) → records intake AND redirects to Stripe.
-   Error paths fixed too: invalid Stripe URL or missing payment link no longer silently throws — surfaces "Payment link is invalid / not configured. Your intake was submitted — your advisor will follow up." Small italic helper below the buttons reads "You can pay later, by check, or in cash — your advisor will follow up." Step 1–3 "Continue →" button unchanged.
-
-7. **Build marker** bumped to `2026-05-21-v0160-phase8-dashboard-and-fixes`.
-
-**Out of scope (deferred to future):**
-- **Side-by-side ADVISOR ALERTS + CLIENT DUE panels.** The Claude mockup shows two separate panels. The current `RemindersPanel` is a single tabbed widget. Splitting it requires refactoring the panel into two presentational components driven by the same `getAdvRem`/`getClientDue` helpers — significant change. Current `RemindersPanel` retained unchanged for v0.16.0 — covers the same data, just in a single tabbed UI. Will revisit if user pushes back.
-- **Client signature canvas draw on touch devices.** No bug reproduction so far. If it surfaces, debug the SignaturePad `onTouchEnd` event firing on the specific device.
-- **Translation keys for new labels** (`combinedNetMo`, `combinedDebt`, `liquidAssets`, `incomeVsSpendingHdr`, `spending`, `netLbl`, `archivedLbl`, `intakePayNow`, `intakePayLaterHint`, `intakeStripeUrlBad`, `intakeNoStripeLink`, `brandingHdr`, `personalInfoHdr`, `goalsAndNotesHdr`, `shortTermLbl`, `midTermLbl`, `longTermLbl`, `generalNotesLbl`, `howHeardLbl`, `howHeardPlaceholder`, `checkingSavingsLbl`, `active`) — currently fall through to English fallbacks via `t.foo||"…"`. ES users will see English for these specific labels. **Translation pass deferred to a separate chat.**
-
-**Build marker:** `2026-05-21-v0160-phase8-dashboard-and-fixes`. App.jsx 3,469 → 3,548 lines (+79 for Phase 8 + bugfixes). `src/engagementLetterTemplate.js` (-8 lines net from v0.15.1). `api/resolve-intake-invite.js` +30 lines (advisor profile join). `vercel.json`, `package.json`, `translations.js` unchanged. No SQL migration. No new pitfalls (pitfall #17 candidate above can be folded in at next versioning). No new locked decisions. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `src/engagementLetterTemplate.js`, `api/resolve-intake-invite.js`; replace `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.16.0 entry.
-- Commit + push; Vercel auto-deploys (auto-redeploys the `api/` function too).
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0160-phase8-dashboard-and-fixes"`.
-
-**Smoke tests:**
-1. **Dashboard layout.** Open Dashboard. Four wide KPI cards across the top (Clients / Combined Net / Combined Debt / Liquid Assets). Below: a big Income vs Spending chart with green income bars, red spending bars, and a gold net line overlay. Legend chips above the chart show the three colors. Range pills (3mo / 6mo / 12mo / All) and filter pills (All / Revolving / Current) still work.
-2. **Sidebar profile widget.** Bottom of the sidebar shows your initials in a gold-bordered circle, your name, and "⚙️ Profile & settings" in gold underneath. Click opens Profile & Settings modal. Collapse the sidebar (« button) — only the avatar shows.
-3. **Profile & Settings doesn't close on backdrop click.** Open Profile & Settings, click outside the modal in the dark area — nothing happens (was: modal closed, draft lost). Click the ✕ to close.
-4. **One-char-at-a-time bug gone.** Profile & Settings → expand Optional fields → check "Company Phone" → type a multi-digit number in the field. Should type all digits in one go, not one at a time.
-5. **Advisor signature on public intake.** Profile & Settings → expand Branding → draw or type a signature → close + save. Open `/intake?invite=<token>` in incognito → step through to step 3 (engagement). The top of the engagement letter should show YOUR signature (drawn or typed) — not the grey placeholder.
-6. **Engagement letter header.** On step 3 of the intake, scroll to the top of the engagement letter. Should read: anchor logo / **Your Name** (big) / Company name (smaller) / "Financial Planning Engagement Letter" italic / gold rule / "phone · email" with no labels. No "Firm:" "Phone:" "Email:" "Tagline:" prefixes anywhere.
-7. **Submit vs Pay split.** Walk through the intake to step 4. Two gold buttons appear: "Submit intake" (filled) and "💳 Submit & pay now" (outlined, only if a Stripe link is configured for the selected service). Clicking Submit intake submits without redirecting. Clicking Submit & pay submits AND redirects to Stripe (or shows a clear error if the link is bad). Italic note below: "You can pay later, by check, or in cash."
-
----
-
-### Prior: v0.15.1 — 2026-05-21 (Patch — v0.15.0 follow-up bugfix pass; 5 real bugs from Mauricio's smoke test).
-
-**What shipped:**
-1. **Missing `IntakeFormBody` component defined.** Referenced at App.jsx:2809 (PublicIntake step 4) and App.jsx:3066 (IntakeSubmissionEditor) since v0.7.1 but never actually written — production regression. Every public intake's step 4 ("Details") rendered blank because React crashed on the undefined component. New `IntakeFormBody({draft,setDraft,t,TH,lang})` placed before `PublicIntake` wraps `IncomeSection`/`BillsSection`/`DebtSection`/`CustomAssetsSection` against the draft state, plus address/DOB/SSN/partner-DOB-SSN/how-heard fields and short/mid/long-term + general notes textareas.
-2. **EngagementLetter Section 4 — Compensation & Fees** simplified per Mauricio. Removed Investment Management AUM line and Product Commissions line from both EN and ES `section4` objects in `src/engagementLetterTemplate.js`. Default `ongoingFeeAmount` changed `"1,200"` → `"500"`; new `ongoingFeeMonthlyLite: "30"` replaces `ongoingFeeQuarterly`. `ongoingValue` text reads "$500 annually (or $30 per month under the Lite plan, if applicable)." `EngagementLetter` JSX render simplified to two lines: Ongoing Fee + Referral Fees.
-3. **Sidebar wordmark → Newsreader italic uppercase.** v0.15.0 Phase 2 missed both sidebar wordmark sites (mobile drawer line 3405 + desktop sidebar line 3416). Fixed via `replace_all` — `fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",fontWeight:500`. Matches the brand spec from `colors_and_type.css .ga-wordmark`.
-4. **ToS modal Accept button.** Removed `disabled={!checked}` attribute (some mobile WebViews honor it unreliably during React rapid re-renders, causing the "I check the box but Accept still won't fire" symptom). Gating is now JS-only: `()=>{ if(checked) onAccept(); }`. Button bumped to 14px / `minHeight:48` / `touchAction:"manipulation"` for proper mobile tap target. Background uses literal `GOLD` (was `theme.accent` which can resolve to `undefined` in some theme contexts → invisible button), text flips to navy `#0D1B2A` when active for readable contrast on gold.
-5. **Advisor signature typed-mode persistence bug.** Profile & Settings `<SignaturePad>` `onChange` was saving `v.dataUrl` — for typed signatures `v.dataUrl` is `undefined` (typed mode has `v.text`), so saving wiped the signature back to `""`. Now persists the full object `v` (or `""` to clear), with a `value`-prop normalization that keeps legacy string-shaped `settings.advisorSignature` values working. `EngagementLetter`'s advisor signature render expanded to a 4-branch IIFE: empty → grey placeholder, string → legacy `<img src>`, `kind:"drawn"` → `<img src={sig.dataUrl}>`, `kind:"typed"` → cursive Brush Script MT text node.
-
-**Deferred (raised by Mauricio, not addressed in v0.15.1):**
-- **Dashboard layout restructure** to match the Claude design `ui_kits/advisor_app/index.html` mockup. Different KPI layout (4 wide cards vs current 6 narrow), INCOME VS SPENDING bars+line overlay chart (vs current smooth area), side-by-side ADVISOR ALERTS + CLIENT DUE panels (vs current single tabbed panel), advisor profile widget at bottom of sidebar (vs current Profile & Settings button). **Not in HANDOFF.md Phases 1–7** — the ui_kits were intentionally scoped as visual references for brand/chrome patterns, not as working component specs. Requires explicit Phase 8 sign-off to scope.
-- **Client signature (engagement step) draw mode visual feedback.** Mauricio reported "Signature on the 3rd page of the advisor agreement doesn't populate." If they meant the ADVISOR's signature at the top of the letter, v0.15.1's typed-mode fix addresses it. If they meant the CLIENT's signature on the engagement step's SignaturePad doesn't visually persist while drawing, that's a separate canvas-rendering issue that needs reproduction on Mauricio's specific device/browser to diagnose.
-
-**Build marker:** `2026-05-21-v0151-intake-and-sig-fixes`. App.jsx 3,417 → 3,469 lines (+52 for IntakeFormBody). `src/engagementLetterTemplate.js` -8 lines (section4 simplification). `vercel.json`, `package.json`, `translations.js` unchanged. No SQL migration. No new pitfalls. No new locked decisions. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `src/engagementLetterTemplate.js`; replace `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.15.1 entry.
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0151-intake-and-sig-fixes"`.
-
-**Smoke tests:**
-1. **Intake step 4 renders.** Open `/intake?advisor=<your-uuid>` in incognito. Step through: household → service → engagement (sign as client) → click Continue. Step 4 ("Details / New Client Intake") should now render the full form (address / DOB / SSN / how-heard, income/bills/debt editors, notes textareas) instead of going blank.
-2. **Engagement letter Section 4.** On step 3 of the intake, scroll to "4. Compensation & Fees". You should see exactly TWO bullet items inside the gold-bordered box: Ongoing Planning/Monitoring Fee ($500 annually or $30 per month under the Lite plan) + Referral Fees. The AUM line and Commissions line should be GONE.
-3. **Sidebar wordmark.** Open the app — the sidebar header "Golden Anchor / ADVISOR PORTAL" should render in Newsreader italic uppercase, gold color, with 0.10em letter-spacing. Same on the mobile drawer (open via hamburger).
-4. **ToS modal.** Sign out, sign back in (or clear `settings.tosAcceptedAt`). The ToS modal appears. Check the "I have read and accept..." box → the Accept & Continue button changes from greyed-out to gold-with-navy-text. Click it. Modal dismisses, app loads. (If still broken after this fix, capture the browser console — there may be a deeper state issue.)
-5. **Advisor signature.** Profile & Settings → scroll to "YOUR SIGNATURE (FOR ENGAGEMENT LETTERS)". Switch to "Type name + date" mode, type your name. Close + reopen Profile & Settings → the typed signature should persist (was wiping to blank before). Open any client's engagement letter → your typed name should render in cursive at the top.
-
----
-
-### Prior: v0.15.0 — 2026-05-21 (Minor — Claude Design System port: Phases 1–4 from `HANDOFF.md`. Brand assets, type system, PDF rebuild, line/area charts).
-
-**What shipped:** The Claude Design handoff (`golden-anchor-design-system/` project) had been delivered but never applied to the live app. v0.15.0 ports four of the seven phases.
-
-**Phase 1 — Brand assets in `public/`.** `assets/logo-anchor.png` and `assets/anchor-monogram.svg` copied into `public/`. `index.html` favicon now points at the SVG monogram first (`<link rel="icon" type="image/svg+xml" href="/anchor-monogram.svg" />`); PNG favicons kept as legacy fallback. `LogoImg` (App.jsx:2468–2472, was: settings logo → ⚓ emoji fallback) rewritten with size-aware fallback: size ≤ 48 uses `/anchor-monogram.svg`, size > 48 uses `/logo-anchor.png`, ⚓ emoji is the final fallback only if the image fails to load (handled via `onError`).
-
-**Phase 2 — Type system (Google Fonts).** `index.html` gets a `<link>` to Google Fonts loading Newsreader, Source Serif 4, Plus Jakarta Sans, and JetBrains Mono. The three `fontFamily:"system-ui,sans-serif"` declarations in App.jsx (line 2746 — intake confirmation; line 2758 — intake form body; line 3416 — main app shell) all become `"'Plus Jakarta Sans',system-ui,sans-serif"`. The main app shell additionally gets `fontVariantNumeric:"tabular-nums"` and `fontFeatureSettings:"'tnum' 1"` so every currency value inherits aligned numerals. Wordmark sites (`Login` line 2461, intake confirmation line 2748, intake form header line 2766) become Newsreader italic with `letterSpacing:"0.10em"` and `textTransform:"uppercase"` — `font-family:"'Newsreader',Georgia,serif"`. EngagementLetter body still uses `Georgia,serif` (printed letter, intentional).
-
-**Phase 3 — `api/render-report-pdf.js` rebuild.** The print-HTML `buildPrintHTML` gets a brand-font upgrade in the `<style>` block. Body now uses `"Source Serif 4", Georgia, serif`. Section headers (`.section-hdr`) use `"Plus Jakarta Sans"`, weight 800, letter-spacing 0.08em, with the gold underline shrunk from `2px solid ${GOLD}` to a `1px solid ${GOLD}` hairline per the spec. New `.report-title` class uses Newsreader italic at 26px for the main report title block. The brand mark changes from `<div class="brand-mark">⚓</div>` to `<img src="https://finance.goldenanchor.life/anchor-monogram.svg">`. Brand name becomes Newsreader italic uppercase with 0.10em letter-spacing. All nine `<div class="section-hdr">EMOJI ${L.fooHdr}</div>` sites have the leading emoji stripped (income / bills / debt / assets / investAllocation / financialRatios / cashFlow / strategyPlan / notes). Header bar bottom-border switches from neutral border to a 1px gold rule. New `.mono`, `.money`, `td.num` classes use JetBrains Mono with `tabular-nums` (selector-based — current tables don't carry these classes yet, so this is a hook for future selective application without touching all table render code). Email signature in `buildEmailBody` also gets the same brand-font treatment (Newsreader italic wordmark + SVG monogram).
-
-**Phase 4 — Recharts charts: BarChart → AreaChart everywhere.** Six BarChart sites swapped to AreaChart with a single 2px stroke, fill at 33-alpha, no point dots (dot:false), small activeDot on hover, and tooltip retained:
-- `Dashboard` (line ~2191) — 5-up debt-trend mini-chart at top of dashboard
-- `SummarySection` (line ~586) — Monthly Statement Summary "Debt Trend" right-side card
-- `ClientDetail` (line ~2423) — 2-up Debt vs Savings / Cash Flow trend cards above the client tab strip
-- `FullReport` (line ~732) — Trends section Debt vs Savings chart
-- `FullReport` (line ~732) — Trends section Cash Flow chart
-- `YearCompareView` (line ~1445) — 4 small year-aggregate KPI charts (Debt / Savings / Cash Flow / Income)
-
-All `<LabelList>` value labels above bars removed per spec — exact numbers now surface only via the tooltip on hover (and via the data tables already rendered alongside the chart). Recharts imports `Bar`, `BarChart`, and `LabelList` retained but unused — tree-shaken at build, harmless to leave.
-
-**Out of scope (per user direction, 2026-05-21):**
-- Phase 5 — responsive scroll-snap tab rows etc. Already largely shipped v0.9.x–v0.13.x.
-- Phase 6 — Spanish polish. Closed v0.12.2 (Chat 8).
-- Phase 7 — Lucide icon swap. Marketing surface only; not in product.
-- Three-up KPI strip override for Monthly tab in print. Current PDF builds a 5-up; the Monthly variant uses a different `reportType` branch in `buildPrintHTML` but the KPI grid is shared. Deferred — would require splitting `kpiHTML` per reportType.
-- Page-number footer via Puppeteer `displayHeaderFooter`. Requires editing the `launch()`/`pdf()` calls, deferred.
-- Anchor-monogram inline-base64 embed in the print HTML (currently fetched from public URL). Works in production where `finance.goldenanchor.life/anchor-monogram.svg` is live; would break for dev-only PDF previews. Acceptable for v0.15.0.
-
-**Folded in this version: v0.14.0 (engagement-letter / ToS / services editor).** A parallel chat shipped the code (`SignaturePad` App.jsx:2474, `ToSModal` App.jsx:2518, `EngagementLetter` App.jsx:2548, plus settings.tosAcceptedAt / settings.tosVersion / client.engagementLetter schema) but never updated AGENT.md or CHANGELOG.md. The referenced `AGENT_v0.14.0_UPDATES.md` was never created. v0.15.0 documents v0.14.0 retroactively in CHANGELOG.md; no new locked decisions added since the code matched the O-14 Chat 11 spec verbatim. The "in-app DocuSign-style signing flow + per-agent uploaded template" remains a D-23 multi-tenant deferred item.
-
-**Build marker:** `2026-05-21-v0150-design-system-port`. App.jsx 3,417 lines (no line-count change — net edits cancel; brand assets are external files). `api/render-report-pdf.js` ~+30 lines (font CSS additions and brand-mark SVG swap). `index.html` +5 lines (favicon + Google Fonts link). New files: `public/logo-anchor.png`, `public/anchor-monogram.svg`. `src/translations.js` unchanged at 1,313 keys/side. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `api/render-report-pdf.js`, `index.html`; add new `public/logo-anchor.png` + `public/anchor-monogram.svg`; replace `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.14.0 + v0.15.0 entries.
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0150-design-system-port"`.
-- Re-upload current App.jsx + AGENT.md + WORKPLAN.md to project knowledge.
-
-**Smoke tests:**
-1. **Fonts loaded** — open the app, DevTools → Computed → `font-family` on the page body should resolve to "Plus Jakarta Sans" (not system-ui). Login screen wordmark "GOLDEN ANCHOR" renders in Newsreader italic uppercase with letter-spacing.
-2. **Favicon SVG** — open a fresh tab, browser tab icon shows the geometric anchor monogram (sharp at any zoom). Older browsers fall back to the PNG silently.
-3. **Charts** — Dashboard's debt-trend chart, Monthly Statement Summary, Client Detail header trends, Complete Report → Trends section, Year Comparison: every chart is a smooth filled area with a 2px stroke (not bars). No values printed above the line. Hover any point → tooltip shows the exact number.
-4. **PDF report** — Complete Report → 📧 Email button → send to yourself. Open the PDF: report title at top in Newsreader italic, no emojis in section headers, body in Source Serif 4, gold 1px hairline under each section header, brand mark is the SVG anchor (not the ⚓ emoji).
-5. **No regressions** — v0.14.0 engagement-letter / ToS flows still work: open a client with no signed engagement letter → amber "Mark as signed today" pill appears; click it → green pill with today's date. First-login modal still shows "I have read and accept the Terms of Service…" if `settings.tosAcceptedAt` is unset.
-
----
-
-### Prior: v0.13.5 — 2026-05-21 (Patch — `PlanReportBlock` restructured into 5 self-contained cards to fix print BG-repaint failure on page splits).
-
-**What shipped:** v0.13.4 added `breakInside:"avoid"` to `mCARD` to control WHERE page breaks happen on print. Mauricio's smoke test confirmed: with "Background graphics" enabled in Chrome's print dialog, the break now happens cleanly between mCARDs (good), but the Strategy Plan section's OUTER container background still ends mid-page on page splits — DEBT PAYOFF ORDER cards on page 8 have dark BG, FINANCIAL ROADMAP + Phase cards on page 9 floating on white. Same root cause as Image 5/6 from the v0.13.3 patch turn.
-
-**Diagnosis — Chrome paints background only on the FIRST fragment of a split container.** This is well-documented browser behavior with no CSS-only fix. When a `<div>` with a background gets split across pages, the background paint stops at the page edge of the first fragment and does NOT repaint on subsequent fragments. `print-color-adjust: exact` (already set globally) helps ensure the painted backgrounds print at all, but it doesn't make the browser repaint across split fragments. Even modern Chrome (2026) still has this limitation.
-
-**Fix — restructure `PlanReportBlock` so each major section is its own self-contained mCARD.** Each card has its own background that paints correctly per page — if a card fits on one page, its background extends to its full content; if a card must split, both fragments paint their own BG (because each fragment IS a card, not a fragment-of-a-parent). The outer wrapper now has no background, just margin.
-
-**New structure (5 cards):**
-1. **Card 1** — Strategy Plan title + KPI block (Net Income/Bills/Min Debt/Extra) + Debt Strategy caption
-2. **Card 2** — DEBT PAYOFF ORDER header + debt items list (only if `totalDebt > 0`)
-3. **Card 3** — FINANCIAL ROADMAP header + Phase 1 + Phase 2 + Phase 3 cards
-4. **Card 4** — INVESTMENT PROJECTION (only if `investPerMo > 0`; was already its own mCARD, just no longer wrapped in outer)
-5. **Card 5** — Additional Notes / Recommendations (only if `ov.extra`)
-
-All conditional rendering preserved (`hasStrat`, `totalDebt`, `efGap`, `investPerMo`, `ov.extra`). All inner cards (debt items, PhaseCards, KPI tiles) unchanged. KPI block's `marginBottom` made conditional on `hasStrat` so the caption sits flush when present and the block tightens when absent.
-
-**Visual change on screen:** Strategy Plan section is now a vertical stack of 5 distinct cards with visible card boundaries (border + dark BG per card), instead of one large unified container with sub-sections. Less unified-looking but more print-correct.
-
-**Trade-off accepted:** Slightly more visual chrome on screen for vastly better print behavior. Each printed card has its own dark BG that doesn't disappear at page splits.
-
-**Residual risk:** If a SINGLE card (most likely Card 3 — FINANCIAL ROADMAP with 3 long Phase cards) is still too tall for one printed page, that single card could split and the BG-repaint issue would recur for that fragment specifically. Lower probability than before (each card is smaller than the original outer container) but not zero. Escalation path: split FINANCIAL ROADMAP further so each Phase becomes its own top-level card. Wait for Mauricio's next print test before applying.
-
-**Out of scope (deferred):**
-- **Email PDF (`/api/render-report-pdf.js`)** has its own `buildPrintHTML` logic separate from App.jsx's Print/Save PDF flow. This patch fixes only the in-browser print. If Mauricio uses Email PDF and sees the same issue, a parallel restructure of the server-side template will be needed.
-- **Mobile column hiding for Income/Bills/Debt tables** — still queued.
-- **v0.14.0 D-40 through D-44 formal documentation** — still pending, lives in `AGENT_v0.14.0_UPDATES.md`.
-
-**Build marker:** `2026-05-21-v0135-strategy-plan-restructure`. App.jsx 3,417 lines (in-place, +499 chars from the structural change). `src/translations.js` unchanged. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.5 entry.
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0135-strategy-plan-restructure"`.
-- Re-upload current App.jsx + AGENT.md + WORKPLAN.md to project knowledge (drift problem keeps biting — needs to become muscle memory after every deploy).
-
-**Smoke tests:**
-1. **In-browser print — Strategy Plan section** — open any client with full data → Reports → Complete Report → Print (Background graphics ON). The Strategy Plan section now appears as 5 stacked cards. When page breaks happen, they fall between cards (not within). EVERY card has its full dark background on whatever page it lands on. No more white-background orphans.
-2. **Screen view — Strategy Plan section** — open Financial Plan tab. The section now looks like 5 distinct cards stacked vertically (was: one big card with sub-sections). Slightly more visual chrome, same content.
-3. **Conditional rendering still correct** — verify with multiple test clients:
-   - Client with no debt + good income: Debt Free callout appears, no DEBT PAYOFF ORDER card, no Phase 1.
-   - Client with debt but no EF gap: DEBT PAYOFF ORDER card present, FINANCIAL ROADMAP has Phase 1 + Phase 3 only (Phase 2 hidden).
-   - Client with no extra cash for investments: INVESTMENT PROJECTION card hidden.
-   - Client with `ov.extra` notes: Additional Notes card appears at the bottom.
-4. **FINANCIAL ROADMAP card size check** — if a client has all 3 phases (debt + EF gap + invest) AND each phase has long notes, the FINANCIAL ROADMAP card may still be too tall for one page. If split BG issue recurs, escalation is to split each Phase into its own top-level card.
-
----
-
-### Prior: v0.13.4 — 2026-05-21 (Patch — Bigger desktop sidebar tiles + universal page-break protection for all card-styled elements).
-
-**What shipped:** Mauricio's v0.13.3 smoke test confirmed sidebar tiles STILL felt small with too much empty space on desktop, and surfaced new print/PDF complaints (sections breaking mid-card across pages; dark backgrounds appearing to end mid-page). Two fixes, five total edits. No new locked decisions, no D-amendments.
-
-**Context — file state at start of session:** The current deployed App.jsx is at build marker `v0140-engagement-letter-flow` from a parallel chat that shipped engagement-letter / ToS / services-editor work (v0.14.0). All of my v0.13.3 fixes are preserved in that file (verified: 7 `kpi-4` tags, 11 `two-col` tags, 3 `kpi-3` tags, "Min Debt Pay (All Loans)" → "Min Debt" replacement intact, sidebar tile mins at 360/360/420/320). The v0.14.0 work has NOT been documented in AGENT.md yet — a separate `AGENT_v0.14.0_UPDATES.md` doc exists with the proposed §3 + §4 (D-40 through D-44) + §5 + §6 updates. Per Mauricio's instruction "start with 0.13.4", this patch's build marker is `v0134-bigger-tiles-print-fixes` even though it goes "backwards" from `v0140` numerically. The v0.14.0 doc updates are out of scope for this patch and will be handled in a future session.
-
-**Fix 1 — Universal page-break protection via `mCARD`.** The single largest pain point in Mauricio's Image 4 (Balance Sheet splits across pages) and Image 5 (Strategy Plan dark background appears to end mid-page) is that large containers like `PlanReportBlock`, the Balance Sheet two-card grid, the Cash Flow Statement, and Income Statement panels are too tall to fit on one printed page and the browser splits them at arbitrary points — including in the middle of a single inner card. The existing `@media print { .ga-section { page-break-inside: avoid } }` rule (from v0.12.6) only applied to ONE place in the codebase (FullReport's `RS` helper) because everything else uses `mCARD` via inline style, not a class.
-
-v0.13.4 fixes this surgically: the `mCARD` style helper at line 51 now returns `breakInside:"avoid"` + `pageBreakInside:"avoid"` + `WebkitPrintColorAdjust:"exact"` + `printColorAdjust:"exact"` in addition to its existing `background/border/borderRadius`. Every component using `...mCARD(th)` automatically inherits these — this includes the Strategy Plan outer, Balance Sheet cards, Income Statement card, Cash Flow Statement, all KPI tiles, all section cards. Effect at print time: when a big container needs to split, the browser tries to put the break BETWEEN inner mCARDs rather than mid-card. When a mid-card split is unavoidable, both fragments will paint the dark background (modern browser behavior). `WebkitPrintColorAdjust:"exact"` is belt-and-suspenders for background printing — already set globally on `*{}` in the existing print CSS, but applying inline ensures it sticks even if some user agent ignores the global.
-
-**Caveat — Chrome's "Background graphics" toggle.** Even with `print-color-adjust:exact`, Chrome still requires the user to enable "Background graphics" in the print dialog's More Settings panel before it'll preserve painted backgrounds. There's no CSS-only way around this. Documentation note for advisor onboarding: when printing/saving to PDF, expand "More settings" → toggle "Background graphics" ON.
-
-**Fix 2 — Desktop sidebar tiles bumped MUCH bigger.** v0.13.3 raised minmax from 240/260/300/250 to 280/300/340/280, then v0.13.3 also bumped to 360/360/420/320. Mauricio's screenshots showed cards still looked small at his ~1700-1920px viewport (~280px per card with auto-fit packing 4-5 columns wide, leaving partial bottom rows with 2-3 empty slots that "feel like empty space"). v0.13.4 bumps Calculators / Resources / About-services to **540px** minimum (was 360/360/320). About-advisor block stays at 420 — only has 2 items, doesn't suffer from the empty-row problem.
-
-At Mauricio's primary 1700-1920px viewport:
-- Calculators (9 items): 1920/540 = 3.56 → **3 columns × 640px each**. 9 calcs / 3 = 3 full rows, zero empty space. Was: 1920/360 = 5.33 → 5 cols × 384px each, 9 calcs / 5 = 2 rows of 5+4 with 1 empty slot.
-- Resources (6 items): 3 columns × 640px each. 6 / 3 = 2 full rows. Was: 5 cols × 384px, 6 / 5 = 1 row of 5 + 1 with 4 empty slots.
-- About services (9 items): 3 columns × 640px each. 9 / 3 = 3 full rows. Was: 6 cols × ~316px, 9 / 6 = 1 row of 6 + 1 with 3 empty slots (Image 3).
-
-At smaller viewports (1200-1400px), cards become wider per row (700-800px) but still readable. Mobile fallback (≤719px) handled by existing CSS rules — single column unchanged.
-
-**Out of scope (deferred):**
-- **Mobile column hiding for Income/Bills/Debt tables** (Source/Person/Net for Income, Name/Person/Monthly for Bills, Name/Balance/Min for Debt). Still queued for a future patch as a focused refactor.
-- **Complete `v0.14.0` engagement-letter / ToS / services-editor documentation.** The other chat shipped this work; the proposed AGENT.md updates live in `AGENT_v0.14.0_UPDATES.md` (separate doc) and will be folded into AGENT.md §3 + §4 (D-40 through D-44) + §5 + §6 in a future session.
-- **Restructuring `PlanReportBlock` so each Phase card is its own top-level section** (would give cleaner page breaks than relying on `breakInside:avoid` hints). Deferred — the universal `mCARD` fix is the lower-risk first attempt; if Mauricio's next print test still shows mid-card splits, this becomes the next move.
-
-**Build marker:** `2026-05-21-v0134-bigger-tiles-print-fixes`. App.jsx 3,417 → 3,417 lines (in-place, +102 chars). `src/translations.js` unchanged. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved. (D-40 through D-44 from the v0.14.0 work are still pending formal addition to §4 — separate documentation task.)
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.4 entry.
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-21-v0134-bigger-tiles-print-fixes"`.
-- Re-upload current App.jsx + AGENT.md + WORKPLAN.md to project knowledge (the project file was at v0.12.6 baseline at start of this session — significant drift).
-
-**Smoke tests:**
-1. **Desktop sidebar tiles (≥1400px viewport)** — Calculators / Resources / About services pages: cards should be visibly much larger (3 columns at 1700px+). Calculators: 9 cards in 3 rows of 3, no empty slots. Resources: 6 cards in 2 rows of 3. Services: 9 cards in 3 rows of 3.
-2. **Desktop print/PDF — Balance Sheet** — open any client → Reports → Complete Report → Print. The Balance Sheet section (Assets card | Liabilities & Net Worth card grid) should NOT split mid-card across pages. If it must split, the break happens between the two cards (Assets ends on one page, Liabilities & Net Worth starts cleanly on next).
-3. **Desktop print/PDF — Strategy Plan** — same flow, scroll to Strategy Plan section. The big outer container should either fit on one page entirely, OR break cleanly between inner cards (KPI block → DEBT PAYOFF ORDER → FINANCIAL ROADMAP phases → INVESTMENT PROJECTION). No mid-card splits.
-4. **Desktop print/PDF — Income Statement** — same.
-5. **Mobile print/PDF** — open in mobile, hit Print. Same page-break improvements should apply.
-6. **Background graphics reminder** — confirm Chrome's "Background graphics" toggle is ON in the print dialog. Without this, dark card backgrounds won't print regardless of CSS rules.
-
----
-
-### Prior: v0.13.3 — 2026-05-20 (Patch — Continued grid-tagging pass from Mauricio's second smoke test + Strategy Plan label fix + bigger desktop sidebar tiles + header reflow on Assets/Savings & Debt).
-
-**What shipped:** Mauricio's v0.13.2 smoke test surfaced more layout regressions, mostly grids that should collapse on mobile but weren't tagged with the v0.9.3 `data-ga-grid` attributes. Sixteen surgical edits. No new locked decisions, no D-amendments. App.jsx 3,135 lines (in-place, +316 chars).
-
-**Fix 1 — "Min Debt Pay (All Loans)" → "Min Debt".** Mauricio's Image 3 showed this label wrapping to 3 lines on mobile due to its length. Shortened the fallback string in both call sites (FinancialPlanTab line 1180, PlanReportBlock line 1289). Translation key `minDebtPayAll` unchanged so if any future translation overrides exist, they still resolve.
-
-**Fix 2 — Strategy Plan KPI 4-up tagged `data-ga-grid="kpi-4"`** at both call sites. The 4-up grid (Net Income / Bills / Min Debt / Extra/mo) was rendering as 4-in-a-row on mobile, squeezing labels. Now collapses to 2×2 via v0.9.3 CSS rule.
-
-**Fix 3 — SummarySection KPI 4-up tagged `data-ga-grid="kpi-4"`.** Mauricio's Image 1 showed "Net I... $14,... Bills $2,... Min P... $244 Cash... $12,..." all truncated on the Monthly Report sub-tab. This is the same kpi-4 collapse fix — the grid wasn't tagged.
-
-**Fix 4 — SummarySection 2-col tagged `data-ga-grid="two-col"`.** The "Where Income Goes" pie + "Debt Trend" bar chart 2-column block now stacks on mobile.
-
-**Fix 5 — Balance Sheet 2-col tagged `data-ga-grid="two-col"`.** The Balance Sheet (Assets card | Liabilities & Net Worth card) — both in Financial Statements tab and in Complete Report's `fullPage` rendering — stacks vertically on mobile.
-
-**Fix 6 — Bills 1-15 / 16-31 in Complete Report tagged `two-col`.**
-
-**Fix 7 — Investment Allocation in report (rows | pie) tagged `two-col`.**
-
-**Fix 8 — Trends in Complete Report (Debt vs Savings | Cash Flow) tagged `two-col`.** Mauricio explicitly mentioned this — "Trends should be 1 graph under the other not one next to another."
-
-**Fix 9 — SummaryReport inner sections tagged `two-col`** (Client Report Summary). The inner 2-col block wrapping (Income + Bills) on left and (Debt + Accounts + Goals) on right now stacks on mobile per Mauricio's request.
-
-**Fix 10 — SavingsSection header reflow (Image 2).** The header row (`💰 ASSETS & SAVINGS` label + 3 SC cards: Assets/Liabilities/Net Worth) was a flex with `justify-content:space-between`. Added `flexWrap:"wrap"` + `gap:10` so on narrow viewports the label and the cards each take a full row. Inner cards container changed from `display:flex,gap:8` to `display:grid,gridTemplateColumns:repeat(3,1fr)` with `data-ga-grid="kpi-3"` and `flex:"1 1 320px"` so on mobile the 3 cards collapse to 2×1+1 grid (kpi-3 rule).
-
-**Fix 11 — DebtSection header reflow (Image 4).** Same pattern: outer flex gets `flexWrap:"wrap"`, inner button container also gets `flexWrap:"wrap"` so on narrow viewports the buttons wrap to additional rows rather than squishing.
-
-**Fix 12 — Desktop sidebar tiles bumped MORE aggressively.** v0.13.2 raised minmax floors from 240/260/300/250 to 280/300/340/280 — Mauricio reported "still the same on desktop side." Cards were still smallish at 1200-1920px viewports. v0.13.3 bumps to 360/360/420/320 with `auto-fit`. At 1400px viewport, Calculators now shows 3 columns at ~466px each (was 5×280=1400 = 280px each); Resources same. About advisor block: 3 columns at ~460px (was 4×340=1360 = 340px). About services: 4 columns at ~340px (was 5×280=1400 = 280px). Visibly larger and more breathable on common desktop sizes.
-
-**Out of scope (deferred to v0.13.4 or later):**
-- **Mobile column hiding for Income/Bills/Debt tables** (Mauricio's request: show only Source/Person/Net on mobile Income; Name/Person/Monthly on Bills; Name/Balance/Min on Debt). Requires conditional `<th>`/`<td>` rendering + adjusted colgroup widths + filtered IAdd cols. Non-trivial refactor. Deferred to its own focused patch.
-- **Print/Save PDF "background doesn't end / sections divided between pages"** — needs `@media print` rules with `page-break-inside:avoid` on cards + extended print background. Need a print-preview screenshot before fixing to avoid breaking what's already working.
-- **Monthly Statement Summary fully matching Client Report Summary** — v0.13.3's #3 and #4 made significant progress (KPI collapse + 2-col stack). Full structural match would require restructuring SummarySection to match SummaryReport, larger than appropriate for one patch.
-
-**Build marker:** `2026-05-20-v0133-grid-tags-plus-headers`. App.jsx 3,135 lines (in-place, +316 chars). `src/translations.js` unchanged. `vercel.json` unchanged. No SQL migration. No new pitfalls. D-1, D-7, D-18, D-27-amended, D-28, D-30, D-31, D-34, D-36 preserved.
-
-**Note on project knowledge file:** During this work, I detected that the project knowledge upload (`/mnt/project/App.jsx`) was still v0.12.6 baseline, while Mauricio is testing against the v0.13.2 deployed build. Continued from `/mnt/user-data/outputs/App.jsx` (the v0.13.2 deliverable from the prior session). **Mauricio should re-upload the latest App.jsx + AGENT.md + WORKPLAN.md to the project knowledge after deploying v0.13.3** so future Claude sessions start from the correct baseline.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.3 entry.
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0133-grid-tags-plus-headers"`.
-- Re-upload current versions of App.jsx, AGENT.md, WORKPLAN.md to project knowledge.
-
-**Smoke tests:**
-1. **Strategy Plan label** — open any client → Financial Plan tab. The third KPI tile should read "🏦 Min Debt" (no "(All Loans)"). Mobile: 2×2 layout, all four cards readable.
-2. **Monthly Report KPIs (mobile)** — Image 1 fix. Open any client → Monthly Report sub-tab. The four KPI cards (Net Income / Bills / Min Pay / Cash Flow) should be 2×2 with full labels and values visible.
-3. **Where Income Goes + Debt Trend (mobile)** — same screen, scroll down. Pie chart and bar chart should each be full-width on mobile, stacked vertically.
-4. **Balance Sheet (mobile)** — Financial Statements tab → Balance Sheet sub-section. Assets card and Liabilities & Net Worth card should stack vertically.
-5. **Bills 1-15 / 16-31 in Complete Report (mobile)** — Complete Report → scroll to Bills & Expenses. Days 1-15 above, Days 16-31 below.
-6. **Investment Allocation in report (mobile)** — Complete Report → scroll to Investment Allocation. Allocation rows above, pie chart below.
-7. **Trends in Complete Report (mobile)** — Complete Report → scroll to Trends. Debt vs Savings bar chart above, Cash Flow bar chart below.
-8. **Client Report Summary (mobile)** — Report → Summary. Income + Bills cards above, Debt + Accounts + Goals cards below.
-9. **Assets & Savings header (mobile, Image 2 fix)** — Monthly Statement, Savings tab area. Label "💰 SAVINGS" on its own row at top; Assets / Liabilities / Net Worth cards on the row below in a 2×1+1 grid (3 cards collapsed to 2 columns on mobile per kpi-3 rule).
-10. **Debt header (mobile, Image 4 fix)** — Monthly Statement → Debt tab. Label "💳 DEBT" on its own row; buttons (+Add Debt/Card, Avalanche, Snowball) wrap underneath.
-11. **Desktop sidebar tiles (≥1400px width)** — Calculators / Resources / About cards visibly larger than v0.13.2. Calculators ~466px wide (3 cols at 1400px); Resources same; About advisor block ~460px wide (3 cols); About services ~340px wide (4 cols).
-
----
-
-### Prior: v0.13.2 — 2026-05-20 (Patch — Mobile/desktop polish: 8 layout fixes + 1 React 19 hydration warning cleanup + D-27 amendment).
-
-**What shipped:** Mauricio's screenshot-driven smoke test of v0.13.1 surfaced a batch of layout regressions across mobile and desktop. v0.13.2 ships eight surgical fixes plus a clean-up of one React 19 hydration warning. No new locked decisions; D-27 (mobile bottom-sheet modals) gets an amendment, not a reversal.
-
-**Fix 1 — React hydration warning eliminated.** `BillsSection`'s `BT` table-renderer had a single space between `</tr>;})}` (end of `rows.map(b=>...)`) and `<IAdd>` inside `<tbody>`. React 19 emits a warning because HTML disallows text-node children of `<tbody>` (only `<tr>` is valid). Fix: delete the single character.
-
-**Fix 2 — Desktop sidebar tiles (Calculators / Resources / About) were too small.** v0.9.0 minified the `minmax(160px,1fr)` floors; v0.10.1 raised them to 240/260/300/250 but kept `auto-fill`, which packs extra unused tracks on wide viewports — cards end up packed into narrow columns. v0.13.2 switches all four grids to `auto-fit` (collapses empty tracks; cards stretch to fill available width) and raises minimums to 280/300/340/280. Mobile branch unchanged.
-
-**Fix 3 — Client Report Summary KPIs no longer truncate on mobile.** The 4-up KPI grid inside `SummaryReport` (`gridTemplateColumns:"repeat(4,1fr)"`) wasn't tagged `data-ga-grid="kpi-4"`, so v0.9.3's mobile auto-collapse-to-2×2 CSS rule never fired. Cards were squeezed and labels truncated to "Net..." "$1...". Fix: add the attribute.
-
-**Fix 4 — Cash Flow Statement two-column layout stacks on mobile.** Fix: add `data-ga-grid="two-col"` to `CashFlowStatement`'s `1fr 1fr` grid. CSS forces 1-column on `(max-width:719px)`.
-
-**Fix 5 — Portfolio Calculator Holdings/Controls stack on mobile.** `PortfolioStandaloneCalc` had two `1fr 1fr` grids: the top portfolio-picker (already tagged `data-ga-grid="portfolios"`) and the lower Holdings | Controls/chart split (untagged). Fix: tag the second grid `data-ga-grid="two-col"`.
-
-**Fix 6 — Modals centered on mobile (D-27 AMENDMENT, not reversal).** D-27 originally specified bottom-sheet modals on mobile for thumb-reach. In practice, the bottom-sheet left dashboard content visible above the modal and looked broken. v0.13.2 amends D-27: modals are centered both on desktop and mobile, with mobile-specific edge padding (12px) and a slightly tighter max-height (85dvh vs 90vh). Border-radius is uniform 16px on all sides. Box-shadow points downward. The `Modal` component itself is the only edit — every modal in the app inherits the new layout automatically. **D-27 amendment logged in §4.**
-
-**Fix 7 — Income/Bills/Debt tables get horizontal-scroll wrappers.** The 6-7-column tables physically cannot fit in a 360px viewport — fixed `colgroup` widths and `tableLayout:"fixed"` made columns shrink unreadably or buttons spill outside the parent box. Fix: wrap each `<table>` in a `<div style="overflowX:auto;WebkitOverflowScrolling:touch">` with `minWidth` on the table itself (600/560/720). On desktop invisible; on mobile, the table scrolls horizontally inside its container while the parent stays viewport-bounded.
-
-**Fix 8 — Investment Allocation pie chart + Assets/Liabilities 4-card grid stack on mobile.** Two more `1fr 1fr` grids fixed: (a) `SavingsSection`'s alloc-rows-and-pie-chart 2-column (the pie was getting cropped on narrow viewports), and (b) `AssetsLiabilitiesTab`'s 4-card layout. Fix: tag both with `data-ga-grid="two-col"`.
-
-**Out of scope (deferred to next iteration):**
-- Print/Save PDF "out of proportion" on desktop — needs a print-CSS or server-PDF screenshot to diagnose precisely.
-- Native iOS/Android app distribution — discussed; path is Capacitor wrapping the existing PWA, queued as a separate post-launch project that doesn't touch App.jsx.
-
-**Build marker:** `2026-05-20-v0132-mobile-desktop-polish`. App.jsx 3,135 lines (in-place, +490 chars). `src/translations.js` + `vercel.json` unchanged. No SQL migration. No new pitfalls. **D-27 amended**; D-1, D-7, D-18, D-28, D-30, D-31, D-34, D-36 preserved.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.2 entry.
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0132-mobile-desktop-polish"`.
-
-**Smoke tests (in DevTools mobile emulator at 390×844 or on actual phone):**
-1. **Hydration warning gone.** Open any client → Monthly Statement → check DevTools console. The "whitespace text nodes cannot be a child of `<tbody>`" warning should be absent.
-2. **Sidebar tiles (desktop).** At >1200px width, Calculators / Resources / About cards should look noticeably larger and more breathable.
-3. **Client Report KPIs (mobile).** Open any client → Report → Summary. Four KPI cards should lay out as a 2×2 with full labels and full numbers visible.
-4. **Cash Flow Statement (mobile).** Open any client → Financial Statements → Cash Flow → cards should stack vertically.
-5. **Portfolio Calculator (mobile).** Sidebar → Calculators → Portfolio Calculator. Holdings list full width, then controls card below it, then growth chart full-width below.
-6. **Modals (mobile + desktop).** New Client / Profile & Settings / Email Report — all centered both axes. Mobile: 12px edge padding.
-7. **Income/Bills/Debt tables (mobile).** Tables fit within page; tables scroll left-right inside their container; the rest of the page does not scroll horizontally.
-8. **Assets pie chart (mobile).** Monthly Statement → Investment Allocation. Pie chart full-circle visible, not cropped.
-
----
-
-### Prior: v0.13.1 — 2026-05-20 (Patch — Three v0.13.0 follow-up fixes from Mauricio's smoke test)
-
-**What shipped:** Three fixes after Mauricio's v0.13.0 smoke test.
-
-**Fix 1 — `/report` always in client URL.** v0.13.0 deliberately omitted the default tab to keep the URL short (`/clients/<id>` instead of `/clients/<id>/report`). Mauricio prefers explicit — every tab in the URL. `buildGAPath` now always appends a tab segment when a client is selected. URL on the Report tab is now `/clients/<id>/report`. Cosmetic; no behavior change beyond what shows in the URL bar.
-
-**Fix 2 — Back/Forward now actually switches the client-detail tab.** `ClientDetail` declared its internal `tab` with `useState(startTab||"report")` — that initializer only fires once at mount. When the user clicked Back, App's `selectedTab` changed (correctly), the new value flowed down as `startTab`, and the URL updated — but the internal `tab` state was stuck at whatever the user last clicked, so the visible tab stayed wrong. Fix: a `useEffect(()=>{if(startTab&&startTab!==tab)setTab(startTab)},[startTab])` syncs the internal state any time the prop changes. Pattern is standard controlled-prop synchronization. Placed after all hook declarations in ClientDetail, before the JSX return — pitfall #13 safe.
-
-**Fix 3 — Each calculator gets its own URL.** `/calculators` used to show the picker and clicking a calc card flipped an internal `active` state inside `CalculatorsPage` without touching the URL. Mauricio noticed Back from a calculator skipped over the picker and went all the way back to whatever sidebar tab was open before. v0.13.1 hoists `selectedCalc` to App-level state, persists it in history snapshots, and extends the URL scheme:
-- `/calculators` → picker
-- `/calculators/retirement` → Retirement Planner directly
-- `/calculators/portfolio`, `/calculators/homeEquity`, `/calculators/income`, `/calculators/debtReduction`, `/calculators/carLoan`, `/calculators/affordability`, `/calculators/interest`, `/calculators/savings` — same pattern per calc.
-
-`buildGAPath` gains a 4th `selectedCalc` arg and emits `/calculators/<id>` when `nav==="calculators"&&selectedCalc`. `parseGAPath` detects the same shape and returns `{nav:"calculators", selectedCalc:<id>}`. The history-seed `snap` object, popstate restoration, and the mobile-drawer popstate push all carry `selectedCalc` through. Hydration applies it on first authenticated tick. Sidebar nav buttons (both desktop and mobile) clear `selectedCalc` when switching to a different nav, mirroring the existing `setSelected(null)` behavior. `CalculatorsPage` becomes a controlled component: signature gains `activeCalc` + `onActiveChange` props; internal `active` state syncs to `activeCalc` via the same `useEffect` pattern used in Fix 2; card click + back button both fire `onActiveChange` alongside the local `setActive`. Unknown calc id in URL → silent bounce to the picker (calls `onActiveChange?.(null)`).
-
-**Build marker:** `2026-05-20-v0131-deep-link-fixes`. App.jsx 3,117 → 3,135 lines (+18 net). `src/translations.js` unchanged at 1,313 keys/side (URLs not translated; calc ids stay as code identifiers, not user-facing labels — those still come from `t.calc*` keys). `vercel.json` unchanged from v0.13.0 (the SPA-fallback rewrite added there still covers `/calculators/<id>`). No SQL migration. No new locked decisions. No new pitfalls — the controlled-prop sync pattern is now used by both ClientDetail and CalculatorsPage; if a third sub-page ever needs the same treatment, mirror that pattern.
-
-**Out-of-app actions required:**
-- Replace `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` v0.13.1 entry. No translation/vercel/SQL changes from v0.13.0 (if you haven't deployed v0.13.0 yet, you still need the v0.13.0 `vercel.json` rewrite — that piece is unchanged in v0.13.1).
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0131-deep-link-fixes"`.
-- **Smoke test 1 (client tab via Back):** Open any client. Click Monthly Statement → URL `/clients/<id>/monthly`. Click Financial Statements → URL `/clients/<id>/financialStatements`. Hit browser Back → URL should revert to `/clients/<id>/monthly` AND the visible tab should switch back to Monthly Statement (the bug case). Hit Back again → URL `/clients/<id>/report` AND visible tab is Report.
-- **Smoke test 2 (calc deep link):** Sidebar → Calculators → URL `/calculators`. Click any calculator, e.g. Retirement Planner → URL `/calculators/retirement`. Hit Back → URL `/calculators` and picker re-appears. Forward → URL `/calculators/retirement` and the calc re-appears. Copy `/calculators/homeEquity`, open in a new tab → lands on Home Calculator directly after login.
-- **Smoke test 3 (nav buttons reset calc):** While on `/calculators/affordability`, click Dashboard in the sidebar → URL `/dashboard`, calc deselected. Click Calculators again → URL `/calculators` (picker shown, NOT auto-resuming the last calc).
-
----
-
-### Prior: v0.13.0 — 2026-05-20 (Minor — Deep-linkable URLs / shareable + bookmarkable + refresh-safe in-app paths)
-
-**What shipped:** v0.11.0 made browser Back/Forward work via `history.pushState`, but the URL bar never changed — every section was `finance.goldenanchor.life/`. v0.13.0 makes URLs real, shareable, bookmarkable, and refresh-safe. Promoted from §4 backlog at Mauricio's direction, separate from Chat 11 (engagement letter) which is being worked in a parallel chat.
-
-**URL scheme:**
-- `/` and `/dashboard` → Dashboard
-- `/clients` → Clients list
-- `/clients/<id>` → Client detail at default tab (`report`)
-- `/clients/<id>/<tab>` → Client detail at specific tab; valid tabs are `report` / `monthly` / `financialStatements` / `investments` / `plan` / `calculators` / `backfill` / `notes`. The default `report` is omitted from the URL to keep it short.
-- `/intake-submissions`, `/calculators`, `/promotions`, `/resources`, `/about` → matching nav sections
-- `/intake?...` → unchanged (PublicIntake, D-28). Detected first via `isPublicIntakeRoute` before any deep-link parsing runs.
-- Unknown URLs silently fall through to `/dashboard`.
-
-**App.jsx changes** (3,052 → 3,117 lines, +65):
-- New top-level helpers (before `App()`): `_GA_NAVS` (7 nav ids), `_GA_CLIENT_TABS` (8 client-detail tab ids), `buildGAPath(nav, selectedId, selectedTab)` for state → path, `parseGAPath(pathname)` for path → state. `parseGAPath` returns `null` for `/intake*` so PublicIntake is never overridden.
-- New `_hydrationDoneRef` + a hydration `useEffect` declared immediately BEFORE the v0.11.0 history-seed effect. Runs once when authenticated; parses the URL and applies it to `nav`/`selectedTab`/`selected` (the last one defers a tick until `clients.length>0`). Sets `_hydrationDoneRef.current = true` when complete.
-- The existing v0.11.0 seed effect now (a) guards on `_hydrationDoneRef.current` so it won't push a stale default URL before hydration applies the real one, and (b) passes `buildGAPath(...)` as the URL argument to `history.replaceState`/`pushState` so the URL bar actually updates.
-- The existing v0.11.0 `popstate` handler gains a fallback: when `e.state` is missing (paste / manual edit / external link), it parses `window.location.pathname` and applies it to state — same code path as initial hydration. The mobile-drawer `popstate` push also carries the proper URL now.
-- `ClientDetail` gains `onTabChange` prop. The 8-tab strip's click handler is `()=>{setTab(tb.id);onTabChange?.(tb.id);}` so internal tab clicks propagate to `selectedTab` in App, which in turn drives a URL push via the seed effect. Single mount site at App-level passes `onTabChange={setSelectedTab}`.
-
-**Out-of-app — `vercel.json` rewrite required** (see "Out-of-app actions" below). Without this, hard-refreshing on any non-root URL (`/clients/<id>`, `/calculators`, etc.) hits Vercel's static-file handler, returns 404, never reaches the SPA. The SPA-fallback rewrite is one line:
-```json
-{"source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html"}
-```
-The negative lookahead leaves `/api/*` (server functions), `/assets/*` (built JS/CSS bundles), and any path with a dot (e.g. `/favicon.ico`, `/manifest.json`, `/sw.js`) alone. Everything else rewrites to `index.html` so the SPA boots and parses the URL itself.
-
-**Behavioral rules preserved:**
-- D-1 (single-file app code): preserved. Helpers + effects all in App.jsx.
-- D-7 (state in App component): preserved. No new contexts, no new state stores.
-- D-28 (`/intake` public route): preserved. `isPublicIntakeRoute` runs first, before any deep-link parse.
-- Pitfall #13 (hook order): preserved. Hydration/seed/popstate effects all sit below every hook declaration and above the `isPublicIntakeRoute` early return.
-- Pitfall #16 (v0.11.0 history): extended, not replaced. The same seed/popstate pattern; now the URL moves with it.
-
-**Build marker:** `2026-05-20-v0130-deep-linkable-urls`. App.jsx 3,052 → 3,117 lines. `src/translations.js` unchanged at 1,313 keys/side — no new user-facing strings (URLs aren't translated; tab/nav ids stay English). `vercel.json` gains a rewrite. No SQL migration. No new locked decisions. No new pitfalls (no mistakes made — the hydration-ordering subtlety is handled by inline comments).
-
-**Out-of-app actions required:**
-- **Replace** `src/App.jsx`, `AGENT.md`, `WORKPLAN.md`; append `CHANGELOG.md` entry; merge the rewrite block into `vercel.json` (paste from CHANGELOG if your current `vercel.json` lacks a `rewrites` key; if it already has one, just add the SPA-fallback object to the array).
-- Commit + push; Vercel auto-deploys.
-- Hard-refresh; verify `window.__GA_BUILD__ === "2026-05-20-v0130-deep-linkable-urls"`.
-- **Smoke test 1 (URL updates as you navigate):** Open the app at `/`. URL should normalize to `/dashboard`. Click Clients → URL becomes `/clients`. Click any client → URL becomes `/clients/<id>`. Click the Monthly Statement tab inside the client → URL becomes `/clients/<id>/monthly`. Click back to the Report tab → URL becomes `/clients/<id>` (default tab omitted). Click ⚓ About in the sidebar → URL becomes `/about`.
-- **Smoke test 2 (Back/Forward work as deep history):** From `/about`, press Back. Should go through every visited section in reverse — `/clients/<id>` → `/clients` → `/dashboard` — not unload the app.
-- **Smoke test 3 (refresh + bookmark):** Navigate to `/clients/<id>/financialStatements`. Hard-refresh. Page should reload directly into the financial-statements tab for that client. Then copy the URL, open in a fresh browser tab, paste, hit Enter — should land on the same view after login.
-- **Smoke test 4 (intake invite unchanged):** Open `/intake?invite=<token>` in incognito. Should render PublicIntake exactly as before, no redirect, no in-app history pushed.
-- **Smoke test 5 (unknown URL):** Type `/finance.goldenanchor.life/nonsense` directly. Should silently fall back to `/dashboard`, no error.
-
----
-
-### Prior: v0.12.6 — 2026-05-20 (Patch — Per-tab PDF differentiation + grey @media print restored + page-break rules + WORKPLAN §3 cleanup)
-
-Three fixes after Mauricio's v0.12.5 smoke test. (1) Per-tab Email buttons send the actual tab's report — `EmailReportModal` accepts a `reportType="complete"|"monthly"|"financial"` prop, varies modal title + subject + POST body; server handler whitelists and routes to `buildPrintHTML(client, lang, advisor, include, reportType)`, which overrides the `inc` section-toggle map + `L.title` based on reportType. Filename also varies. (2) Restored v0.12.4's grey `@media print` background that v0.12.5 silently reverted (built from wrong project-knowledge baseline). Added page-break rules: `h1-h4` page-break-after avoid; `table/tr/.ga-section` page-break-inside avoid. (3) WORKPLAN §3 trimmed from 9 chat slots to 1 (Chat 11). Build marker `2026-05-20-v0126-per-tab-pdf-grey-print-restored`.
-
----
-
-### Prior: v0.12.5 — 2026-05-20 (Patch — Email PDF data CORRECTLY fixed + Email button on Monthly + Financial tabs + modal backdrop-close disabled)
-
-Three fixes from Mauricio's v0.12.4 smoke-test feedback. **(1)** `api/render-report-pdf.js` helpers + `computeAggregates()` rewritten (~100 lines) to mirror the live App.jsx math exactly — v0.12.4's data-extraction code used invented field names that don't exist on the stored data. v0.12.5 uses real ones: `toM(stream.net, stream.freq)` for income (NOT `.netMo`/`.amount`), `actB(bills).reduce(toM(b.cost, b.freq))` for bills (NOT `.amount`), `client.cards + client.loans` for debt (NOT `client.debts`), `effectiveMin(c)` for card min pay (NOT `.minPayment`), `a.value` for accounts (NOT `.balance`), `client.alloc + client.committed` for investment allocation (NOT `client.investAllocation`). 10 buildPrintHTML field references surgically corrected. **(2)** Email button added to Monthly + Financial tabs (was Complete-only since v0.12.0). Both tabs accept `settings` prop; ClientReport call sites pass it through. **(3)** Modal gains `disableBackdropClose` prop (defaults to false); EmailReportModal opts in. App.jsx 3,046 → 3,046 lines. render-report-pdf.js 817 → 885. `translations.js` unchanged at 1,313 keys/side. **Build marker** `2026-05-20-v0125-email-on-all-reports-data-fix`. **Silent regression introduced**: lost v0.12.4's `@media print` grey background + section parity work because the patch was built from a `/mnt/project/App.jsx` that was still at the v0.12.3 baseline (Mauricio's v0.12.4 deploy never updated project knowledge). Fixed in v0.12.6.
-
-### Prior: v0.12.4 — 2026-05-20 (Patch — Email Complete Report PDF section parity + soft-grey print background)
-
-Added 5 missing sections (Investment Allocation, Financial Ratios, Cash Flow Statement, Strategy Plan including debt-payoff order + 2-phase financial roadmap + 5/10/20-year investment projection) to the email PDF, respecting `client.reportInclude` toggle map. Page background `#F1F5F9` with white section cards. App.jsx `@media print` block patched: `body { background: white }` → `html, body { background: #F1F5F9 }` + `print-color-adjust: exact` on `*`. Build marker `2026-05-20-v0124-section-parity-grey-print`. **However** the data-extraction code in v0.12.4 used wrong field names — fixed in v0.12.5. And the `@media print` change was lost in v0.12.5 — restored in v0.12.6.
-
-### Prior: v0.12.3 — 2026-05-20 (Patch — Hotfix for v0.12.2; t-out-of-scope crash)
-
-Hotfix for production-breaking bug in v0.12.2. After deploying v0.12.2, the app rendered a blank screen immediately after login for every user. Root cause: 8 component functions (Kebab, PTag, BulkSnapModal, ImportWizard, DuplicateResolverModal, DeleteClientModal, BackupImportModal, ExportModal) referenced new t.xxx keys inside their bodies but did NOT accept t as a parameter — JavaScript hit `ReferenceError: t is not defined` → React error boundary fired → blank screen. **Fix:** added t to all 8 signatures + propagated t={t} at 22 call sites + rewrote the patcher to be brace-aware + added a scope-aware static verifier (both checks now pass zero). Belt-and-suspenders: 177 sites using v0.12.2-introduced keys wrapped with optional chaining. **D-36 added** (static-text patches MUST be verified by a scope-aware checker, not just a syntax check). Build marker `2026-05-20-v0123-t-scope-fix`.
 
 ## 4. Locked decisions
 
@@ -500,7 +61,7 @@ Decisions in this section have been agreed and should NOT be changed without the
 
 ### Product
 
-- **D-1 — Single file architecture (amended 2026-05-15, v0.6.2).** Single-file architecture for application logic. All React components, state, hooks, business logic, and side effects live in `src/App.jsx`. **EXCEPTION:** pure-data modules — translation dictionaries, static catalogs (`SVCS`, `PORTFOLIOS`, `TICKER_META`, etc.), and other literal-only exports with no JSX and no React imports — MAY live in sibling files in `src/` when their size impairs editing. The first instance of this carve-out is **D-29** (`translations.js`, v0.6.2). Future extractions of pure-data modules under this exception do not require re-opening D-1; just lock a new D-NN entry describing what was moved and why. Reason for keeping App.jsx single-file otherwise: easier for non-developer owner to manage uploads via GitHub web UI.
+- **D-1 — Single file architecture (amended 2026-05-15, v0.6.2; SUPERSEDED by D-37, 2026-06-10 — kept for history).** Single-file architecture for application logic. All React components, state, hooks, business logic, and side effects live in `src/App.jsx`. **EXCEPTION:** pure-data modules — translation dictionaries, static catalogs (`SVCS`, `PORTFOLIOS`, `TICKER_META`, etc.), and other literal-only exports with no JSX and no React imports — MAY live in sibling files in `src/` when their size impairs editing. The first instance of this carve-out is **D-29** (`translations.js`, v0.6.2). Future extractions of pure-data modules under this exception do not require re-opening D-1; just lock a new D-NN entry describing what was moved and why. Reason for keeping App.jsx single-file otherwise: easier for non-developer owner to manage uploads via GitHub web UI.
 - **D-2 — No localStorage for sensitive PII in production.** When Supabase is wired in, client SSN / DOB / address move to the database. The current localStorage-only state is acceptable only until first paying client.
 - **D-3 — Bilingual EN/ES is a launch requirement.** The EN/ES toggle button in the sidebar must remain visible. Translation infrastructure should never crash or freeze the app. If translation breaks, fall back to English silently — do not blank the screen.
 - **D-4 — Auto-DOM-translation with MutationObserver is BANNED.** Previous attempts caused infinite re-render loops. Translation must be done via the `T = { en: {...}, es: {...} }` dictionary pattern with `t.key || "Fallback English"` lookups in JSX. No DOM walking. No observers on mutated nodes.
@@ -591,6 +152,8 @@ Decisions in this section have been agreed and should NOT be changed without the
 - **D-34 — PDF report rendering = self-contained print HTML + Puppeteer, NOT driving the live SPA (v0.12.0, 2026-05-19; chromium runtime spec amended v0.12.1, 2026-05-19; closes O-11 and O-13).** When a server function needs to produce a PDF of a Complete Report (or any future report), it MUST render a self-contained HTML document built server-side from the client data (no React, no SPA boot, no advisor login), then Puppeteer that HTML to PDF. Concretely: **`puppeteer-core` paired with `@sparticuz/chromium-min`** (NOT `@sparticuz/chromium`); the `-min` variant fetches the Chromium brotli tarball from the official GitHub release URL at runtime and caches it in `/tmp` between warm invocations, keeping the deployed bundle ~5MB and side-stepping the Vercel bundler-tracing failure that ate `libnss3.so` out of the regular `@sparticuz/chromium` package in v0.12.0. Function memory 1024 MB and `maxDuration: 30` in `vercel.json`; cold start ~5–8s (one-time tarball download), warm ~1s. Launch call: `headless: "shell"` (puppeteer-core 24 literal), args spread includes `--no-sandbox` + `--disable-setuid-sandbox` + `--hide-scrollbars`. Charts are hand-rolled inline SVG in the Golden Anchor palette — no Recharts, no chart library in the function bundle. **Version pinning rule:** `@sparticuz/chromium-min` follows Chromium's release cycle (not semver) so breaking changes happen at the patch level; pair it with the `puppeteer-core` major listed in the Sparticuz/chromium release notes (v140 ↔ puppeteer-core 24 as of 2026-05). When bumping the npm package version, bump the hard-coded `CHROMIUM_PACK_URL` constant in `api/render-report-pdf.js` to match — they must agree or the launch will fail with a Chromium-protocol mismatch. **Reasoning** (decided 2026-05-19 with Mauricio): driving `finance.goldenanchor.life` in a headless browser would require injecting a Supabase session into the page context (refresh token exposure), wait for Recharts animations + chart layout to settle, and silently break on any App.jsx layout drift. Print HTML is faster, more stable, smaller cold-start surface, and the auth model stays clean. **Lesson learned from v0.12.0 → v0.12.1:** the full `@sparticuz/chromium` package bundles its native libs into `node_modules` and depends on Vercel's bundler preserving them through tracing. That tracing is flaky — especially with adjacent large deps in `node_modules`. The `-min` runtime-download variant is the safer default. **Maintenance cost:** any Complete Report visual change must be mirrored in `buildPrintHTML()` inside `api/render-report-pdf.js`. For v1 the Complete Report is mostly tabular (income / bills / debt / assets / notes), so mirroring is cheap. **Delivery:** Resend email attachment (base64-encoded PDF). Considered + rejected for v1: upload to Supabase Storage bucket `client-reports` + signed-URL link in the email — adds storage surface and a "log in / click a link" step for the client; revisit if Resend's per-email size limit becomes a problem at scale (current PDFs are 100–500 KB, well under). **Forward note:** when v0.13+ adds monthly-statement PDFs or annual-summary PDFs, they extend `api/render-report-pdf.js` (or add a sibling `api/render-monthly-pdf.js`) under the same pattern; do NOT re-open the print-HTML-vs-SPA-driving question or the chromium-min decision without surfacing this entry.
 
 - **D-36 — Static-text patches MUST be verified by a scope-aware checker, not just a syntax check (v0.12.3, 2026-05-20; lesson from v0.12.2 → v0.12.3 production crash).** When a future change does bulk source-text rewrites (e.g. wiring hardcoded strings through `t.key`, finding-and-replacing across many components, renaming a shared variable), a TypeScript / `node --check` syntax dry-run is **not sufficient** to ship. `t.foo` where `t` is undefined is **valid JavaScript syntax** — the crash is a runtime `ReferenceError`, which `tsc --noLib` will not surface. The v0.12.2 audit also missed it because it was a source-text check (string presence, key symmetry), not a scope check. **Required for every future bulk patch:** (a) for each function declaration touched, confirm every `t.knownKey` reference in its body is matched by either `t` in the function's destructured params or a `const t=…` inside the body — recursing into nested functions if needed; (b) for each JSX call site that newly passes a prop (e.g. `t={t}`), confirm that variable is in scope at the call site, applying the same rule recursively up enclosing functions; (c) the patcher itself must be **brace-aware and string-aware** when editing JSX — a naive `<Name[^>]*?/?>` regex matches the first `>` inside an attribute-expression body like `onClose={()=>setX(false)}` and corrupts the source. The patcher must walk character-by-character tracking `{}` depth and string-quote state (`'`, `"`, `` ` ``) until it finds a `>` or `/>` at depth 0. **Concretely** the v0.12.3 fix script lives at the same scope-aware design and is re-usable: `find_jsx_tags(src, name)` walks the tag with brace/string state; the post-patch verifier reports any function that references a known dictionary key without `t` in scope, and any `t={t}` call site without `t` in its enclosing function's scope. Both must report zero before shipping. **Forward note:** any future skill that does bulk source rewrites (translation extraction, prop refactoring, hook migration) must add equivalent scope checks before the artifact is presented to Mauricio.
+
+- **D-37 — Modular architecture (supersedes D-1's single-file rule; locked 2026-06-10 with explicit owner approval).** The application is modular under `src/`: `constants/` (pure-data catalogs), `styles/` (theme factories + style helpers), `utils/` (pure functions), `services/` (Supabase/API helpers), `components/` (charts, calculators, primitives, modals, …), `pages/` (feature surfaces), with `App.jsx` shrinking toward a router/composition shell. Rationale: D-1's "owner uploads via the GitHub web UI" justification is obsolete (all work happens via Claude Code + git), and the CRM/SaaS direction requires module boundaries, code-splitting (bundle already >800 KB), and team-scalable files. Execution is phased and build-verified per move — see `docs/ARCHITECTURE-PLAN.md`. The pure-data/server carve-outs (D-29, D-30) remain valid; D-7 (no Redux/Zustand — state in App) still governs state management.
 
 ---
 
@@ -695,23 +258,30 @@ These are mistakes we've made and learned from. **Don't repeat them.**
 15. **Never put a JSON path or a dotted value inside a PostgREST `.or()` filter.** supabase-js `.or("col.op.val,col.op.val")` is parsed by splitting the string on `.`, so a JSON path like `data->>id` — and any value containing `.`, such as the decimal client ids in legacy data (`1776873994030.0803`) — corrupt the filter and the request 400s. v0.10.1's `gaDeleteClient` hit exactly this and silently failed every delete. **Rule:** to match on `local_id` and/or `data->>'id'`, use separate `.eq()` calls — `.eq()` URL-encodes the whole value, so dots are safe. For app-written rows `local_id` is reliably `String(client.id)`, so `.eq("local_id", String(client.id))` always matches; a second `.eq("data->>id", …)` pass covers any row whose `local_id` is unset. `gaLoadClients` de-dupes by client id on load. Fixed in v0.10.2. NOTE: v0.10.1 framed this pitfall as "NULL `local_id` legacy rows" — that root cause was wrong; the real bug was the `.or()` parsing described here.
 16. **In-app navigation must push browser history or Back unloads the SPA.** Tab/section navigation is plain React state (`nav`, `selected`, `selectedTab`); without `history.pushState` the browser keeps no in-app entries and Back leaves the app. Fixed in v0.11.0 with a navigation-signature `useEffect` (push on `[nav, selected?.id, selectedTab]` change) plus a `popstate` listener. **Rule:** the push effect must run a first-render `replaceState` to seed the entry point; a `_popstateRestoringRef` guard must suppress the push on the render caused by a `popstate` restore, or Back/Forward spawn duplicate entries; and — per pitfall #13 — both effects belong in the effects block below every hook and above the `isPublicIntakeRoute` early return, with the push effect early-returning on the `/intake` route and while signed out.
 
+
+17. **Components defined inside other components' bodies.** Every parent re-render creates a new component type → React unmounts/remounts the subtree → inputs lose focus after one keystroke (the "one-character-at-a-time" bug). Always define components at module top level and pass state via props. (Formalized from the v0.16.0 ProfileToggleField fix; bit us again candidates exist anywhere a quick inline component is tempting.)
+
+18. **Per-user client-side caches must be owner-namespaced.** clients/settings/drafts cached under GLOBAL localStorage keys leaked across accounts on a shared browser (fixed v0.68.1 + v0.69): a second login booted with the first account's data, and the localStorage→cloud migration could even UPLOAD it into the wrong account. Rules: tag caches with the auth user id (`ga_cache_uid`); treat an absent/foreign tag as invalid and purge before migrate/load; clear on sign-out; uid-tag session drafts and never restore them across users; derive role from auth `user_metadata` (server-trusted token), never from client-cached settings. Server RLS being correct does NOT make the client cache safe.
+
+19. **lucide-react exports vary — verify before importing.** This repo's lucide-react does not export `Instagram` (build fails with MISSING_EXPORT at bundle time, not in dev). Before adding an icon import, confirm the export exists (grep `node_modules/lucide-react/dist/esm/lucide-react.mjs`); pick an alternative when absent (we use `AtSign` for the Instagram handle).
+
 ---
 
 ## 8. Build & deploy workflow
 
-Current (manual web UI):
-1. User downloads new App.jsx from chat output.
-2. Goes to GitHub → repo → `src/` folder → uploads to replace `App.jsx`.
-3. Commits to `main` branch directly.
+Current (Claude Code + git, single folder — the manual web-UI upload flow is retired):
+1. Edit in `C:\Users\mauhd\Projects\financeapp-deploy` (this repo). `git pull origin main` first — parallel chats push too.
+2. `npm run build` must pass after every change.
+3. Bump `__GA_BUILD__` in src/App.jsx, commit (conventional message + co-author trailer), push to `main`.
 4. Vercel auto-deploys (~30s).
-5. User hard-refreshes browser to confirm.
+5. Hard-refresh and verify `window.__GA_BUILD__` matches the new marker (service worker may need unregistering — see CLAUDE.md cache pitfall).
 
 **Sanity check after every deploy:**
 ```js
 // In browser DevTools console, paste this:
 window.__GA_BUILD__
 ```
-Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan-restructure"`). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
+Should return the build marker string (compare against the marker you just shipped — see CHANGELOG for history). If `undefined`, the new bundle didn't deploy — likely an upload location issue.
 
 ---
 
@@ -739,8 +309,8 @@ Should return the build marker string (current: `"2026-05-21-v0135-strategy-plan
 ## 10. What to do when starting a new chat
 
 1. Read this AGENT.md.
-2. Confirm the version you're loading (currently v0.5.2a).
-3. Ask the user to upload the latest `App.jsx` so you have current state.
+2. Confirm the current version via the build marker (`grep -o '__GA_BUILD__="[^"]*"' src/App.jsx`) — trust it over docs.
+3. The repo IS the current state — `git pull origin main`, then grep before reading large slices.
 4. If a SKILL is loaded (`finance-app-updater`), follow its procedure for any change request.
 5. If something the user asks conflicts with Locked Decisions, surface the conflict before doing the work.
 
@@ -857,7 +427,9 @@ All service credentials (passwords, API keys, recovery codes) live in user's pas
 
 ---
 
-## 11.5. Pending work + sync map (v0.6.0)
+## 11.5. Pending work + sync map (v0.6.0) — HISTORICAL SNAPSHOT (May 2026)
+
+> **Stale — kept for history only.** Current pending work lives in `CLAUDE.md` (session handoff), `docs/ARCHITECTURE-PLAN.md`, and `REVIEW_QUEUE.md`.
 
 This section is the single source of truth for "where are we in the launch path." Update on every meaningful state change.
 
