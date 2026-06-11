@@ -2,6 +2,24 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.74 — 2026-06-11 (Minor) — Plan ladder + Premium gating (MD-A)
+
+- **Free vs Premium for client accounts.** New `src/components/premium.jsx`: `PremiumCtx`
+  (provided at app root, role-derived — advisors NEVER gated; D-7 amended), plan from
+  `client.accountPlan` (absent → free).
+- **Gated for free clients**: in-profile Calculators tab, Complete Report, month
+  Compare (PDF rides along), and the extra investment packages (ALT_PACKS → lock note).
+  Each gate renders the choose-your-price upsell card ($3/$10/$20, warm copy, every
+  tier unlocks everything).
+- **Activation (light flow)**: tier links carry `client_reference_id=<uid>`; after
+  paying, "I already subscribed — activate" sets the plan instantly and emails a
+  verification lead to finance@ for cross-checking against Stripe receipts. Webhook
+  sync replaces the claim step in MD-H.
+- **Pricing page**: new "Use the app with or without an advisor" section — Free + Premium
+  cards above the advisory services (public CTA → create account; in-app → tier links).
+- **Client Settings "Your plan"**: shows the real plan; Premium tiers + advisor plans
+  as separate upgrade groups.
+
 ## v0.73.2 — 2026-06-11 (Patch) — Live Stripe realigned to catalog (executed via API)
 
 Audit found live Stripe still charged OLD prices (Quarterly $99, Lite $29/mo, Annual

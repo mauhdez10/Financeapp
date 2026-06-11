@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Tag, Anchor, Shield, PiggyBank, TrendingUp, Home, TrendingDown, Globe, AtSign, Mail, Phone, Award, GraduationCap, HeartHandshake, Target, Languages, ShieldCheck, CalendarCheck } from "lucide-react";
 import { GOLD, mINP, mCARD } from "../styles/theme";
 import { useTh } from "../contexts/theme";
-import { SVCS, CERTS, _gaLang, DEF_SETTINGS } from "../constants/meta";
+import { SVCS, CERTS, _gaLang, DEF_SETTINGS, PREMIUM_TIERS } from "../constants/meta";
 import { bE, gid } from "../utils/finance";
 import { Field, useViewport, Row2, Btn, BSolid, MaskedNumInp, Modal, SaveBar } from "../components/primitives";
 
@@ -350,6 +350,37 @@ function PlanComparison({lang}){
   </table></div></div>;
 }
 /* v0.63.2 PricingPage: standalone (public from landing w/ line-field + EN/ES + modes, or app nav). */
+/* MD-A (v0.74) — self-serve ladder: Free + Premium (choose-your-price) above the services. */
+function SelfServePlans({lang,variant,onSignIn}){
+  const th=useTh();const es=lang==="es";
+  const _ref=(typeof localStorage!=="undefined"&&localStorage.getItem("ga_cache_uid"))||"";
+  const freeFeats=es?["Tu perfil financiero","Calculadoras públicas","Recursos y artículos","Soporte por correo"]:["Your financial profile","Public calculators","Resources & articles","Email support"];
+  const premFeats=es?["Calculadoras con TUS números","Reporte completo + comparación de meses","Paquetes de inversión adicionales","Descarga de reportes en PDF","Directorio de recursos útiles"]:["Calculators with YOUR numbers","Complete report + month compare","Additional investment packages","PDF report downloads","Useful-links resource directory"];
+  const Ck=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={th.pos} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M20 6 9 17l-5-5"/></svg>;
+  const card={...mCARD(th),padding:"24px 22px",display:"flex",flexDirection:"column",minHeight:330};
+  return<div style={{maxWidth:760,margin:"0 auto 44px"}}>
+    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",color:th.dim,textAlign:"center",marginBottom:8}}>{es?"Hazlo tú mismo":"Self-serve"}</div>
+    <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:25,color:th.text,textAlign:"center",margin:"0 0 22px",lineHeight:1.15}}>{es?"Usa la app con o sin asesor":"Use the app with or without an advisor"}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:18}}>
+      <div className="ga-lift" style={card}>
+        <div style={{fontSize:17,fontWeight:600,color:th.text}}>{es?"Gratis":"Free"}</div>
+        <div style={{fontSize:12,color:th.dim,margin:"5px 0 14px"}}>{es?"Para empezar a ordenar tus finanzas.":"To start getting organized."}</div>
+        <div style={{fontSize:34,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"-0.02em",color:th.text,marginBottom:16}}>$0</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,flex:1,marginBottom:18}}>{freeFeats.map((f,i)=><div key={i} style={{display:"flex",gap:9,fontSize:12.5,color:th.muted,lineHeight:1.4}}><Ck/>{f}</div>)}</div>
+        {variant==="public"&&<button className="ga-press" onClick={onSignIn} style={{display:"block",width:"100%",textAlign:"center",fontSize:12.5,fontWeight:600,padding:"11px 16px",borderRadius:9,background:"transparent",color:th.text,border:"1px solid "+th.cardBorder,cursor:"pointer",fontFamily:"inherit"}}>{es?"Crear cuenta gratis":"Create a free account"}</button>}
+      </div>
+      <div className="ga-lift" style={{...card,border:"1px solid "+th.accent+"55"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><div style={{fontSize:17,fontWeight:600,color:th.text}}>Premium</div><span style={{fontSize:8.5,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",background:th.accent+"1A",color:th.accent,padding:"4px 10px",borderRadius:99,border:"1px solid "+th.accent+"44"}}>{es?"Paga lo que elijas":"Choose your price"}</span></div>
+        <div style={{fontSize:12,color:th.dim,margin:"5px 0 14px"}}>{es?"Todo desbloqueado — tú decides cuánto aportar.":"Everything unlocked — you decide how much to give."}</div>
+        <div style={{display:"flex",alignItems:"baseline",gap:5,marginBottom:16}}><span style={{fontSize:34,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"-0.02em",color:th.text}}>$3+</span><span style={{fontSize:13,color:th.dim,fontFamily:"'JetBrains Mono',monospace"}}>/{es?"mes":"mo"}</span></div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,flex:1,marginBottom:18}}>{premFeats.map((f,i)=><div key={i} style={{display:"flex",gap:9,fontSize:12.5,color:th.muted,lineHeight:1.4}}><Ck/>{f}</div>)}</div>
+        {variant==="public"
+          ?<button className="ga-press" onClick={onSignIn} style={{display:"block",width:"100%",textAlign:"center",fontSize:12.5,fontWeight:600,padding:"11px 16px",borderRadius:9,background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",border:"none",cursor:"pointer",fontFamily:"inherit",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32), 0 6px 16px rgba(201,168,76,0.22)"}}>{es?"Empezar gratis y mejorar":"Start free, then upgrade"}</button>
+          :<div style={{display:"flex",gap:7}}>{PREMIUM_TIERS.map(tr=><a key={tr.id} className="ga-press" href={tr.link+(_ref?"?client_reference_id="+encodeURIComponent(_ref):"")} target="_blank" rel="noopener noreferrer" style={{flex:1,textAlign:"center",fontSize:12,fontWeight:700,padding:"10px 6px",borderRadius:9,background:th.accent+"14",color:th.accent,border:"1px solid "+th.accent+"33",textDecoration:"none",fontFamily:"'JetBrains Mono',monospace"}}>${tr.amount}</a>)}</div>}
+      </div>
+    </div>
+  </div>;
+}
 function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest,isDark,onToggleTheme,onToggleLang}){
   const th=useTh();const L=lang==="es"?"es":"en";
   const ctaLabel=(variant==="public")?(L==="es"?"Comenzar":"Get started"):(L==="es"?"Elegir plan":"Choose plan");
@@ -359,6 +390,9 @@ function PricingPage({t,lang,settings,variant="app",onBack,onSignIn,onRequest,is
       <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:35,color:th.text,margin:"0 0 10px",letterSpacing:"-0.01em",lineHeight:1.1}}>{L==="es"?"Elige el plan adecuado para ti":"Choose the plan that fits you"}</h1>
       <p style={{fontSize:14,color:th.muted,maxWidth:560,margin:"0 auto",lineHeight:1.6}}>{L==="es"?"Membresías y servicios puntuales para cada etapa de tu camino financiero. Sin permanencia, cancela cuando quieras.":"Memberships and one-time services for every stage of your financial journey. No lock-in, cancel anytime."}</p>
     </div>
+    <SelfServePlans lang={lang} variant={variant} onSignIn={onSignIn}/>
+    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",color:th.dim,textAlign:"center",marginBottom:8}}>{L==="es"?"Con tu asesor":"With your advisor"}</div>
+    <div style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:25,color:th.text,textAlign:"center",margin:"0 0 22px",lineHeight:1.15}}>{L==="es"?"Membresías y servicios de asesoría":"Advisory memberships & services"}</div>
     <PricingCarousel lang={lang} settings={settings} onRequest={onRequest} ctaLabel={ctaLabel}/>
     <div style={{maxWidth:980,margin:"50px auto 0"}}>
       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.16em",textTransform:"uppercase",color:th.dim,textAlign:"center",marginBottom:8}}>{L==="es"?"Comparación completa":"Full comparison"}</div>

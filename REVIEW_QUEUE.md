@@ -21,6 +21,22 @@
       they come from noreply@finance.goldenanchor.life, unlimited. (The Resend MCP key
       expired, so I can't mint one myself.)
 
+### MD-A: Free vs Premium is live (v0.74)
+- [ ] Log in as **clientdemo** (I reset it again — you'll see the onboarding wizard
+      first, then the FREE experience): open your profile → **Calculators tab**,
+      **Client Report → Complete Report**, and **→ Compare** — each shows the
+      choose-your-price upsell ($3 coffee / $10 sustainer / $20 champion, your copy,
+      professionally worded). Portfolios → extra packages show a lock note.
+- [ ] The upsell's "I already subscribed — activate" flips the account to Premium
+      instantly and emails finance@ a verification lead (cross-check against Stripe —
+      the checkout links carry the account id as `client_reference_id`). Try it once;
+      tell me and I'll reset the demo back to free.
+- [ ] **Pricing page** (logged out or in): new "Use the app with or without an advisor"
+      section — Free + Premium cards above your advisory services.
+- [ ] **Your advisor account is never gated** — verified adversarially.
+- [ ] ⚠️ Annual Bundle is now a RECURRING yearly $499 subscription in Stripe (was
+      one-time $299). Flag me if you want one-time instead.
+
 ### MD research docs ready for your read (no decisions blocking)
 - [ ] `docs/USEFUL-LINKS-DIRECTORY.md` — 147 vetted links, 16 life situations (incl.
       the critic-added immigration/ITIN, disability, seniors+scams, life events,

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Users, BookOpen, Anchor, Receipt, HardDriveDownload, Archive, Sparkles, Bell, Phone } from "lucide-react";
 import { GOLD, stripLeadEmoji, mINP, mCARD } from "../styles/theme";
-import { SVCS, svcPayUrl, DEF_SETTINGS } from "../constants/meta";
+import { SVCS, svcPayUrl, DEF_SETTINGS, PREMIUM_TIERS } from "../constants/meta";
+import { planOf, planLabel } from "../components/premium";
 import { useTh } from "../contexts/theme";
 import { fmtPh } from "../utils/finance";
 import { useReducedMotion } from "../hooks/anim";
@@ -530,8 +531,9 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
     const me=(clients&&clients[0])||{};
     const profRows=[[t?.nameLbl||"Name",(((me.firstName||"")+" "+(me.lastName||"")).trim())||"—"],[t?.emailLbl||"Email",me.email||"—"]];
     const profFields=[{k:"firstName",l:t?.firstName||"First name",type:"text"},{k:"lastName",l:t?.lastName||"Last name",type:"text"},{k:"email",l:t?.emailLbl||"Email",type:"text"}];
-    const planRows=[[t?.planLbl||"Plan",t?.planFree||"Free"],[t?.planIncludesLbl||"Includes",t?.planIncludesVal||"Profile, calculators & resources"]];
     const isEs=settings.lang==="es";
+    const myPlan=planOf(me);
+    const planRows=[[t?.planLbl||"Plan",planLabel(myPlan,isEs)],[t?.planIncludesLbl||"Includes",myPlan==="free"?(t?.planIncludesVal||"Profile, calculators & resources"):(isEs?"Todo: reportes, comparación, calculadoras con tus números":"Everything: reports, compare, calculators with your numbers")]];
     const upgradeBtns=["monthly-lite","monthly-lite-plus","annual-bundle"].map(id=>{
       const svc=SVCS.find(s=>s.id===id);if(!svc)return null;
       const url=svcPayUrl(svc,settings)||DEF_SETTINGS.stripeLinks?.[id]||"";if(!url)return null;
@@ -540,8 +542,14 @@ function SettingsPage({settings,onEdit,onSave,onBackup,onRestoreBackup,t,clients
         <span style={{fontSize:11.5,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}}>{svc.price}</span>
       </a>;
     }).filter(Boolean);
-    const planActions=upgradeBtns.length?<div style={{display:"flex",flexDirection:"column",gap:7}}>
-      <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{t?.upgradeOptions||"Upgrade options"}</div>
+    const _ref=(typeof localStorage!=="undefined"&&localStorage.getItem("ga_cache_uid"))||"";
+    const premBtns=myPlan==="free"?PREMIUM_TIERS.map(tr=><a key={tr.id} className="ga-press" href={tr.link+(_ref?"?client_reference_id="+encodeURIComponent(_ref):"")} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"7px 12px",borderRadius:8,background:th.inp,border:"1px solid "+th.cardBorder,textDecoration:"none"}}>
+      <span style={{fontSize:11.5,fontWeight:600,color:th.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isEs?tr.es:tr.en}</span>
+      <span style={{fontSize:11.5,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}}>${tr.amount}/{isEs?"mes":"mo"}</span>
+    </a>):[];
+    const planActions=(upgradeBtns.length||premBtns.length)?<div style={{display:"flex",flexDirection:"column",gap:7}}>
+      {premBtns.length>0&&<><div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{isEs?"Premium — paga lo que elijas":"Premium — choose what you pay"}</div>{premBtns}</>}
+      <div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",marginTop:premBtns.length?5:0}}>{isEs?"Con asesor":"With an advisor"}</div>
       {upgradeBtns}
       <div style={{fontSize:10,color:th.dim,fontStyle:"italic"}}>{t?.upgradeNote||"Opens secure Stripe checkout in a new tab."}</div>
     </div>:null;

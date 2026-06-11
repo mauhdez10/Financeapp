@@ -86,6 +86,14 @@ Decisions in this section have been agreed and should NOT be changed without the
   - Monthly Lite: $49/mo · Monthly Lite+: $79/mo (Lite + 1 Strategy Session/mo)
   - Strategy Session: $129 flat (Home/Job/Car split retired per F5)
   - NEXT (master directive §A): Free tier + Premium self-serve at choose-your-price ($3 floor, suggested $3/$10/$20)
+- **D-13b — Self-serve ladder (2026-06-11, master directive §A):** client accounts are
+  Free by default; **Premium = choose-your-price ($3/$10/$20 per month, $3 floor — all
+  tiers identical access)** unlocks: in-profile calculators, Complete Report, month
+  compare, PDF downloads, extra investment packs, useful-links directory. Lite/Lite+/
+  Annual (advisor plans) include Premium access. Plan flag: `client.accountPlan`;
+  gating via `PremiumCtx` (src/components/premium.jsx — D-7 amended to allow it,
+  same pattern as HideCtx). Advisors are never gated. Activation = light claim flow
+  verified against Stripe receipts until the MD-H webhook lands.
 - **D-14 — Health/Insurance bundle:** Free Initial Checkup for active insurance clients. Promo code `HEALTHFAMILY`.
 - **D-15 — Referral discount:** 25% off Initial Checkup (code `REFERRED25`); referrer gets $25 credit.
 - **D-16 — Seasonal promos:** New Year Reset ($99 Jan 1–31), Spring Review ($99 Mar 15–Apr 30), Back-to-School ($99 Aug 1–Sep 15), Holiday Prep ($79 Nov 1–30), Year-End Review ($99 Dec 15–31).
