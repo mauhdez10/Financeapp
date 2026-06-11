@@ -26,7 +26,7 @@ function _sameShape(a,b){
   if(a&&b&&typeof a==="object"){const ka=Object.keys(a).sort(),kb=Object.keys(b).sort();return ka.length===kb.length&&ka.every((k,i)=>k===kb[i]);}
   return true;
 }
-function useTweenedData(target,duration=800){
+function useTweenedData(target,duration=300){
   const[cur,setCur]=useState(target);
   const ref=useRef({to:target,raf:0,cur:target});
   ref.current.cur=cur;

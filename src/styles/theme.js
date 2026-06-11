@@ -11,7 +11,7 @@ const GOLD="#C9A84C";
 // Lift card surfaces (#16181C) clearly above the near-black bg (#0A0B0D) + more
 // visible hairline borders (#2A2E35), brighter muted/dim text. Linear-style: panels
 // read as distinct on a near-black ground.
-const makeDark=(a=GOLD)=>({bg:"#0C0D11",bgHi:"#16181D",bgLo:"#08090B",nav:"#101216",navBorder:"#23262D",card:"#16181C",cardBorder:"#2A2E35",glassBg:"#16181C",glassBorder:"#2A2E35",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.16)",glow2:"rgba(60,110,120,0.04)",modal:"#181A1F",inp:"#1C1F24",inpBorder:"#32363E",text:"#ECEEF1",muted:"#9BA1AB",dim:"#6B7079",sideText:"#ECEEF1",sideMuted:"#9BA1AB",navAcc:"#E2C375",accent:a,pos:"#3DD68C",neg:"#F0857B",warn:"#E2C375",blue:"#7FA8C9"});
+const makeDark=(a=GOLD)=>({bg:"#0C0D11",bgHi:"#16181D",bgLo:"#08090B",nav:"#101216",navBorder:"rgba(255,255,255,0.06)",card:"#16181C",cardBorder:"rgba(255,255,255,0.07)",glassBg:"#16181C",glassBorder:"rgba(255,255,255,0.07)",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(226,195,117,0.16)",glow2:"rgba(60,110,120,0.04)",modal:"#1F232A",inp:"#1C1F24",inpBorder:"rgba(255,255,255,0.11)",text:"#EDEDF3",muted:"#A8AAB5",dim:"#787A8C",sideText:"#EDEDF3",sideMuted:"#A8AAB5",navAcc:"#E2C375",accent:a,pos:"#34D399",neg:"#F87171",warn:"#E2C375",blue:"#7FA8C9"});
 // v0.55.0 — warm cream + amber light palette applied app-wide per Mauricio's
 // "the light mode looks off" feedback. Same palette family as landing + intake.
 // Was: cool slate (`#F1F5F9` bg, `#E2E8F0` borders, blue accent).
@@ -19,7 +19,7 @@ const makeDark=(a=GOLD)=>({bg:"#0C0D11",bgHi:"#16181D",bgLo:"#08090B",nav:"#1012
 // shadow (hover-lift adds it). Sidebar stays near-black (B keeps a dark rail in light).
 // Light sidebar (B in light keeps a clean off-white rail, not a dark one). navAcc =
 // walnut gold so active items stay legible on white (gold #C9A84C fails AA on white).
-const makeLight=(a="#C9A84C")=>({bg:"#F8F7F2",bgHi:"#FDFCF8",bgLo:"#EFEDE5",nav:"#FFFFFF",navBorder:"#ECEDEF",card:"#FFFFFF",cardBorder:"#ECEDEF",glassBg:"#FFFFFF",glassBorder:"#ECEDEF",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(184,144,30,0.13)",glow2:"rgba(60,110,120,0.03)",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"#E6E7EA",text:"#0B0C0E",muted:"#60646C",dim:"#9097A0",sideText:"#16181C",sideMuted:"#60646C",navAcc:"#8A6B1E",accent:a,pos:"#0E9F6E",neg:"#D0453B",warn:"#B8901E",blue:"#5A7E9E"});
+const makeLight=(a="#C9A84C")=>({bg:"#F8F7F2",bgHi:"#FDFCF8",bgLo:"#EFEDE5",nav:"#FFFFFF",navBorder:"rgba(20,16,5,0.07)",card:"#FFFFFF",cardBorder:"rgba(20,16,5,0.08)",glassBg:"#FFFFFF",glassBorder:"rgba(20,16,5,0.08)",blur:"blur(0px)",cardShadow:"none",glow1:"rgba(184,144,30,0.13)",glow2:"rgba(60,110,120,0.03)",modal:"#FFFFFF",inp:"#FFFFFF",inpBorder:"rgba(20,16,5,0.12)",text:"#0B0C0E",muted:"#60646C",dim:"#9097A0",sideText:"#16181C",sideMuted:"#60646C",navAcc:"#8A6B1E",accent:a,pos:"#0E9F6E",neg:"#D0453B",warn:"#B8901E",blue:"#5A7E9E"});
 const DARK_ACCENTS=[{l:"Gold",v:"#C9A84C"},{l:"Blue",v:"#3B82F6"},{l:"Emerald",v:"#10B981"},{l:"Purple",v:"#8B5CF6"}];
 const LIGHT_ACCENTS=[{l:"Blue",v:"#2563EB"},{l:"Teal",v:"#0D9488"},{l:"Emerald",v:"#059669"},{l:"Purple",v:"#7C3AED"}];
 // v0.8.1 — background/card shade presets for the Appearance settings
@@ -33,7 +33,7 @@ const LIGHT_BG_PRESETS=["#FAF6EC","#F7F4EC","#FFFFFF","#F1F5F9","#ECEFF3","#E6EB
 // Render-time strip of a LEADING emoji (+ trailing space) so we don't have to edit
 // hundreds of call sites or touch data (account-type icons etc. stay). String-only.
 const stripLeadEmoji=s=>typeof s==="string"?s.replace(/^(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}️‍⃣]\s*)+/u,""):s;
-const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:10,padding:"9px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
+const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
 // v0.61 — glass card: translucent bg + thin hairline + backdrop blur (dark) or
 // soft shadow (light). Falls back to solid card tokens if glass tokens absent
 // (e.g. a user's custom card-color override flows in via th.glassBg at merge time).
@@ -42,6 +42,6 @@ const mTH=th=>({fontSize:11,fontWeight:700,color:th.muted,padding:"0 6px 8px 0",
 const mTHR=th=>({...mTH(th),textAlign:"right",padding:"0 0 8px 6px"});
 const mTD=th=>({fontSize:12,padding:"7px 6px 7px 0",borderTop:`1px solid ${th.cardBorder}`,color:th.text,verticalAlign:"middle"});
 const mTDR=th=>({...mTD(th),textAlign:"right",padding:"7px 0 7px 6px"});
-const mIIN=th=>({background:th.bg,border:`1px solid ${th.inpBorder}44`,color:th.text,borderRadius:6,padding:"4px 7px",fontSize:12,outline:"none",width:"100%"});
+const mIIN=th=>({background:th.bg,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"4px 7px",fontSize:12,outline:"none",width:"100%"});
 
 export { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN };

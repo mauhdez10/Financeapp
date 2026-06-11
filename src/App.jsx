@@ -98,7 +98,7 @@ function KpiTile({label,value,color,sub,delta,spark}){
     <div style={{fontSize:9.5,color:th.dim,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500,fontFamily:"'JetBrains Mono',monospace",marginBottom:10}}>{label}</div>
     <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:10}}>
       <div style={{minWidth:0}}>
-        <div style={{fontSize:27,fontWeight:500,color:th.text,fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.01em",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div>
+        <div style={{fontSize:27,fontWeight:600,color:th.text,fontVariantNumeric:"tabular-nums",lineHeight:1,letterSpacing:"-0.5px",fontFamily:"'JetBrains Mono',ui-monospace,monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div>
         {(delta||sub)&&<div style={{fontSize:11,color:th.dim,display:"flex",alignItems:"center",gap:7,marginTop:9}}>
           {delta&&<span style={{color:delta.up?th.pos:delta.down?th.neg:th.dim,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{delta.up?"▲":delta.down?"▼":"→"} {delta.value}</span>}
           {sub&&<span>{sub}</span>}
@@ -825,7 +825,7 @@ function CashFlowStatement({client,t}){const th=useTh();const net=sumN(client.in
   // Actual liquid savings
   const actualLiq=(client.accounts||[]).filter(a=>ACCT_META[a.type]?.liquid).reduce((s,a)=>s+(+a.value||0),0);
   const netCF=operCF-totalSav;const dsr=net>0?minD/net:0;const savRate=net>0?totalSav/net:0;
-  const SRow=({label,value,color,bold,indent,line})=><div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:line?`2px solid ${GOLD}44`:`1px solid ${th.cardBorder}22`,paddingLeft:indent?12:0}}><span style={{fontSize:bold?13:12,color:bold?th.text:th.muted,fontWeight:bold?700:400}}>{label}</span><span style={{fontSize:bold?14:12,fontWeight:bold?800:600,color:color||th.muted}}>{fmt(value)}/mo</span></div>;
+  const SRow=({label,value,color,bold,indent,line})=><div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:line?`2px solid ${GOLD}44`:`1px solid rgba(127,127,127,0.10)`,paddingLeft:indent?12:0}}><span style={{fontSize:bold?13:12,color:bold?th.text:th.muted,fontWeight:bold?700:400}}>{label}</span><span style={{fontSize:bold?14:12,fontWeight:bold?800:600,color:color||th.muted}}>{fmt(value)}/mo</span></div>;
   return<div style={{...mCARD(th),padding:16}}><div style={{fontSize:12,fontWeight:800,color:th.text,marginBottom:12,borderBottom:`2px solid ${th.accent}`,paddingBottom:6}}>💰 {t.cashFlowStmtHdr||"CASH FLOW STATEMENT"}</div>
   {/* v0.55 — Waterfall moved BELOW the inflow/outflow tables per Mauricio's
      feedback ("graph shouldn't be on top of the numbers"). Shrunk from
@@ -975,7 +975,7 @@ const trendData=[...snaps.slice(-5),liveSnap];
 const ai=[{k:"stocks",l:"Stocks",c:th.blue},{k:"retirement",l:"Retirement",c:"#8B5CF6"},{k:"realEstate",l:"Real Estate",c:th.pos},{k:"savings",l:"Savings",c:"#06B6D4"},{k:"vacation",l:"Vacation",c:th.warn},{k:"other",l:"Other",c:th.muted},{k:"debtRepayment",l:"Debt Repayment",c:th.neg}];
 const portfolioSel="growth";const portRates={conservative:5.5,growth:8.5,aggressive:11.0,...(client.portfolioCustom?.rates||{})};const ret=portRates[portfolioSel];const r=ret/100/12;const monthly=Math.round(avail*(client.alloc?.stocks||0)/100);const fv10=monthly>0?(monthly*((Math.pow(1+r,120)-1)/r)):0;
 const RS=({icon,title,children})=><div className="ga-section ga-print-page" style={{marginBottom:24,pageBreakInside:"avoid"}}><div className="section-hdr" style={{borderBottom:`1px solid ${th.cardBorder}`,paddingBottom:8,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:10,fontWeight:500,color:th.dim,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:"'JetBrains Mono',monospace"}}>{stripLeadEmoji(title)}</span></div>{children}</div>;
-const TR=({label,value,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${th.cardBorder}44`}}><span style={{fontSize:12,color:th.muted}}>{label}</span><span style={{fontSize:12,fontWeight:bold?700:600,color:color||th.muted}}>{value}</span></div>;
+const TR=({label,value,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid rgba(127,127,127,0.18)`}}><span style={{fontSize:12,color:th.muted}}>{label}</span><span style={{fontSize:12,fontWeight:bold?700:600,color:color||th.muted}}>{value}</span></div>;
 const h1=actB(client.bills).filter(b=>(b.dueDay||1)<=15),h2=actB(client.bills).filter(b=>(b.dueDay||1)>15);
 return<div style={{paddingBottom:40}}>
 <div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:24}}><SC label={"💼 "+(t.netIncomeMo||"Net Income/mo")} value={fmt(net)} color={th.pos}/><SC label={"💳 "+(t.monthlyBillsKpi||"Monthly Bills")} value={fmt(bills)} color={th.neg}/><SC label={"🏦 "+(t.totalDebtKpi||"Total Debt")} value={fmt(client.cards.reduce((s,c)=>s+(+c.balance||0),0)+(client.loans||[]).reduce((s,l)=>s+(+l.balance||0),0))} color={th.warn}/><SC label={"💎 "+(t.netWorthKpi||"Net Worth")} value={fmt(tA-tL)} color={tA-tL>=0?th.pos:th.neg}/></div>
@@ -1991,7 +1991,7 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
       {showMutedAdv&&mutedAdv.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px dashed ${th.cardBorder}`}}>
         <div style={{fontSize:10,fontWeight:700,color:th.dim,letterSpacing:".06em",textTransform:"uppercase",marginBottom:6}}>{t?.mutedHdr||"Muted"}</div>
         <div style={{display:"flex",flexDirection:"column",gap:4}}>
-          {mutedAdv.map((a,i)=><div key={a.key||i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:7,background:th.cardBorder+"15",fontSize:11,opacity:0.85}}>
+          {mutedAdv.map((a,i)=><div key={a.key||i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:7,background:"rgba(127,127,127,0.07)",fontSize:11,opacity:0.85}}>
             <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
               <span style={{color:th.muted,fontWeight:600}}>{a.clientName}</span>
               <span style={{color:th.dim,marginLeft:6}}>· {a.task.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+/u,"")}</span>
@@ -2035,7 +2035,7 @@ function RemindersPanel({clients,settings,t,onSettingsChange}){
       {showMutedCli&&mutedCli.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px dashed ${th.cardBorder}`}}>
         <div style={{fontSize:10,fontWeight:700,color:th.dim,letterSpacing:".06em",textTransform:"uppercase",marginBottom:6}}>{t?.mutedHdr||"Muted"}</div>
         <div style={{display:"flex",flexDirection:"column",gap:4}}>
-          {mutedCli.map((u,i)=><div key={u.key||i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:7,background:th.cardBorder+"15",fontSize:11,opacity:0.85}}>
+          {mutedCli.map((u,i)=><div key={u.key||i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:7,background:"rgba(127,127,127,0.07)",fontSize:11,opacity:0.85}}>
             <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
               <span style={{color:th.muted,fontWeight:600}}>{u.name}</span>
               <span style={{color:th.dim,marginLeft:6}}>· {u.clientName}</span>
@@ -4656,7 +4656,7 @@ function EngagementLetter({settings,clientName1,clientName2,selectedService,lang
 }
 
 
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-10-v0701-charts-module";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-10-v0702-design-system-pass";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 
 /* ── IntakeFormBody — shared editor body used by PublicIntake step 4 and
    IntakeSubmissionEditor modal. Wraps the income/bills/debt/customAssets/
@@ -6113,7 +6113,7 @@ function TopBar({title,breadcrumb,isDark,setDark,lang,setLang,hideNumbers,setHid
     {divider:true},
     {icon:"signOut",label:t?.signOut||"Sign out",danger:true,onClick:onSignOut}
   ];
-  return <div className="ga-np" style={{padding:isMobile?"12px 14px":"16px 24px",background:th.bg,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+  return <div className="ga-np" style={{padding:isMobile?"10px 14px":"12px 24px",background:th.bg,borderBottom:`1px solid ${th.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
     <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
       {isMobile&&<button onClick={onOpenDrawer} title={t?.menu||"Menu"} aria-label={t?.menu||"Menu"} style={{background:th.accent+"22",border:`1px solid ${th.accent}44`,color:th.accent,borderRadius:8,padding:"8px 10px",cursor:"pointer",fontSize:16,lineHeight:1}}>☰</button>}
       <div style={{minWidth:0}}>
@@ -6518,11 +6518,11 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       @media (hover:hover) and (pointer:fine){
         .ga-lift{transition:transform .2s var(--ga-ease),box-shadow .25s var(--ga-ease),border-color .2s var(--ga-ease);}
         /* v0.62.2 — Halo hover: soft accent corona bloom instead of a hard border (less dense). */
-        .ga-lift:hover{transform:translateY(-2px);border-color:rgba(var(--ga-acc-rgb),.42)!important;box-shadow:0 0 0 1px rgba(var(--ga-acc-rgb),.22), 0 0 34px 2px rgba(var(--ga-acc-rgb),.20), var(--ga-lift)!important;}
+        .ga-lift:hover{transform:translateY(-2px);border-color:rgba(var(--ga-acc-rgb),.40)!important;box-shadow:0 0 0 1px rgba(var(--ga-acc-rgb),.16)!important;}
       }
-      .ga-press{transition:transform .15s var(--ga-ease)!important;}
+      .ga-press{transition:transform .12s var(--ga-ease)!important;}
       .ga-press:active{transform:scale(.97);}
-      .ga-rise{opacity:0;transform:translateY(8px);animation:gaRise .38s var(--ga-ease) forwards;}
+      .ga-rise{opacity:0;transform:translateY(8px);animation:gaRise .3s var(--ga-ease) forwards;}
       @keyframes gaRise{to{opacity:1;transform:translateY(0);}}
       /* v0.64 — spotlight glow (translated from 21st.dev GlowCard): a gold radial that
          follows the cursor across the card. --mx/--my set by a pointermove listener. */
@@ -6530,9 +6530,12 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       .ga-spot::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--ga-ease);background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), rgba(var(--ga-acc-rgb),0.14), transparent 60%);z-index:0;}
       @media (hover:hover) and (pointer:fine){.ga-spot:hover::after{opacity:1;}}
       .ga-spot>*{position:relative;z-index:1;}
+      /* design pass 2026-06-10: ONE hover effect per surface — spotlight never stacks on lift */
+      .ga-lift.ga-spot::after{display:none!important;}
       /* v0.26.0 — Reduced motion (UI/UX Pro Max guideline #8) */
       @media (prefers-reduced-motion: reduce){
         *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+        .ga-spot::after{display:none!important}
       }
       /* v0.26.0 — 150ms hover transition baseline (CRM pattern) */
       button,a,[role="button"]{transition:background-color 150ms ease,border-color 150ms ease,color 150ms ease,opacity 150ms ease}
@@ -6700,7 +6703,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     {vp.isMobile&&drawerOpen&&<div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,background:"#000a",zIndex:90,touchAction:"none"}} aria-hidden="true"/>}
     {vp.isMobile&&<div id="ga-sidebar-mobile" style={{width:260,background:theme.nav,borderRight:`1px solid ${theme.navBorder}`,display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",transform:drawerOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.25s ease-out",zIndex:100,boxShadow:drawerOpen?"4px 0 32px #000a":"none",visibility:drawerOpen?"visible":"hidden"}}>
       <div style={{padding:"18px 16px",borderBottom:`1px solid ${theme.navBorder}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div style={{overflow:"hidden"}}><div style={{fontSize:16,fontWeight:500,color:theme.navAcc,fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",letterSpacing:"0.10em",textTransform:"uppercase",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{settings.logoLight||settings.logoDark?<LogoImg settings={settings} mode={isDark?"dark":"light"} size={24}/>:<span>⚓</span>} {settings.companyName?(settings.companyName.length>22?settings.companyName.slice(0,20)+"…":settings.companyName):"Golden Anchor"}</div><div style={{fontSize:9,color:theme.sideMuted,letterSpacing:"0.14em",marginTop:2}}>{role==="client"?(t.clientPortalUpper||"CLIENT PORTAL"):(t.advisorPortalUpper||"ADVISOR PORTAL")}</div></div><button onClick={()=>setDrawerOpen(false)} aria-label={t?.navCloseMenu||"Close menu"} style={{background:"transparent",border:"none",color:theme.sideMuted,cursor:"pointer",fontSize:20,padding:4,minWidth:36,minHeight:36}}>✕</button></div>
-      <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:"10px 12px",justifyContent:"flex-start",borderRadius:9,background:active?theme.navAcc+"22":"transparent",color:active?theme.navAcc:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}><GAIcon name={n.icon} size={18} color={active?theme.navAcc:undefined}/><span>{n.l}</span></button>;})}</nav>
+      <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:"10px 12px",justifyContent:"flex-start",borderRadius:8,background:active?"rgba(127,127,127,0.09)":"transparent",color:active?theme.navAcc:theme.sideMuted,fontWeight:active?600:500,border:"none",cursor:"pointer",fontSize:14,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden"}}><GAIcon name={n.icon} size={18} color={active?theme.navAcc:undefined}/><span>{n.l}</span></button>;})}</nav>
       <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
         {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
             now live in the TopBar avatar dropdown so they don't duplicate. */}
@@ -6733,7 +6736,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
             </>
           }
         </div>
-        <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?n.l:""} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:sidebarCollapsed?"10px 0":"9px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:9,background:active?theme.navAcc+"22":"transparent",color:active?theme.navAcc:theme.sideMuted,fontWeight:600,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",position:"relative"}}>{active&&!sidebarCollapsed&&<span style={{position:"absolute",left:0,top:"22%",bottom:"22%",width:3,background:theme.navAcc,borderRadius:"0 3px 3px 0"}}/>}<GAIcon name={n.icon} size={17} color={active?theme.navAcc:undefined}/>{!sidebarCollapsed&&<span>{n.l}</span>}</button>;})}</nav>
+        <nav style={{flex:1,padding:10,overflowY:"auto"}}>{NAV.map(n=>{const active=nav===n.id&&!selected;return<button key={n.id} onClick={()=>{setNav(n.id);setSelected(null);setSelectedCalc(null);setDrawerOpen(false);}} title={sidebarCollapsed?n.l:""} style={{width:"100%",display:"flex",alignItems:"center",gap:11,padding:sidebarCollapsed?"10px 0":"9px 12px",justifyContent:sidebarCollapsed?"center":"flex-start",borderRadius:8,background:active?"rgba(127,127,127,0.09)":"transparent",color:active?theme.navAcc:theme.sideMuted,fontWeight:active?600:500,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",position:"relative"}}>{active&&!sidebarCollapsed&&<span style={{position:"absolute",left:0,top:"22%",bottom:"22%",width:3,background:theme.navAcc,borderRadius:"0 3px 3px 0"}}/>}<GAIcon name={n.icon} size={17} color={active?theme.navAcc:undefined}/>{!sidebarCollapsed&&<span>{n.l}</span>}</button>;})}</nav>
         <div style={{padding:10,borderTop:`1px solid ${theme.navBorder}`}}>
           {/* v0.18.0 — sidebar bottom is JUST the profile widget. Theme / EN-ES / Sign-out
               moved to the TopBar avatar dropdown so they don't duplicate. */}
