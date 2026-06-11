@@ -8,7 +8,7 @@ import { _gaLang } from "../constants/meta";
 import { fmtDate, fmt, vEmail, sumB, sumN, sumMin, totalA, totalL, liquidA } from "../utils/finance";
 import { Donut, Waterfall, SmoothAreaLine, RadialGauge } from "../components/charts";
 import { SC, Modal } from "../components/primitives";
-import { supabase, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink } from "../services/supabase";
+import { supabase, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaCreateClientLink, gaListClientLinks, gaRevokeClientLink, gaSendLinkInvite } from "../services/supabase";
 
 function PortalShareModal({client,settings,t,onClose}){
   const th=useTh();
@@ -156,4 +156,104 @@ function PublicPortal(){
 }
 
 
-export { PortalShareModal, PublicPortal };
+/* ── LinkInviteModal — MD-C Link-R (v0.76). Advisor invites a client account to
+   link to this client record. Email must match at accept (server-enforced).      */
+function LinkInviteModal({client,settings,t,onClose}){
+  const th=useTh();const es=_gaLang()==="es";
+  const[links,setLinks]=useState(null);const[email,setEmail]=useState(client.email||"");
+  const[busy,setBusy]=useState(false);const[msg,setMsg]=useState("");
+  const load=async()=>{const{data:sess}=await supabase.auth.getSession();const uid=sess?.session?.user?.id;if(!uid)return;setLinks(await gaListClientLinks(uid,client.id));};
+  useEffect(()=>{load();},[]);
+  const invite=async()=>{
+    if(busy)return;const em=email.trim();if(!vEmail(em)){setMsg(es?"Correo inválido.":"Invalid email.");return;}
+    setBusy(true);setMsg("");
+    const{data:sess}=await supabase.auth.getSession();const uid=sess?.session?.user?.id;
+    const r=await gaCreateClientLink(uid,client.id,em);
+    if(!r.ok){setMsg(r.error||"create failed");setBusy(false);return;}
+    const sr=await gaSendLinkInvite({token:r.link.token,lang:es?"es":"en",clientName:(client.firstName||"")+" "+(client.lastName||""),advisorName:(settings&&settings.advisorName)||"Your advisor"});
+    setMsg(sr.ok?(es?"Invitación enviada a "+em+" — vence en 14 días.":"Invite sent to "+em+" — expires in 14 days."):("Email failed: "+(sr.error||"")));
+    setBusy(false);load();
+  };
+  const revoke=async(id)=>{if(!confirm(es?"¿Revocar este enlace?":"Revoke this link?"))return;await gaRevokeClientLink(id);load();};
+  const chip=(s)=>({pending:th.warn,accepted:th.pos,revoked:th.neg,expired:th.dim})[s]||th.dim;
+  const active=(links||[]).find(l=>l.status==="accepted");
+  return <Modal title={es?"Conectar cuenta del cliente":"Link client account"} onClose={onClose} width={480}>
+    <div style={{fontSize:11.5,color:th.muted,lineHeight:1.6,marginBottom:14}}>
+      {es?"El cliente crea (o usa) su propia cuenta con ESTE correo y verá este perfil — solo lectura, datos sensibles filtrados. Tu registro sigue siendo la fuente de verdad.":"The client creates (or uses) their own account with THIS email and will see this profile — read-only, sensitive fields stripped. Your record stays the source of truth."}
+    </div>
+    {active?<div style={{...mCARD(th),padding:14,marginBottom:12}}>
+      <div style={{fontSize:12.5,fontWeight:700,color:th.pos,marginBottom:4}}>{es?"Cuenta conectada":"Account linked"} ✓</div>
+      <div style={{fontSize:11.5,color:th.muted}}>{active.invited_email} · {es?"desde":"since"} {String(active.accepted_at||"").slice(0,10)}</div>
+      {active.island_snapshot&&<div style={{fontSize:10.5,color:th.dim,marginTop:6,fontStyle:"italic"}}>{es?"El cliente tenía datos propios — revisa el respaldo en el registro si quieres importar algo.":"The client had self-entered data — its snapshot is saved on the link if you want to import anything."}</div>}
+      <button onClick={()=>revoke(active.id)} style={{marginTop:10,fontSize:10.5,padding:"5px 12px",borderRadius:7,background:"transparent",color:th.neg,border:"1px solid "+th.neg+"44",cursor:"pointer"}}>{es?"Revocar enlace":"Revoke link"}</button>
+    </div>
+    :<div style={{display:"flex",gap:8,marginBottom:12}}>
+      <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.com" style={{...mINP(th),flex:1}}/>
+      <button onClick={invite} disabled={busy} style={{fontSize:12,fontWeight:700,padding:"9px 16px",borderRadius:9,background:th.accent+"1A",color:th.accent,border:"1px solid "+th.accent+"44",cursor:"pointer",fontFamily:"inherit"}}>{busy?"…":(es?"Enviar invitación":"Send invite")}</button>
+    </div>}
+    {msg&&<div style={{fontSize:11.5,color:th.muted,marginBottom:10}}>{msg}</div>}
+    {(links||[]).filter(l=>l.status!=="accepted").slice(0,5).map(l=><div key={l.id} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 2px",borderBottom:"1px solid "+(th.glassBorder||th.cardBorder),fontSize:11.5}}>
+      <span style={{flex:1,color:th.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.invited_email}</span>
+      <span style={{fontSize:9.5,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:chip(l.status),textTransform:"uppercase",letterSpacing:"0.08em"}}>{l.status}</span>
+      {l.status==="pending"&&<button onClick={()=>revoke(l.id)} style={{fontSize:9.5,padding:"3px 9px",borderRadius:6,background:"transparent",color:th.neg,border:"1px solid "+th.neg+"44",cursor:"pointer"}}>{es?"Revocar":"Revoke"}</button>}
+    </div>)}
+  </Modal>;
+}
+
+/* ── LinkedOverview — MD-C Link-R (v0.76). What a LINKED client sees as their
+   Overview: the advisor's record, sanitized server-side, read-only.            */
+function LinkedOverview({data,lang}){
+  const th=useTh();const es=lang==="es";const L=(en,esx)=>es?esx:en;
+  const MONO="'JetBrains Mono',monospace";
+  const c=data.client||{};const adv=data.advisor||{};
+  const income=Math.round(sumN(c.incomeStreams||[])),bills=Math.round(sumB(c.bills||[])),minPay=Math.round(sumMin(c.cards||[]));
+  const debt=Math.round(totalL(c)),assets=Math.round(totalA(c)),net=assets-debt,liquid=Math.round(liquidA(c));
+  const efMonths=+c.efMonths||3,efTarget=bills*efMonths;
+  const cash=Math.round((c.accounts||[]).reduce((s,a)=>s+(+a.value||0),0));
+  const invest=Math.round((c.marketInvestments||[]).reduce((s,a)=>s+(+a.value||0),0));
+  const propV=Math.round([].concat(c.customAssets||[],c.properties||[]).reduce((s,a)=>s+(+a.value||0),0));
+  const slices=[{label:L("Cash & accounts","Efectivo y cuentas"),value:cash,color:th.pos},{label:L("Investments","Inversiones"),value:invest,color:th.accent},{label:L("Property & assets","Propiedad y bienes"),value:propV,color:th.blue||th.warn}].filter(x=>x.value>0);
+  const snaps=Array.isArray(c.monthSnapshots)?c.monthSnapshots:[];
+  const trend=snaps.slice(-6).map(x=>({label:String(x.label||"").split(" ")[0],debt:Math.round(+x.debt||0),savings:Math.round(+x.savings||0)}));
+  trend.push({label:L("Now","Hoy"),debt,savings:liquid});
+  const g=c.notes||{};
+  const Card=({children,style})=><div style={{...mCARD(th),padding:18,...style}}>{children}</div>;
+  const Eye=({children})=><div style={{fontSize:10,fontWeight:600,letterSpacing:"0.14em",color:th.dim,fontFamily:MONO,textTransform:"uppercase",marginBottom:12}}>{children}</div>;
+  return <div className="ga-np" style={{padding:24,maxWidth:1080,margin:"0 auto"}}>
+    <div style={{...mCARD(th),padding:"13px 16px",marginBottom:18,display:"flex",alignItems:"center",gap:11,flexWrap:"wrap"}}>
+      <span style={{width:8,height:8,borderRadius:99,background:th.pos,flexShrink:0}}/>
+      <span style={{fontSize:12,color:th.muted,lineHeight:1.55,flex:1,minWidth:220}}>
+        {L("This profile is managed by your advisor","Este perfil lo administra tu asesor")}{adv.name?" — "+(adv.name):""}. {L("It's read-only here; ask them about anything you'd like to change.","Aquí es solo lectura; pídeles cualquier cambio que necesites.")}
+      </span>
+      {adv.email&&<a href={"mailto:"+adv.email} style={{fontSize:11,fontWeight:700,color:th.accent,textDecoration:"none",border:"1px solid "+th.accent+"44",borderRadius:8,padding:"6px 12px",background:th.accent+"12"}}>{L("Contact advisor","Contactar asesor")}</a>}
+    </div>
+    <div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14}}>
+      <SC label={L("Net income/mo","Ingreso neto/mes")} value={fmt(income)} color={th.pos}/>
+      <SC label={L("Total debt","Deuda total")} value={fmt(debt)} color={th.neg}/>
+      <SC label={L("Liquid savings","Ahorro líquido")} value={fmt(liquid)} color={th.accent}/>
+      <SC label={L("Net worth","Patrimonio neto")} value={fmt(net)} color={net>=0?th.pos:th.neg}/>
+    </div>
+    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:14,marginBottom:14}}>
+      <Card><Eye>{L("Debt ↓ vs savings ↑","Deuda ↓ vs ahorro ↑")}</Eye><SmoothAreaLine data={trend} height={190} debtColor={th.neg} savingsColor={th.pos} legendDebt={L("Debt","Deuda")} legendSav={L("Savings","Ahorro")}/></Card>
+      <Card style={{display:"flex",flexDirection:"column",alignItems:"center"}}><Eye>{L("Asset mix","Mezcla de activos")}</Eye>{slices.length?<Donut data={slices} size={168} centerLabel={L("Assets","Activos")} centerValue={fmt(assets)} centerColor={th.text}/>:<div style={{fontSize:12,color:th.dim,fontStyle:"italic",padding:20}}>{L("No assets recorded yet.","Aún no hay activos registrados.")}</div>}</Card>
+    </div>
+    <div data-ga-grid="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1.3fr",gap:14}}>
+      <Card style={{display:"flex",flexDirection:"column",alignItems:"center"}}><Eye>{L("Emergency fund","Fondo de emergencia")}</Eye><RadialGauge value={liquid} max={Math.max(1,efTarget)} label={L("Saved","Ahorrado")} subLabel={efMonths+L("-mo target","-mes meta")} color={th.pos} fmt={v=>fmt(v)}/></Card>
+      <Card><Eye>{L("Your goals","Tus metas")}</Eye>
+        {(g.goals||g.shortTerm||g.midTerm||g.longTerm)?<div style={{fontSize:12.5,color:th.muted,lineHeight:1.75}}>
+          {g.goals&&<div style={{marginBottom:6}}>{g.goals}</div>}
+          {g.shortTerm&&<div>• {L("Short term","Corto plazo")}: {g.shortTerm}</div>}
+          {g.midTerm&&<div>• {L("Mid term","Mediano plazo")}: {g.midTerm}</div>}
+          {g.longTerm&&<div>• {L("Long term","Largo plazo")}: {g.longTerm}</div>}
+        </div>:<div style={{fontSize:12,color:th.dim,fontStyle:"italic"}}>{L("No goals recorded yet — talk to your advisor.","Aún no hay metas registradas — habla con tu asesor.")}</div>}
+      </Card>
+    </div>
+    {Array.isArray(adv.referralContacts)&&adv.referralContacts.filter(x=>x.name).length>0&&<Card style={{marginTop:14}}>
+      <Eye>{L("Trusted contacts from your advisor","Contactos de confianza de tu asesor")}</Eye>
+      {adv.referralContacts.filter(x=>x.name).map((x,i)=><div key={i} style={{fontSize:12,color:th.muted,padding:"6px 0",borderBottom:"1px solid "+(th.glassBorder||th.cardBorder)}}><b style={{color:th.text}}>{x.name}</b>{x.company?" · "+x.company:""}{x.phone?" · "+x.phone:""}{x.note?<div style={{fontSize:11,color:th.dim}}>{x.note}</div>:null}</div>)}
+      <div style={{fontSize:9.5,color:th.dim,fontStyle:"italic",marginTop:10,lineHeight:1.5}}>{L("Disclosure: your advisor may receive referral compensation. You never pay more, and you're free to choose anyone else.","Aviso: tu asesor puede recibir compensación por referidos. Tú nunca pagas más, y eres libre de elegir a alguien más.")}</div>
+    </Card>}
+  </div>;
+}
+
+export { PortalShareModal, PublicPortal, LinkInviteModal, LinkedOverview };

@@ -30,31 +30,9 @@ function sha256(s) {
 // Allow-list: only these top-level client fields ever reach the browser.
 // Everything else (social/p1Social/p2Social, dob/p1Dob/p2Dob, phone/p1Phone,
 // address, recommendedBy, raw notes, etc.) is dropped.
-const ALLOW = new Set([
-  "id", "firstName", "lastName", "partnerFirst", "partnerLast", "clientType",
-  "email", "incomeStreams", "bills", "cards", "accounts", "loans",
-  "customAssets", "marketInvestments", "properties", "monthSnapshots",
-  "alloc", "committed", "efMonths", "savedPortfolio", "portfolioCustom",
-  "planStrategy", "planOverrides", "reportInclude"
-]);
-
-function sanitizeClient(data) {
-  const safe = {};
-  if (!data || typeof data !== "object") return safe;
-  for (const k of Object.keys(data)) {
-    if (ALLOW.has(k)) safe[k] = data[k];
-  }
-  // Goals are client-facing; advisor-internal notes (general, setbacks) are not.
-  if (data.notes && typeof data.notes === "object") {
-    safe.notes = {
-      goals:     data.notes.goals     || "",
-      shortTerm: data.notes.shortTerm || "",
-      midTerm:   data.notes.midTerm   || "",
-      longTerm:  data.notes.longTerm  || ""
-    };
-  }
-  return safe;
-}
+// v0.76 (MD-C): the allow-list moved to api/_sanitize.js — ONE security boundary
+// shared with linked-overview.js. Comment above documents what gets dropped.
+import { sanitizeClient } from "./_sanitize.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

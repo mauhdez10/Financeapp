@@ -2190,7 +2190,344 @@ const USEFUL_LINKS = [
       }
     ]
   },
-  //__NEXT_CATEGORY__
+  {
+    id: "life-events-family",
+    icon: "Baby",
+    title: { en: "Life Events: New Baby, Divorce, Loss", es: "Eventos de vida: bebé nuevo, divorcio, pérdida" },
+    blurb: {
+      en: "The money moves and deadlines that come with a birth, a divorce, or losing a loved one.",
+      es: "Los pasos financieros y plazos que llegan con un nacimiento, un divorcio o la pérdida de un ser querido."
+    },
+    tips: [
+      {
+        en: "New baby: the clock starts at birth. You typically have only 30 days to add the baby to job-based health insurance (60 days on HealthCare.gov). Call HR or the Marketplace the same week, not at tax time.",
+        es: "Bebé nuevo: el reloj empieza al nacer. Normalmente tiene solo 30 días para agregar al bebé al seguro médico del trabajo (60 días en HealthCare.gov). Llame a Recursos Humanos o al Mercado esa misma semana, no en la temporada de impuestos."
+      },
+      {
+        en: "Divorce: the divorce decree does NOT remove your name from joint credit cards, the mortgage, or the car loan — creditors can still come after you. Close or refinance joint accounts, open one small account in your own name, and check all three credit reports free at AnnualCreditReport.com.",
+        es: "Divorcio: la sentencia de divorcio NO quita su nombre de las tarjetas de crédito conjuntas, la hipoteca ni el préstamo del auto — los acreedores aún pueden perseguirlo. Cierre o refinancie las cuentas conjuntas, abra una cuenta pequeña a su nombre y revise sus tres reportes de crédito gratis en AnnualCreditReport.com."
+      },
+      {
+        en: "Widowhood: never pay anyone to 'find' survivor benefits or lost life insurance — Social Security and the NAIC policy locator are free. Also report the death to Social Security right away (the funeral home often does it), and ask about the one-time $255 lump-sum death payment.",
+        es: "Viudez: nunca pague a nadie por 'encontrar' beneficios de sobrevivientes o un seguro de vida perdido — el Seguro Social y el localizador de pólizas de la NAIC son gratuitos. Además, reporte el fallecimiento al Seguro Social de inmediato (la funeraria a menudo lo hace) y pregunte por el pago único por fallecimiento de $255."
+      },
+      {
+        en: "Funerals: get prices from 2-3 funeral homes by phone before choosing — the law requires them to tell you. You can decline embalming and packaged 'deals'. If the family truly can't pay, ask the county or city about its indigent burial/cremation assistance program before signing a funeral contract.",
+        es: "Funerales: pida precios a 2-3 funerarias por teléfono antes de elegir — la ley les exige decírselos. Puede rechazar el embalsamamiento y los 'paquetes'. Si la familia de verdad no puede pagar, pregunte al condado o la ciudad por su programa de asistencia para entierro/cremación antes de firmar un contrato funerario."
+      }
+    ],
+    items: [
+      {
+        name: "WIC (Women, Infants, and Children)",
+        url: "https://www.fns.usda.gov/wic",
+        what: {
+          en: "Free healthy food, baby formula help, and nutrition support for pregnant moms and kids under 5. Shows you how to apply at your local office.",
+          es: "Comida saludable gratis, ayuda con fórmula para bebés y apoyo nutricional para mamás embarazadas y niños menores de 5 años. Le muestra cómo aplicar en su oficina local."
+        },
+        whoFor: {
+          en: "Pregnant women and families with babies or young children on a tight budget.",
+          es: "Mujeres embarazadas y familias con bebés o niños pequeños con presupuesto ajustado."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "InsureKidsNow.gov (Medicaid & CHIP for kids)",
+        url: "https://www.insurekidsnow.gov/",
+        what: {
+          en: "Free or very low-cost health insurance for children and teens. Pick your state to apply, or call 1-877-543-7669. Kids often qualify even when parents earn too much for Medicaid.",
+          es: "Seguro médico gratuito o de muy bajo costo para niños y adolescentes. Elija su estado para aplicar, o llame al 1-877-543-7669. Los niños a menudo califican aunque los padres ganen demasiado para Medicaid."
+        },
+        whoFor: {
+          en: "Any family with an uninsured child — including many working families who assume they earn too much.",
+          es: "Cualquier familia con un niño sin seguro — incluyendo muchas familias trabajadoras que asumen que ganan demasiado."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "IRS — Child Tax Credit",
+        url: "https://www.irs.gov/credits-deductions/individuals/child-tax-credit",
+        what: {
+          en: "The official rules for the tax credit you get for each child (up to $2,200 per child). Explains who qualifies and how to claim it on your tax return.",
+          es: "Las reglas oficiales del crédito tributario que recibe por cada hijo (hasta $2,200 por hijo). Explica quién califica y cómo reclamarlo en su declaración de impuestos."
+        },
+        whoFor: {
+          en: "Parents and guardians — especially after a new baby, so you don't leave this money unclaimed.",
+          es: "Padres y tutores — especialmente después de un bebé nuevo, para no dejar este dinero sin reclamar."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "HealthCare.gov — Special Enrollment after a baby",
+        url: "https://www.healthcare.gov/coverage-outside-open-enrollment/special-enrollment-period/",
+        what: {
+          en: "Having a baby lets you add the child or change health plans outside the normal sign-up season — but only for a limited time after the birth. This page explains the deadline and how to report the change.",
+          es: "Tener un bebé le permite agregar al niño o cambiar de plan médico fuera de la temporada normal de inscripción — pero solo por un tiempo limitado después del nacimiento. Esta página explica el plazo y cómo reportar el cambio."
+        },
+        whoFor: {
+          en: "New parents — act within 30 days for job-based insurance, 60 days on the Marketplace.",
+          es: "Padres recientes — actúe dentro de 30 días para el seguro del trabajo, 60 días en el Mercado."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Child Support — find your state agency",
+        url: "https://www.acf.hhs.gov/css/resource/state-and-tribal-child-support-agency-contacts",
+        what: {
+          en: "Official map of every state's child support office. These agencies set up, collect, and enforce child support for free or a few dollars — you do not need to hire a lawyer to start.",
+          es: "Mapa oficial de la oficina de manutención infantil de cada estado. Estas agencias establecen, cobran y hacen cumplir la manutención gratis o por unos pocos dólares — no necesita contratar un abogado para empezar."
+        },
+        whoFor: {
+          en: "Separated or divorced parents who need child support set up or who aren't receiving payments owed.",
+          es: "Padres separados o divorciados que necesitan establecer la manutención o que no reciben los pagos que se les deben."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "U.S. Dept. of Labor — Dividing retirement in divorce (QDRO)",
+        url: "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/qdros",
+        what: {
+          en: "Plain-language government guide to the special court order (called a QDRO) needed to split a 401(k) or pension in a divorce. Without it, you can lose your share or get hit with taxes and penalties.",
+          es: "Guía del gobierno en lenguaje sencillo sobre la orden judicial especial (llamada QDRO) que se necesita para dividir un 401(k) o pensión en un divorcio. Sin ella, puede perder su parte o recibir impuestos y multas."
+        },
+        whoFor: {
+          en: "Anyone divorcing where either spouse has a 401(k), pension, or other workplace retirement plan.",
+          es: "Cualquier persona en proceso de divorcio donde alguno de los cónyuges tenga un 401(k), pensión u otro plan de retiro del trabajo."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "LawHelp.org — free legal aid finder",
+        url: "https://www.lawhelp.org/",
+        what: {
+          en: "Pick your state to find free legal aid lawyers and plain-language guides for divorce, custody, housing, and benefits. For Florida, it points to FloridaLawHelp.org.",
+          es: "Elija su estado para encontrar abogados de ayuda legal gratuita y guías en lenguaje sencillo sobre divorcio, custodia, vivienda y beneficios. Para Florida, lo dirige a FloridaLawHelp.org."
+        },
+        whoFor: {
+          en: "People who can't afford a lawyer for divorce, custody, or other family legal problems.",
+          es: "Personas que no pueden pagar un abogado para divorcio, custodia u otros problemas legales familiares."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Social Security — Survivor benefits",
+        url: "https://www.ssa.gov/survivor",
+        what: {
+          en: "Monthly payments for widows, widowers, and children when a worker dies. Explains who qualifies and how to apply — you must call or visit Social Security; you can't apply online.",
+          es: "Pagos mensuales para viudas, viudos e hijos cuando un trabajador fallece. Explica quién califica y cómo aplicar — debe llamar o visitar el Seguro Social; no se puede aplicar en línea."
+        },
+        whoFor: {
+          en: "Anyone who lost a spouse or a parent of their children — kids usually qualify too, which many families miss.",
+          es: "Cualquier persona que perdió a su cónyuge o al padre/madre de sus hijos — los niños normalmente también califican, algo que muchas familias pasan por alto."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "NAIC Life Insurance Policy Locator",
+        url: "https://eapps.naic.org/life-policy-locator/",
+        what: {
+          en: "Free official tool that asks insurance companies nationwide to search for a deceased loved one's lost life insurance or annuity. If a policy is found and you're the beneficiary, the company contacts you.",
+          es: "Herramienta oficial gratuita que pide a las aseguradoras de todo el país buscar el seguro de vida o anualidad perdida de un ser querido fallecido. Si se encuentra una póliza y usted es el beneficiario, la compañía lo contacta."
+        },
+        whoFor: {
+          en: "Families who think a deceased relative had life insurance but can't find the paperwork.",
+          es: "Familias que creen que un familiar fallecido tenía seguro de vida pero no encuentran los documentos."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "FTC — The Funeral Rule (your rights)",
+        url: "https://consumer.ftc.gov/articles/ftc-funeral-rule",
+        what: {
+          en: "Federal law says funeral homes must give you prices (even by phone), let you buy only what you want, and accept a casket bought elsewhere. Embalming is almost never legally required.",
+          es: "La ley federal dice que las funerarias deben darle precios (incluso por teléfono), dejarle comprar solo lo que quiera y aceptar un ataúd comprado en otro lugar. El embalsamamiento casi nunca es legalmente obligatorio."
+        },
+        whoFor: {
+          en: "Anyone arranging a funeral — read this before signing anything, especially while grieving.",
+          es: "Cualquier persona que organice un funeral — lea esto antes de firmar algo, especialmente durante el duelo."
+        },
+        esSite: true,
+        free: true
+      }
+    ]
+  },
+  {
+    id: "disasters-florida",
+    icon: "CloudRainWind",
+    title: { en: "Hurricanes & Disasters (Florida)", es: "Huracanes y desastres (Florida)" },
+    blurb: {
+      en: "FEMA aid, flood insurance, storm-claim help, and getting your home and documents storm-ready.",
+      es: "Ayuda de FEMA, seguro contra inundaciones, ayuda con reclamos de tormenta y cómo preparar su casa y documentos."
+    },
+    tips: [
+      {
+        en: "Your home or renters insurance does NOT cover flooding — that needs a separate flood policy, and there is usually a 30-day wait before it kicks in. Buy it before hurricane season, not when a storm is on the map.",
+        es: "Su seguro de casa o de inquilinos NO cubre las inundaciones — eso requiere una póliza de inundación aparte, y normalmente hay una espera de 30 días antes de que entre en vigor. Cómprela antes de la temporada de huracanes, no cuando ya hay una tormenta en el mapa."
+      },
+      {
+        en: "After a storm: take photos of ALL damage before cleaning anything up, then report your claim to your insurer immediately. Florida law gives you as little as one year to file, and insurers treat late claims with suspicion.",
+        es: "Después de una tormenta: tome fotos de TODOS los daños antes de limpiar cualquier cosa, y luego reporte su reclamo a su aseguradora de inmediato. La ley de Florida le da tan solo un año para presentarlo, y las aseguradoras ven con sospecha los reclamos tardíos."
+      },
+      {
+        en: "Never sign paperwork from a contractor who knocks on your door after a storm. 'Assignment of Benefits' contracts are illegal in Florida — if anyone asks you to sign over your insurance rights or 'direct payment,' call the state helpline first (1-877-693-5236) and verify the license.",
+        es: "Nunca firme documentos de un contratista que toque su puerta después de una tormenta. Los contratos de 'Cesión de Beneficios' (Assignment of Benefits) son ilegales en Florida — si alguien le pide ceder sus derechos del seguro o el 'pago directo', llame primero a la línea estatal (1-877-693-5236) y verifique la licencia."
+      },
+      {
+        en: "If FEMA denies you, that is usually NOT the final answer — most denials are missing documents. You have 60 days to appeal, and the appeal letter can be written in Spanish.",
+        es: "Si FEMA lo niega, normalmente NO es la respuesta final — la mayoría de las negaciones son por documentos faltantes. Tiene 60 días para apelar, y la carta de apelación puede escribirse en español."
+      }
+    ],
+    items: [
+      {
+        name: "DisasterAssistance.gov (FEMA)",
+        url: "https://www.disasterassistance.gov/",
+        what: {
+          en: "The official place to apply for FEMA money after a hurricane — help with rent, repairs, and things you lost. Apply online, by phone (800-621-3362, press 2 for Spanish), or at a recovery center.",
+          es: "El lugar oficial para solicitar dinero de FEMA después de un huracán — ayuda con renta, reparaciones y cosas que perdió. Aplique en línea, por teléfono (800-621-3362, presione 2 para español) o en un centro de recuperación."
+        },
+        whoFor: {
+          en: "Anyone whose home or belongings were damaged in a declared disaster — renters and homeowners both qualify.",
+          es: "Cualquier persona cuya casa o pertenencias fueron dañadas en un desastre declarado — califican tanto inquilinos como propietarios."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "FEMA — How to Appeal a Decision",
+        url: "https://www.fema.gov/assistance/individual/after-applying/appeals",
+        what: {
+          en: "Step-by-step instructions for asking FEMA to look again if they said no or gave you less than expected. Many denials are just missing paperwork.",
+          es: "Instrucciones paso a paso para pedirle a FEMA que revise de nuevo si dijo que no o le dio menos de lo esperado. Muchas negaciones son solo por documentos faltantes."
+        },
+        whoFor: {
+          en: "Anyone who got a FEMA denial letter or a smaller amount than they need — you have 60 days to appeal.",
+          es: "Cualquier persona que recibió una carta de negación de FEMA o una cantidad menor de la que necesita — tiene 60 días para apelar."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Florida D-SNAP (Disaster Food Assistance)",
+        url: "https://www.myflfamilies.com/dsnap",
+        what: {
+          en: "Emergency food-buying help (an EBT card) for families hit by a hurricane who don't already get regular food stamps. Opens county by county after a storm — pre-register here.",
+          es: "Ayuda de emergencia para comprar comida (una tarjeta EBT) para familias afectadas por un huracán que no reciben cupones de alimentos regulares. Abre condado por condado después de una tormenta — preinscríbase aquí."
+        },
+        whoFor: {
+          en: "Families who lost food, income, or had storm costs and don't receive regular SNAP benefits.",
+          es: "Familias que perdieron comida o ingresos, o tuvieron gastos por la tormenta, y no reciben beneficios regulares de SNAP."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "FloodSmart.gov — National Flood Insurance Program",
+        url: "https://www.floodsmart.gov/",
+        what: {
+          en: "The government flood insurance program. Regular home and renters insurance does NOT cover flood damage — this is where you learn what a flood policy costs and how to get one.",
+          es: "El programa de seguro contra inundaciones del gobierno. El seguro regular de casa e inquilinos NO cubre los daños por inundación — aquí aprende cuánto cuesta una póliza de inundación y cómo obtenerla."
+        },
+        whoFor: {
+          en: "Every Florida homeowner and renter — flooding is the most common hurricane damage and most people are not covered.",
+          es: "Todo propietario e inquilino de Florida — la inundación es el daño de huracán más común y la mayoría de la gente no está cubierta."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "My Safe Florida Home",
+        url: "https://mysafeflhome.com/",
+        what: {
+          en: "A free state inspection of your home plus grant money (up to $10,000) to strengthen your roof, windows, and doors against hurricanes. Lower-income homeowners may not have to match any money.",
+          es: "Una inspección estatal gratuita de su casa más dinero de subvención (hasta $10,000) para reforzar su techo, ventanas y puertas contra huracanes. Los propietarios de menores ingresos pueden no tener que aportar nada."
+        },
+        whoFor: {
+          en: "Florida homeowners with a homestead exemption, especially low- and moderate-income families — hardening your home can also lower your insurance bill.",
+          es: "Propietarios de Florida con exención homestead, especialmente familias de ingresos bajos y moderados — reforzar su casa también puede bajar su factura de seguro."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "Florida CFO — Hurricane Insurance Help",
+        url: "https://myfloridacfo.com/division/consumers/storm/resources",
+        what: {
+          en: "The state's official help page for storm insurance claims: how to file, your rights, deductible guides, and a free helpline (1-877-693-5236) with real people who can pressure your insurer.",
+          es: "La página oficial de ayuda del estado para reclamos de seguro por tormentas: cómo presentarlos, sus derechos, guías de deducibles y una línea de ayuda gratuita (1-877-693-5236) con personas reales que pueden presionar a su aseguradora."
+        },
+        whoFor: {
+          en: "Anyone filing a storm claim, stuck with a slow insurer, or unsure if a contractor or adjuster is legitimate.",
+          es: "Cualquier persona que presente un reclamo por tormenta, esté atorada con una aseguradora lenta o dude de si un contratista o ajustador es legítimo."
+        },
+        esSite: false,
+        free: true
+      },
+      {
+        name: "SBA Disaster Loans",
+        url: "https://www.sba.gov/funding-programs/disaster-assistance",
+        what: {
+          en: "Low-interest government loans to repair or replace your home and belongings after a declared disaster. Despite the name, it's not just for businesses.",
+          es: "Préstamos del gobierno a bajo interés para reparar o reemplazar su casa y pertenencias después de un desastre declarado. A pesar del nombre, no es solo para negocios."
+        },
+        whoFor: {
+          en: "Homeowners and renters whose losses are bigger than what FEMA grants cover — applying also keeps your FEMA options open.",
+          es: "Propietarios e inquilinos cuyas pérdidas superan lo que cubren las ayudas de FEMA — aplicar también mantiene abiertas sus opciones con FEMA."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "American Red Cross — Disaster Relief",
+        url: "https://www.redcross.org/get-help/disaster-relief-and-recovery-services.html",
+        what: {
+          en: "Immediate free help right after a storm: emergency shelter, food, water, supplies, and help replacing lost prescriptions — no paperwork about income or immigration status.",
+          es: "Ayuda gratuita inmediata justo después de una tormenta: albergue de emergencia, comida, agua, suministros y ayuda para reemplazar recetas perdidas — sin trámites sobre ingresos ni estatus migratorio."
+        },
+        whoFor: {
+          en: "Anyone who needs a safe place, a meal, or basic supplies in the first days after a disaster.",
+          es: "Cualquier persona que necesite un lugar seguro, una comida o suministros básicos en los primeros días después de un desastre."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "211 (United Way)",
+        url: "https://www.211.org/",
+        what: {
+          en: "Dial 2-1-1 from any phone (or search online) to reach a real person who knows every local charity and program — food, shelter, rent help, disaster recovery. Free and confidential.",
+          es: "Marque 2-1-1 desde cualquier teléfono (o busque en línea) para hablar con una persona real que conoce todas las organizaciones y programas locales — comida, albergue, ayuda con la renta, recuperación de desastres. Gratuito y confidencial."
+        },
+        whoFor: {
+          en: "Anyone who doesn't know where to start — especially good for older or low-tech people who prefer talking to a person.",
+          es: "Cualquier persona que no sepa por dónde empezar — especialmente útil para personas mayores o poco tecnológicas que prefieren hablar con alguien."
+        },
+        esSite: true,
+        free: true
+      },
+      {
+        name: "Ready.gov — Financial Preparedness (Document Go-Bag)",
+        url: "https://www.ready.gov/financial-preparedness",
+        what: {
+          en: "A free checklist (the Emergency Financial First Aid Kit) of every document to copy and keep safe before a storm: IDs, insurance policies, deeds, car titles, medical info.",
+          es: "Una lista de verificación gratuita (el Kit de Primeros Auxilios Financieros de Emergencia) de cada documento que debe copiar y guardar seguro antes de una tormenta: identificaciones, pólizas de seguro, escrituras, títulos de auto, información médica."
+        },
+        whoFor: {
+          en: "Every family, before hurricane season — having these copies makes FEMA and insurance claims much faster.",
+          es: "Toda familia, antes de la temporada de huracanes — tener estas copias hace mucho más rápidos los reclamos con FEMA y el seguro."
+        },
+        esSite: true,
+        free: true
+      }
+    ]
+  }
 ];
 
 export { USEFUL_LINKS };

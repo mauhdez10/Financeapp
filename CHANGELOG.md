@@ -2,6 +2,25 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.76 — 2026-06-11 (Major feature) — Account linking (Link-R) + the Useful-Links directory
+
+- **Advisor ↔ client account linking, phase Link-R** (MD-C, all 6 owner answers):
+  `client_links` table (migration applied; 1:1 enforced by partial unique indexes; RLS
+  advisor-manages-own + client-reads-own-accepted; acceptance service-role only).
+  Advisor: client kebab → "Link client account" → email invite (14-day expiry, bilingual
+  Resend mail, revoke/re-send). Client: /link?token → sign in/up with the invited email
+  (server hard-rejects mismatches) → island data snapshotted to the link row (advisor
+  review note) → portal tokens auto-revoked → their Overview becomes the **sanitized
+  read-only mirror** of the advisor's record (`api/linked-overview.js` through the SAME
+  allow-list as the portal, now shared in `api/_sanitize.js`). Revoke → the client's
+  own frozen island returns. AI export + onboarding wizard respect the linked state.
+- **Useful Links directory** (MD-K.1, Premium-gated for clients, free for advisors):
+  147 vetted resources in 16 life situations (government programs, fair credit, housing,
+  immigration, disability, seniors+scams, Florida disasters…), fully bilingual, with
+  per-category tips, search, and the ES/free legend. In-app only.
+- AI-readable client export ("Copy AI summary" kebab, MD-J) + per-advisor referral
+  network (Billing editor → About display with disclosure, MD-K.2) landed earlier today.
+
 ## v0.75.2 — 2026-06-11 (Minor) — Two new calculators, role-aware What's New, collapsible Stripe links
 
 - **Life-Insurance Needs (DIME)** + **Inflation Impact** calculators (owner-approved
