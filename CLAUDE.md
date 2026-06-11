@@ -52,11 +52,29 @@
 
 ---
 
-## 🗓 Session handoff — last update 2026-06-10
+## 🗓 Session handoff — last update 2026-06-11 (finish-the-project run COMPLETE)
 
 ### Currently shipped (live on Vercel)
 
-**v0.69.8** — `2026-06-09-v0698-settings-card-clip-3d-no-page-jump`
+**v0.76.2** — `2026-06-11-v0762-function-consolidation-linkr-verified`
+
+**The 2026-06-11 master-directive run shipped ALL 12 workstreams** (v0.72.4 → v0.76.2):
+pricing realigned in live Stripe (GACLIENT50, real Lite+, Premium product), email
+verification + onboarding wizard (Resend SMTP), landing page + /login /pricing
+/about-us /contact /faq, Free/Premium ladder with TRUE choose-your-price ($3+ any
+amount via api/billing), payment→activation webhook, Members admin (gift Premium),
+account linking Link-R (prod-E2E-verified; api/link), Useful-Links directory
+(147 links, Premium-gated), referral network, AI export, DIME+Inflation calcs,
+role-aware What's New, collapsible Stripe links, promos auto-sync, GTM/SOP/
+questionnaire docs. **Read `docs/MASTER-DIRECTIVE.md` (status table at end) + the
+top of REVIEW_QUEUE.md first.** ⚠️ Pitfall #20: Vercel Hobby 12-function cap —
+api/ is at EXACTLY 12; new endpoints must merge into the action-routers (link.js /
+billing.js / admin-members.js). Owner pending: 2 Vercel env vars (STRIPE_SECRET_KEY
++ STRIPE_WEBHOOK_SECRET → unlocks auto-activation, any-amount checkout, MRR panel),
+key rotation pre-launch, GTM [OWNER: fill]s, landing-motion feedback (his refero/mux
+refs — the one open design iteration).
+
+— Prior state (2026-06-09): **v0.69.8** — `2026-06-09-v0698-settings-card-clip-3d-no-page-jump`
 
 The app now has **two account roles** (advisor + client), chosen at signup and fully isolated.
 The v0.60 → v0.69 arc in one table (full detail in CHANGELOG.md):
