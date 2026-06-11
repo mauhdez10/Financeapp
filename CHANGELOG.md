@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.73.1 — 2026-06-11 (Patch) — Pre-auth routes: /login and /pricing are real URLs (MD-E part 1)
+
+`/login` shows the sign-in page, `/pricing` deep-links to the public pricing page (Back
+works, popstate handled, unauthed deep-links to in-app URLs clean to `/`). `/` still
+shows the login hero for now — the designed marketing landing replaces it in MD-E part 2.
+`showPricing` boolean replaced by URL-backed `preAuth` state.
+
 ## v0.73 — 2026-06-11 (Minor) — Email verification + client onboarding wizard (MD-D)
 
 - **Email verification is ON** (Supabase `mailer_autoconfirm:false`; site_url fixed from
