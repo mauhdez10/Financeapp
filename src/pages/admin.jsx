@@ -101,11 +101,22 @@ function SecurityPage({t}){
 /* ── BillingPage — services & Stripe links editor. v0.18.0 ──────────────── */
 function BillingPage({settings,onSettingsChange,t}){
   const th=useTh();
+  /* MD-H (v0.75.2) — owner: collapsible TWICE (per section + per service, with +/−). */
+  const[secOpen,setSecOpen]=useState({memberships:true});
+  const[rowOpen,setRowOpen]=useState({});
   const services=Array.isArray(settings.services)?settings.services:[];
-  const INP={padding:"8px 10px",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,fontSize:12,outline:"none",boxSizing:"border-box"};
+  const INP={padding:"8px 10px",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,fontSize:12,outline:"none",boxSizing:"border-box",width:"100%"};
   const set=(i,k,v)=>onSettingsChange({...settings,services:services.map((s,idx)=>idx===i?{...s,[k]:v}:s)});
-  const addSvc=()=>onSettingsChange({...settings,services:[...services,{id:"svc-"+Date.now(),name:"New Service",price:"$0",stripeUrl:""}]});
+  const addSvc=()=>{onSettingsChange({...settings,services:[...services,{id:"svc-"+Date.now(),name:"New Service",price:"$0",stripeUrl:""}]});setSecOpen(p=>({...p,other:true}));};
   const delSvc=i=>{if(!confirm("Delete this service?"))return;onSettingsChange({...settings,services:services.filter((_,idx)=>idx!==i)});};
+  const GROUPS=[
+    {id:"memberships",label:t?.svcGroupMemberships||"Memberships",ids:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+    {id:"onetime",label:t?.svcGroupOneTime||"One-time services",ids:["initial-checkup","quarterly-review","strategy-session"]},
+    {id:"other",label:t?.svcGroupOther||"Other & custom",ids:null},
+  ];
+  const known=GROUPS.flatMap(g=>g.ids||[]);
+  const grouped=GROUPS.map(g=>({...g,rows:services.map((s,i)=>({s,i})).filter(({s})=>g.ids?g.ids.includes(s.id):!known.includes(s.id))}));
+  const PM=({open})=><span style={{fontSize:15,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",width:16,display:"inline-block",textAlign:"center"}}>{open?"−":"+"}</span>;
   return <div className="ga-np" style={{padding:24,maxWidth:900,margin:"0 auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6,flexWrap:"wrap",gap:10}}>
       {/* v0.24.0 — page title removed (TopBar shows it). */}
@@ -114,17 +125,28 @@ function BillingPage({settings,onSettingsChange,t}){
       </div>
       <button onClick={addSvc} style={{padding:"8px 14px",borderRadius:8,background:GOLD,color:"#0D1B2A",fontWeight:700,fontSize:12,border:"none",cursor:"pointer"}}>＋ {t?.addService||"Add service"}</button>
     </div>
-    <div style={{...mCARD(th),padding:16,marginTop:14}}>
-      <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:12}}>{t?.serviceCatalog||"Service Catalog"}</div>
-      {services.length===0?<div style={{fontSize:12,color:th.dim,fontStyle:"italic",padding:14,textAlign:"center"}}>{t?.noServices||"No services configured yet. Click \"Add service\" to start."}</div>:
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {services.map((s,i)=><div key={s.id||i} style={{display:"grid",gridTemplateColumns:"1.4fr 0.6fr 2fr auto",gap:8,alignItems:"center"}}>
-            <input style={INP} value={s.name||""} onChange={e=>set(i,"name",e.target.value)} placeholder={t?.serviceNamePh||"Service name"}/>
-            <input style={{...INP,fontFamily:"'JetBrains Mono',monospace"}} value={s.price||""} onChange={e=>set(i,"price",e.target.value)} placeholder="$0"/>
-            <input style={{...INP,fontFamily:"'JetBrains Mono',monospace",fontSize:11}} value={s.stripeUrl||""} onChange={e=>set(i,"stripeUrl",e.target.value)} placeholder={t?.stripeUrlPh||"https://buy.stripe.com/..."}/>
-            <button onClick={()=>delSvc(i)} title={t?.delete||"Delete"} style={{padding:"6px 10px",borderRadius:6,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer",fontSize:12}}>🗑</button>
-          </div>)}
+    <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:14}}>
+      {grouped.map(g=>{const on=!!secOpen[g.id];return<div key={g.id} style={{...mCARD(th),padding:0,overflow:"hidden"}}>
+        <button onClick={()=>setSecOpen(p=>({...p,[g.id]:!p[g.id]}))} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"13px 16px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+          <PM open={on}/><span style={{flex:1,fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase"}}>{g.label}</span><span style={{fontSize:10.5,color:th.dim,fontFamily:"'JetBrains Mono',monospace"}}>{g.rows.length}</span>
+        </button>
+        {on&&<div style={{padding:"0 12px 12px"}}>
+          {g.rows.map(({s,i})=>{const k=s.id||("i"+i);const ron=!!rowOpen[k];return<div key={k} style={{marginBottom:7,border:"1px solid "+th.cardBorder,borderRadius:9,overflow:"hidden"}}>
+            <button onClick={()=>setRowOpen(p=>({...p,[k]:!p[k]}))} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 12px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+              <PM open={ron}/><span style={{flex:1,fontSize:12.5,fontWeight:600,color:th.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name||(t?.svcUnnamed||"Unnamed service")}</span>
+              <span style={{fontSize:11.5,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{s.price||"—"}</span>
+              <span title={s.stripeUrl?"Stripe link set":"No Stripe link"} style={{width:7,height:7,borderRadius:99,background:s.stripeUrl?th.pos:th.cardBorder,flexShrink:0}}/>
+            </button>
+            {ron&&<div style={{padding:"4px 12px 12px",display:"grid",gridTemplateColumns:"1.4fr 0.6fr",gap:8}}>
+              <input style={INP} value={s.name||""} onChange={e=>set(i,"name",e.target.value)} placeholder={t?.serviceNamePh||"Service name"}/>
+              <input style={{...INP,fontFamily:"'JetBrains Mono',monospace"}} value={s.price||""} onChange={e=>set(i,"price",e.target.value)} placeholder="$0"/>
+              <input style={{...INP,fontFamily:"'JetBrains Mono',monospace",fontSize:11,gridColumn:"1 / -1"}} value={s.stripeUrl||""} onChange={e=>set(i,"stripeUrl",e.target.value)} placeholder={t?.stripeUrlPh||"https://buy.stripe.com/..."}/>
+              <button onClick={()=>delSvc(i)} style={{justifySelf:"start",padding:"5px 12px",borderRadius:6,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer",fontSize:11}}>{t?.delete||"Delete"}</button>
+            </div>}
+          </div>;})}
+          {!g.rows.length&&<div style={{fontSize:11.5,color:th.dim,fontStyle:"italic",padding:"2px 6px 6px"}}>{t?.svcGroupEmpty||"No services here yet."}</div>}
         </div>}
+      </div>;})}
     </div>
     <div style={{marginTop:14,fontSize:11,color:th.dim,fontStyle:"italic",lineHeight:1.6}}>{t?.billingNote||"Stripe payment links are created in your Stripe dashboard. Paste the full URL into the field above — clients will be redirected there when they click \"Submit & pay now\" on the intake form."}</div>
   </div>;
@@ -175,7 +197,34 @@ function ArchivedClientsPage({clients,onRestore,onDelete,t}){
 }
 
 /* ── WhatsNewPage — release notes. v0.18.0 — hardcoded, edit this array. ─ */
+/* MD-I (v0.75.2) — entries carry aud:"client"|"advisor"|"all"; entries WITHOUT aud
+   are legacy advisor notes. WhatsNewPage filters by the viewer's role. */
 const WHATS_NEW_ENTRIES=[
+  {v:"v0.75",date:"2026-06-11",aud:"client",title:"Premium is choose-what-you-pay — from $3 a month",bullets:[
+    "Pick ANY whole-dollar amount from $3/mo — every amount unlocks the same full Premium access (your calculators with real numbers, complete reports, month compare, investment packages).",
+    "Pay and your account activates automatically.",
+    "Account emails (verification, resets) now arrive from Golden Anchor's own address."
+  ]},
+  {v:"v0.74",date:"2026-06-11",aud:"client",title:"Free & Premium plans",bullets:[
+    "Your account is free forever: profile, public calculators, and resources.",
+    "Premium unlocks the in-profile calculators, the Complete Report, month-over-month compare, and extra investment packages — see Settings → Your plan.",
+    "Advisor plans (Monthly Lite / Lite+ / Annual) include everything in Premium plus a human advisor."
+  ]},
+  {v:"v0.73",date:"2026-06-11",aud:"client",title:"A proper welcome — and verified email",bullets:[
+    "New accounts confirm their email before signing in (security upgrade).",
+    "A short welcome wizard sets up your name and goals — and you can ask for a free health-insurance consult or car-insurance help right there.",
+    "The website got a real front door: landing page, About, Contact, and Q&A."
+  ]},
+  {v:"v0.75",date:"2026-06-11",aud:"advisor",title:"Members admin — your master view",bullets:[
+    "New 'Members' page (sidebar): every client account, plan, onboarding status, and insurance interests.",
+    "Gift complimentary Premium to any client by email — or revoke it. Grants are stamped with who comped them.",
+    "Monthly income (MRR) panel lights up once the Stripe key is set in Vercel.",
+    "Payments now auto-activate Premium via webhook; pricing realigned in Stripe (one Checkup product + GACLIENT50 for returning clients)."
+  ]},
+  {v:"v0.71",date:"2026-06-10",aud:"advisor",title:"Share portal v2",bullets:[
+    "Portal links now support expiry (30/90 days), per-section visibility, 'Preview as client', and a branded email straight to the client.",
+    "Client accounts launched: clients self-serve with their own restricted portal — your data and theirs never mix."
+  ]},
   {v:"v0.35.0",date:"2026-05-23",title:"Cleaner charts (Donut, smooth lines) + better PDF page breaks",bullets:[
     "Net Worth Distribution donut on the Dashboard now renders crisper edges — same data, hand-drawn SVG.",
     "Cash-flow Waterfall component is wired up and ready to drop into the next Monthly Snapshot rebuild.",
@@ -296,13 +345,15 @@ const WHATS_NEW_ENTRIES=[
     "Brand assets, Plus Jakarta Sans + Newsreader fonts, PDF rebuild, area charts everywhere."
   ]}
 ];
-function WhatsNewPage({t}){
+function WhatsNewPage({t,role}){
   const th=useTh();
+  // MD-I: clients see client/all entries; advisors see everything except client-only.
+  const entries=WHATS_NEW_ENTRIES.filter(e=>role==="client"?(e.aud==="client"||e.aud==="all"):(e.aud!=="client"));
   return <div className="ga-np" style={{padding:24,maxWidth:820,margin:"0 auto"}}>
     {/* v0.24.0 — page title removed (TopBar shows it). */}
     <div style={{fontSize:12,color:th.muted,marginBottom:18}}>{t?.whatsNewSub||"Recent updates to the app. Full changelog lives in the GitHub repo."}</div>
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      {WHATS_NEW_ENTRIES.map(e=><div key={e.v} style={{...mCARD(th),padding:18}}>
+      {entries.map(e=><div key={e.v+(e.aud||"")} style={{...mCARD(th),padding:18}}>
         <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:6,flexWrap:"wrap"}}>
           <span style={{fontSize:14,fontWeight:800,color:GOLD,fontFamily:"'JetBrains Mono',monospace"}}>{e.v}</span>
           <span style={{fontSize:10,color:th.dim,letterSpacing:"0.04em"}}>{e.date}</span>

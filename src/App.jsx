@@ -11,7 +11,7 @@ import { OnboardingWizard } from "./pages/onboarding";
 import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgrade, PremiumLockNote } from "./components/premium";
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0751-public-pages-about-contact-faq";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0752-calcs-whatsnew-roles-collapsible-billing";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -26,7 +26,7 @@ import { ENGAGEMENT_LETTER, ELT_DEFAULTS, fillTokens } from "./engagementLetterT
 
 import { BSolid, BootstrapSkeleton, Btn, CCircle, CalcRow, FH, Field, GAIcon, IAdd, InfoTip, Kebab, KpiTile, MaskedNumInp, Modal, NumInp, PTag, Paginator, Pill, ProfileToggleField, Row2, SA, SBadge, SC, SHdr, SSNInput, SaveBar, Skel, Tog, YearInp, _GA_ICONS, useAnimatedDisplay, useSrt, useViewport } from "./components/primitives";
 import { AffordabilityCalc, AmortTablePaginated, CalculatorsPage, CarLoanCalc, DebtReductionCalc, EquityTablePaginated, HomeEquityCalc, IncomeCalc, InterestCalc, PortfolioStandaloneCalc, RetirementCalc, STD_DED, SavingsCalc, TAX_BRACKETS, calcFedTax, getBracket } from "./components/calculators";
-function ProfileModal({settings,onSave,onClose,t,section,clients}){const th=useTh();const[s,setS]=useState({...settings});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
+function ProfileModal({settings,onSave,onClose,t,section,clients}){const th=useTh();const[s,setS]=useState({...settings});const[svcSecOpen,setSvcSecOpen]=useState({memberships:true});const[svcOpen,setSvcOpen]=useState({});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
 const services = s.services && s.services.length ? s.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:(v.en||""),price:(v.price||""),stripeUrl:(s.stripeLinks||{})[v.id]||""}));
 const updateService=(idx,field,val)=>{const next=services.map((sv,i)=>i===idx?{...sv,[field]:val}:sv);setS(p=>({...p,services:next}));};
 const addService=()=>{const next=[...services,{id:"svc-"+Date.now(),icon:"💼",name:"",price:"",stripeUrl:""}];setS(p=>({...p,services:next}));};
@@ -43,14 +43,38 @@ const AccRow=({label,k,presets})=><div style={{marginBottom:14}}><div style={{fo
 const BgPicker=({label,k,presets,def})=>{const v=s[k]||def;return<div style={{marginBottom:10}}><div style={{fontSize:10,color:th.muted,marginBottom:6,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>{presets.map(c=><div key={c} onClick={()=>setS(p=>({...p,[k]:c}))} title={c} style={{width:32,height:32,borderRadius:8,background:c,cursor:"pointer",border:(v||"").toLowerCase()===c.toLowerCase()?`2px solid ${th.accent}`:`1px solid ${th.cardBorder}`,boxShadow:(v||"").toLowerCase()===c.toLowerCase()?`0 0 0 3px ${th.accent}33`:"none",transition:"transform 100ms ease"}}/>)}<label title={t.customColorLbl||"Custom color"} style={{position:"relative",width:32,height:32,borderRadius:8,border:`1px dashed ${th.cardBorder}`,cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",color:th.dim,fontSize:14}}>＋<input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v||"")?v:def} onChange={e=>setS(p=>({...p,[k]:e.target.value}))} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/></label></div></div>;};
 // ToggleField extracted to top-level ProfileToggleField — see comment above ProfileModal.
 // Call sites pass {k,label,s,setS,th,INP} directly so the component type stays stable.
-if(section==="services"){return<Modal title={t.servicesAndStripeLinks||"Services & Stripe Links"} onClose={onClose} width={520} disableBackdropClose={true}>
+if(section==="services"){
+  /* MD-H (v0.75.2) — owner: "stripe links should be collapsible twice, one per section
+     and one per service with a + - sign". Sections group the catalog; each service row
+     collapses to icon·name·price and expands to its fields. */
+  const SVC_GROUPS=[
+    {id:"memberships",label:t.svcGroupMemberships||"Memberships",ids:["monthly-lite","monthly-lite-plus","annual-bundle"]},
+    {id:"onetime",label:t.svcGroupOneTime||"One-time services",ids:["initial-checkup","quarterly-review","strategy-session"]},
+    {id:"other",label:t.svcGroupOther||"Other & custom",ids:null},
+  ];
+  const grouped=SVC_GROUPS.map(g=>({...g,rows:services.map((svc,idx)=>({svc,idx})).filter(({svc})=>g.ids?g.ids.includes(svc.id):!SVC_GROUPS.flatMap(x=>x.ids||[]).includes(svc.id))}));
+  const PM=({open})=><span style={{fontSize:14,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",width:16,display:"inline-block",textAlign:"center"}}>{open?"−":"+"}</span>;
+  return<Modal title={t.servicesAndStripeLinks||"Services & Stripe Links"} onClose={onClose} width={520} disableBackdropClose={true}>
 <div style={{fontSize:10,color:th.dim,marginBottom:12,lineHeight:1.5,fontStyle:"italic"}}>{t.ourServicesHelp||"Edit the name, price, and Stripe Payment Link for each service. These appear on the public intake form for clients to choose from."}</div>
-{services.map((svc,idx)=><div key={svc.id||idx} style={{padding:"10px 12px",background:th.bg,borderRadius:8,marginBottom:8,border:`1px solid ${th.cardBorder}`}}>
-  <Row2><Field label={t.svcIcon||"Icon"}><input style={INP} value={svc.icon||""} onChange={e=>updateService(idx,"icon",e.target.value)} maxLength={3}/></Field><Field label={t.svcPrice||"Price"}><input style={INP} value={svc.price||""} onChange={e=>updateService(idx,"price",e.target.value)} placeholder="$149"/></Field></Row2>
-  <Field label={t.svcName||"Service name"}><input style={INP} value={svc.name||""} onChange={e=>updateService(idx,"name",e.target.value)}/></Field>
-  <Field label={t.svcStripeUrl||"Stripe Payment Link"}><input style={{...INP,fontFamily:"monospace",fontSize:11}} placeholder="https://buy.stripe.com/..." value={svc.stripeUrl||""} onChange={e=>updateService(idx,"stripeUrl",e.target.value)}/></Field>
-  <button type="button" onClick={()=>removeService(idx)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>\U0001F5D1 {t.removeSvc||"Remove"}</button>
-</div>)}
+{grouped.map(g=>{const secOpen=!!svcSecOpen[g.id];return<div key={g.id} style={{marginBottom:8,border:`1px solid ${th.cardBorder}`,borderRadius:9,overflow:"hidden"}}>
+  <button type="button" onClick={()=>setSvcSecOpen(p=>({...p,[g.id]:!p[g.id]}))} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"10px 12px",background:th.bg,border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+    <PM open={secOpen}/><span style={{flex:1,fontSize:11,fontWeight:700,color:th.text,letterSpacing:"0.04em",textTransform:"uppercase"}}>{g.label}</span><span style={{fontSize:10,color:th.dim,fontFamily:"'JetBrains Mono',monospace"}}>{g.rows.length}</span>
+  </button>
+  {secOpen&&<div style={{padding:"8px 10px"}}>
+    {g.rows.map(({svc,idx})=>{const k=svc.id||("i"+idx);const open=!!svcOpen[k];return<div key={k} style={{marginBottom:6,border:`1px solid ${th.cardBorder}`,borderRadius:8,overflow:"hidden"}}>
+      <button type="button" onClick={()=>setSvcOpen(p=>({...p,[k]:!p[k]}))} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
+        <PM open={open}/><span style={{fontSize:13}}>{svc.icon||"💼"}</span><span style={{flex:1,fontSize:12,fontWeight:600,color:th.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc.name||(t.svcUnnamed||"Unnamed service")}</span><span style={{fontSize:11,fontWeight:700,color:th.accent,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{svc.price||"—"}</span>{svc.stripeUrl?<span title="Stripe link set" style={{width:7,height:7,borderRadius:99,background:th.pos,flexShrink:0}}/>:<span title="No Stripe link" style={{width:7,height:7,borderRadius:99,background:th.cardBorder,flexShrink:0}}/>}
+      </button>
+      {open&&<div style={{padding:"6px 10px 10px",background:th.bg}}>
+        <Row2><Field label={t.svcIcon||"Icon"}><input style={INP} value={svc.icon||""} onChange={e=>updateService(idx,"icon",e.target.value)} maxLength={3}/></Field><Field label={t.svcPrice||"Price"}><input style={INP} value={svc.price||""} onChange={e=>updateService(idx,"price",e.target.value)} placeholder="$149"/></Field></Row2>
+        <Field label={t.svcName||"Service name"}><input style={INP} value={svc.name||""} onChange={e=>updateService(idx,"name",e.target.value)}/></Field>
+        <Field label={t.svcStripeUrl||"Stripe Payment Link"}><input style={{...INP,fontFamily:"monospace",fontSize:11}} placeholder="https://buy.stripe.com/..." value={svc.stripeUrl||""} onChange={e=>updateService(idx,"stripeUrl",e.target.value)}/></Field>
+        <button type="button" onClick={()=>removeService(idx)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:"transparent",color:th.neg,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>{t.removeSvc||"Remove"}</button>
+      </div>}
+    </div>;})}
+    {!g.rows.length&&<div style={{fontSize:11,color:th.dim,fontStyle:"italic",padding:"4px 2px"}}>{t.svcGroupEmpty||"No services here yet."}</div>}
+  </div>}
+</div>;})}
 <button type="button" onClick={addService} style={{fontSize:11,padding:"6px 12px",borderRadius:8,background:GOLD+"22",color:GOLD,border:`1px solid ${GOLD}55`,cursor:"pointer",fontWeight:600}}>+ {t.addService||"Add service"}</button>
 <SaveBar onSave={()=>onSave(s)} onCancel={onClose} t={t}/>
 </Modal>;}
@@ -3828,7 +3852,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:
           nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
           nav==="archived"?<ArchivedClientsPage clients={clients} onRestore={restoreClient} onDelete={deleteClient} t={t}/>:
-          nav==="whats-new"?<WhatsNewPage t={t}/>:
+          nav==="whats-new"?<WhatsNewPage t={t} role={role}/>:
           nav==="help"?<HelpSupportPage t={t} settings={settings} authUser={authUser}/>:
           <AboutPage t={t} settings={settings} lang={lang} isDark={isDark}/>}
       </div></div>

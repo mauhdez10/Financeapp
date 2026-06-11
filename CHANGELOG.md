@@ -2,6 +2,21 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.75.2 — 2026-06-11 (Minor) — Two new calculators, role-aware What's New, collapsible Stripe links
+
+- **Life-Insurance Needs (DIME)** + **Inflation Impact** calculators (owner-approved
+  non-duplicative adds; the insurance calc ends in a free-consult CTA). Categories
+  rebalanced 4/4/3 ("Plan & grow" / "Debt & big purchases" / "Income & protection") —
+  the orphan-card blank space is gone. Full EN/ES.
+- **What's New is per-role** (MD-I): entries carry an audience; clients see fresh
+  client-facing notes (Premium choose-your-price, plans, the welcome wizard), advisors
+  see theirs (Members admin, portal v2) plus the legacy log.
+- **Stripe links are collapsible TWICE** (MD-H, owner spec): Billing page and the
+  Settings services popup group into Memberships / One-time / Other sections with
+  +/− toggles, and each service row collapses to name · price · link-status dot.
+- Docs (agent-produced, owner-reviewed next): GTM-CLIENT-PITCH, GTM-AGENT-RECRUIT,
+  GTM-INVESTOR-BRIEF (MD-L), MASTER-QUESTIONNAIRE + ADVISOR-SOP (MD-J).
+
 ## v0.75.1 — 2026-06-11 (Minor surface) — Public About / Contact / Q&A pages (MD-E part 3)
 
 New `src/pages/public.jsx`: PublicShell (pre-auth header nav About/Pricing/Q&A/Contact +

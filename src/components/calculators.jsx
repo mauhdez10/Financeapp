@@ -2,7 +2,7 @@
 // Code is verbatim from the single-file era; comments may reference old App.jsx line numbers.
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTip, Line, ComposedChart, Legend } from "recharts";
-import { PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem } from "lucide-react";
+import { PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem, ShieldCheck } from "lucide-react";
 import { useTh } from "../contexts/theme";
 import { GOLD, stripLeadEmoji, mCARD, mINP, mIIN, mTH, mTHR, mTD, mTDR } from "../styles/theme";
 import { PORTFOLIOS, TICKER_META, DEF_PORT_RATES, PC } from "../constants/meta";
@@ -354,15 +354,55 @@ const chartData=[];for(let y=1;y<=years;y++){const n2=y*12;const v=(initial>0?in
   <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:14,height:2,borderTop:"1.5px dashed #94A3B8"}}/>{t.realLbl||"Real (3% infl)"} <span style={{fontFamily:"'JetBrains Mono',monospace",color:"#94A3B8",marginLeft:4,fontWeight:700}}>{fmt(fv/Math.pow(1+INFL,years))}</span></span>
 </div></div></div></div>;}
 
-function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
+/* MD-G (v0.75.2) — Life-Insurance Needs (DIME method). Feeds the free insurance
+   consult (the firm's licensed line of business). Owner-approved add (no duplicate). */
+function LifeInsuranceCalc({t}){const th=useTh();const[f,setF]=useState({debt:15000,income:45000,years:10,mortgage:180000,education:40000,coverage:50000,savings:10000});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const INP=mINP(th);
+  const D=f.debt,I=f.income*f.years,M=f.mortgage,E=f.education;
+  const gross=D+I+M+E;const need=Math.max(0,gross-f.coverage-f.savings);
+  const es=(typeof window!=="undefined"&&window.__GA_LANG)==="es";
+  return<div>
+    <Row2><Field label={t.liDebt||"Non-mortgage debt ($)"}><MaskedNumInp style={INP} value={f.debt} onChange={u("debt")} onKeyDown={bE}/></Field><Field label={t.liIncome||"Annual income ($)"}><MaskedNumInp style={INP} value={f.income} onChange={u("income")} onKeyDown={bE}/></Field></Row2>
+    <Row2><Field label={t.liYears||"Years to replace income"}><MaskedNumInp style={INP} value={f.years} onChange={u("years")} onKeyDown={bE} min={1} max={30}/></Field><Field label={t.liMortgage||"Mortgage balance ($)"}><MaskedNumInp style={INP} value={f.mortgage} onChange={u("mortgage")} onKeyDown={bE}/></Field></Row2>
+    <Row2><Field label={t.liEducation||"Future education costs ($)"}><MaskedNumInp style={INP} value={f.education} onChange={u("education")} onKeyDown={bE}/></Field><Field label={t.liCoverage||"Existing coverage + savings ($)"}><div style={{display:"flex",gap:8}}><MaskedNumInp style={INP} value={f.coverage} onChange={u("coverage")} onKeyDown={bE} placeholder={es?"cobertura":"coverage"}/><MaskedNumInp style={INP} value={f.savings} onChange={u("savings")} onKeyDown={bE} placeholder={es?"ahorros":"savings"}/></div></Field></Row2>
+    <div style={{...mCARD(th),padding:16,marginBottom:10}}>
+      <CalcRow label={t.liRecommended||"Recommended coverage"} value={fmt(need)} color={th.accent} big/>
+      <CalcRow label={"D — "+(t.liRowDebt||"Debts")} value={fmt(D)} color={th.muted}/>
+      <CalcRow label={"I — "+(t.liRowIncome||"Income replacement")} value={fmt(I)} color={th.muted}/>
+      <CalcRow label={"M — "+(t.liRowMortgage||"Mortgage payoff")} value={fmt(M)} color={th.muted}/>
+      <CalcRow label={"E — "+(t.liRowEducation||"Education")} value={fmt(E)} color={th.muted}/>
+      <CalcRow label={t.liRowOffset||"Minus coverage & savings"} value={"−"+fmt(f.coverage+f.savings)} color={th.pos}/>
+    </div>
+    <div style={{...mCARD(th),padding:"13px 16px",display:"flex",alignItems:"center",gap:11,flexWrap:"wrap"}}>
+      <div style={{flex:1,minWidth:200,fontSize:12,color:th.muted,lineHeight:1.55}}>{t.liCta||"The DIME method is a starting point, not a quote. Our licensed advisor reviews your real situation — the first consult is free."}</div>
+      <a href="mailto:mauricio@goldenanchor.life?subject=Free%20insurance%20consult" style={{fontSize:11.5,fontWeight:700,padding:"8px 15px",borderRadius:9,background:th.accent+"1A",color:th.accent,border:"1px solid "+th.accent+"44",textDecoration:"none",whiteSpace:"nowrap"}}>{t.liCtaBtn||"Free consult"}</a>
+    </div>
+  </div>;}
+/* MD-G (v0.75.2) — Inflation / purchasing power. The 3% deflator other calcs use
+   internally gets its own front door. */
+function InflationCalc({t}){const th=useTh();const[f,setF]=useState({amount:10000,rate:3,years:10});const u=k=>e=>setF(p=>({...p,[k]:+e.target.value||0}));const INP=mINP(th);
+  const r=f.rate/100;const power=f.amount/Math.pow(1+r,f.years);const needed=f.amount*Math.pow(1+r,f.years);
+  const data=[];for(let y=0;y<=f.years;y+=Math.max(1,Math.round(f.years/10)))data.push({year:"Yr "+y,value:Math.round(f.amount/Math.pow(1+r,y))});
+  return<div>
+    <Row2><Field label={t.infAmount||"Amount today ($)"}><MaskedNumInp style={INP} value={f.amount} onChange={u("amount")} onKeyDown={bE}/></Field><Field label={t.infRate||"Inflation rate (%/yr)"}><MaskedNumInp style={INP} value={f.rate} onChange={u("rate")} onKeyDown={bE} step="0.1"/></Field></Row2>
+    <Row2><Field label={t.years||"Years"}><MaskedNumInp style={INP} value={f.years} onChange={u("years")} onKeyDown={bE} min={1} max={50}/></Field><div/></Row2>
+    <div style={{...mCARD(th),padding:16,marginBottom:10}}>
+      <CalcRow label={t.infPower||"What it will buy then"} value={fmt(power)} color={th.neg} big/>
+      <CalcRow label={t.infNeeded||"Needed to match today's power"} value={fmt(needed)} color={th.accent}/>
+      <CalcRow label={t.infLoss||"Purchasing power lost"} value={Math.round((1-power/f.amount)*100)+"%"} color={th.warn}/>
+    </div>
+    <ResponsiveContainer width="100%" height={140} style={{outline:"none"}}><AreaChart data={data} margin={{top:10,right:0,left:0,bottom:0}}><CartesianGrid strokeDasharray="3 3" stroke={th.cardBorder}/><XAxis dataKey="year" tick={{fontSize:9,fill:th.dim}} axisLine={false} tickLine={false}/><YAxis hide/><ReTip contentStyle={{background:th.modal,border:`1px solid ${th.cardBorder}`,borderRadius:8,fontSize:11}} formatter={v=>fmt(v)}/><Area type="monotone" dataKey="value" name={t.infPowerShort||"Buying power"} stroke={th.neg} fill={th.neg+"26"} strokeWidth={2}/></AreaChart></ResponsiveContainer>
+  </div>;}
+function CalculatorsPage({t,activeCalc,onActiveChange}){const th=useTh();const[active,setActive]=useState(activeCalc||null);useEffect(()=>{const next=activeCalc||null;if(next!==active)setActive(next);},[activeCalc]);const calcs=[{id:"retirement",label:(t.calcRetirementPlanner||"🎯 Retirement Planner"),C:RetirementCalc},{id:"portfolio",label:(t.calcPortfolioCalc||"📈 Portfolio Calculator"),C:PortfolioStandaloneCalc},{id:"homeEquity",label:(t.calcHomeCalc||"🏠 Home Calculator"),C:HomeEquityCalc},{id:"income",label:(t.calcIncomeCalc||"💰 Income Calculator"),C:IncomeCalc},{id:"debtReduction",label:(t.calcDebtReduction||"📉 Debt Reduction"),C:DebtReductionCalc},{id:"carLoan",label:(t.calcCarLoan||"🚗 Car Loan"),C:CarLoanCalc},{id:"affordability",label:(t.calcAffordability||"🏡 Affordability"),C:AffordabilityCalc},{id:"interest",label:(t.calcInterestCalc||"📊 Interest Calculator"),C:InterestCalc},{id:"savings",label:(t.calcHySavings||"💎 High Yield Savings"),C:SavingsCalc},{id:"lifeInsurance",label:(t.calcLifeInsurance||"🛡 Life Insurance Needs"),C:LifeInsuranceCalc},{id:"inflation",label:(t.calcInflation||"📉 Inflation Impact"),C:InflationCalc}];if(active){const calc=calcs.find(c=>c.id===active);if(!calc){// v0.13.1 — URL pointed at an unknown calculator id; bounce to the picker silently
 if(activeCalc)onActiveChange?.(null);return null;}const Comp=calc.C;return<div style={{padding:"24px 14px"}}><button onClick={()=>{setActive(null);onActiveChange?.(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:8,background:th.inp,color:th.muted,border:`1px solid ${th.cardBorder}`,cursor:"pointer",marginBottom:16}}>{t.back}</button><h2 style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:20,marginTop:0}}>{stripLeadEmoji(calc.label)}</h2><div style={{maxWidth:900}}><Comp t={t}/></div></div>;}
 // v0.56 — calc grid tile size bumped again per Mauricio's "still too small"
 // feedback. Was minmax(220, 1fr) with 104px minHeight reading as a wall of
 // thin cards. Now minmax(300, 1fr) + 130px minHeight + 16/18 padding +
 // 32px icon. Fewer tiles per row, each one feels substantial.
-const ICONS={retirement:PiggyBank,portfolio:TrendingUp,homeEquity:Home,income:Wallet,debtReduction:TrendingDown,carLoan:Car,affordability:KeyRound,interest:Percent,savings:Gem};
-  const DESCS={retirement:t.descRetirement||"Project your retirement savings to a target age.",portfolio:t.descPortfolio||"Estimate long-term portfolio growth.",savings:t.descSavings||"See how high-yield savings compound.",interest:t.descInterest||"Compound interest on any balance.",debtReduction:t.descDebtReduction||"Compare avalanche vs snowball payoff.",carLoan:t.descCarLoan||"Monthly payment, interest, and amortization.",homeEquity:t.descHomeEquity||"Equity, refinance, and borrowing power.",affordability:t.descAffordability||"How much home you can afford.",income:t.descIncomeCalc||"Take-home pay after taxes."};
-  const CATS=[{title:t.calcCatPlan||"Plan & grow",ids:["retirement","portfolio","savings","interest"]},{title:t.calcCatDebt||"Tackle debt",ids:["debtReduction","carLoan"]},{title:t.calcCatHome||"Home & affordability",ids:["homeEquity","affordability"]},{title:t.calcCatIncome||"Income",ids:["income"]}];
+const ICONS={retirement:PiggyBank,portfolio:TrendingUp,homeEquity:Home,income:Wallet,debtReduction:TrendingDown,carLoan:Car,affordability:KeyRound,interest:Percent,savings:Gem,lifeInsurance:ShieldCheck,inflation:TrendingDown};
+  const DESCS={retirement:t.descRetirement||"Project your retirement savings to a target age.",portfolio:t.descPortfolio||"Estimate long-term portfolio growth.",savings:t.descSavings||"See how high-yield savings compound.",interest:t.descInterest||"Compound interest on any balance.",debtReduction:t.descDebtReduction||"Compare avalanche vs snowball payoff.",carLoan:t.descCarLoan||"Monthly payment, interest, and amortization.",homeEquity:t.descHomeEquity||"Equity, refinance, and borrowing power.",affordability:t.descAffordability||"How much home you can afford.",income:t.descIncomeCalc||"Take-home pay after taxes.",lifeInsurance:t.descLifeInsurance||"How much life insurance your family needs (DIME).",inflation:t.descInflation||"What inflation does to your money over time."};
+  /* MD-G (v0.75.2): categories rebalanced 4/4/3 so rows fill (the old 4/2/2/1 left
+     orphan cards + blank space — the owner's complaint). */
+  const CATS=[{title:t.calcCatPlan||"Plan & grow",ids:["retirement","portfolio","savings","interest"]},{title:t.calcCatDebtBuying||"Debt & big purchases",ids:["debtReduction","carLoan","homeEquity","affordability"]},{title:t.calcCatIncomeProt||"Income & protection",ids:["income","lifeInsurance","inflation"]}];
   return<div className="ga-np" style={{padding:"24px 20px",maxWidth:1100,margin:"0 auto"}}>
     {/* MD-G (v0.74.3): page h1 removed — the top banner already says "Calculators" (owner: redundant). */}
     <div style={{marginBottom:24}}>
