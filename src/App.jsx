@@ -10,7 +10,8 @@ import { PortalShareModal, PublicPortal } from "./pages/portal";
 import { OnboardingWizard } from "./pages/onboarding";
 import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgrade, PremiumLockNote } from "./components/premium";
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0750-members-admin-pwyw-webhook-smtp";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-11-v0751-public-pages-about-contact-faq";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -3289,7 +3290,9 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   const _gaInitRoute=(()=>{try{if(typeof window==="undefined")return null;return parseGAPath(window.location.pathname);}catch{return null;}})();
   const[nav,setNav]=useState((_gaInitRoute&&_gaInitRoute.nav)||"dashboard");
   // MD-E (v0.73.1) — pre-auth routes are real URLs: / (landing→login for now), /login, /pricing.
-  const[preAuth,setPreAuthRaw]=useState(()=>{if(typeof window==="undefined")return"landing";const p=window.location.pathname;return p==="/pricing"?"pricing":p==="/login"?"login":"landing";});const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState((_gaInitRoute&&_gaInitRoute.selectedTab)||"report");const[selectedCalc,setSelectedCalc]=useState((_gaInitRoute&&_gaInitRoute.selectedCalc)||null);// v0.13.1 — which calculator is open inside the /calculators page
+  const _preAuthOf=(p)=>p==="/pricing"?"pricing":p==="/login"?"login":p==="/about-us"?"about":p==="/contact"?"contact":p==="/faq"?"faq":"landing";
+  const _preAuthUrl=(v)=>v==="pricing"?"/pricing":v==="login"?"/login":v==="about"?"/about-us":v==="contact"?"/contact":v==="faq"?"/faq":"/";
+  const[preAuth,setPreAuthRaw]=useState(()=>{if(typeof window==="undefined")return"landing";return _preAuthOf(window.location.pathname);});const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState((_gaInitRoute&&_gaInitRoute.selectedTab)||"report");const[selectedCalc,setSelectedCalc]=useState((_gaInitRoute&&_gaInitRoute.selectedCalc)||null);// v0.13.1 — which calculator is open inside the /calculators page
   const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[profileSection,setProfileSection]=useState(null);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));const isPublicPortalRoute=typeof window!=="undefined"&&/\/portal\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
@@ -3362,7 +3365,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           setClients(mapped);
         }else{
           if(_foreignCache){_lastClientsRef.current=[];setClients([]);}
-          else if((authUser?.user_metadata?.role)==="client"){const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"My",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});_lastClientsRef.current=[];setClients([_self]);}
+          else if((authUser?.user_metadata?.role)==="client"){const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});_lastClientsRef.current=[];setClients([_self]);}
           else{_lastClientsRef.current=clients;}  // local data became the seed (migration uploaded it)
         }
         const remoteSettings=await gaLoadSettings(authUser.id);
@@ -3404,7 +3407,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     gaSaveSettings(authUser.id,settings);
     _lastSettingsRef.current=settings;
   },[settings,authUser]);
-  useEffect(()=>{if((authUser?.user_metadata?.role)!=="client"||bootstrapping||!_cloudReadyRef.current||clients.length>0)return;const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"My",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});setClients([_self]);},[bootstrapping,clients.length,authUser]);
+  useEffect(()=>{if((authUser?.user_metadata?.role)!=="client"||bootstrapping||!_cloudReadyRef.current||clients.length>0)return;const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});setClients([_self]);},[bootstrapping,clients.length,authUser]);
   useEffect(()=>{if(typeof window!=="undefined")window.__GA_LANG=lang;},[lang]);
   // v0.11.0 — Browser history integration. Push a history entry on each
   // in-app navigation change (nav / open client / tab) so the browser Back
@@ -3448,17 +3451,17 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     else{window.history.pushState(snap,"",url);}
   },[nav,selected?.id,selectedTab,selectedCalc,authUser,isPublicIntakeRoute]);
   // MD-E (v0.73.1) — pre-auth URL plumbing: navigate, Back/Forward, and post-signout cleanup.
-  const goPre=(v)=>{setPreAuthRaw(v);if(typeof window!=="undefined"){window.history.pushState({gaPre:v},"",v==="pricing"?"/pricing":v==="login"?"/login":"/");}};
+  const goPre=(v)=>{setPreAuthRaw(v);if(typeof window!=="undefined"){window.history.pushState({gaPre:v},"",_preAuthUrl(v));window.scrollTo(0,0);}};
   useEffect(()=>{
     if(typeof window==="undefined"||authUser)return;
-    const onPop=()=>{const p=window.location.pathname;setPreAuthRaw(p==="/pricing"?"pricing":p==="/login"?"login":"landing");};
+    const onPop=()=>{setPreAuthRaw(_preAuthOf(window.location.pathname));};
     window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop);
   },[authUser]);
   useEffect(()=>{ // unauthed visitor on an in-app URL (deep link or just signed out) → clean to /
     if(typeof window==="undefined")return;
     if(!authReady||authUser||isPublicIntakeRoute||isPublicPortalRoute)return;
     const p=window.location.pathname;
-    if(p!=="/"&&p!=="/login"&&p!=="/pricing"){window.history.replaceState({gaPre:"landing"},"","/");setPreAuthRaw("landing");}
+    if(!["/","/login","/pricing","/about-us","/contact","/faq"].includes(p)){window.history.replaceState({gaPre:"landing"},"","/");setPreAuthRaw("landing");}
   },[authReady,authUser,isPublicIntakeRoute,isPublicPortalRoute]);
   useEffect(()=>{
     if(typeof window==="undefined")return;
@@ -3698,7 +3701,17 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   const NAV=role==="client"?[{id:"dashboard",icon:"dashboard",l:(t.myOverview||"Overview")},{id:"calculators",icon:"calculators",l:t.calculators},{id:"resources",icon:"resources",l:t.resources},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"about",icon:"about",l:t.about}]:[{id:"dashboard",icon:"dashboard",l:t.dashboard},{id:"clients",icon:"clients",l:t.clients},{id:"intake-submissions",icon:"intake",l:(t.intakeSubmissions||"Intake Forms")},...(isGaAdmin(authUser?.email)?[{id:"members",icon:"clients",l:(lang==="es"?"Miembros":"Members")}]:[]),{id:"calculators",icon:"calculators",l:t.calculators},{id:"promotions",icon:"promotions",l:t.promotions},{id:"pricing",icon:"billing",l:(t.pricing||(lang==="es"?"Precios":"Pricing"))},{id:"resources",icon:"resources",l:t.resources},{id:"about",icon:"about",l:t.about}];
   if(isPublicIntakeRoute)return<PublicIntake/>;if(isPublicPortalRoute)return<PublicPortal/>;
   if(!authReady)return<ThemeCtx.Provider value={theme}><div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:theme.bg,color:theme.muted,fontSize:13}}>…</div></ThemeCtx.Provider>;
-  if(!authUser)return<ThemeCtx.Provider value={theme}>{preAuth==="pricing"?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>goPre("landing")} onSignIn={()=>goPre("login")} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>:preAuth==="login"?<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>goPre("pricing")} onBackToLanding={()=>goPre("landing")}/>:<LandingPage lang={lang} isDark={isDark} onToggle={()=>setDark(d=>!d)} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onSignIn={()=>goPre("login")} onPricing={()=>goPre("pricing")}/>}</ThemeCtx.Provider>;
+  if(!authUser){
+    const _shellProps={lang,isDark,onToggle:()=>setDark(d=>!d),onLangToggle:()=>setLang(l=>l==="en"?"es":"en"),onNav:goPre,onSignIn:()=>goPre("login")};
+    return<ThemeCtx.Provider value={theme}>{
+      preAuth==="pricing"?<PricingPage variant="public" t={t} lang={lang} settings={settings} onBack={()=>goPre("landing")} onSignIn={()=>goPre("login")} onRequest={null} isDark={isDark} onToggleTheme={()=>setDark(d=>!d)} onToggleLang={()=>setLang(l=>l==="en"?"es":"en")}/>
+      :preAuth==="login"?<Login onLogin={u=>setAuthUser(u)} t={t} isDark={isDark} onToggle={()=>setDark(d=>!d)} lang={lang} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onShowPricing={()=>goPre("pricing")} onBackToLanding={()=>goPre("landing")}/>
+      :preAuth==="about"?<PublicShell {..._shellProps} active="about"><PublicAboutPage t={t} lang={lang} settings={settings} isDark={isDark}/></PublicShell>
+      :preAuth==="contact"?<PublicShell {..._shellProps} active="contact"><PublicContactPage lang={lang} settings={settings}/></PublicShell>
+      :preAuth==="faq"?<PublicShell {..._shellProps} active="faq"><PublicFaqPage lang={lang}/></PublicShell>
+      :<LandingPage lang={lang} isDark={isDark} onToggle={()=>setDark(d=>!d)} onLangToggle={()=>setLang(l=>l==="en"?"es":"en")} onSignIn={()=>goPre("login")} onPricing={()=>goPre("pricing")} onNav={goPre}/>
+    }</ThemeCtx.Provider>;
+  }
   if(bootstrapping)return<ThemeCtx.Provider value={theme}><BootstrapSkeleton theme={theme} t={t} isMobile={vp.isMobile}/></ThemeCtx.Provider>;
   // T&C gate moved AFTER bootstrap so it doesn't flash-and-disappear when stale settings load in.
   if(!settings.tosAcceptedAt)return<ThemeCtx.Provider value={theme}><ToSModal onAccept={()=>{setSettings(s=>({...s,tosAcceptedAt:new Date().toISOString().slice(0,10),tosVersion:"1.0"}));}} onCancel={async()=>{if(supabase)try{await supabase.auth.signOut();}catch{}gaClearLocalCache();setClients([]);setAuthUser(null);}} t={t} theme={theme}/></ThemeCtx.Provider>;

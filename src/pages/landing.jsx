@@ -266,7 +266,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing,onBack
    sample data — sharper than screenshots, theme-aware), motion-light, dual-mode.
    Login moved to /login; CTAs route there. Compliance stays one quiet footer line
    (D-17) — no front-page disclaimer walls, per the owner's directive.           */
-function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing}){
+function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav}){
   const reducedMotion=useReducedMotion();
   const es=lang==="es";
   const MONO="'JetBrains Mono',monospace";
@@ -345,7 +345,10 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing}){
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          {onNav&&<button onClick={()=>onNav("about")} style={pill}>{es?"Nosotros":"About"}</button>}
           <button onClick={onPricing} style={pill}>{es?"Precios":"Pricing"}</button>
+          {onNav&&<button onClick={()=>onNav("faq")} style={pill}>Q&A</button>}
+          {onNav&&<button onClick={()=>onNav("contact")} style={pill}>{es?"Contacto":"Contact"}</button>}
           <button onClick={onLangToggle} aria-label="Toggle language" style={pill}>{es?"EN":"ES"}</button>
           <button onClick={onToggle} aria-label="Toggle theme" style={pill}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
           <button onClick={onSignIn} style={{...pill,color:P.text,fontWeight:700}}>{es?"Iniciar sesión":"Sign in"}</button>
@@ -443,9 +446,8 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing}){
 
       <footer style={{maxWidth:1240,margin:"0 auto",padding:"18px 40px 32px",borderTop:`1px solid ${P.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
         <div style={{fontSize:11,color:P.dim,lineHeight:1.6,maxWidth:640}}>© Golden Anchor · {es?"Asesoría financiera educativa — no constituye asesoría de inversión, fiscal o legal.":"Educational financial coaching — not investment, tax, or legal advice."}</div>
-        <div style={{display:"flex",gap:16,fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em"}}>
-          <button onClick={onPricing} style={{background:"none",border:"none",cursor:"pointer",color:P.muted,fontFamily:"inherit",fontSize:"inherit",letterSpacing:"inherit",textTransform:"inherit",padding:0}}>{es?"Precios":"Pricing"}</button>
-          <a href="mailto:mauricio@goldenanchor.life" style={{color:P.muted,textDecoration:"none"}}>Email</a>
+        <div style={{display:"flex",gap:16,fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.13em",flexWrap:"wrap"}}>
+          {[["about",es?"Nosotros":"About"],["pricing",es?"Precios":"Pricing"],["faq","Q&A"],["contact",es?"Contacto":"Contact"]].map(([id,l])=><button key={id} onClick={()=>id==="pricing"?onPricing():(onNav&&onNav(id))} style={{background:"none",border:"none",cursor:"pointer",color:P.muted,fontFamily:"inherit",fontSize:"inherit",letterSpacing:"inherit",textTransform:"inherit",padding:0}}>{l}</button>)}
         </div>
       </footer>
     </div>

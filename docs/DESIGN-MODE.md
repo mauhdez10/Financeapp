@@ -32,6 +32,16 @@ manual (the Claude design-surface playbook adapted to this repo: build self-cont
 labs in `preview/`, then port winners to `App.jsx`). It auto-loads on visual/UI work and
 covers the workflow, React+Babel lab patterns, Tweaks panel, AI-slop bans, and verification.
 
+## Reference & inspiration sites (owner-added 2026-06-11 — use during research)
+
+- **styles.refero.design** — curated real-product UI patterns by category; mine it for
+  landing/page-pattern references before designing any public surface.
+- **higgsfield.ai** — AI motion/visual generation; candidate source for hero motion
+  assets (export → host as webp/webm, never live-generate in-app).
+- Owner's motion bar for the landing hero (Mux-hosted examples he liked): animated
+  product-y motion, modern, NOT childish — adapt to Golden Anchor's app, don't copy.
+- These join the existing roster (Mercury/Linear/Stripe/Origin refs, motionsites.ai).
+
 ## The pipeline (each layer, in order)
 
 | Layer | Tool | Owns | How to invoke |

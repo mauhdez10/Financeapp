@@ -2,6 +2,15 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.75.1 — 2026-06-11 (Minor surface) — Public About / Contact / Q&A pages (MD-E part 3)
+
+New `src/pages/public.jsx`: PublicShell (pre-auth header nav About/Pricing/Q&A/Contact +
+lang/theme/sign-in, quiet footer) wrapping `/about-us` (reuses the in-app AboutPage),
+`/contact` (clean contact rows from advisor settings), and `/faq` (8 bilingual visitor
+Q&As, accordion). Landing header + footer link to all of them; Back/Forward and
+deep-links work; unauthed in-app URLs still clean to `/`. Also: client self-profile no
+longer defaults firstName to "My" (shows the account email until onboarding names it).
+
 ## v0.75 — 2026-06-11 (Minor) — Members admin, TRUE choose-your-price, payment webhook, branded auth emails
 
 - **Members page** (admin advisors: nav "Members"): every client account with plan/
