@@ -424,6 +424,66 @@ function HeroVideo({reducedMotion,onFail}){
     style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:0}}/>;
 }
 
+/* ── GoldSmoke (v0.80) — A4 from the hero lab: 34 radial-gradient blobs drifting
+   on a noise field, mouse-reactive gentle push, gold on near-black.             */
+function GoldSmoke({reducedMotion,isDark}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const c=ref.current;if(!c)return;
+    const ctx=c.getContext("2d");
+    const DPR=Math.min(2,window.devicePixelRatio||1);
+    let raf=null,running=true,et=8;
+    const mouse={x:-9999,y:-9999};
+    /* seeded noise */
+    const P8=new Uint8Array(512);
+    (()=>{const p=[];let s=1234;const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+      for(let i=0;i<256;i++)p[i]=i;
+      for(let j=255;j>0;j--){const k=Math.floor(r()*(j+1));[p[j],p[k]]=[p[k],p[j]];}
+      for(let m=0;m<512;m++)P8[m]=p[m&255];})();
+    const n2=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+      const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+      const h=(a,b)=>P8[(P8[a&255]+(b&255))&255]/255;
+      return h(xi,yi)+(h(xi+1,yi)-h(xi,yi))*u+(h(xi,yi+1)-h(xi,yi)+(h(xi+1,yi+1)-h(xi+1,yi)-h(xi,yi+1)+h(xi,yi))*u)*v;};
+    /* blobs */
+    const blobs=Array.from({length:34},()=>({ax:Math.random(),ay:Math.random(),n1:Math.random()*80,n2:Math.random()*80,r:60+Math.random()*60,ph:Math.random()*6.28,px:0,py:0}));
+    const resize=()=>{c.width=c.clientWidth*DPR;c.height=c.clientHeight*DPR;};
+    const draw=()=>{
+      const W=c.width,H=c.height,dark=isDark!==false;
+      ctx.fillStyle=dark?"#08090B":"#F8F7F2";ctx.fillRect(0,0,W,H);
+      const rot=et*Math.PI*2/120;
+      for(const b of blobs){
+        const dxv=(n2(b.n1+et*0.05,b.n2)-0.5)*W*0.34;
+        const dyv=(n2(b.n2+et*0.045,b.n1)-0.5)*H*0.42;
+        const x=b.ax*W+dxv*Math.cos(rot)-dyv*Math.sin(rot)+b.px;
+        const y=b.ay*H+dxv*Math.sin(rot)+dyv*Math.cos(rot)+b.py;
+        const mdx=x-mouse.x,mdy=y-mouse.y,md=Math.hypot(mdx,mdy);
+        if(md<200*DPR&&md>1){b.px+=(mdx/md)*0.35*DPR;b.py+=(mdy/md)*0.35*DPR;}
+        b.px*=0.985;b.py*=0.985;
+        const rad=b.r*DPR*(0.9+0.15*Math.sin(et*0.3+b.ph));
+        const a=dark?0.058:0.052;
+        const g=ctx.createRadialGradient(x,y,0,x,y,rad);
+        g.addColorStop(0,dark?`rgba(214,180,100,${a})`:`rgba(160,120,40,${a})`);
+        g.addColorStop(1,dark?"rgba(214,180,100,0)":"rgba(160,120,40,0)");
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rad,0,Math.PI*2);ctx.fill();
+      }
+    };
+    resize();draw();
+    if(!reducedMotion){
+      const loop=()=>{if(!running)return;et+=1/60;draw();raf=requestAnimationFrame(loop);};
+      raf=requestAnimationFrame(loop);
+    }
+    const ro=typeof ResizeObserver!=="undefined"?new ResizeObserver(()=>{resize();draw();}):null;
+    if(ro)ro.observe(c);
+    c._smokePointer=(x,y)=>{mouse.x=x*DPR;mouse.y=y*DPR;};
+    c._smokePointerOut=()=>{mouse.x=-9999;mouse.y=-9999;};
+    return()=>{running=false;if(raf)cancelAnimationFrame(raf);if(ro)ro.disconnect();};
+  },[isDark,reducedMotion]);
+  return <canvas ref={ref} aria-hidden="true"
+    style={{position:"absolute",inset:0,width:"100%",height:"100%"}}
+    onPointerMove={e=>{const c=e.currentTarget;if(c._smokePointer)c._smokePointer(e.clientX,e.clientY);}}
+    onPointerLeave={e=>{const c=e.currentTarget;if(c._smokePointerOut)c._smokePointerOut();}}/>;
+}
+
 /* ── GoldCube (v0.79) — the hero object, from the owner's Resend reference:
    a Rubik's-style cube of gold and dark-glass tiles tumbling slowly in space.
    Pure CSS 3D (no libs): 6 faces × 9 tiles, deterministic tile pattern so the
@@ -530,14 +590,15 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
   // v0.78 — liquid-glass video hero state (video falls back to GoldenTides on error)
   const[videoOk,setVideoOk]=useState(true);
   const[heroEmail,setHeroEmail]=useState("");
-  // v0.79.1 — owner comparison switch: ?hero=tides (v0.77 canvas) | ?hero=video (v0.78) | default cube (v0.79)
-  const heroMode=(()=>{try{const m=new URLSearchParams(window.location.search).get("hero");return m==="tides"||m==="video"?m:"cube";}catch(_e){return"cube";}})();
+  // v0.80 — default smoke (A4); ?hero=cube|tides|video switches back to prior versions
+  const heroMode=(()=>{try{const m=new URLSearchParams(window.location.search).get("hero");return["cube","tides","video"].includes(m)?m:"smoke";}catch(_e){return"smoke";}})();
   return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
     <div style={{position:"relative",zIndex:2}}>
 
       {/* ── CUBE HERO (v0.79 — Resend's object + Letter's luminous dark) ─────── */}
       <section style={{position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",background:"#08090B",overflow:"hidden"}}>
         {/* ?hero= comparison backgrounds (under the gradient overlays) */}
+        {heroMode==="smoke"&&<GoldSmoke reducedMotion={reducedMotion} isDark={true}/>}
         {heroMode==="tides"&&<GoldenTides reducedMotion={reducedMotion}/>}
         {heroMode==="video"&&(videoOk
           ?<HeroVideo reducedMotion={reducedMotion} onFail={()=>setVideoOk(false)}/>
@@ -570,6 +631,7 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
             one line, one action). Nothing else on the first screen. */}
         <div style={{position:"relative",zIndex:4,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px 7vh",textAlign:"center"}}>
           {heroMode==="cube"&&<div style={{marginBottom:58,marginTop:8}}><GoldCube size={Math.min(220,typeof window!=="undefined"?window.innerWidth*0.42:220)}/></div>}
+
           <div className="ga-liquid" style={{borderRadius:999,padding:"7px 16px",marginBottom:24,background:"rgba(255,255,255,0.01)"}}>
             <span style={{fontSize:10.5,fontWeight:600,color:"#E2C375",fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.16em"}}>{es?"Gratis para empezar":"Free to start"}</span>
           </div>
