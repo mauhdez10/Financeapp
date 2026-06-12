@@ -1,0 +1,405 @@
+<!-- @dsCard group="Marketing" viewport="1280x720" name="Hero lab — A family" subtitle="4 variants + video: field · smoke · comet · sparse · video (keys 1–5)" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Golden Anchor — Hero Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<style>
+  :root {
+    --gold: #C9A84C; --amber: #E2C375; --ink-on-gold: #16120A;
+    --bg: #08090B; --text: #F2EFE6; --muted: #9AA3AF; --dim: #626B78;
+    --hairline: rgba(255,255,255,0.09); --glass: rgba(255,255,255,0.045);
+    --gold-ink: #E2C375; --ease: cubic-bezier(.23,1,.32,1);
+  }
+  body.light {
+    --bg: #F8F7F2; --text: #16181C; --muted: #4E5560; --dim: #9AA0A8;
+    --hairline: rgba(20,16,5,0.10); --glass: rgba(255,255,255,0.7);
+    --gold-ink: #8A6B1E;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; overflow: hidden; transition: background .3s var(--ease); }
+
+  nav { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); z-index: 40;
+    display: flex; align-items: center; gap: 18px; padding: 10px 18px; border-radius: 999px;
+    background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 0 0 1px var(--hairline); }
+  nav .brand { display: flex; align-items: center; gap: 9px; }
+  nav .brand img { width: 21px; height: 21px; }
+  nav .brand span { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  nav .pillbtn { border: none; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 600;
+    color: var(--muted); background: transparent; border-radius: 999px; padding: 7px 12px; min-height: 32px;
+    transition: color .15s ease, background .15s ease; }
+  nav .pillbtn:hover { color: var(--gold-ink); background: rgba(201,168,76,0.10); }
+
+  .dir { position: fixed; inset: 0; display: none; }
+  .dir.active { display: block; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .stack { position: relative; z-index: 5; display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: 26px; padding: 0 24px; }
+  .stack.center { justify-content: center; min-height: 100vh; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 9px; font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold-ink); }
+  .eyebrow i { width: 6px; height: 6px; border-radius: 99px; background: var(--gold-ink); }
+  h1.hl { font-weight: 500; font-size: clamp(2.4rem, 5vw, 4.1rem); line-height: 1.06; letter-spacing: -0.032em;
+    margin: 0; max-width: 780px; }
+  h1.hl em { font-family: 'Newsreader', Georgia, serif; font-style: italic; font-weight: 400; color: var(--amber); }
+  body.light h1.hl em { color: #8A6B1E; }
+  .sub { font-size: 16px; line-height: 1.6; color: var(--muted); max-width: 480px; margin: 0; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .cta-gold { display: inline-block; font: 700 13.5px/1 'Plus Jakarta Sans', sans-serif; padding: 14px 27px;
+    border-radius: 11px; border: none; cursor: pointer; color: var(--ink-on-gold); letter-spacing: 0.01em;
+    background: linear-gradient(180deg, #EBD089 0%, #C9A84C 52%, #B58E1C 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 8px 22px rgba(201,168,76,0.25);
+    transition: transform .12s var(--ease); }
+  .cta-gold:active { transform: scale(0.97); }
+  .cta-ghost { display: inline-block; font: 600 13.5px/1 'Plus Jakarta Sans', sans-serif; padding: 14px 25px;
+    border-radius: 11px; cursor: pointer; color: var(--text); background: transparent;
+    border: 1px solid var(--hairline); transition: border-color .15s ease, transform .12s var(--ease); }
+  .cta-ghost:hover { border-color: rgba(201,168,76,0.45); }
+  .cta-ghost:active { transform: scale(0.97); }
+
+  /* video hero */
+  #dir-VIDEO video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+  #dir-VIDEO .vscrim { position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: linear-gradient(0deg, rgba(8,9,11,0.75) 0%, rgba(8,9,11,0.18) 60%, rgba(8,9,11,0.30) 100%); }
+  body.light #dir-VIDEO video { opacity: 0.35; }
+  body.light #dir-VIDEO .vscrim { background: linear-gradient(0deg, rgba(248,247,242,0.82) 0%, rgba(248,247,242,0.18) 60%, rgba(248,247,242,0.30) 100%); }
+
+  .corner { position: fixed; top: 26px; left: 26px; z-index: 50; font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); pointer-events: none; }
+  .corner b { color: var(--gold-ink); font-weight: 600; }
+  .switcher { position: fixed; bottom: 24px; right: 24px; z-index: 50; display: flex; gap: 4px;
+    padding: 5px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 0 0 1px var(--hairline); }
+  .switcher button { min-width: 34px; height: 34px; border-radius: 99px; border: none; cursor: pointer;
+    font: 600 11px 'JetBrains Mono', monospace; color: var(--muted); background: transparent; padding: 0 9px;
+    transition: background .15s ease, color .15s ease; }
+  .switcher button.on { background: var(--gold); color: var(--ink-on-gold); }
+  .hint { position: fixed; bottom: 33px; right: 246px; z-index: 50; font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.1em; color: var(--dim); pointer-events: none; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><img src="../assets/anchor-monogram.svg" alt="" /><span>Golden Anchor</span></div>
+  <button class="pillbtn" id="btn-lang">ES</button>
+  <button class="pillbtn" id="btn-theme">Light</button>
+</nav>
+
+<section class="dir" id="dir-A" data-screen-label="Hero A — Liquid Gold Field">
+  <canvas></canvas>
+  <div class="stack center">
+    <span class="eyebrow"><i></i><span data-t="eyebrow"></span></span>
+    <h1 class="hl" data-t="headline"></h1>
+    <p class="sub" data-t="sub"></p>
+    <div class="ctas"><button class="cta-gold" data-t="cta1"></button><button class="cta-ghost" data-t="cta2"></button></div>
+  </div>
+</section>
+
+<section class="dir" id="dir-A4" data-screen-label="Hero A4 — Gold Smoke">
+  <canvas></canvas>
+  <div class="stack center">
+    <span class="eyebrow"><i></i><span data-t="eyebrow"></span></span>
+    <h1 class="hl" data-t="headline"></h1>
+    <p class="sub" data-t="sub"></p>
+    <div class="ctas"><button class="cta-gold" data-t="cta1"></button><button class="cta-ghost" data-t="cta2"></button></div>
+  </div>
+</section>
+
+<section class="dir" id="dir-A7" data-screen-label="Hero A7 — Comet Arcs">
+  <canvas></canvas>
+  <div class="stack center">
+    <span class="eyebrow"><i></i><span data-t="eyebrow"></span></span>
+    <h1 class="hl" data-t="headline"></h1>
+    <p class="sub" data-t="sub"></p>
+    <div class="ctas"><button class="cta-gold" data-t="cta1"></button><button class="cta-ghost" data-t="cta2"></button></div>
+  </div>
+</section>
+
+<section class="dir" id="dir-A8" data-screen-label="Hero A8 — Sparse Field">
+  <canvas></canvas>
+  <div class="stack center">
+    <span class="eyebrow"><i></i><span data-t="eyebrow"></span></span>
+    <h1 class="hl" data-t="headline"></h1>
+    <p class="sub" data-t="sub"></p>
+    <div class="ctas"><button class="cta-gold" data-t="cta1"></button><button class="cta-ghost" data-t="cta2"></button></div>
+  </div>
+</section>
+
+<section class="dir" id="dir-VIDEO" data-screen-label="Hero Video — Golden Particles">
+  <video muted playsinline autoplay loop src="https://finance.goldenanchor.life/hero-bg.mp4"></video>
+  <div class="vscrim"></div>
+  <div class="stack center">
+    <span class="eyebrow"><i></i><span data-t="eyebrow"></span></span>
+    <h1 class="hl" data-t="headline"></h1>
+    <p class="sub" data-t="sub"></p>
+    <div class="ctas"><button class="cta-gold" data-t="cta1"></button><button class="cta-ghost" data-t="cta2"></button></div>
+  </div>
+</section>
+
+<div class="corner" id="corner"></div>
+<div class="hint">1–5</div>
+<div class="switcher" id="switcher"></div>
+
+<script>
+(function () {
+  "use strict";
+  var REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var store; try { store = JSON.parse(localStorage.getItem("ga-hero-lab") || "{}"); } catch (e) { store = {}; }
+  var ORDER = ["A", "A4", "A7", "A8", "VIDEO"];
+  var state = { dir: ORDER.indexOf(store.dir) >= 0 ? store.dir : "A", lang: store.lang || "en", dark: store.dark !== false };
+  function save() { try { localStorage.setItem("ga-hero-lab", JSON.stringify({ dir: state.dir, lang: state.lang, dark: state.dark })); } catch (e) {} }
+
+  var NAMES = { A: "Liquid Gold Field", A4: "Gold Smoke", A7: "Comet Arcs", A8: "Sparse Field", VIDEO: "Golden Particles Video" };
+  var T = {
+    en: { eyebrow: "Financial coaching platform",
+          headline: 'The dashboard your <em>advisor</em> brings to every meeting.',
+          sub: "A complete picture of your income, bills, debt, and savings, updated each session.",
+          cta1: "Start free", cta2: "See pricing" },
+    es: { eyebrow: "Plataforma de asesoría financiera",
+          headline: 'El tablero que tu <em>asesor</em> lleva a cada reunión.',
+          sub: "Una imagen completa de tus ingresos, gastos, deudas y ahorros, actualizada en cada sesión.",
+          cta1: "Empieza gratis", cta2: "Ver precios" }
+  };
+  function renderText() {
+    var t = T[state.lang];
+    document.querySelectorAll("[data-t]").forEach(function (el) {
+      var k = el.getAttribute("data-t");
+      if (k === "headline") el.innerHTML = t.headline; else el.textContent = t[k];
+    });
+    document.getElementById("btn-lang").textContent = state.lang === "es" ? "EN" : "ES";
+    document.getElementById("btn-theme").textContent = state.dark ? (state.lang === "es" ? "Claro" : "Light") : (state.lang === "es" ? "Oscuro" : "Dark");
+    document.getElementById("corner").innerHTML = "[<b>" + state.dir + "</b>] " + NAMES[state.dir];
+  }
+
+  /* ── shared helpers ── */
+  function fit(c) { var d = Math.min(2, window.devicePixelRatio || 1);
+    c.width = c.clientWidth * d; c.height = c.clientHeight * d; return d; }
+  var P8 = new Uint8Array(512);
+  (function () { var p = [], seed = 1234; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var i = 0; i < 256; i++) p[i] = i;
+    for (var j = 255; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)); var tmp = p[j]; p[j] = p[k]; p[k] = tmp; }
+    for (var m = 0; m < 512; m++) P8[m] = p[m & 255]; })();
+  function noise2(x, y) {
+    var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    var u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    function h(a, b) { return P8[(P8[a & 255] + (b & 255)) & 255] / 255; }
+    var n0 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u;
+    var n1 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
+    return n0 + (n1 - n0) * v;
+  }
+  function goldStroke(a) { return state.dark ? "rgba(214,180,100," + a + ")" : "rgba(138,107,30," + a + ")"; }
+  function basePal(sparse) { return state.dark
+    ? { base: "#08090B", fade: sparse ? "rgba(8,9,11,0.010)" : "rgba(8,9,11,0.018)", alpha: sparse ? 0.045 : 0.055, tip: 0.14, lw: sparse ? 0.65 : 0.7 }
+    : { base: "#F8F7F2", fade: sparse ? "rgba(248,247,242,0.016)" : "rgba(248,247,242,0.032)", alpha: sparse ? 0.11 : 0.095, tip: 0.17, lw: sparse ? 1.1 : 1.0 }; }
+
+  /* ── flow-field engine (A, A8) ── */
+  function flowField(canvas, cfg) {
+    cfg = cfg || {};
+    var c = canvas, ctx = c.getContext("2d"), D = 1, t = 0, et = 0, raf = null, running = false;
+    var mouse = { x: -9999, y: -9999 }, parts = [];
+    function spawn(p) { p.x = Math.random() * c.width; p.y = Math.random() * c.height; p.age = 0; p.max = 200 + Math.random() * 500; }
+    function seed() { parts = [];
+      var n = cfg.sparse ? 160 : 260;
+      for (var i = 0; i < n; i++) { var p = {}; spawn(p); p.age = Math.random() * p.max; parts.push(p); } }
+    function step() {
+      var P = basePal(cfg.sparse);
+      var S = 0.0017 / D * 2, SPEED = 0.27 * D;
+      ctx.fillStyle = P.fade; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.lineCap = "round"; ctx.lineWidth = P.lw * D;
+      for (var i = 0; i < parts.length; i++) {
+        var q = parts[i];
+        var a = noise2(q.x * S, q.y * S) * Math.PI * 4 + t * 0.18;
+        var vx = Math.cos(a) * SPEED, vy = Math.sin(a) * SPEED;
+        var dx = q.x - mouse.x, dy = q.y - mouse.y, dd = dx * dx + dy * dy;
+        if (dd < 32400 * D * D) { var f = (1 - Math.sqrt(dd) / (180 * D)) * (cfg.sparse ? 0.40 : 0.55);
+          vx += (-dy / Math.sqrt(dd + 1)) * f * D; vy += (dx / Math.sqrt(dd + 1)) * f * D; }
+        ctx.strokeStyle = goldStroke(P.alpha);
+        var nx = q.x + vx, ny = q.y + vy;
+        ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(nx, ny); ctx.stroke();
+        q.x = nx; q.y = ny; q.age++;
+        if (q.age > q.max || q.x < -10 || q.x > c.width + 10 || q.y < -10 || q.y > c.height + 10) spawn(q);
+      }
+      t += 0.0007; et += 1 / 60;
+    }
+    function paintStatic() { var P = basePal();
+      ctx.fillStyle = P.base; ctx.fillRect(0, 0, c.width, c.height);
+      for (var i = 0; i < 300; i++) step(); }
+    function loop() { if (!running) return; step(); raf = requestAnimationFrame(loop); }
+    return {
+      start: function () { D = fit(c); seed(); t = 0; et = 0; paintStatic();
+        if (!REDUCE) { running = true; raf = requestAnimationFrame(loop); } },
+      stop: function () { running = false; if (raf) cancelAnimationFrame(raf); },
+      pointer: function (x, y) { mouse.x = x * D; mouse.y = y * D; },
+      pointerOut: function () { mouse.x = -9999; mouse.y = -9999; }
+    };
+  }
+
+  /* ── A4 · Gold Smoke ── */
+  function smoke(canvas) {
+    var c = canvas, ctx = c.getContext("2d"), D = 1, et = 0, raf = null, running = false;
+    var blobs = [], mouse = { x: -9999, y: -9999 };
+    function seed() { blobs = [];
+      for (var i = 0; i < 34; i++) blobs.push({
+        ax: Math.random(), ay: Math.random(), n1: Math.random() * 80, n2: Math.random() * 80,
+        r: (60 + Math.random() * 60), ph: Math.random() * 6.28, px: 0, py: 0 });
+    }
+    function draw() {
+      var W = c.width, H = c.height, dark = state.dark;
+      ctx.fillStyle = dark ? "#08090B" : "#F8F7F2"; ctx.fillRect(0, 0, W, H);
+      var rot = et * Math.PI * 2 / 120;
+      for (var i = 0; i < blobs.length; i++) {
+        var b = blobs[i];
+        var dxv = (noise2(b.n1 + et * 0.05, b.n2) - 0.5) * W * 0.34;
+        var dyv = (noise2(b.n2 + et * 0.045, b.n1) - 0.5) * H * 0.42;
+        var rx = dxv * Math.cos(rot) - dyv * Math.sin(rot);
+        var ry = dxv * Math.sin(rot) + dyv * Math.cos(rot);
+        var x = b.ax * W + rx + b.px, y = b.ay * H + ry + b.py;
+        var mdx = x - mouse.x, mdy = y - mouse.y, md = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (md < 200 * D && md > 1) { b.px += (mdx / md) * 0.35 * D; b.py += (mdy / md) * 0.35 * D; }
+        b.px *= 0.985; b.py *= 0.985;
+        var rad = b.r * D * (0.9 + 0.15 * Math.sin(et * 0.3 + b.ph));
+        var a = dark ? 0.058 : 0.052;
+        var g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+        g.addColorStop(0, dark ? "rgba(214,180,100," + a + ")" : "rgba(160,120,40," + a + ")");
+        g.addColorStop(1, dark ? "rgba(214,180,100,0)" : "rgba(160,120,40,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    function loop() { if (!running) return; et += 1 / 60; draw(); raf = requestAnimationFrame(loop); }
+    return {
+      start: function () { D = fit(c); seed(); et = 8; draw();
+        if (!REDUCE) { running = true; raf = requestAnimationFrame(loop); } },
+      stop: function () { running = false; if (raf) cancelAnimationFrame(raf); },
+      pointer: function (x, y) { mouse.x = x * D; mouse.y = y * D; },
+      pointerOut: function () { mouse.x = -9999; mouse.y = -9999; }
+    };
+  }
+
+  /* ── A7 · Comet Arcs ── */
+  function cometArcs(canvas) {
+    var c = canvas, ctx = c.getContext("2d"), D = 1, phase = 0, raf = null, running = false;
+    var pos = { x: 0, y: 0 }, drift = 0, lastMove = -1e9;
+    var N_TRAILS = 52, N_NODES = 40, FRICTION = 0.52, DAMPENING = 0.022, TENSION = 0.99;
+    var trails = [];
+    function Node(x, y) { this.x = x; this.y = y; this.vx = 0; this.vy = 0; }
+    function build() { trails = [];
+      for (var i = 0; i < N_TRAILS; i++) { var spring = 0.36 + (i / N_TRAILS) * 0.02;
+        var friction = FRICTION + (Math.random() * 0.01 - 0.005);
+        var nodes = []; for (var j = 0; j < N_NODES; j++) nodes.push(new Node(pos.x, pos.y));
+        trails.push({ spring: spring, friction: friction, nodes: nodes }); } }
+    function upd(tr) { var e = tr.spring, n0 = tr.nodes[0];
+      n0.vx += (pos.x - n0.x) * e; n0.vy += (pos.y - n0.y) * e;
+      for (var i = 0; i < tr.nodes.length; i++) { var n = tr.nodes[i];
+        if (i > 0) { var p = tr.nodes[i - 1]; n.vx += (p.x - n.x) * e; n.vy += (p.y - n.y) * e;
+          n.vx += p.vx * DAMPENING; n.vy += p.vy * DAMPENING; }
+        n.vx *= tr.friction; n.vy *= tr.friction; n.x += n.vx; n.y += n.vy; e *= TENSION; } }
+    function drw(tr) { var nd = tr.nodes;
+      ctx.beginPath(); ctx.moveTo(nd[0].x, nd[0].y);
+      for (var i = 1; i < nd.length - 2; i++) { var a = nd[i], b = nd[i + 1];
+        ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2); }
+      var la = nd[nd.length - 2], lb = nd[nd.length - 1];
+      ctx.quadraticCurveTo(la.x, la.y, lb.x, lb.y); ctx.stroke(); }
+    function step() {
+      var W = c.width, H = c.height, dark = state.dark;
+      if (performance.now() - lastMove > 1200) {
+        drift += 0.008; pos.x = W * (0.62 + 0.26 * Math.sin(drift * 0.7)); pos.y = H * (0.42 + 0.22 * Math.cos(drift * 0.9)); }
+      phase += 0.0016; var sh = 0.5 + Math.sin(phase) * 0.5;
+      var alpha = dark ? (0.045 + sh * 0.05) : (0.10 + sh * 0.07);
+      ctx.globalCompositeOperation = "source-over";
+      if (dark) {
+        ctx.fillStyle = "rgba(8,9,11,0.055)"; ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = "lighter";
+      } else {
+        ctx.fillStyle = "rgba(248,247,242,0.18)"; ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = "source-over";
+      }
+      ctx.strokeStyle = dark ? "rgba(201,168,76," + alpha + ")" : "rgba(138,107,30," + (alpha * 0.9) + ")";
+      ctx.lineWidth = dark ? 5.5 * D : 4 * D; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      for (var i = 0; i < trails.length; i++) { upd(trails[i]); drw(trails[i]); }
+      ctx.globalCompositeOperation = "source-over"; }
+    function loop() { if (!running) return; step(); raf = requestAnimationFrame(loop); }
+    return {
+      start: function () { D = fit(c); pos.x = c.width * 0.62; pos.y = c.height * 0.42;
+        build();
+        ctx.fillStyle = state.dark ? "#08090B" : "#F8F7F2"; ctx.fillRect(0, 0, c.width, c.height);
+        for (var i = 0; i < 260; i++) step();
+        if (!REDUCE) { running = true; raf = requestAnimationFrame(loop); } },
+      stop: function () { running = false; if (raf) cancelAnimationFrame(raf); },
+      pointer: function (x, y) { lastMove = performance.now(); pos.x = x * D; pos.y = y * D; },
+      pointerOut: function () {}
+    };
+  }
+
+  /* ── VIDEO · Golden Particles ── */
+  function videoHero(section) {
+    var vid = section.querySelector("video");
+    return {
+      start: function () { if (vid && vid.paused) { vid.currentTime = 0; vid.play().catch(function(){}); } },
+      stop: function () { if (vid) vid.pause(); },
+      pointer: function () {}, pointerOut: function () {}
+    };
+  }
+
+  /* ── wire variants ── */
+  var DIRS = {
+    A:     flowField(document.querySelector("#dir-A canvas"), {}),
+    A4:    smoke(document.querySelector("#dir-A4 canvas")),
+    A7:    cometArcs(document.querySelector("#dir-A7 canvas")),
+    A8:    flowField(document.querySelector("#dir-A8 canvas"), { sparse: true }),
+    VIDEO: videoHero(document.getElementById("dir-VIDEO"))
+  };
+  ORDER.forEach(function (k) {
+    var sec = document.getElementById("dir-" + k);
+    sec.addEventListener("pointermove", function (e) { DIRS[k].pointer(e.clientX, e.clientY); });
+    sec.addEventListener("pointerleave", function () { DIRS[k].pointerOut(); });
+  });
+  function show(d) {
+    if (!DIRS[d]) return;
+    ORDER.forEach(function (k) { DIRS[k].stop(); });
+    state.dir = d; save();
+    ORDER.forEach(function (k) {
+      document.getElementById("dir-" + k).classList.toggle("active", k === d);
+    });
+    document.querySelectorAll(".switcher button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-dir") === d); });
+    renderText();
+    DIRS[d].start();
+  }
+
+  /* chrome */
+  var sw = document.getElementById("switcher");
+  ORDER.forEach(function (k) {
+    var b = document.createElement("button");
+    b.setAttribute("data-dir", k); b.textContent = k;
+    b.addEventListener("click", function () { show(k); });
+    sw.appendChild(b);
+  });
+  document.addEventListener("keydown", function (e) {
+    var i = ["1", "2", "3", "4", "5"].indexOf(e.key);
+    if (i >= 0) show(ORDER[i]);
+  });
+  document.getElementById("btn-lang").addEventListener("click", function () {
+    state.lang = state.lang === "es" ? "en" : "es"; save(); renderText();
+  });
+  document.getElementById("btn-theme").addEventListener("click", function () {
+    state.dark = !state.dark; save();
+    document.body.classList.toggle("light", !state.dark);
+    renderText(); show(state.dir);
+  });
+  window.addEventListener("resize", function () { show(state.dir); });
+
+  document.body.classList.toggle("light", !state.dark);
+  renderText();
+  show(state.dir);
+})();
+</script>
+</body>
+</html>
