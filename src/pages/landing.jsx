@@ -590,8 +590,8 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
   // v0.78 — liquid-glass video hero state (video falls back to GoldenTides on error)
   const[videoOk,setVideoOk]=useState(true);
   const[heroEmail,setHeroEmail]=useState("");
-  // v0.80 — default smoke (A4); ?hero=cube|tides|video switches back to prior versions
-  const heroMode=(()=>{try{const m=new URLSearchParams(window.location.search).get("hero");return["cube","tides","video"].includes(m)?m:"smoke";}catch(_e){return"smoke";}})();
+  // v0.80.1 — default video; ?hero=smoke|cube|tides for comparison
+  const heroMode=(()=>{try{const m=new URLSearchParams(window.location.search).get("hero");return["smoke","cube","tides"].includes(m)?m:"video";}catch(_e){return"video";}})();
   return <div ref={rootRef} style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",position:"relative",overflowX:"hidden"}}>
     <div style={{position:"relative",zIndex:2}}>
 
