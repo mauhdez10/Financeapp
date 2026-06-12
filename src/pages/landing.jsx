@@ -605,8 +605,8 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
           :<GoldenTides reducedMotion={reducedMotion}/>)}
         {/* Letter-style "dark but light": soft warm light bleeding from above */}
         <div aria-hidden style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 120% 60% at 50% -12%, rgba(250,244,230,0.10) 0%, rgba(226,195,117,0.05) 38%, rgba(0,0,0,0) 70%)",pointerEvents:"none"}}/>
-        {/* bottom melt into the active theme */}
-        <div aria-hidden style={{position:"absolute",inset:0,background:`linear-gradient(0deg, ${P.bg} 0%, rgba(8,9,11,0.4) 16%, rgba(8,9,11,0) 38%)`,pointerEvents:"none"}}/>
+        {/* bottom melt — dark mode only (light mode has no fade) */}
+        {isDark&&<div aria-hidden style={{position:"absolute",inset:0,background:"linear-gradient(0deg, #0A0C10 0%, rgba(8,9,11,0.4) 16%, rgba(8,9,11,0) 38%)",pointerEvents:"none"}}/>}
 
         {/* capsule glass nav */}
         <header style={{position:"relative",zIndex:4,padding:"22px 24px"}}>
