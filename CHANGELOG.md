@@ -2,6 +2,15 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.81.2 — 2026-06-24 (Patch) — scale: derive monthly_bills + monthly_debt_min on save
+
+Additive prerequisite for the server-side dashboard (next phase). Added `clients.monthly_bills`
+(`sumB(bills)`) + `clients.monthly_debt_min` (`sumMin(cards)`) summary columns, derived on every
+save via `clientSummary` (migration `add_bills_min_summary_columns` applied to live DB). These feed
+the dashboard's Sankey + Practice-Health aggregates so it can render without loading every blob.
+Live app unchanged (write-only until the dashboard is wired). Verified: a save wrote
+`monthly_bills=1985, monthly_debt_min=35` for the test client.
+
 ## v0.81.1 — 2026-06-24 (Patch) — scale: drop ga_v3 localStorage full-cache
 
 Removed the `ga_v3` localStorage full-cache (init read + persist write). Supabase is now the sole

@@ -87,6 +87,7 @@ const clientSummary = (c) => ({
   email: c.email || "", client_type: c.clientType || "financeOnly",
   net_worth: totalA(c) - totalL(c), total_debt: totalL(c),
   monthly_income: sumN(c.incomeStreams), liquid_assets: liquidA(c),
+  monthly_bills: sumB(c.bills), monthly_debt_min: sumMin(c.cards),
   snapshot_count: (c.monthSnapshots || []).length,
   last_activity: new Date().toISOString(), archived: !!c.archived,
 });

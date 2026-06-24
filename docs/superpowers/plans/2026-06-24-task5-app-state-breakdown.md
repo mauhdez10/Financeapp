@@ -82,8 +82,11 @@ unit (client-role path untouched), not piecemeal-to-prod.
 **`Dashboard` (dashboard.jsx) full-array uses — needs more than the 2 RPCs:**
 - KPI headline numbers (debt/income/liquid/counts) → `ga_dashboard_summary` ✅ covered.
 - Trend chart (per-month debt/savings across all clients) → `ga_dashboard_trend` ✅ covered.
-- **Sankey** (aggregate income/bills/min) — NOT covered; needs an aggregate RPC or extend summary.
-- **Net-worth donut** (client tiers) — NOT covered; needs tier-count RPC.
+- **Sankey** (aggregate income/bills/min) — `monthly_bills`/`monthly_debt_min` summary columns now
+  derived on save (v0.81.2); an aggregate RPC can `sum()` them + `monthly_income`. (income already covered.)
+- **Practice-Health gauges** (DSR/savings/EF from inc/bills/min/liquid) — same columns; aggregate RPC.
+- **Net-worth donut** (tier counts: nw<0 / <50k / <250k / ≥250k from `net_worth`) — needs tier-count RPC.
+- **Ranked / Treemap** (top-N active clients by net_worth) — `gaListClients` sort=netWorth, limit N (NOT all).
 - **KPI sparklines** (per-month client-count / income / debt / savings series) — partly from trend;
   client-count-per-month series needs `client_monthly_summary` presence counts.
 - Dashboard search box + Import/Backup/Export modals also take the full `clients`.
