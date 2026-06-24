@@ -93,6 +93,11 @@ const clientSummary = (c) => ({
     ...(c.cards || []).filter(x => (+x.balance || 0) > 0).map(x => ({ name: x.name || "Card", bal: +x.balance || 0, kind: "card", ltype: "", first: c.firstName || "" })),
     ...(c.loans || []).filter(x => (+x.balance || 0) > 0).map(x => ({ name: x.name || "Loan", bal: +x.balance || 0, kind: "loan", ltype: x.type || "", first: c.firstName || "" })),
   ],
+  // Assets by account name + bucket for the dashboard Asset-Sunburst — aggregated server-side.
+  assets: [
+    ...(c.accounts || []).filter(x => (+x.value || 0) > 0).map(x => { const m = ACCT_META[x.type]; return { bucket: (m && m.liquid) ? "cash" : (m && m.invest) ? "invest" : "property", name: (m && (m.l || m.label)) || x.type || "Other", val: +x.value || 0 }; }),
+    ...(c.customAssets || []).filter(x => (+x.value || 0) > 0).map(x => ({ bucket: "property", name: x.name || "Other", val: +x.value || 0 })),
+  ],
   snapshot_count: (c.monthSnapshots || []).length,
   last_activity: new Date().toISOString(), archived: !!c.archived,
 });

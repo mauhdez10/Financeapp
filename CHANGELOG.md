@@ -2,6 +2,15 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.81.5 — 2026-06-24 (Patch) — scale: assets rollup + asset-alloc RPC (full dashboard aggregation)
+
+Added `clients.assets` jsonb (derived on save: accounts+customAssets value>0 as `{bucket,name,val}`,
+bucket = cash/invest/property by ACCT_META) + `ga_dashboard_asset_alloc()` RPC (sums by bucket+name
+across active clients, anon-revoked) — powers the dashboard Asset-Sunburst server-side, no blob reads.
+Server version uses the proper account label (`ACCT_META.l`), fixing a latent `.label` typo in the
+in-app sunburst. Additive; app unchanged. Verified: Amanda's assets total 59,800 (− debt 31,700 =
+net worth 28,100, reconciles exactly). **This completes the line-item rollup layer.**
+
 ## v0.81.4 — 2026-06-24 (Patch) — scale: debts rollup + top-debts RPC (full dashboard aggregation)
 
 Added `clients.debts` jsonb (derived on save: each card/loan with balance>0 as
