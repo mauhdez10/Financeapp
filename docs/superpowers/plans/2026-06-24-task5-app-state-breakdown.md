@@ -33,11 +33,17 @@ All verified live (simulated test-user auth), all anon-revoked / authenticated-o
 - `ga_dashboard_top_debts(limit)` ✓ — Debts-by-Balance (from `clients.debts` jsonb).
 - `ga_dashboard_asset_alloc()` ✓ — Asset-Sunburst by bucket+name (from `clients.assets` jsonb).
 - Treemap / Ranked (top-N clients by net_worth) → `gaListClients({sort:'netWorth'})` (add netWorth sort).
+- `ga_dashboard_client_deltas(limit)` ✓ — Dumbbell / Slope: top-N active clients with first/last-month
+  asset-based NW `(a_*−l_*)` + current net_worth, from `client_monthly_summary`. Verified.
 
-**Remaining data piece (1):** `ga_dashboard_client_deltas(limit)` for Dumbbell / Slope — top-N active
-clients with first-month & last-month asset-based NW `(a_*−l_*)` from `client_monthly_summary`.
-**Then:** backfill ALL clients (so rollups are complete, not just re-saved ones) → WIRE dashboard.jsx to
-these RPCs (drop the `clients`-array computations) → then ClientList paging + App-state flip below.
+**⇒ DASHBOARD AGGREGATION DATA LAYER 100% COMPLETE + VERIFIED.** Every chart has a server-side source;
+no dashboard chart needs a blob. **Remaining is purely non-additive APP WIRING:**
+1. Backfill ALL clients (re-save each so every rollup column is populated, not just re-saved ones). For
+   the 3 test clients: re-save via the app, or a node script copying the full derivers (note: sumB/sumMin
+   pull in `actB`/`effectiveMin` — copy those too, or run through the app).
+2. WIRE dashboard.jsx → the 5 RPCs (App fetches on nav=dashboard for advisors, passes down; drop the
+   `clients`-array computations). Verify each chart matches the current render.
+3. ClientList paging + App-state flip + server bulk/pickers/export (the consumer table above).
 
 NOTE on faithful port: dashboard `dashSearch` (filters which clients the aggregates cover) has no RPC
 equivalent yet — either drop it or add a search arg to the summary/trend RPCs during wiring.
