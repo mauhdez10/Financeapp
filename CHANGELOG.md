@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.15 — 2026-06-24 (Patch) — remove dead advisor-side intake code
+
+Cleanup (owner-approved). Removed the superseded advisor-side intake cluster (`INTAKE_TXT` +
+`exportIntakePDF` + `IntakeSection`, 139 lines) from `App.jsx` — referenced nowhere in src/; the
+live intake flow is `pages/intake.jsx` (whose own comment notes "full parity with old
+IntakeSection"). App.jsx 954 → **817 lines**. Build green; zero residual references (asserted).
+
 ## v0.80.14 — 2026-06-24 (Patch) — Phase 2 decomposition: profile/settings modal extracted
 
 Eleventh Phase 2 slice. Moved `ProfileModal` (+ its internal `AccRow`/`BgPicker` sub-components)
