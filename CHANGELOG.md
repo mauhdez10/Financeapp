@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.81.1 — 2026-06-24 (Patch) — scale: drop ga_v3 localStorage full-cache
+
+Removed the `ga_v3` localStorage full-cache (init read + persist write). Supabase is now the sole
+source of truth for clients. The cache capped at ~5 MB and was the **nearest** scale breakage point
+(blew at a few hundred snapshot-heavy clients). Kept the `ga_cache_uid` foreign-purge (pitfall #18)
+and the small `ga_session_draft`. Verified live: all clients load from cloud, `ga_v3` no longer
+written, load/render/save intact.
+
+## v0.81.0 — 2026-06-24 (Minor) — scalable data layer: foundation (DB + write path)
+
+First cut of the **scalable data layer** (spec/plan in `docs/superpowers/`; goal: a single advisor
+account with tens of thousands of clients must not break). Additive — live app UX unchanged.
+- **DB migration** (live Supabase): `clients` summary columns (name/email/type, net_worth,
+  total_debt, monthly_income, liquid_assets, snapshot_count, last_activity, archived, `search_tsv`
+  GIN) + `client_monthly_summary` time-series table + `ga_dashboard_summary`/`ga_dashboard_trend`
+  RPCs. RLS reuses `auth.uid()=user_id`; RPCs `SECURITY DEFINER` with pinned `search_path`, anon
+  execute revoked. Verified: aggregates correct (3 clients → debt 363550, income 30200).
+- **Write path**: `gaSaveClient` derives summary columns + upserts monthly rows on every save
+  (`clientSummary`/`monthlyRows` in `utils/finance.js`). Verified live; existing clients backfilled.
+- **Service layer (unwired)**: `gaListClients` (server page/search/sort), `gaLoadClient` (one blob),
+  dashboard RPC wrappers — ready for the App-state flip (the coordinated advisor-path refactor;
+  consumer map + plan in `docs/superpowers/plans/2026-06-24-task5-app-state-breakdown.md`).
+
 ## v0.80.15 — 2026-06-24 (Patch) — remove dead advisor-side intake code
 
 Cleanup (owner-approved). Removed the superseded advisor-side intake cluster (`INTAKE_TXT` +

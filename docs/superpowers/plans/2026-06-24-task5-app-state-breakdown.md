@@ -69,3 +69,44 @@ dashboard + flat memory regardless of client count. EN/ES symmetry on any new st
 D-1 single file · D-3 EN+ES same edit · pitfall #12 (local_id is the app id) · #15 (no
 dotted values in `.or()` — search already sanitized) · #17 (no nested component defs) ·
 #18 (uid-namespace any cache) · #20 (Vercel 12-function cap — NO new `api/*.js`).
+
+## ⚠️ Coupling reality (deeper read, 2026-06-24) — this is ONE coordinated flip
+
+Reading `dashboard.jsx` and `clientList.jsx` in full shows 5b/5c/5d are NOT independently
+shippable. Converting any single consumer to server-fetch while `App()` still loads the full
+array adds code for **zero** scale benefit — the win only lands when the load-everything
+(`gaLoadClients`, App.jsx:307) is removed, which requires EVERY advisor-path consumer below to
+no longer need the full array, all in the same change. Do it as one coordinated, preview-verified
+unit (client-role path untouched), not piecemeal-to-prod.
+
+**`Dashboard` (dashboard.jsx) full-array uses — needs more than the 2 RPCs:**
+- KPI headline numbers (debt/income/liquid/counts) → `ga_dashboard_summary` ✅ covered.
+- Trend chart (per-month debt/savings across all clients) → `ga_dashboard_trend` ✅ covered.
+- **Sankey** (aggregate income/bills/min) — NOT covered; needs an aggregate RPC or extend summary.
+- **Net-worth donut** (client tiers) — NOT covered; needs tier-count RPC.
+- **KPI sparklines** (per-month client-count / income / debt / savings series) — partly from trend;
+  client-count-per-month series needs `client_monthly_summary` presence counts.
+- Dashboard search box + Import/Backup/Export modals also take the full `clients`.
+→ Full 5b requires EXTENDING the dashboard RPCs (Sankey totals, NW tiers, per-month counts) so the
+  screen renders with no blob array. Until then, Dashboard pins the load-everything.
+
+**`ClientList` (clientList.jsx) full-array uses — far more than display:**
+- search + 5 sort modes (name/recent/debt/income/netWorth) → already in `gaListClients` (add netWorth sort).
+- **Bulk archive/restore/delete**: select pool, select-all, `selClients=ids.map(find)` — needs
+  server-side selection semantics across pages (select-all-matching, not select-all-loaded).
+- **Split/Join pickers** (`partnered`/`singles`, `JoinModal allClients=`) — must search ALL clients
+  server-side, not filter the page.
+- **Import** (`existingClients=` for dup-detection), **Export/Backup-all** (`expBackup(clients)`,
+  `ExportModal clients=`) — need server pagination/stream over all rows (rare admin action).
+- render `filtered.map` = one DOM node per client → **virtualize** (windowing) for #3.
+
+**Files the coordinated flip touches:** `App.jsx` (clientsPage/openClient state + load effects +
+mutation handlers + the ~15 props), `dashboard.jsx` (RPC + extended RPCs), `clientList.jsx`
+(paged/virtualized + server bulk/pickers), `clientData.jsx` (import/export/backup over server),
+`clientModals.jsx` (Join `allClients`), plus DB (new aggregate RPCs for Sankey/NW/counts).
+
+**Recommended execution:** a focused session — extend the dashboard RPCs first (DB, additive,
+safe), then flip `App()` + all advisor consumers together behind the preview gate (verify login,
+load, list+search+sort, bulk ops, split/join, import/export/backup, dashboard, open, save — ALL
+green) before a single push to main. Seed 10k–50k synthetic first (Task 0) so the flip is measured,
+not assumed.
