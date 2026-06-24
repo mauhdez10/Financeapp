@@ -78,3 +78,25 @@ function getClientRem(clients){const today=new Date();const day=today.getDate();
 function getAdvRem(clients,settings){const today=new Date();const out=[];clients.forEach(c=>{const snaps=c.monthSnapshots||[];if(settings.reminderAdvisor?.noContact){const last=snaps[snaps.length-1];const days=last?.savedAt?Math.floor((today-new Date(last.savedAt))/86400000):(snaps.length===0?999:0);if(days>=(settings.noContactDays||30))out.push({type:"noContact",clientId:c.id,key:`noContact:${c.id}`,priority:days>60?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`Last review ${days===999?"never":`${days}d ago`}`,task:"📞 No Contact"});}if(settings.reminderAdvisor?.highDebt){const net=sumN(c.incomeStreams);const dsr=net>0?sumMin(c.cards)/net:0;if(dsr>0.36)out.push({type:"highDebt",clientId:c.id,key:`highDSR:${c.id}`,priority:dsr>0.5?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`DSR ${(dsr*100).toFixed(0)}%`,task:"⚠️ High DSR"});}if(settings.reminderAdvisor?.promoExpiring){(c.cards||[]).forEach(cc=>{(cc.promos||[]).forEach(p=>{if(p.end){const dLeft=Math.floor((new Date(p.end)-today)/86400000);if(dLeft>=0&&dLeft<=60)out.push({type:"promo",clientId:c.id,cardId:cc.id,promoId:p.id,key:`promo:${c.id}:${cc.id}:${p.id||p.label||"_"}`,priority:dLeft<=14?"high":"med",clientName:`${c.firstName} ${c.lastName}`,detail:`${cc.name} "${p.label||"Promo"}" — ${dLeft}d`,task:"⏰ Promo Expiring"});}});});}if(settings.reminderAdvisor?.debtIncreasing){if(snaps.length>=2&&snaps[snaps.length-1].debt>snaps[0].debt)out.push({type:"debtRising",clientId:c.id,key:`debtRising:${c.id}`,priority:"med",clientName:`${c.firstName} ${c.lastName}`,detail:`+${fmt(snaps[snaps.length-1].debt-snaps[0].debt)}`,task:"📈 Debt Rising"});}});return out;}
 
 export { RATIOS_META, ratFmt, ratColor, ratStatus, fmtDate, setLocale, gid, mkAcct, mkLoan, mk, migrateCard, migrateAccounts, migrateLoans, migrateAcctTypes, extractAcctsToProps, mig, SEED, FREQ, toM, fmt, fmtD, fmtS, bE, vEmail, fmtPh, fmtSSN, actB, sumB, sumN, sumG, effectiveMin, sumMin, cardMoInt, totalMoInt, payM, payL, mthPmt, availCredit, syncAssetLoans, getProperties, totalA, totalL, liquidA, esc, pLine, genCSV, dlCSV, expCSV, expAllCSV, parseCSV, isAlertDismissed, getClientRem, getAdvRem };
+
+
+// ── Scalable data layer (2026-06-24): derive summary columns + monthly-summary rows from the blob.
+const _MONTH_NUM = {Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};
+const clientSummary = (c) => ({
+  first_name: c.firstName || "", last_name: c.lastName || "", partner_first: c.partnerFirst || null,
+  email: c.email || "", client_type: c.clientType || "financeOnly",
+  net_worth: totalA(c) - totalL(c), total_debt: totalL(c),
+  monthly_income: sumN(c.incomeStreams), liquid_assets: liquidA(c),
+  snapshot_count: (c.monthSnapshots || []).length,
+  last_activity: new Date().toISOString(), archived: !!c.archived,
+});
+const monthlyRows = (c) => (c.monthSnapshots || []).map(s => {
+  const parts = String(s.label || "").split(" ");
+  const cardMins = ((s.data && s.data.cards) || []).reduce((a, cd) => a + (+cd.min || 0), 0);
+  return {
+    month_key: (parts[1] || "") + "-" + (_MONTH_NUM[parts[0]] || "00"),
+    debt: +s.debt || 0, savings: +s.savings || 0, income: +s.income || 0,
+    spending: (+s.bills || 0) + cardMins, net_worth: (+s.savings || 0) - (+s.debt || 0),
+  };
+});
+export { clientSummary, monthlyRows };
