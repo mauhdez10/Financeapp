@@ -93,11 +93,23 @@ const clientSummary = (c) => ({
 });
 const monthlyRows = (c) => (c.monthSnapshots || []).map(s => {
   const parts = String(s.label || "").split(" ");
-  const cardMins = ((s.data && s.data.cards) || []).reduce((a, cd) => a + (+cd.min || 0), 0);
+  const d = (s && s.data) || {};
+  const cards = d.cards || [], loans = d.loans || [];
+  const cardMins = cards.reduce((a, cd) => a + (+cd.min || 0), 0);
+  // Asset/liability by type — matches dashboard NetWorthBridge (accounts by ACCT_META, customAssets=property).
+  let aLiquid = 0, aInvest = 0, aOther = 0;
+  (d.accounts || []).forEach(x => { const m = ACCT_META[x.type]; const v = +x.value || 0; if (m && m.liquid) aLiquid += v; else if (m && m.invest) aInvest += v; else aOther += v; });
+  const aProperty = (d.customAssets || []).reduce((a, x) => a + (+x.value || 0), 0);
+  const lCards = cards.reduce((a, x) => a + (+x.balance || 0), 0);
+  const lLoansAll = loans.reduce((a, x) => a + (+x.balance || 0), 0);
+  // "current" debt mode = loans excluding linked-asset, mortgage, vehicle (matches dashboard getDebtForMode).
+  const lLoansCurrent = loans.filter(x => !x.linkedAssetId && x.type !== "mortgage" && x.type !== "vehicle").reduce((a, x) => a + (+x.balance || 0), 0);
   return {
     month_key: (parts[1] || "") + "-" + (_MONTH_NUM[parts[0]] || "00"),
     debt: +s.debt || 0, savings: +s.savings || 0, income: +s.income || 0,
     spending: (+s.bills || 0) + cardMins, net_worth: (+s.savings || 0) - (+s.debt || 0),
+    a_liquid: aLiquid, a_invest: aInvest, a_property: aProperty, a_other: aOther,
+    l_cards: lCards, l_loans_all: lLoansAll, l_loans_current: lLoansCurrent,
   };
 });
 export { clientSummary, monthlyRows };

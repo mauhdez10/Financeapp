@@ -2,6 +2,16 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.81.3 — 2026-06-24 (Patch) — scale: per-month asset/liability breakdown (full dashboard aggregation)
+
+Owner chose **full server aggregation** for the dashboard at scale (no per-client blob reads).
+Added 7 derived columns to `client_monthly_summary` (`a_liquid/a_invest/a_property/a_other`,
+`l_cards/l_loans_all/l_loans_current`), computed in `monthlyRows` from each snapshot's `data`,
+matching the dashboard's Net-Worth Bridge / Forecast / debt-mode-trend math exactly. Feeds those
+per-month charts server-side. Additive; live app unchanged. Verified: a save populated the columns
+(May snapshot → property 22000, cards 1200). Remaining for full aggregation: line-item rollups for
+Asset-Sunburst (by account name) + Debts-by-Balance (by individual debt), then the dashboard wiring.
+
 ## v0.81.2 — 2026-06-24 (Patch) — scale: derive monthly_bills + monthly_debt_min on save
 
 Additive prerequisite for the server-side dashboard (next phase). Added `clients.monthly_bills`
