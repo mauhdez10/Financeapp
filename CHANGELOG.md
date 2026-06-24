@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.82.2 — 2026-06-24 (Patch) — scale: windowed dashboard roster
+
+The Dashboard's bottom client roster now renders at most `rosterShown` (60) per-client cards with the
+same bilingual "Show more (N)" control (+120/click) as the ClientList, instead of one card per client.
+Pure render change; reuses the `showMoreClients` string. Build-verified. (Roster still computes from
+the blob array — converts fully with the App-state persistence rework.)
+
 ## v0.82.1 — 2026-06-24 (Patch) — scale: windowed ClientList render
 
 The advisor ClientList now renders at most `shown` (80) client cards at a time with a bilingual
