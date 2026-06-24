@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.12 — 2026-06-24 (Patch) — Phase 2 decomposition: ClientList page extracted
+
+Ninth Phase 2 slice. Moved the `ClientList` page out of `App.jsx` into new
+`src/components/clientList.jsx`. Downward-closed (reliable scan: zero unresolved tags; `Cbx` is a
+local sub-component). App.jsx 1,302 → **1,180 lines**. Build green; verified live — the Clients page
+renders all client cards + sort + New Client.
+
 ## v0.80.11 — 2026-06-24 (Patch) — Phase 2 decomposition: Dashboard + reminders extracted
 
 Eighth Phase 2 slice. Moved `Dashboard` + `RemindersPanel` + `AlertsSettingsModal` out of
