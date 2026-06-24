@@ -2,6 +2,33 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.4 — 2026-06-14 (Patch) — Phase 2 decomposition: client workbook sections extracted
+
+Second Phase 2 slice. Moved the 11 client workbook section components
+(`IncomeSection`, `BillsSection`, `DebtSection`, `AccountsSection`, `LoansSection`,
+`CustomAssetsSection`, `SavingsSection`, `NotesSection`, plus the embedded
+`BulkSnapModal`, `MarketInvestmentModal`, `MarketInvestmentsSection`) out of `App.jsx`
+into new `src/components/clientSections.jsx`. Byte-exact move; App.jsx imports back the
+6 externally-referenced sections (the other 5 are used only within the new module).
+App.jsx 3,865 → **3,789 lines**. Build green; verified live — the full `SavingsSection`
+chain (Accounts/Loans/CustomAssets/MarketInvestments + the recharts allocation pie)
+renders, and `IncomeSection`→`IncomeModal` cross-file open works. Continues unwinding
+graphify's Community 0. Remaining: report blocks/tabs, then the `ClientDetail` shell (last).
+
+## v0.80.3 — 2026-06-14 (Patch) — Phase 2 decomposition: client data-entry modals extracted
+
+First slice of ARCHITECTURE-PLAN §3 Phase 2. Moved the 8 client data-entry modals
+(`IncomeModal`, `CardModal`, `BillModal`, `AccountModal`, `LoanModal`, `AssetModal`,
+`SplitAssignModal`, `JoinModal`) out of `App.jsx` into new `src/components/clientModals.jsx`.
+Pure leaf components (props-only, no app state) — byte-exact move, no behavior change.
+App.jsx 3,899 → 3,865 lines. Build green; `CardModal` open/render verified live on a
+client. Graphify's Community 0 ("Client Workbook", cohesion 0.07) flagged this cluster as
+the prime split target — this begins unwinding it. Next slices: client-sections, then the
+`ClientDetail` shell (highest coupling, last).
+
+> Doc-debt note: CHANGELOG skips v0.80–v0.80.2 (hero default→smoke→video revert→light-fade
+> fix). Those shipped; entries not backfilled here.
+
 ## v0.79.1 — 2026-06-11 (Patch) — `?hero=` live comparison switch
 
 Owner asked to see the earlier heroes again. URL param on the landing page:
