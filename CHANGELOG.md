@@ -2,6 +2,16 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.6 — 2026-06-24 (Patch) — Phase 2 decomposition: dashboard chart-editor UI extracted
+
+Fourth Phase 2 slice. Moved the dashboard chart-customization components
+(`ChartGalleryCard`, `ChartEditModal`, `ChartSettingsModal`, `DashSlotPicker`) out of
+`App.jsx` into new `src/components/chartEditors.jsx`. App.jsx imports back
+`ChartSettingsModal` + `DashSlotPicker` (the other 2 are internal). App.jsx
+3,425 → **3,114 lines**. Build green; verified live — the dashboard "Change chart" picker
+renders the full ChartGalleryCard gallery (8+ live chart previews). Remaining: report
+blocks/tabs, ImportWizard, then the `ClientDetail`/`Dashboard` shells (highest coupling, last).
+
 ## v0.80.5 — 2026-06-24 (Patch) — Phase 2 decomposition: client-scoped calculators extracted
 
 Third Phase 2 slice. Moved the client-scoped calculators (`ClientIncomeCalc`,
