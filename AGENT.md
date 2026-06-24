@@ -2,7 +2,7 @@
 
 > **Read this file at the start of every conversation.** It is the source of truth for what this project is, what's been decided, what's working, and what to avoid touching. Do not propose changes that contradict the Locked Decisions section below without explicit confirmation from the user.
 
-> **Cross-project playbook (inherited, not duplicated).** The portable way-of-working — core principles, verification discipline, deploy/migration habits — lives in the canonical **`C:\Users\mauhd\Projects\mauricio-os\PLAYBOOK.md`** (single source of truth; do not copy it here). This AGENT.md holds finance's locked architecture + specifics and inherits those disciplines. The playbook's situational items for bulk edits / atomic scripted writes / client-cache namespacing (§6) and batch-verify-all / build-version markers (§7) originated in this project (see Locked Decisions D-36, Pitfalls #4/#7/#12, and `__GA_BUILD__`). **Newly applicable since roles shipped:** §6 adversarial per-role access proof + §5 role-rules-as-a-skill.
+> **Cross-project playbook (inherited, not duplicated).** The portable way-of-working — core principles, verification discipline, deploy/migration habits — lives in the canonical **`C:\Users\mauhd\Projects\mauricio-os\PLAYBOOK.md`** (single source of truth; do not copy it here). This AGENT.md holds finance's locked architecture + specifics and inherits those disciplines. The playbook's situational items for bulk edits / atomic scripted writes / client-cache namespacing (§6) and batch-verify-all / build-version markers (§7) originated in this project (see Locked Decisions D-36, Pitfalls #4/#7/#12, and `__GA_BUILD__`). **Roles now shipped (advisor + client):** §6's adversarial per-role access proof + §5's role-rules-as-a-skill are enforced via the **`golden-anchor-logic`** skill — consult it before any role / permission / portal change.
 
 ---
 
@@ -350,6 +350,11 @@ Should return the build marker string (compare against the marker you just shipp
 | **claude-mem** | Cross-session memory — `mem-search` before re-deriving; `babysit` while waiting on Vercel deploy; `make-plan`/`do` for phased work like the chart-customization MVP. |
 | **`/code-review`** | Quality gate before any push, especially for `api/*` server changes and Supabase migrations. |
 | **`canvas-design` / `brand-guidelines` / `theme-factory`** (custom + Anthropic skills) | Visual artifacts, brand voice, palette/font generation. The app already has a strong gold/amber/cream system (`colors_and_type.css` + `design-system/golden-anchor/MASTER.md`) — use these to extend it, not replace it. |
+| **`frontend-design`** skill (global, added 2026-06-24) | Aesthetic direction for new or reshaped UI — distinctive typography + visual choices that avoid templated defaults. Sits with `design-principles` (Layer 0) at the "what should this look like" stage; pair its output with the Impeccable anti-slop gate. |
+| **`web-design-guidelines`** skill (global, added 2026-06-24) | Review UI code against the Web Interface Guidelines (a11y, contrast, touch targets, UX). Run alongside `design:accessibility-review` before any design-version bump — finance is dual-mode + bilingual, so verify contrast/locale in BOTH themes. |
+| **`agent-browser`** MCP (global, added 2026-06-24) | Browser automation for E2E / QA / dogfooding. An alternative to Playwright + Claude Preview when driving the live app during §6 verification (login → client → open a modal). Prefer it over ad-hoc browser tooling. |
+| **`handoff`** skill (global, added 2026-06-24) | Session handoff — capture state when wrapping a long session or before a context crash. Complements the CLAUDE.md session-handoff block + claude-mem. |
+| **`customer-billing-ops`** skill (global, added 2026-06-24) | Live Stripe billing ops: refunds, churn triage, billing-portal recovery, subscription/plan inspection. Use for operating the Premium ladder (D-13b) + `api/billing.js` / webhook flows — NOT for code edits (that stays `finance-app-updater`). |
 
 ### Not installed but worth installing when this work lands
 | Resource | Trigger to install | Install |
