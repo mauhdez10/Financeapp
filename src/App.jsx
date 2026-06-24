@@ -14,7 +14,7 @@ import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgra
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v08012-phase2-clientlist-extracted";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v08013-phase2-clienteditor-extracted";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -39,6 +39,7 @@ import { ImportWizard, DuplicateResolverModal, DeleteClientModal, BackupImportMo
 import { MonthlyTab, FinancialStatementsTab, InvestmentsTab, BackfillTab, AssetsLiabilitiesTab, FinancialPlanTab, ClientReport } from "./components/clientReports";
 import { Dashboard } from "./components/dashboard";
 import { ClientList } from "./components/clientList";
+import { NewClientModal, ClientForm } from "./components/clientEditor";
 function ProfileModal({settings,onSave,onClose,t,section,clients}){const th=useTh();const[s,setS]=useState({...settings});const[svcSecOpen,setSvcSecOpen]=useState({memberships:true});const[svcOpen,setSvcOpen]=useState({});const[themeOpen,setThemeOpen]=useState(false);const[bgOpen,setBgOpen]=useState(false);const[brandingOpen,setBrandingOpen]=useState(false);const[optionalOpen,setOptionalOpen]=useState(false);const[servicesOpen,setServicesOpen]=useState(false);const[backupOpen,setBackupOpen]=useState(false);const u=k=>e=>setS(p=>({...p,[k]:e.target.value}));const INP=mINP(th);
 const services = s.services && s.services.length ? s.services : SVCS.map(v=>({id:v.id,icon:v.icon,name:(v.en||""),price:(v.price||""),stripeUrl:(s.stripeLinks||{})[v.id]||""}));
 const updateService=(idx,field,val)=>{const next=services.map((sv,i)=>i===idx?{...sv,[field]:val}:sv);setS(p=>({...p,services:next}));};
@@ -209,64 +210,6 @@ return<Modal title={t.profileSettings} onClose={onClose} width={520} disableBack
 </Modal>;}
 
 /* ── NEW CLIENT MODAL (with optional partner) ────────────────────────────── */
-function NewClientModal({onSave,onClose,t}){const th=useTh();const[f,setF]=useState({firstName:"",lastName:"",email:"",color1:"#4472C4",hasPartner:false,partnerFirst:"",partnerLast:"",color2:"#ED7D31"});const[err,setErr]=useState("");const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));const save=()=>{if(!f.firstName||!f.lastName){setErr("First and last name required.");return;}if(!f.email||!vEmail(f.email)){setErr("Valid email required.");return;}if(f.hasPartner&&!f.partnerFirst){setErr("Partner first name required.");return;}onSave(mig({...f,id:gid(),partnerFirst:f.hasPartner?f.partnerFirst:null,partnerLast:f.hasPartner?f.partnerLast:null,color2:f.hasPartner?f.color2:null}));};const INP=mINP(th);return<Modal title={t.addClient} onClose={onClose} width={500}><Row2><Field label={`${t.firstName} *`}><input style={INP} value={f.firstName} onChange={u("firstName")}/></Field><Field label={`${t.lastName} *`}><input style={INP} value={f.lastName} onChange={u("lastName")}/></Field></Row2><Field label={`${t.email} *`}><input style={INP} value={f.email} onChange={u("email")}/></Field><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"10px 12px",background:th.bg,borderRadius:8}}><CCircle value={f.color1} onChange={u("color1")}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:th.text}}>{f.firstName||t.p1} color</div></div></div><div style={{borderTop:`1px solid ${th.cardBorder}`,paddingTop:14,marginBottom:14}}><button onClick={()=>setF(p=>({...p,hasPartner:!p.hasPartner}))} style={{fontSize:12,padding:"6px 14px",borderRadius:8,cursor:"pointer",background:f.hasPartner?th.accent+"22":"transparent",color:f.hasPartner?th.accent:th.muted,border:`1px solid ${f.hasPartner?th.accent:th.cardBorder}`,fontWeight:600}}>{f.hasPartner?"✓ "+t.removePartner:"＋ "+t.addPartner}</button></div>{f.hasPartner&&<><Row2><Field label={`${t.partnerFirst} *`}><input style={INP} value={f.partnerFirst} onChange={u("partnerFirst")}/></Field><Field label={t.partnerLast}><input style={INP} value={f.partnerLast} onChange={u("partnerLast")}/></Field></Row2><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"10px 12px",background:th.bg,borderRadius:8}}><CCircle value={f.color2} onChange={u("color2")}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:th.text}}>{f.partnerFirst||t.p2} color</div></div></div></>}{err&&<div style={{fontSize:11,color:"#EF4444",background:"#EF444411",borderRadius:8,padding:"7px 10px",marginBottom:8}}>{err}</div>}<SaveBar onSave={save} onCancel={onClose} t={t}/></Modal>;}
-
-/* ── EDIT CLIENT MODAL ───────────────────────────────────────────────────── */
-function ClientForm({client,onSave,onDelete,onClose,t}){const th=useTh();const[f,setF]=useState({firstName:"",lastName:"",partnerFirst:"",partnerLast:"",email:"",phone:"",address:"",dob:"",social:"",clientType:"financeOnly",recommendedBy:"",p1Phone:"",p2Phone:"",p1Email:"",p2Email:"",p1Dob:"",p2Dob:"",p1Social:"",p2Social:"",color1:"#4472C4",color2:"#ED7D31",...(client||{})});
-  // Mirror legacy top-level phone/email/dob/social to p1Phone etc on initial load for existing clients
-  useEffect(()=>{setF(p=>({...p,p1Phone:p.p1Phone||p.phone||"",p1Email:p.p1Email||p.email||"",p1Dob:p.p1Dob||p.dob||"",p1Social:p.p1Social||p.social||""}));},[]);
-  const[errs,setErrs]=useState({});
-  const u=k=>e=>setF(p=>({...p,[k]:e.target.value}));
-  const save=()=>{const e={};if(!f.firstName)e.firstName="Required";if(!f.lastName)e.lastName="Required";if(!f.p1Email&&!f.email)e.p1Email="Required";else if((f.p1Email||f.email)&&!vEmail(f.p1Email||f.email))e.p1Email="Invalid";if(Object.keys(e).length){setErrs(e);return;}
-    // Keep legacy top-level fields in sync with p1 for backward compat
-    const merged={...client,...f,id:client?.id||gid(),partnerFirst:f.partnerFirst||null,partnerLast:f.partnerLast||null,color2:f.partnerFirst?f.color2:null,email:f.p1Email||f.email,phone:f.p1Phone||f.phone,dob:f.p1Dob||f.dob,social:f.p1Social||f.social};
-    onSave(mig(merged));};
-  const INP=mINP(th);
-  const hasP2=!!f.partnerFirst;
-  return<Modal title={t.editClient} onClose={onClose} width={580}>
-    <Row2>
-      <div><label style={{fontSize:11,color:th.muted,display:"block",marginBottom:5}}>{t.firstName} *</label><input style={INP} value={f.firstName} onChange={u("firstName")}/>{errs.firstName&&<div style={{fontSize:10,color:"#EF4444",marginTop:2}}>{errs.firstName}</div>}</div>
-      <div><label style={{fontSize:11,color:th.muted,display:"block",marginBottom:5}}>{t.lastName} *</label><input style={INP} value={f.lastName} onChange={u("lastName")}/>{errs.lastName&&<div style={{fontSize:10,color:"#EF4444",marginTop:2}}>{errs.lastName}</div>}</div>
-    </Row2>
-    <Row2>
-      <Field label={t.partnerFirst}><input style={INP} value={f.partnerFirst||""} onChange={u("partnerFirst")} placeholder={t?.blankIfSingle||"Blank if single"}/></Field>
-      <Field label={t.partnerLast}><input style={INP} value={f.partnerLast||""} onChange={u("partnerLast")}/></Field>
-    </Row2>
-    <Field label={t.address}><input style={INP} value={f.address||""} onChange={u("address")}/></Field>
-    <Row2>
-      <Field label={t.clientType}><select style={INP} value={f.clientType||"financeOnly"} onChange={u("clientType")}><option value="financeOnly">{t.financeOnly}</option><option value="financeAndHealth">{t.financeAndHealth}</option></select></Field>
-      <Field label={t.recommendedBy}><input style={INP} value={f.recommendedBy||""} onChange={u("recommendedBy")}/></Field>
-    </Row2>
-    <div style={{height:1,background:th.cardBorder,margin:"16px 0"}}/>
-    <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:10}}>👤 {f.firstName||"Person 1"} — Personal Info</div>
-    <Row2>
-      <div><label style={{fontSize:11,color:th.muted,display:"block",marginBottom:5}}>{t?.email||"Email"} *</label><input style={INP} value={f.p1Email} onChange={u("p1Email")} placeholder="person1@email.com"/>{errs.p1Email&&<div style={{fontSize:10,color:"#EF4444",marginTop:2}}>{errs.p1Email}</div>}</div>
-      <Field label={t?.phone||"Phone"}><input style={INP} value={f.p1Phone||""} onChange={e=>setF(p=>({...p,p1Phone:fmtPh(e.target.value)}))} placeholder="(305) 555-0000"/></Field>
-    </Row2>
-    <Row2>
-      <Field label={t?.dob||"Date of Birth"}><input type="date" style={INP} value={f.p1Dob||""} onChange={u("p1Dob")}/></Field>
-      <Field label={t?.social||"SSN"}><SSNInput value={f.p1Social||""} onChange={u("p1Social")} t={t}/></Field>
-    </Row2>
-    {hasP2&&<><div style={{height:1,background:th.cardBorder,margin:"16px 0"}}/>
-    <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:10}}>👤 {f.partnerFirst} — Personal Info</div>
-    <Row2>
-      <Field label={t?.email||"Email"}><input style={INP} value={f.p2Email||""} onChange={u("p2Email")} placeholder="person2@email.com"/></Field>
-      <Field label={t?.phone||"Phone"}><input style={INP} value={f.p2Phone||""} onChange={e=>setF(p=>({...p,p2Phone:fmtPh(e.target.value)}))} placeholder="(305) 555-0000"/></Field>
-    </Row2>
-    <Row2>
-      <Field label={t?.dob||"Date of Birth"}><input type="date" style={INP} value={f.p2Dob||""} onChange={u("p2Dob")}/></Field>
-      <Field label={t?.social||"SSN"}><SSNInput value={f.p2Social||""} onChange={u("p2Social")} t={t}/></Field>
-    </Row2></>}
-    <div style={{height:1,background:th.cardBorder,margin:"16px 0"}}/>
-    <div style={{display:"flex",gap:24,alignItems:"center",marginBottom:14}}>
-      <div style={{display:"flex",alignItems:"center",gap:8}}><CCircle value={f.color1||"#4472C4"} onChange={u("color1")}/><span style={{fontSize:12,color:th.muted}}>{f.firstName||t.p1}</span></div>
-      {hasP2&&<div style={{display:"flex",alignItems:"center",gap:8}}><CCircle value={f.color2||"#ED7D31"} onChange={u("color2")}/><span style={{fontSize:12,color:th.muted}}>{f.partnerFirst}</span></div>}
-    </div>
-    <SaveBar onSave={save} onCancel={onClose} onDelete={onDelete} t={t}/>
-  </Modal>;}
-
-/* ── INTAKE ──────────────────────────────────────────────────────────────── */
-
 const INTAKE_TXT={
   en:{title:"Client Intake Form",subtitle:"Golden Anchor Financial Advisory",helper:"Please fill out this form with your current financial information. Leave blank any rows that don't apply. Your advisor will enter this data into the system.",sectionPersonal:"Personal Information",sectionPartner:"Partner/Spouse Information (if applicable)",sectionIncome:"Income Sources",incomeNote:"List every source of income (jobs, side gigs, rental, investment income). Use gross (before taxes) and net (after taxes).",fieldPerson:"Person (P1/P2/Joint)",fieldLabel:"Source/Job",fieldGross:"Gross Amount",fieldNet:"Net Amount",fieldFreq:"Frequency (weekly/bi-weekly/semi-monthly/monthly/annual)",sectionBills:"Monthly Bills & Expenses",billsNote:"List all regular bills. Assign to P1, P2, or Joint. Include due day (1-31) and type (regular/temporary).",fieldBillName:"Bill Name",fieldCost:"Amount",fieldBillFreq:"Frequency",fieldDue:"Due Day",fieldSplit:"Split % (P1/P2)",sectionCards:"Credit Cards & Debt",cardsNote:"Include ALL credit cards and loans, even ones with $0 balance. List APR (interest rate) as %. If promotional rate applies, note it separately.",fieldCardName:"Card/Loan Name",fieldBalance:"Balance",fieldAPR:"APR (%)",fieldMinPay:"Min Payment",fieldLimit:"Credit Limit",fieldOwner:"Owner (P1/P2/Joint)",sectionAccounts:"Bank & Investment Accounts",accountsNote:"Liquid accounts (checking, savings, money market), investment accounts (brokerage, IRA, 401k).",fieldAcctName:"Account Name",fieldType:"Type (checking/savings/retirement/IRA/brokerage)",fieldValue:"Current Balance",sectionProperties:"Physical Properties",propertiesNote:"Real estate, vehicles, precious metals, collectibles, business ownership.",fieldPropName:"Name",fieldCat:"Category",fieldCurrentValue:"Current Value",fieldPurchase:"Purchase Cost",fieldDebtOwed:"Current Debt",fieldDesc:"Description",sectionGoals:"Financial Goals",shortTermLbl:"Short-Term Goals (0-1 yr)",midTermLbl:"Mid-Term Goals (1-5 yr)",longTermLbl:"Long-Term Goals (5+ yr)",mainGoalsLbl:"Main Goals (what you want to achieve)",generalNotesLbl:"Other Notes",signature:"Client Signature",date:"Date"},
   es:{title:"Formulario de Información del Cliente",subtitle:"Asesoría Financiera Golden Anchor",helper:"Por favor complete este formulario con su información financiera actual. Deje en blanco las filas que no apliquen. Su asesor ingresará esta información al sistema.",sectionPersonal:"Información Personal",sectionPartner:"Información de Pareja/Cónyuge (si aplica)",sectionIncome:"Fuentes de Ingreso",incomeNote:"Liste toda fuente de ingreso (trabajos, ingresos adicionales, alquileres, inversiones). Use bruto (antes de impuestos) y neto (después de impuestos).",fieldPerson:"Persona (P1/P2/Conjunto)",fieldLabel:"Fuente/Trabajo",fieldGross:"Monto Bruto",fieldNet:"Monto Neto",fieldFreq:"Frecuencia (semanal/quincenal/bisemanal/mensual/anual)",sectionBills:"Gastos Mensuales",billsNote:"Liste todos los gastos regulares. Asigne a P1, P2, o Conjunto. Incluya día de pago (1-31) y tipo (regular/temporal).",fieldBillName:"Nombre del Gasto",fieldCost:"Monto",fieldBillFreq:"Frecuencia",fieldDue:"Día de Pago",fieldSplit:"División % (P1/P2)",sectionCards:"Tarjetas de Crédito y Deudas",cardsNote:"Incluya TODAS las tarjetas y préstamos, aún los de saldo $0. Liste la tasa (APR) en %. Si aplica tasa promocional, anótela por separado.",fieldCardName:"Nombre Tarjeta/Préstamo",fieldBalance:"Saldo",fieldAPR:"Tasa (%)",fieldMinPay:"Pago Mínimo",fieldLimit:"Límite de Crédito",fieldOwner:"Dueño (P1/P2/Conjunto)",sectionAccounts:"Cuentas Bancarias e Inversiones",accountsNote:"Cuentas líquidas (cheques, ahorros, mercado monetario), cuentas de inversión (corretaje, IRA, 401k).",fieldAcctName:"Nombre de Cuenta",fieldType:"Tipo (cheques/ahorros/retiro/IRA/corretaje)",fieldValue:"Saldo Actual",sectionProperties:"Propiedades Físicas",propertiesNote:"Bienes raíces, vehículos, metales preciosos, coleccionables, negocio.",fieldPropName:"Nombre",fieldCat:"Categoría",fieldCurrentValue:"Valor Actual",fieldPurchase:"Costo de Compra",fieldDebtOwed:"Deuda Actual",fieldDesc:"Descripción",sectionGoals:"Metas Financieras",shortTermLbl:"Metas Corto Plazo (0-1 año)",midTermLbl:"Metas Mediano Plazo (1-5 años)",longTermLbl:"Metas Largo Plazo (5+ años)",mainGoalsLbl:"Metas Principales (qué desea lograr)",generalNotesLbl:"Otras Notas",signature:"Firma del Cliente",date:"Fecha"}

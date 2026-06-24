@@ -2,6 +2,12 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.13 — 2026-06-24 (Patch) — Phase 2 decomposition: client editor extracted
+
+Tenth Phase 2 slice. Moved `NewClientModal` + `ClientForm` out of `App.jsx` into new
+`src/components/clientEditor.jsx`. Clean cut. App.jsx 1,180 → **1,123 lines**. Build green; verified
+live — the New Client modal opens with the client form (first/last/email/partner/type).
+
 ## v0.80.12 — 2026-06-24 (Patch) — Phase 2 decomposition: ClientList page extracted
 
 Ninth Phase 2 slice. Moved the `ClientList` page out of `App.jsx` into new
