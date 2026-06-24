@@ -2,6 +2,15 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.11 — 2026-06-24 (Patch) — Phase 2 decomposition: Dashboard + reminders extracted
+
+Eighth Phase 2 slice. Moved `Dashboard` + `RemindersPanel` + `AlertsSettingsModal` out of
+`App.jsx` into new `src/components/dashboard.jsx` (Dashboard renders RemindersPanel, which renders
+AlertsSettingsModal — so all three move together; App.jsx imports back only `Dashboard`). Downward-
+closed cut (reliable scan: zero unresolved tags). App.jsx 1,852 → **1,302 lines**. Build green;
+verified live — the dashboard renders all KPI tiles, the income/spending trend chart (17 charts),
+and the reminders panel (Client Due / Advisor Alerts).
+
 ## v0.80.10 — 2026-06-24 (Patch) — remove dead ArchivedSection
 
 Cleanup (autonomous-loop pass). Removed the unused `ArchivedSection` component from
