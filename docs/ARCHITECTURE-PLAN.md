@@ -1,8 +1,24 @@
 # Architecture & Cleanup Plan — financeapp → CRM/SaaS
 
-> **Status: PLAN ONLY (2026-06-09). Nothing here has been executed.** No code moved, no
-> docs changed, no files deleted. This is the write-up to review and approve before any
-> work starts. The one decision that drives everything is **§0 (relax D-1)**.
+> **Status: IN EXECUTION (updated 2026-06-24).** D-1 was relaxed → **D-37** locked. Phase 0
+> (constants/styles/utils/services/contexts/hooks) and Phase 1 (charts/primitives/calculators)
+> shipped. **Phase 2 in progress** — `App.jsx` is down from 8,502 → **3,023 lines**. Extracted
+> so far into `src/components/`: `clientModals` + `clientSections` (v0.80.4), `clientCalcs`
+> (v0.80.5), `chartEditors` (v0.80.6), `reportBlocks` (v0.80.7). Each move is byte-exact,
+> build-green, and runtime-verified in the live app.
+>
+> **Deferred (named follow-up):** the **import/backup/export cluster** (`ImportWizard`,
+> `DuplicateResolverModal`, `BackupImportModal`, `ExportModal`, `DeleteClientModal`,
+> `ArchivedSection`). It is NOT a clean leaf cut — it depends on App-local pure helpers
+> (`findDuplicate`, `smartMerge`, `parseCRMCsv`, `parseWorkbook`, `validateBackup`, `expBackup`)
+> that are also used by the App-shell `restoreBackup`. **Do this first:** relocate those six
+> helpers to `utils/finance.js` (or a new `utils/import.js`), wire both consumers to import
+> them, build-verify; **then** extract the modals into `components/clientData.jsx`. Attempted
+> 2026-06-24 and reverted because the helpers weren't moved first.
+>
+> **Still remaining after that:** the report views/tabs (`SummarySection`, `FullReport`,
+> `SummaryReport`, the `*Tab` family) and finally the `ClientDetail` / `Dashboard` shells —
+> the highest-coupling pieces (§3 says do last; prefer a fresh-context session).
 
 > One-paragraph intro: the app is one 8,502-line file (`src/App.jsx`) by locked decision
 > **D-1**. That made sense for a solo tool managed through the GitHub web UI; it does **not**
