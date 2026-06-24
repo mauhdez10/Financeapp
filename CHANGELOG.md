@@ -2,6 +2,14 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.82.1 — 2026-06-24 (Patch) — scale: windowed ClientList render
+
+The advisor ClientList now renders at most `shown` (80) client cards at a time with a bilingual
+"Show more (N)" control (+120 per click; resets on search/sort) instead of one DOM node per client —
+keeps the list smooth at high client counts. Pure render change (no data/persistence touch); bulk
+select-all still operates on the full filtered set (selection is id-based, not DOM-based). New string
+`showMoreClients` added to EN + ES (D-3). Build-verified.
+
 ## v0.82.0 — 2026-06-24 (Minor) — scale: advisor Dashboard renders from server aggregates
 
 The advisor Dashboard now reads from the 5 dashboard RPCs (via `gaDashboardAll()`), not the in-memory
