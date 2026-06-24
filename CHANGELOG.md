@@ -57,8 +57,23 @@ client. Graphify's Community 0 ("Client Workbook", cohesion 0.07) flagged this c
 the prime split target — this begins unwinding it. Next slices: client-sections, then the
 `ClientDetail` shell (highest coupling, last).
 
-> Doc-debt note: CHANGELOG skips v0.80–v0.80.2 (hero default→smoke→video revert→light-fade
-> fix). Those shipped; entries not backfilled here.
+## v0.80.2 — 2026-06-12 (Patch) — remove white bottom fade in light-mode hero
+
+The landing hero's bottom-melt gradient used `P.bg` (cream `#FAFAF7` in light mode),
+producing a visible white fade. Gated the entire melt `<div>` to dark mode only
+(`{isDark && …}`) so light mode has no fade. (commit `4ed7bd1`)
+
+## v0.80.1 — 2026-06-11 (Patch) — revert hero default to video
+
+Owner feedback: the v0.80 Gold Smoke default wasn't reading well. Reverted the landing
+hero default back to the v0.78 fade-looped particle video; Smoke stays reachable via
+`?hero=smoke`. (commit `46353f9`)
+
+## v0.80 — 2026-06-11 (Minor surface) — Gold Smoke hero (A4) default
+
+Replaced the v0.79 gold cube as the landing default with the A4 "Gold Smoke" canvas hero
+(noise-field gold blobs drifting on near-black, mouse-reactive). Other heroes still selectable
+via `?hero=` (cube/tides/video). Superseded the next day by v0.80.1. (commit `73210bf`)
 
 ## v0.79.1 — 2026-06-11 (Patch) — `?hero=` live comparison switch
 

@@ -37,17 +37,23 @@ When working in a fresh session, **read App.jsx before proposing changes**. Don'
 
 ## 3. Current version
 
-**v0.69.8** — 2026-06-09. Account-based client portal (advisor/client roles from auth
-`user_metadata`), token share-portal, Settings flip cards, editable Localization, URL-stable
-routing, cross-account cache-leak fixes.
+**v0.80.7** — 2026-06-24. Phase 2 decomposition in progress (`App.jsx` down to ~3,023 lines from
+8,502). Since v0.69.8: the full 2026-06-11 master-directive run (pricing realign, email verify +
+onboarding, landing + public pages, Free/Premium ladder + choose-your-price, payment→activation
+webhook, Members admin, Link-R account linking, Useful-Links directory, referral network, AI export,
+DIME+Inflation calcs); landing hero iterations (v0.77 tides → v0.78 video → v0.79 cube → v0.80 smoke
+→ reverted to video, light-fade fix); and the Phase 2 extraction slices v0.80.3–v0.80.7.
 
 **Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` — **trust the marker over any
 doc.** The full per-version history lives in `CHANGELOG.md` (newest on top).
 
-**Architecture status (2026-06-10):** **D-37 locked** — D-1's single-file rule is relaxed; the app
-is being modularized per `docs/ARCHITECTURE-PLAN.md` (constants/styles/utils/services first, then
-components/charts/calculators, then pages). App.jsx remains the source of truth for anything not
-yet extracted.
+**Architecture status (2026-06-24):** **D-37 locked** — D-1's single-file rule is relaxed; the app is
+modularized per `docs/ARCHITECTURE-PLAN.md`. Phase 0 (constants/styles/utils/services/contexts/hooks)
+and Phase 1 (charts/primitives/calculators) shipped. **Phase 2 in progress** — extracted to
+`src/components/`: `clientModals`, `clientSections`, `clientCalcs`, `chartEditors`, `reportBlocks`.
+Remaining: import/backup cluster (recipe in ARCHITECTURE-PLAN top), report views/tabs, then the
+`ClientDetail`/`Dashboard` shells (highest coupling, last). App.jsx remains the source of truth for
+anything not yet extracted. Green-light queue + status: `docs/BACKLOG.md`.
 
 > The per-version deep-dives (v0.12.3–v0.16.0) that used to live in this section were removed
 > 2026-06-10: every version is covered in `CHANGELOG.md`, and the original long-form write-ups are

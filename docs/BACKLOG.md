@@ -38,9 +38,8 @@ Live marker **v0.80.7** (`2026-06-24-v0807-phase2-report-blocks-extracted`). `Ap
   Do LAST, in a fresh-context session.
 
 ### Doc hygiene (green-light)
-- 🟢 Backfill `CHANGELOG.md` entries for v0.80, v0.80.1, v0.80.2 (hero default→smoke→video
-  revert→light-fade fix) — currently flagged as a gap in the v0.80.3 entry.
-- 🟢 Refresh `AGENT.md §3` "Current version" if it lags the live `__GA_BUILD__` marker.
+- ✅ Backfill `CHANGELOG.md` entries for v0.80, v0.80.1, v0.80.2 (done 2026-06-24, autonomous loop).
+- ✅ Refresh `AGENT.md §3` "Current version" v0.69.8 → v0.80.7 + Phase 2 status (done 2026-06-24).
 
 ### Owner-only (⛔ do NOT auto-do — needs a dashboard/key/decision)
 - ⛔ Paste the 2 Vercel env vars (`STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`) → unlocks
