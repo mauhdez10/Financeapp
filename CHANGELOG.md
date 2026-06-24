@@ -2,6 +2,21 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.9 — 2026-06-24 (Patch) — Phase 2 decomposition: report views/tabs extracted
+
+Seventh Phase 2 slice — the biggest. Moved the entire client report ecosystem (~30 components:
+`MonthSelector`, `PrintBtn`, `DownloadPdfBtn`, `NoDataMsg`, `ReportHdr`, `SummarySection`, the
+history modals `NMModal/CmpModal/VHModal/MDrop/HistView/FullMonthView`, `MonthlyTab`,
+`CashFlowStatement`, `RatioContent`, `FinancialStatementsTab`, `ExportHoldingsModal`,
+`InvestmentsTab`, `FullReport`, `SummaryReport`, `MonthlyReportTab`, `FinancialStatementReportTab`,
+`EmailReportModal`, `CompleteReportTab`, `BackfillTab`, `AssetsLiabilitiesTab`, `FinancialPlanTab`,
+`YearCompareView`, `CompareReportTab`, `ClientReport` + the `getClientForMonth`/`saveHistoricalUpdate`
+helpers) out of `App.jsx` into new `src/components/clientReports.jsx`. Downward-closed cut (dependency
+analysis showed zero dangling component tags); App.jsx imports back the 7 tabs `ClientDetail` renders.
+App.jsx 2,597 → **1,852 lines**. Build green; verified live — all 6 ClientDetail tabs + the Client
+Report sub-views (Summary / Monthly / Complete Report / Compare) render with charts. (Pre-existing
+`<tbody>` whitespace warning in CompareReportTab surfaced — unrelated to this byte-exact move; logged.)
+
 ## v0.80.8 — 2026-06-24 (Patch) — Phase 2 decomposition: import/backup/export cluster extracted
 
 Sixth Phase 2 slice — the entangled one. Two steps: (A) relocated the import/CSV/backup/dedupe

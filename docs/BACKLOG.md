@@ -23,14 +23,17 @@ Live marker **v0.80.7** (`2026-06-24-v0807-phase2-report-blocks-extracted`). `Ap
 - ✅ **Import/backup/export cluster** → `utils/import.js` (13 helpers) + `components/clientData.jsx`
   (6 modals). Done v0.80.8 (2026-06-24); Import-Clients wizard + Export modal verified live.
   `ArchivedSection` moved but unused (dead — drop in a later sweep).
-- 🟢 **Report views/tabs** → `components/clientReports.jsx` (`SummarySection, FullReport,
-  SummaryReport, MonthlyTab, FinancialStatementsTab, InvestmentsTab, the *ReportTab family,
-  CompleteReportTab, AssetsLiabilitiesTab, FinancialPlanTab, YearCompareView, CompareReportTab,
-  ClientReport` + the report modals `NMModal/CmpModal/VHModal/EmailReportModal/ExportHoldingsModal`).
-  Map deps with `scripts/_xtract.py` (auto-derives imports + flags dangling refs); verify each cut
-  in the live app before committing. Likely needs a couple of shared helpers relocated to utils.
+- ✅ **Report views/tabs** → `components/clientReports.jsx` (~30 components incl. history modals +
+  getClientForMonth/saveHistoricalUpdate helpers). Done v0.80.9 (2026-06-24); all 6 tabs + Client
+  Report sub-views (Summary/Monthly/Complete/Compare) verified live. App.jsx → 1,852 lines.
 - 💤 **`ClientDetail` / `Dashboard` shells** — HIGHEST coupling (threads client state to every tab).
-  Do LAST, in a fresh-context session.
+  Do LAST, in a fresh-context session. After this, App.jsx is ~the shell + IntakeSection +
+  RemindersPanel/AlertsSettingsModal + NewClientModal/ClientForm/ProfileModal + the App() router.
+
+### Cleanup finds (green-light, low priority)
+- 🟢 Dead code: `ArchivedSection` (in `components/clientData.jsx`) is exported but unused — remove.
+- 🟢 Pre-existing React warning: `CompareReportTab` (now in `clientReports.jsx`) renders a whitespace
+  text node inside `<tbody>` — fix the `{" "}`/newline between table rows (cosmetic dev warning).
 
 ### Doc hygiene (green-light)
 - ✅ Backfill `CHANGELOG.md` entries for v0.80, v0.80.1, v0.80.2 (done 2026-06-24, autonomous loop).
