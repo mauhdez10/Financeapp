@@ -2,6 +2,16 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.7 — 2026-06-24 (Patch) — Phase 2 decomposition: report blocks extracted
+
+Fifth Phase 2 slice. Moved the read-only report blocks (`PlanReportBlock`,
+`PortfolioReportBlock`, `CompareReportBlock`, `CalculatorsReportBlock`) out of `App.jsx`
+into new `src/components/reportBlocks.jsx`. App.jsx 3,114 → **3,023 lines**. Build green;
+verified live — Strategy Plan tab renders the debt-payoff PlanReportBlock, Client Report
+renders the portfolio/calculators/compare blocks. Remaining: report views/tabs
+(SummarySection, FullReport, *Tab family) + ImportWizard, then the `ClientDetail`/`Dashboard`
+shells (highest coupling, last).
+
 ## v0.80.6 — 2026-06-24 (Patch) — Phase 2 decomposition: dashboard chart-editor UI extracted
 
 Fourth Phase 2 slice. Moved the dashboard chart-customization components
