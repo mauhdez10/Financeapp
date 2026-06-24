@@ -2,6 +2,14 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.81.4 — 2026-06-24 (Patch) — scale: debts rollup + top-debts RPC (full dashboard aggregation)
+
+Added `clients.debts` jsonb (derived on save: each card/loan with balance>0 as
+`{name,bal,kind,ltype,first}`) + `ga_dashboard_top_debts(limit)` RPC (unnests across active clients,
+top-N by balance, anon-revoked) — powers the dashboard Debts-by-Balance chart server-side, no blob
+reads. Additive; app unchanged. Verified: Amanda's debts (Student 18000 + Vehicle 12500 + Capital One
+1200 = 31700) returned by the RPC, matching her total_debt exactly.
+
 ## v0.81.3 — 2026-06-24 (Patch) — scale: per-month asset/liability breakdown (full dashboard aggregation)
 
 Owner chose **full server aggregation** for the dashboard at scale (no per-client blob reads).

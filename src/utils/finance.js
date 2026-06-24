@@ -88,6 +88,11 @@ const clientSummary = (c) => ({
   net_worth: totalA(c) - totalL(c), total_debt: totalL(c),
   monthly_income: sumN(c.incomeStreams), liquid_assets: liquidA(c),
   monthly_bills: sumB(c.bills), monthly_debt_min: sumMin(c.cards),
+  // Individual debts (balance>0) for the dashboard Debts-by-Balance chart — top-N server-side, no blob reads.
+  debts: [
+    ...(c.cards || []).filter(x => (+x.balance || 0) > 0).map(x => ({ name: x.name || "Card", bal: +x.balance || 0, kind: "card", ltype: "", first: c.firstName || "" })),
+    ...(c.loans || []).filter(x => (+x.balance || 0) > 0).map(x => ({ name: x.name || "Loan", bal: +x.balance || 0, kind: "loan", ltype: x.type || "", first: c.firstName || "" })),
+  ],
   snapshot_count: (c.monthSnapshots || []).length,
   last_activity: new Date().toISOString(), archived: !!c.archived,
 });
