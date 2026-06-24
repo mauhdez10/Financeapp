@@ -2,6 +2,13 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.14 — 2026-06-24 (Patch) — Phase 2 decomposition: profile/settings modal extracted
+
+Eleventh Phase 2 slice. Moved `ProfileModal` (+ its internal `AccRow`/`BgPicker` sub-components)
+out of `App.jsx` into new `src/components/profileModal.jsx`. App.jsx 1,123 → **954 lines** — under
+1,000, down from the 8,502-line monolith (~89% reduction). Build green; verified live — "Profile &
+Settings" opens the modal with Theme/Localization/Background sections.
+
 ## v0.80.13 — 2026-06-24 (Patch) — Phase 2 decomposition: client editor extracted
 
 Tenth Phase 2 slice. Moved `NewClientModal` + `ClientForm` out of `App.jsx` into new
