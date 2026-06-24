@@ -20,14 +20,9 @@ Live marker **v0.80.7** (`2026-06-24-v0807-phase2-report-blocks-extracted`). `Ap
 ## Queue (top = next)
 
 ### Phase 2 decomposition — pure refactors, build + runtime verified (very green-light)
-- 🟢 **Import/backup/export cluster** → `components/clientData.jsx`.
-  **PREREQ (do first):** move the import helpers out of `App.jsx` into a new `utils/import.js`:
-  `expBackup, validateBackup, xFreq, SKIP_SH, moIdx, isMonthSh, shToLabel, parseMonthRows,
-  buildStreams, parseWorkbook, parseCRMCsv, findDuplicate, smartMerge` (they call only each other
-  + `gid`/`toM`/`mk`/`mig` which are already in `utils/finance.js`; `parseWorkbook` needs `xlsx`).
-  Wire both consumers (`restoreBackup` in the App shell + the import modals), build green; THEN
-  extract `ImportWizard, DuplicateResolverModal, DeleteClientModal, BackupImportModal, ExportModal`
-  (`ArchivedSection` is dead code — drop or move). Recipe in `docs/ARCHITECTURE-PLAN.md` top.
+- ✅ **Import/backup/export cluster** → `utils/import.js` (13 helpers) + `components/clientData.jsx`
+  (6 modals). Done v0.80.8 (2026-06-24); Import-Clients wizard + Export modal verified live.
+  `ArchivedSection` moved but unused (dead — drop in a later sweep).
 - 🟢 **Report views/tabs** → `components/clientReports.jsx` (`SummarySection, FullReport,
   SummaryReport, MonthlyTab, FinancialStatementsTab, InvestmentsTab, the *ReportTab family,
   CompleteReportTab, AssetsLiabilitiesTab, FinancialPlanTab, YearCompareView, CompareReportTab,

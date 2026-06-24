@@ -2,6 +2,19 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.8 — 2026-06-24 (Patch) — Phase 2 decomposition: import/backup/export cluster extracted
+
+Sixth Phase 2 slice — the entangled one. Two steps: (A) relocated the import/CSV/backup/dedupe
+helpers (`expBackup`, `validateBackup`, `xFreq`, `SKIP_SH`, `moIdx`, `isMonthSh`, `shToLabel`,
+`parseMonthRows`, `buildStreams`, `parseWorkbook`, `parseCRMCsv`, `findDuplicate`, `smartMerge`)
+out of `App.jsx` into new `src/utils/import.js` (they depend only on `gid`/`sumB`/`toM` + XLSX) so
+both the App-shell `restoreBackup` and the modals can share them; (B) extracted the modals
+(`ImportWizard`, `DuplicateResolverModal`, `DeleteClientModal`, `BackupImportModal`,
+`ArchivedSection`, `ExportModal`) into new `src/components/clientData.jsx`. App.jsx
+3,023 → **2,597 lines**. Build green; verified live — Import-Clients wizard + Export modal both
+open and render from the new module (helpers resolve from `utils/import`). A first attempt was
+reverted earlier today because the shared helpers weren't relocated first; this does it right.
+
 ## v0.80.7 — 2026-06-24 (Patch) — Phase 2 decomposition: report blocks extracted
 
 Fifth Phase 2 slice. Moved the read-only report blocks (`PlanReportBlock`,
