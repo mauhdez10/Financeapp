@@ -22,6 +22,26 @@
 **⇒ The entire additive data layer (3 layers + write path + service wrappers + all dashboard
 aggregates) is DONE, verified, secured. The ONLY remaining work is non-additive APP WIRING below.**
 
+### Dashboard aggregation RPC layer — status (2026-06-24, full server aggregation)
+
+All verified live (simulated test-user auth), all anon-revoked / authenticated-only:
+- `ga_dashboard_summary()` ✓ — KPIs, Sankey, NW-tier donut, Practice-Health, Waterfall, Radar
+  (client_count, total_debt/income/bills/min/liquid/nw, finance_only/health, nw_neg/low/mid/high).
+- `ga_dashboard_trend()` ✓ — per month: debt/savings/income/spending/client_count **+ a_liquid/a_invest/
+  a_property/a_other + l_cards/l_loans_all/l_loans_current**. Powers trend, KPI sparklines, NetWorthBridge,
+  Forecast, debt-mode trend (revolving=l_cards, all=+l_loans_all, current=+l_loans_current), Cash-Flow.
+- `ga_dashboard_top_debts(limit)` ✓ — Debts-by-Balance (from `clients.debts` jsonb).
+- `ga_dashboard_asset_alloc()` ✓ — Asset-Sunburst by bucket+name (from `clients.assets` jsonb).
+- Treemap / Ranked (top-N clients by net_worth) → `gaListClients({sort:'netWorth'})` (add netWorth sort).
+
+**Remaining data piece (1):** `ga_dashboard_client_deltas(limit)` for Dumbbell / Slope — top-N active
+clients with first-month & last-month asset-based NW `(a_*−l_*)` from `client_monthly_summary`.
+**Then:** backfill ALL clients (so rollups are complete, not just re-saved ones) → WIRE dashboard.jsx to
+these RPCs (drop the `clients`-array computations) → then ClientList paging + App-state flip below.
+
+NOTE on faithful port: dashboard `dashSearch` (filters which clients the aggregates cover) has no RPC
+equivalent yet — either drop it or add a search arg to the summary/trend RPCs during wiring.
+
 ## The spine: every consumer of the full `clients` array (src/App.jsx)
 
 The in-memory `clients` array is load-bearing. Each must be addressed before the
