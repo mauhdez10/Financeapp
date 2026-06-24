@@ -14,9 +14,9 @@ import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgra
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v0815-assets-rollup";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v0820-dashboard-server-aggregates";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
-import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache } from "./services/supabase";
+import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
 import { ThemeCtx, useTh, HideCtx, useHN, ChartConfigCtx, useChartConfig } from "./contexts/theme";
 import { ACCT_META, LOAN_META, ACCA, LOKA, CP, PC, SVCS, svcPayUrl, DEF_PORT_RATES, TICKER_META, PORTFOLIOS, ALT_PACKS, MAIN_PACKS, MS, MS_ES, ML_ES, mLabel, ML, CERTS, PHYS_CATS, ACCT_L_ES, LOAN_L_ES, PHYS_L_ES, _gaLang, acctL, loanL, physL, DEF_SETTINGS } from "./constants/meta";
@@ -244,6 +244,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
   const[clients,setClients]=useState(()=>SEED.map(mig));  // v0.81.1: no ga_v3 full-cache — Supabase is source of truth (scale: removes the ~5MB localStorage wall)
+  const[dashData,setDashData]=useState(null);  // v0.82: advisor dashboard renders from server aggregates (RPCs), not the client blob array
   // v0.5.2a — Listen for save-failure events (dispatched by gaSaveClient/gaSaveSettings on error)
   // v0.28.0 — Also listen for ga-toast events (alert dismiss/restore feedback)
   useEffect(()=>{
@@ -356,6 +357,13 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   },[settings,authUser]);
   useEffect(()=>{if((authUser?.user_metadata?.role)!=="client"||bootstrapping||!_cloudReadyRef.current||clients.length>0)return;const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});setClients([_self]);},[bootstrapping,clients.length,authUser]);
   useEffect(()=>{if(typeof window!=="undefined")window.__GA_LANG=lang;},[lang]);
+  // v0.82 — advisor dashboard data from server RPCs (no client-blob iteration). Refetch on nav→dashboard and after edits.
+  useEffect(()=>{
+    if(nav!=="dashboard"||!authUser||!supabase||(authUser?.user_metadata?.role)==="client")return;
+    let cancelled=false;
+    gaDashboardAll().then(d=>{if(!cancelled)setDashData(d);}).catch(()=>{});
+    return()=>{cancelled=true;};
+  },[nav,authUser,clients]);
   // v0.11.0 — Browser history integration. Push a history entry on each
   // in-app navigation change (nav / open client / tab) so the browser Back
   // button moves within the app instead of unloading it. See pitfall #16.
@@ -794,7 +802,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         />
         <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:
-          nav==="dashboard"?(role==="client"?(linkedView?<LinkedOverview data={linkedView} lang={lang}/>:clients[0]?<ClientDetail client={clients[0]} clientMode={true} onUpdate={upClient} lang={lang} t={t} onBack={()=>{}} startTab={selectedTab} allClients={clients} settings={settings} onTabChange={setSelectedTab}/>:<div className="ga-np" style={{padding:24,color:theme.muted,fontSize:13}}>{t.settingUpProfile||"Setting up your profile…"}</div>):<Dashboard clients={clients} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>):
+          nav==="dashboard"?(role==="client"?(linkedView?<LinkedOverview data={linkedView} lang={lang}/>:clients[0]?<ClientDetail client={clients[0]} clientMode={true} onUpdate={upClient} lang={lang} t={t} onBack={()=>{}} startTab={selectedTab} allClients={clients} settings={settings} onTabChange={setSelectedTab}/>:<div className="ga-np" style={{padding:24,color:theme.muted,fontSize:13}}>{t.settingUpProfile||"Setting up your profile…"}</div>):<Dashboard clients={clients} dashData={dashData} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>):
           nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
           nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} settings={settings} onConvert={c=>{addClient(c);}}/>:
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:

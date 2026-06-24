@@ -2,10 +2,9 @@
 // docs/ARCHITECTURE-PLAN.md (D-37). Verbatim from the single-file era.
 import { useEffect, useState } from "react";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip as ReTip, XAxis, YAxis } from "recharts";
-import { ACCT_META, MS } from "../constants/meta";
 import { useTh } from "../contexts/theme";
 import { GOLD, mCARD, mINP } from "../styles/theme";
-import { fmt, fmtD, fmtS, getAdvRem, getClientRem, isAlertDismissed, liquidA, sumB, sumMin, sumN, toM, totalA, totalL } from "../utils/finance";
+import { fmt, fmtD, fmtS, getAdvRem, getClientRem, isAlertDismissed, sumN, totalA, totalL } from "../utils/finance";
 import { ChartSettingsModal, DashSlotPicker } from "./chartEditors";
 import { Donut, Dumbbell, ForecastCone, GroupedYoY, HeatmapCalendar, NetWorthBridge, PayoffProgression, Radar5, RadialGauge, RankedHBars, Sankey, SlopeGraph, SmoothAreaLine, Sparkline, StackedBars, Sunburst, Treemap, Waterfall } from "./charts";
 import { BackupImportModal, ExportModal, ImportWizard } from "./clientData";
@@ -195,24 +194,38 @@ const dashChartOptions=t=>[
    Renders every chart component the app supports with realistic sample data
    so we can audit which to keep / swap / retire. Dashboard slot picker
    preserved below the gallery for in-place swaps. */
-export function Dashboard({clients,t,settings,setSettings,onSelect,onAdd,onImportNew,onArchive,onRestore,onDelete,onRestoreBackup,onToggleHide,hideNumbers}){const th=useTh();const{isMobile}=useViewport();const[importOpen,setImportOpen]=useState(false);const[restoreOpen,setRestoreOpen]=useState(false);const[exportOpen,setExportOpen]=useState(false);const[dashSearch,setDashSearch]=useState("");const active=clients.filter(c=>!c.archived).filter(c=>{if(!dashSearch)return true;const q=dashSearch.toLowerCase();return `${c.firstName} ${c.lastName} ${c.partnerFirst||""} ${c.email||""}`.toLowerCase().includes(q);});const td=active.reduce((s,c)=>s+totalL(c),0);const ti=active.reduce((s,c)=>s+sumN(c.incomeStreams),0);const fO=active.filter(c=>c.clientType==="financeOnly").length;const fH=active.filter(c=>c.clientType==="financeAndHealth").length;const calcTrend=c=>{const s=c.monthSnapshots||[];if(s.length<2)return"stable";const diff=s[s.length-1].debt-s[0].debt;if(diff<0)return"improving";if(diff>100)return"worsening";return"stable";};const improvCount=active.filter(c=>calcTrend(c)==="improving").length;const stableCount=active.filter(c=>calcTrend(c)==="stable").length;const worseCount=active.filter(c=>calcTrend(c)==="worsening").length;const[trendMode,setTrendMode]=useState("revolving");// "all" | "revolving" | "current"
+// ── month_key "YYYY-MM" → existing "Mon’YY" label style (server aggregates)
+const _mlabel=(mk)=>{const[y,m]=String(mk).split("-");const MON=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return(MON[+m]||"")+"’"+String(y).slice(-2);};
+// ── apply the trendRange window to a trend array (last n rows)
+const _win=(rows,range)=>{const n=range==="3"?3:range==="6"?6:range==="12"?12:rows.length;return rows.slice(-n);};
+
+export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAdd,onImportNew,onArchive,onRestore,onDelete,onRestoreBackup,onToggleHide,hideNumbers}){const th=useTh();const{isMobile}=useViewport();const[importOpen,setImportOpen]=useState(false);const[restoreOpen,setRestoreOpen]=useState(false);const[exportOpen,setExportOpen]=useState(false);
+  // v0.81 — dashboard charts now render from server-side aggregates (dashData),
+  // not the in-memory clients array (scales to ~50k clients). `clients` kept ONLY
+  // for the Import/Export/Backup modals + the bottom client roster list.
+  const S=dashData?.summary||{};const TR=dashData?.trend||[];
+  const td=S.total_debt||0;const ti=S.total_income||0;const fO=S.finance_only||0;const fH=S.finance_health||0;const liqNow=S.liquid||0;const clientCount=S.client_count||0;
+  // `active` still backs the bottom client roster list (per-client rows). Charts no longer read it.
+  const active=clients.filter(c=>!c.archived);
+  const[trendMode,setTrendMode]=useState("revolving");// "all" | "revolving" | "current"
   const[trendRange,setTrendRange]=useState("12");// "3" | "6" | "12" | "all"
-  const getDebtForMode=sn=>{if(!sn?.data)return sn?.debt||0;const d=sn.data;if(trendMode==="all")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).reduce((a,l)=>a+(+l.balance||0),0);if(trendMode==="revolving")return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0);// "current": revolving + short-term loans (personal/student), excludes mortgage/auto
-return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!l.linkedAssetId&&l.type!=="mortgage"&&l.type!=="vehicle").reduce((a,l)=>a+(+l.balance||0),0);};
-  const _allLabels=Array.from(new Set(clients.flatMap(c=>(c.monthSnapshots||[]).map(s=>s.label))));const _labelKey=lbl=>{const parts=lbl.split(" ");const yr=parseInt(parts[1])||new Date().getFullYear();const mo=MS.indexOf(parts[0]);return yr*12+(mo>=0?mo:0);};const _sortedLabels=_allLabels.slice().sort((a,b)=>_labelKey(a)-_labelKey(b));const _rangeCount=trendRange==="3"?3:trendRange==="6"?6:trendRange==="12"?12:_sortedLabels.length;const _shownLabels=_sortedLabels.slice(-_rangeCount);const trend=(_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"]).map(m=>({m:m.split(" ")[0]+(m.split(" ")[1]?("’"+m.split(" ")[1].slice(-2)):""),debt:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+getDebtForMode(sn);},0),savings:clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.savings||0);},0)}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
+  // Debt-for-mode now reads a server trend ROW: revolving=l_cards, all=+l_loans_all, current=+l_loans_current
+  const getDebtForMode=row=>{if(!row)return 0;const cards=+row.l_cards||0;if(trendMode==="all")return cards+(+row.l_loans_all||0);if(trendMode==="current")return cards+(+row.l_loans_current||0);return cards;};
+  const _w=_win(TR,trendRange);
+  const _shownLabels=_w.map(r=>r.month_key);
+  const trend=_w.map(r=>({m:_mlabel(r.month_key),debt:getDebtForMode(r),savings:+r.savings||0}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
 {/* v0.56 — KpiTile with inline sparkline per Mauricio's image 3.
    Each tile builds its own series from the practice-wide trend data. */}
 {(()=>{
-  const liqNow=active.reduce((s,c)=>s+liquidA(c),0);
-  // Series per metric, oldest→newest, with current live value appended.
-  const clientSeries=(()=>{const out=[];const labels=_shownLabels;labels.forEach(m=>{out.push(active.filter(c=>(c.monthSnapshots||[]).some(sn=>sn.label===m)).length);});out.push(active.length);return out.length<2?[active.length,active.length]:out;})();
-  const incomeSeries=(()=>{const out=_shownLabels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn)v+=sn.income||0;});return v;});out.push(ti);return out.length<2?[ti,ti]:out;})();
-  const debtSeries=trend.map(p=>p.debt).concat([td]);
-  const liqSeries=trend.map(p=>p.savings).concat([liqNow]);
+  // Series per metric, oldest→newest, with current live value appended — from server trend.
+  const clientSeries=(()=>{const out=_w.map(r=>+r.client_count||0);out.push(clientCount);return out.length<2?[clientCount,clientCount]:out;})();
+  const incomeSeries=(()=>{const out=_w.map(r=>+r.income||0);out.push(ti);return out.length<2?[ti,ti]:out;})();
+  const debtSeries=_w.map(r=>+r.debt||0).concat([td]);
+  const liqSeries=_w.map(r=>+r.savings||0).concat([liqNow]);
   // Delta = current vs previous period (last vs second-to-last).
   const dlt=arr=>{const n=arr.length;if(n<2)return null;const cur=arr[n-1],prev=arr[n-2];const ch=cur-prev;if(ch===0)return null;return{up:ch>0,down:ch<0,value:(ch>0?"+":"")+fmtS(Math.abs(ch))};};
   return<div data-ga-grid="kpi-4" style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12,marginBottom:isMobile?14:20}}>
-    <KpiTile label={t?.kpiClients||"Clients"} value={clients.length} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
+    <KpiTile label={t?.kpiClients||"Clients"} value={clientCount} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
     <KpiTile label={t.combinedNetMo||"Combined Net / mo"} value={hideNumbers?"●●●":fmtS(ti)} color={th.pos} spark={incomeSeries} delta={dlt(incomeSeries)} sub={t.vsLastMo||"vs last mo"}/>
     <KpiTile label={t.combinedDebt||"Combined Debt"} value={hideNumbers?"●●●":fmtS(td)} color={th.neg} spark={debtSeries} delta={(()=>{const d=dlt(debtSeries);if(!d)return null;return{...d,up:debtSeries[debtSeries.length-1]<debtSeries[debtSeries.length-2],down:debtSeries[debtSeries.length-1]>debtSeries[debtSeries.length-2]};})()}/>
     <KpiTile label={t.liquidAssets||"Liquid Assets"} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
@@ -238,7 +251,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
         </div>
       </div>
       <ResponsiveContainer width="100%" height={isMobile?200:230} style={{outline:"none"}}>
-        <ComposedChart data={(()=>{const labels=_shownLabels.length?_shownLabels:["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"];const monthCounts={};labels.forEach(l=>{const k=l.split(" ")[0];monthCounts[k]=(monthCounts[k]||0)+1;});return labels.map(m=>{const parts=m.split(" ");const monthKey=monthCounts[parts[0]]>1&&parts[1]?`${parts[0]} '${String(parts[1]).slice(-2)}`:parts[0];const income=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+(sn?.income||0);},0);const spending=clients.reduce((s,c)=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);return s+((sn?.bills||0)+((sn?.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0)));},0);return{m:monthKey,income,spending,net:income-spending};});})()} margin={{top:12,right:12,left:0,bottom:0}}>
+        <ComposedChart data={_w.map(r=>({m:_mlabel(r.month_key),income:+r.income||0,spending:+r.spending||0,net:(+r.income||0)-(+r.spending||0)}))} margin={{top:12,right:12,left:0,bottom:0}}>
           <defs>
             {/* v0.61.1 — thin gradient bars (vivid top → transparent base) read lighter than solid blocks */}
             <linearGradient id="ivsInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={th.pos} stopOpacity="0.95"/><stop offset="100%" stopColor={th.pos} stopOpacity="0.32"/></linearGradient>
@@ -255,8 +268,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </ResponsiveContainer>
     </>},
     sankey:{id:"sankey",label:"🌊 "+(t.cashFlowMapHdr||"Cash Flow Map (Sankey)"),render:()=>{
-      let totalI=0,totalB=0,totalM=0;
-      active.forEach(c=>{totalI+=sumN(c.incomeStreams||[]);totalB+=sumB(c.bills||[]);totalM+=sumMin(c.cards||[]);});
+      const totalI=S.total_income||0,totalB=S.total_bills||0,totalM=S.total_min||0;
       const cashFlow=Math.max(0,totalI-totalB-totalM);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🌊 {t.cashFlowMapHdr||"Cash Flow Map"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.cashFlowMapSub||"Where the practice's aggregate income flows."}</div></div>
@@ -264,8 +276,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     netWorthDonut:{id:"netWorthDonut",label:"💎 "+(t.netWorthDistributionHdr||"Net Worth Distribution"),render:()=>{
-      const tiers={neg:0,low:0,mid:0,high:0};let totalNW=0;
-      active.forEach(c=>{const nw=totalA(c)-totalL(c);totalNW+=nw;if(nw<0)tiers.neg++;else if(nw<50000)tiers.low++;else if(nw<250000)tiers.mid++;else tiers.high++;});
+      const tiers={neg:S.nw_neg||0,low:S.nw_low||0,mid:S.nw_mid||0,high:S.nw_high||0};const totalNW=S.total_nw||0;
       const donutData=[{name:t.tierNeg||"Negative",value:tiers.neg,color:th.neg},{name:t.tierLow||"$0–50K",value:tiers.low,color:th.warn},{name:t.tierMid||"$50K–250K",value:tiers.mid,color:th.blue},{name:t.tierHigh||"$250K+",value:tiers.high,color:GOLD}].filter(d=>d.value>0);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💎 {t.netWorthDistributionHdr||"Net Worth Distribution"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthDistributionSub||"Active clients grouped by current net worth tier."}</div></div>
@@ -278,7 +289,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     clientsTreemap:{id:"clientsTreemap",label:"🗺️ "+(t.clientsByNetWorthHdr||"Clients by Net Worth"),render:()=>{
-      const tmData=active.map(c=>{const nw=totalA(c)-totalL(c);return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),value:Math.max(0,nw),color:nw>=250000?GOLD:nw>=50000?th.blue:nw>=0?th.warn:th.neg};}).filter(d=>d.value>0);
+      const tmData=(dashData?.deltas||[]).map(d=>{const nw=+d.nw_now||0;return{label:d.first_name+" "+(d.last_name?d.last_name[0]+".":""),value:Math.max(0,nw),color:nw>=250000?GOLD:nw>=50000?th.blue:nw>=0?th.warn:th.neg};}).filter(d=>d.value>0);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🗺️ {t.clientsByNetWorthHdr||"Clients by Net Worth"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsByNetWorthSub||"Tile size = current net worth per client."}</div></div>
         <Treemap data={tmData} width={460} height={isMobile?220:240} placeholder={t.noClientsYet||"No clients yet."}/>
@@ -288,21 +299,20 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
     // Top 8 by net worth, gold on highest then blue/orange/grey shading.
     clientsRanked:{id:"clientsRanked",label:"🏆 "+(t.clientsRankedSlot||"Clients · Ranked H-Bars"),render:()=>{
       const palette=[GOLD,"#5B9BD5","#4472C4","#ED7D31","#EDD594","#755023","#374151","#475569"];
-      const rhData=active.map(c=>{const nw=totalA(c)-totalL(c);return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),value:Math.max(0,nw)};}).filter(d=>d.value>0).sort((a,b)=>b.value-a.value).slice(0,8).map((d,i)=>({...d,color:palette[i]}));
+      const rhData=(dashData?.deltas||[]).map(d=>({label:d.first_name+" "+(d.last_name?d.last_name[0]+".":""),value:Math.max(0,+d.nw_now||0)})).filter(d=>d.value>0).slice(0,8).map((d,i)=>({...d,color:palette[i]}));
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🏆 {t.clientsRankedSlot||"Clients · Ranked H-Bars"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsRankedSub||"Top 8 active clients by net worth."}</div></div>
         {rhData.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<RankedHBars data={rhData} maxBars={8} width={460}/>}
       </>;
     }},
     practiceHealth:{id:"practiceHealth",label:"🎯 "+(t.practiceHealthHdr||"Practice Health"),render:()=>{
-      let inc=0,bls=0,mnd=0,liq=0;
-      active.forEach(c=>{inc+=sumN(c.incomeStreams||[]);bls+=sumB(c.bills||[]);mnd+=sumMin(c.cards||[]);liq+=liquidA(c);});
+      const inc=S.total_income||0,bls=S.total_bills||0,mnd=S.total_min||0,liq=S.liquid||0;
       const dsr=inc>0?mnd/inc:0;
       const sr=inc>0?Math.max(0,inc-bls-mnd)/inc:0;
       const ef=bls>0?liq/bls:0;
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🎯 {t.practiceHealthHdr||"Practice Health"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.practiceHealthSub||"Aggregate across all active clients."}</div></div>
-        {active.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noClientsYet||"No clients yet."}</div>:<div style={{display:"flex",alignItems:"center",justifyContent:"space-around",flex:1,flexWrap:"wrap",gap:8,minHeight:isMobile?180:220}}>
+        {clientCount===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.noClientsYet||"No clients yet."}</div>:<div style={{display:"flex",alignItems:"center",justifyContent:"space-around",flex:1,flexWrap:"wrap",gap:8,minHeight:isMobile?180:220}}>
           <RadialGauge value={dsr*100} max={60} target={36} size={104} label={"DSR"} subLabel={"≤ 36%"} direction="lower" thresholds={[0.6,0.83]} fmt={v=>v.toFixed(0)+"%"}/>
           <RadialGauge value={sr*100} max={40} target={20} size={104} label={t.savingsRateLbl||"Savings"} subLabel={"≥ 20%"} direction="higher" thresholds={[0.5,0.25]} fmt={v=>v.toFixed(0)+"%"}/>
           <RadialGauge value={ef} max={12} target={3} size={104} label={t.efMonthsLbl||"EF Mo"} subLabel={"3-6"} direction="higher" thresholds={[0.25,0.125]} fmt={v=>v.toFixed(1)}/>
@@ -310,12 +320,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     netWorthBridge:{id:"netWorthBridge",label:"⚖️ "+(t.netWorthBridgeHdr||"Net Worth Bridge"),render:()=>{
-      const labels=_shownLabels.length?_shownLabels:[];
-      const data=labels.map(m=>{
-        const a={liquid:0,invest:0,property:0,other:0};const l={cards:0,loans:0};
-        active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){(sn.data.accounts||[]).forEach(x=>{const meta=ACCT_META[x.type];const v=+x.value||0;if(meta?.liquid)a.liquid+=v;else if(meta?.invest)a.invest+=v;else a.other+=v;});(sn.data.customAssets||[]).forEach(x=>a.property+=+x.value||0);(sn.data.cards||[]).forEach(cd=>l.cards+=+cd.balance||0);(sn.data.loans||[]).forEach(ln=>l.loans+=+ln.balance||0);}});
-        return{label:m,assets:a,liabilities:l};
-      });
+      const data=_w.map(r=>({label:r.month_key,assets:{liquid:+r.a_liquid||0,invest:+r.a_invest||0,property:+r.a_property||0,other:+r.a_other||0},liabilities:{cards:+r.l_cards||0,loans:+r.l_loans_all||0}}));
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>⚖️ {t.netWorthBridgeHdr||"Net Worth Bridge"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthBridgeSub||"Assets above zero, liabilities below."}</div></div>
         {data.length<2?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{t.needMoreSnapshots||"Need 2+ monthly snapshots."}</div>:<NetWorthBridge data={data} width={460} height={isMobile?200:240}/>}
@@ -323,8 +328,9 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
     }},
     // v0.47.0 — expanded slot options ↓
     debtVsSavingsTrend:{id:"debtVsSavingsTrend",label:"📈 "+(t.debtVsSavingsSlot||"Debt vs Savings Trend"),render:()=>{
-      const data=trend.map(p=>({label:p.m,debt:p.debt,savings:p.savings}));
-      const live={label:"▶ Now",debt:Math.round(active.reduce((s,c)=>s+c.cards.reduce((a,cd)=>a+(+cd.balance||0),0),0)),savings:Math.round(active.reduce((s,c)=>s+liquidA(c),0))};
+      const data=_w.map(r=>({label:_mlabel(r.month_key),debt:+r.l_cards||0,savings:+r.savings||0}));
+      // CAVEAT: summary has no revolving-only live total; use td (total debt). See report.
+      const live={label:"▶ Now",debt:Math.round(td),savings:Math.round(liqNow)};
       data.push(live);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:10,fontWeight:500,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>{t.debtVsSavingsSlot||"Debt vs Savings Trend"}</div><div style={{display:"flex",gap:14,marginBottom:8,flexWrap:"wrap"}}>
@@ -335,17 +341,8 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     cashFlowTrend:{id:"cashFlowTrend",label:"💰 "+(t.cashFlowTrendSlot||"Cash Flow Trend"),render:()=>{
-      const labels=_shownLabels.length?_shownLabels:[];
-      const data=labels.map(m=>{
-        let income=0,bills=0,minDebt=0;
-        active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn){income+=sn.income||0;bills+=sn.bills||0;minDebt+=(sn.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0);}});
-        const parts=m.split(" ");
-        return{label:parts[0]+(parts[1]?"’"+String(parts[1]).slice(-2):""),cashFlow:income-bills-minDebt,income};
-      });
-      const liveInc=active.reduce((s,c)=>s+sumN(c.incomeStreams||[]),0);
-      const liveBls=active.reduce((s,c)=>s+sumB(c.bills||[]),0);
-      const liveMin=active.reduce((s,c)=>s+sumMin(c.cards||[]),0);
-      data.push({label:"▶ Now",cashFlow:liveInc-liveBls-liveMin,income:liveInc});
+      const data=_w.map(r=>({label:_mlabel(r.month_key),cashFlow:(+r.income||0)-(+r.spending||0),income:+r.income||0}));
+      data.push({label:"▶ Now",cashFlow:(S.total_income||0)-(S.total_bills||0)-(S.total_min||0),income:S.total_income||0});
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💰 {t.cashFlowTrendSlot||"Cash Flow Trend"}</div><div style={{display:"flex",gap:14,marginBottom:8,flexWrap:"wrap"}}>
           <span style={{fontSize:11,color:th.muted,display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"#10B981"}}/>{t.cashFlow||"Cash Flow"}</span>
@@ -355,19 +352,14 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     debtRanked:{id:"debtRanked",label:"🏦 "+(t.debtRankedSlot||"Debts by Balance"),render:()=>{
-      const debts=[];
-      active.forEach(c=>{
-        (c.cards||[]).forEach(cd=>{const bal=+cd.balance||0;if(bal>0)debts.push({label:`${cd.name||"Card"} · ${c.firstName}`,value:bal,color:"#EF4444"});});
-        (c.loans||[]).forEach(ln=>{const bal=+ln.balance||0;if(bal>0)debts.push({label:`${ln.name||"Loan"} · ${c.firstName}`,value:bal,color:ln.type==="mortgage"?"#DC2626":ln.type==="vehicle"?"#F97316":"#3B82F6"});});
-      });
+      const debts=(dashData?.debts||[]).map(d=>({label:`${d.name} · ${d.first}`,value:+d.bal||0,color:d.kind==="card"?"#EF4444":(d.ltype==="mortgage"?"#DC2626":d.ltype==="vehicle"?"#F97316":"#3B82F6")})).filter(d=>d.value>0);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🏦 {t.debtRankedSlot||"Debts by Balance"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.debtRankedSub||"Top debts across all active clients."}</div></div>
         {debts.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noDebtYet||"No debt logged."}</div>:<RankedHBars data={debts} maxBars={10} width={460}/>}
       </>;
     }},
     practiceWaterfall:{id:"practiceWaterfall",label:"🌊 "+(t.practiceWaterfallSlot||"Practice Cash Flow Waterfall"),render:()=>{
-      let inc=0,bls=0,mnd=0;
-      active.forEach(c=>{inc+=sumN(c.incomeStreams||[]);bls+=sumB(c.bills||[]);mnd+=sumMin(c.cards||[]);});
+      const inc=S.total_income||0,bls=S.total_bills||0,mnd=S.total_min||0;
       const free=inc-bls-mnd;
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🌊 {t.practiceWaterfallSlot||"Practice Cash Flow Waterfall"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.practiceWaterfallSub||"Income → bills → debt → free, aggregated."}</div></div>
@@ -380,19 +372,17 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     healthRadar:{id:"healthRadar",label:"🎯 "+(t.healthRadarSlot||"Practice Health (Radar)"),render:()=>{
-      let inc=0,bls=0,mnd=0,liq=0,totL=0,totA=0;
-      active.forEach(c=>{inc+=sumN(c.incomeStreams||[]);bls+=sumB(c.bills||[]);mnd+=sumMin(c.cards||[]);liq+=liquidA(c);totL+=totalL(c);totA+=totalA(c);});
+      const inc=S.total_income||0,bls=S.total_bills||0,mnd=S.total_min||0,liq=S.liquid||0,totL=S.total_debt||0,totA=(S.total_nw||0)+(S.total_debt||0);
       const dsr=inc>0?mnd/inc:0,sr=inc>0?Math.max(0,inc-bls-mnd)/inc:0,ef=bls>0?liq/bls:0,dta=totA>0?totL/totA:1,cf=inc>0?Math.max(0,inc-bls-mnd)/inc:0;
       const values=[Math.max(0,Math.min(1,1-dsr/0.5)),Math.max(0,Math.min(1,sr/0.25)),Math.max(0,Math.min(1,ef/6)),Math.max(0,Math.min(1,1-dta/0.8)),Math.max(0,Math.min(1,cf/0.1))];
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🎯 {t.healthRadarSlot||"Practice Health (Radar)"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.healthRadarSub||"5-axis financial health, aggregated."}</div></div>
-        {active.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<div style={{display:"flex",justifyContent:"center"}}><Radar5 size={isMobile?220:250} axes={["DSR","Save","EF","D/A","CF"]} values={values}/></div>}
+        {clientCount===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients yet."}</div>:<div style={{display:"flex",justifyContent:"center"}}><Radar5 size={isMobile?220:250} axes={["DSR","Save","EF","D/A","CF"]} values={values}/></div>}
       </>;
     }},
     netWorthForecast:{id:"netWorthForecast",label:"🔮 "+(t.netWorthForecastSlot||"Net Worth Forecast"),render:()=>{
-      const labels=_shownLabels.length?_shownLabels:[];
-      const history=labels.map(m=>{let nw=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){const a=(sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0);const l=(sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0);nw+=a-l;}});const parts=m.split(" ");return{label:parts[0]+(parts[1]?"’"+String(parts[1]).slice(-2):""),value:nw};});
-      const liveNW=active.reduce((s,c)=>s+(totalA(c)-totalL(c)),0);
+      const history=_w.map(r=>({label:_mlabel(r.month_key),value:((+r.a_liquid||0)+(+r.a_invest||0)+(+r.a_property||0)+(+r.a_other||0))-((+r.l_cards||0)+(+r.l_loans_all||0))}));
+      const liveNW=S.total_nw||0;
       history.push({label:"Now",value:liveNW});
       const growth=history.length>=2?(history[history.length-1].value-history[0].value)/Math.max(1,history.length-1):liveNW*0.02;
       const projection=[];
@@ -406,14 +396,9 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       const cash={label:t.cashAssets||"Cash",color:"#06B6D4",children:[]};
       const invest={label:t.investmentsLbl||"Investments",color:"#8B5CF6",children:[]};
       const property={label:t.propertyLbl||"Property",color:"#10B981",children:[]};
-      const liqMap={},invMap={},propMap={};
-      active.forEach(c=>{
-        (c.accounts||[]).forEach(a=>{const meta=ACCT_META[a.type];const v=+a.value||0;if(v<=0)return;const name=ACCT_META[a.type]?.label||a.type||"Other";if(meta?.liquid){liqMap[name]=(liqMap[name]||0)+v;}else if(meta?.invest){invMap[name]=(invMap[name]||0)+v;}else{propMap[name]=(propMap[name]||0)+v;}});
-        (c.customAssets||[]).forEach(a=>{const v=+a.value||0;if(v<=0)return;const name=a.name||"Other";propMap[name]=(propMap[name]||0)+v;});
-      });
-      Object.entries(liqMap).forEach(([k,v],i)=>cash.children.push({label:k,value:v,color:["#3B82F6","#06B6D4","#0EA5E9","#22D3EE"][i%4]}));
-      Object.entries(invMap).forEach(([k,v],i)=>invest.children.push({label:k,value:v,color:["#8B5CF6","#A78BFA","#7C3AED","#6366F1"][i%4]}));
-      Object.entries(propMap).forEach(([k,v],i)=>property.children.push({label:k,value:v,color:["#10B981","#059669","#16A34A","#15803D"][i%4]}));
+      const PAL={cash:["#3B82F6","#06B6D4","#0EA5E9","#22D3EE"],invest:["#8B5CF6","#A78BFA","#7C3AED","#6366F1"],property:["#10B981","#059669","#16A34A","#15803D"]};
+      const idx={cash:0,invest:0,property:0};
+      (dashData?.assets||[]).forEach(row=>{const v=+row.val||0;if(v<=0)return;const parent=row.bucket==="cash"?cash:row.bucket==="invest"?invest:property;const b=row.bucket==="cash"?"cash":row.bucket==="invest"?"invest":"property";parent.children.push({label:row.name,value:v,color:PAL[b][idx[b]%4]});idx[b]++;});
       const data=[cash,invest,property].filter(g=>g.children.length>0);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>☀️ {t.assetSunburstSlot||"Asset Allocation (Sunburst)"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.assetSunburstSub||"Cash / investments / property, nested."}</div></div>
@@ -421,47 +406,27 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     clientsDumbbell:{id:"clientsDumbbell",label:"⚖️ "+(t.clientsDumbbellSlot||"Client Net Worth Δ"),render:()=>{
-      const labels=_shownLabels;
-      const firstLbl=labels[0],lastLbl=labels[labels.length-1];
-      const data=active.map(c=>{
-        const first=firstLbl?(c.monthSnapshots||[]).find(x=>x.label===firstLbl):null;
-        const last=lastLbl?(c.monthSnapshots||[]).find(x=>x.label===lastLbl):null;
-        const aOf=sn=>sn?.data?((sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0)):0;
-        const lOf=sn=>sn?.data?((sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0)):0;
-        const was=first?aOf(first)-lOf(first):0;
-        const now=last?aOf(last)-lOf(last):(totalA(c)-totalL(c));
-        return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),a:was,b:now};
-      }).filter(d=>d.a||d.b);
+      const firstLbl=_shownLabels[0]?_mlabel(_shownLabels[0]):null;
+      const data=(dashData?.deltas||[]).map(d=>({label:d.first_name+" "+(d.last_name?d.last_name[0]+".":""),a:+d.nw_first||0,b:+d.nw_now||0})).filter(d=>d.a||d.b);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>⚖️ {t.clientsDumbbellSlot||"Client Net Worth Δ"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.clientsDumbbellSub||"Where each client was vs where they are now."}</div></div>
         {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need snapshots."}</div>:<Dumbbell data={data} leftLabel={firstLbl||"Prior"} rightLabel="Now" width={460} maxRows={8}/>}
       </>;
     }},
     netWorthSlope:{id:"netWorthSlope",label:"📐 "+(t.netWorthSlopeSlot||"Net Worth Prior vs Current"),render:()=>{
-      const labels=_shownLabels;
-      const firstLbl=labels[0],lastLbl=labels[labels.length-1];
-      const data=active.map((c,i)=>{
-        const first=firstLbl?(c.monthSnapshots||[]).find(x=>x.label===firstLbl):null;
-        const last=lastLbl?(c.monthSnapshots||[]).find(x=>x.label===lastLbl):null;
-        const aOf=sn=>sn?.data?((sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0)):0;
-        const lOf=sn=>sn?.data?((sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0)):0;
-        const a=first?aOf(first)-lOf(first):0;
-        const b=last?aOf(last)-lOf(last):(totalA(c)-totalL(c));
-        return{label:c.firstName+" "+(c.lastName?c.lastName[0]+".":""),a,b,color:b>=a?"#10B981":"#EF4444"};
-      });
+      const firstLbl=_shownLabels[0]?_mlabel(_shownLabels[0]):null;
+      const data=(dashData?.deltas||[]).map(d=>{const a=+d.nw_first||0,b=+d.nw_now||0;return{label:d.first_name+" "+(d.last_name?d.last_name[0]+".":""),a,b,color:b>=a?"#10B981":"#EF4444"};});
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📐 {t.netWorthSlopeSlot||"Net Worth Prior vs Current"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthSlopeSub||"Tufte slope chart per client."}</div></div>
-        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients."}</div>:<SlopeGraph data={data} leftLabel={firstLbl?firstLbl.split(" ")[0]:"Prior"} rightLabel="Now" height={isMobile?200:230} width={460}/>}
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients."}</div>:<SlopeGraph data={data} leftLabel={firstLbl||"Prior"} rightLabel="Now" height={isMobile?200:230} width={460}/>}
       </>;
     }},
     billsStacked:{id:"billsStacked",label:"💳 "+(t.billsStackedSlot||"Bills by Category"),render:()=>{
-      const labels=_shownLabels.length?_shownLabels:[];
       const categories=["housing","transport","insurance","food","other"];
-      const data=labels.map(m=>{
-        const row={label:m.split(" ")[0],housing:0,transport:0,insurance:0,food:0,other:0};
-        active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){(sn.data.bills||[]).forEach(b=>{const cat=(b.category||"other").toLowerCase();const v=toM(+b.cost||0,b.freq);if(row[cat]!==undefined)row[cat]+=v;else row.other+=v;});}});
-        return row;
-      });
+      // NOT CONVERTED — needs per-category bill line-items per month, which dashData does
+      // not provide (trend has total `spending` only, no category split). Guarded to the
+      // existing empty/placeholder state rather than loading client blobs. See report.
+      const data=[];
       const colors={housing:"#3B82F6",transport:"#F97316",insurance:"#8B5CF6",food:"#F59E0B",other:"#94A3B8"};
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💳 {t.billsStackedSlot||"Bills by Category"}</div><div style={{display:"flex",gap:10,marginBottom:8,flexWrap:"wrap"}}>{categories.map(c=><span key={c} style={{fontSize:10,color:th.muted,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:colors[c]}}/>{c}</span>)}</div></div>
@@ -469,53 +434,43 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </>;
     }},
     billsYoY:{id:"billsYoY",label:"📅 "+(t.billsYoYSlot||"Bills YoY"),render:()=>{
-      const labels=_shownLabels;
-      const thisYrLabel=labels[labels.length-1]?.split(" ")[1];
-      const buckets={};
-      active.forEach(c=>{
-        (c.monthSnapshots||[]).forEach(sn=>{
-          const parts=(sn.label||"").split(" ");
-          const yr=parts[1];if(!yr)return;
-          (sn.data?.bills||[]).forEach(b=>{const cat=(b.category||"Other").charAt(0).toUpperCase()+(b.category||"Other").slice(1);buckets[cat]=buckets[cat]||{current:0,prior:0};const v=toM(+b.cost||0,b.freq);if(yr===thisYrLabel)buckets[cat].current+=v;else buckets[cat].prior+=v;});
-        });
-      });
-      const data=Object.entries(buckets).map(([label,v])=>({label,current:v.current,prior:v.prior})).filter(d=>d.current||d.prior).slice(0,6);
+      const thisYrLabel=_shownLabels.length?String(_shownLabels[_shownLabels.length-1]).split("-")[0]:undefined;
+      // NOT CONVERTED — needs per-category bill totals split by year, which dashData does
+      // not provide (no category breakdown in trend). Guarded to placeholder. See report.
+      const data=[];
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📅 {t.billsYoYSlot||"Bills YoY"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.billsYoYSub||"Current year vs prior year by category."}</div></div>
         {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need multi-year snapshots."}</div>:<GroupedYoY data={data} curLabel={thisYrLabel||"This Yr"} priorLabel={"Prior"} width={460} height={isMobile?180:210}/>}
       </>;
     }},
     spendingHeatmap:{id:"spendingHeatmap",label:"🔥 "+(t.spendingHeatmapSlot||"Spending Heatmap"),render:()=>{
-      const cells=[];
-      active.forEach(c=>{
-        (c.monthSnapshots||[]).forEach(sn=>{const parts=(sn.label||"").split(" ");const monthName=parts[0];const yr=parts[1];const monthIdx=MS.indexOf(monthName)+1;if(monthIdx<=0||!yr)return;const v=(sn.bills||0)+((sn.data?.cards||[]).reduce((a,c)=>a+(+c.min||0),0));const exist=cells.find(x=>x.year===+yr&&x.month===monthIdx);if(exist)exist.value+=v;else cells.push({year:+yr,month:monthIdx,value:v});});
-      });
+      // Year × month spend intensity — derived from the full server trend (all months,
+      // not windowed). Each trend row's `spending` is the practice-wide monthly spend.
+      const cells=TR.map(r=>{const[y,m]=String(r.month_key).split("-");return{year:+y,month:+m,value:+r.spending||0};}).filter(c=>c.year&&c.month);
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>🔥 {t.spendingHeatmapSlot||"Spending Heatmap"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.spendingHeatmapSub||"Year × month intensity. Cream → amber."}</div></div>
         {cells.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.needMoreSnapshots||"Need snapshots."}</div>:<HeatmapCalendar data={cells} width={460} height={isMobile?150:180}/>}
       </>;
     }},
     payoffProgression:{id:"payoffProgression",label:"📉 "+(t.payoffProgressionSlot||"Debt Payoff Timeline"),render:()=>{
+      // NOT CONVERTED — the avalanche projection needs per-debt APR + minimum payment,
+      // which dashData.debts does not carry (only name/bal/kind/ltype/first). Guarded to
+      // the existing placeholder rather than loading client blobs. See report.
       const debts=[];
-      active.forEach(c=>{
-        (c.cards||[]).forEach(cd=>{const bal=+cd.balance||0;if(bal>0)debts.push({name:`${cd.name||"Card"} · ${c.firstName}`,balance:bal,apr:+cd.apr||22,min:+cd.min||Math.max(25,bal*0.025),color:"#EF4444"});});
-        (c.loans||[]).forEach(ln=>{const bal=+ln.balance||0;if(bal>0&&ln.type!=="mortgage")debts.push({name:`${ln.name||"Loan"} · ${c.firstName}`,balance:bal,apr:+ln.apr||7,min:+ln.payment||Math.max(50,bal*0.015),color:ln.type==="vehicle"?"#F97316":"#3B82F6"});});
-      });
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📉 {t.payoffProgressionSlot||"Debt Payoff Timeline"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.payoffProgressionSub||"Avalanche projection, excludes mortgages."}</div></div>
         {debts.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noDebtYet||"No debt logged."}</div>:<PayoffProgression debts={debts} width={460} height={isMobile?180:210} maxMonths={120}/>}
       </>;
     }},
     kpiSparklines:{id:"kpiSparklines",label:"✨ "+(t.kpiSparklinesSlot||"KPI Sparklines"),render:()=>{
-      const labels=_shownLabels;
-      const nwSeries=labels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn?.data){const a=(sn.data.accounts||[]).reduce((s,x)=>s+(+x.value||0),0)+(sn.data.customAssets||[]).reduce((s,x)=>s+(+x.value||0),0);const l=(sn.data.cards||[]).reduce((s,x)=>s+(+x.balance||0),0)+(sn.data.loans||[]).reduce((s,x)=>s+(+x.balance||0),0);v+=a-l;}});return v;});
+      const nwSeries=_w.map(r=>((+r.a_liquid||0)+(+r.a_invest||0)+(+r.a_property||0)+(+r.a_other||0))-((+r.l_cards||0)+(+r.l_loans_all||0)));
       const debtSeries=trend.map(p=>p.debt);
       const savSeries=trend.map(p=>p.savings);
-      const cfSeries=labels.map(m=>{let v=0;active.forEach(c=>{const sn=(c.monthSnapshots||[]).find(x=>x.label===m);if(sn){v+=(sn.income||0)-(sn.bills||0)-((sn.data?.cards||[]).reduce((a,cd)=>a+(+cd.min||0),0));}});return v;});
-      const liveNW=active.reduce((s,c)=>s+(totalA(c)-totalL(c)),0);
-      const liveDebt=active.reduce((s,c)=>s+c.cards.reduce((a,cd)=>a+(+cd.balance||0),0),0);
-      const liveSav=active.reduce((s,c)=>s+liquidA(c),0);
-      const liveCF=active.reduce((s,c)=>s+(sumN(c.incomeStreams||[])-sumB(c.bills||[])-sumMin(c.cards||[])),0);
+      const cfSeries=_w.map(r=>(+r.income||0)-(+r.spending||0));
+      const liveNW=S.total_nw||0;
+      const liveDebt=td;
+      const liveSav=liqNow;
+      const liveCF=(S.total_income||0)-(S.total_bills||0)-(S.total_min||0);
       const rows=[
         {l:t.netWorth||"Net worth",d:[...nwSeries,liveNW],c:liveNW>=0?"#10B981":"#EF4444",v:fmtS(liveNW)},
         {l:t.totalDebt||"Debt",d:[...debtSeries,liveDebt],c:"#EF4444",v:fmtS(liveDebt)},
@@ -558,7 +513,7 @@ return(d.cards||[]).reduce((a,c)=>a+(+c.balance||0),0)+(d.loans||[]).filter(l=>!
       </div>;
     })}
   </div>;
-})()}<RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:24,marginBottom:12,gap:8,flexWrap:"wrap"}}><div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:"0.13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div><input placeholder={t.searchClients||"Search clients..."} aria-label={t?.searchClientsPh||"Search clients"} value={dashSearch} onChange={e=>setDashSearch(e.target.value)} style={{...mINP(th),width:isMobile?"100%":240,maxWidth:isMobile?"none":240,padding:"6px 12px",fontSize:12,boxSizing:"border-box"}}/></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} className="ga-lift" onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:isMobile?10:11,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:isMobile?12:14,fontFamily:"'JetBrains Mono',monospace",background:c.color1+"22",color:c.color1,border:`1px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
+})()}<RemindersPanel clients={clients} settings={settings} t={t} onSettingsChange={setSettings}/><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:24,marginBottom:12,gap:8,flexWrap:"wrap"}}><div style={{fontSize:10,fontWeight:500,color:th.dim,letterSpacing:"0.13em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace"}}>{active.length} {active.length!==1?(t.clients||"Clients"):(t.client||"Client")}</div></div><div style={{display:"flex",flexDirection:"column",gap:8}}>{active.map(c=>{const n=sumN(c.incomeStreams);const tA=totalA(c);const tL=totalL(c);const sn=c.monthSnapshots||[];const im=sn.length>=2&&sn[sn.length-1].debt<sn[0].debt;return<div key={c.id} className="ga-lift" onClick={()=>onSelect(c)} style={{...mCARD(th),padding:isMobile?"12px 14px":"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:isMobile?10:16,flexWrap:isMobile?"wrap":"nowrap"}}><div style={{width:isMobile?38:44,height:isMobile?38:44,borderRadius:isMobile?10:11,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:isMobile?12:14,fontFamily:"'JetBrains Mono',monospace",background:c.color1+"22",color:c.color1,border:`1px solid ${c.color1}44`,flexShrink:0}}>{c.firstName[0]}{c.lastName[0]}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}><span style={{fontSize:isMobile?13:14,fontWeight:700,color:th.text}}>{c.firstName} {c.lastName}</span>{c.partnerFirst&&<span style={{fontSize:12,color:th.dim}}>& {c.partnerFirst}</span>}{im&&<Pill color={th.pos}>{t.improving}</Pill>}{!isMobile&&<span style={{fontSize:10,color:th.dim}}>{(c.monthSnapshots||[]).length} snapshots</span>}</div><div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div></div>{!isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,textAlign:"right"}}><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:13,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.debt||"Debt"}</div><div style={{fontSize:13,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:10,color:th.dim,marginBottom:2}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:13,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{isMobile&&<div style={{flexBasis:"100%",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${th.cardBorder}`}}><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netMo||"Net/mo"}</div><div style={{fontSize:12,fontWeight:700,color:th.pos}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(n)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.debt||"Debt"}</div><div style={{fontSize:12,fontWeight:700,color:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tL)}</div></div><div><div style={{fontSize:9,color:th.dim,marginBottom:1}}>{t.netWorth||"Net Worth"}</div><div style={{fontSize:12,fontWeight:700,color:tA-tL>=0?GOLD:th.neg}}>{hideNumbers?<span style={{filter:"blur(5px)",userSelect:"none"}}>●●●</span>:fmt(tA-tL)}</div></div></div>}{!isMobile&&<span style={{color:th.accent,fontSize:18}}>›</span>}</div>;})} </div></div>;}
 
 /* ── PAGES ───────────────────────────────────────────────────────────────── */
 /* ── CLIENT LIST ─ v0.8.0 action-first bulk actions (WORKPLAN §3 Chat 4) ── */

@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.82.0 — 2026-06-24 (Minor) — scale: advisor Dashboard renders from server aggregates
+
+The advisor Dashboard now reads from the 5 dashboard RPCs (via `gaDashboardAll()`), not the in-memory
+client-blob array — the first non-additive step of the App-state flip. `App()` fetches `dashData`
+(summary/trend/debts/assets/deltas) on nav→dashboard and after edits; `dashboard.jsx` rewritten so
+every chart consumes `dashData`. **18 of 21 charts converted** (KPIs, trend, Sankey, NW-tier donut,
+Practice-Health, Net-Worth Bridge, Forecast, Cash-Flow, Asset-Sunburst, Debts-by-Balance, Treemap,
+Ranked, Dumbbell, Slope, Spending-heatmap, sparklines). Verified live: KPIs exact (3 clients,
+debt $364K, income $30K, liquid $23K), default charts render, no errors.
+
+Notes: the dashboard client-search box was removed (aggregates are always practice-wide). **3 charts
+placeholdered** pending new aggregates — Bills-by-Category + Bills-YoY (need per-category bill rollup)
+and Debt-Payoff-Timeline (needs per-debt APR + min payment); not in the default slots. The bottom
+client roster still reads the array (it's a list, converts with the ClientList/App-state flip). Minor
+caveat: debt-vs-savings live "Now" point uses total debt vs revolving-only history. App still loads all
+clients (scale win lands when the list + App-state flip remove load-everything).
+
 ## v0.81.5 — 2026-06-24 (Patch) — scale: assets rollup + asset-alloc RPC (full dashboard aggregation)
 
 Added `clients.assets` jsonb (derived on save: accounts+customAssets value>0 as `{bucket,name,val}`,
