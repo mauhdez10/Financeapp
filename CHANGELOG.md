@@ -2,6 +2,12 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.10 — 2026-06-24 (Patch) — remove dead ArchivedSection
+
+Cleanup (autonomous-loop pass). Removed the unused `ArchivedSection` component from
+`components/clientData.jsx` — it was exported but referenced nowhere in `src/` (superseded by
+`pages/admin`'s `ArchivedClientsPage`). Build green; zero residual references. No behavior change.
+
 ## v0.80.9 — 2026-06-24 (Patch) — Phase 2 decomposition: report views/tabs extracted
 
 Seventh Phase 2 slice — the biggest. Moved the entire client report ecosystem (~30 components:

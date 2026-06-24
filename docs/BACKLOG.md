@@ -31,7 +31,7 @@ Live marker **v0.80.7** (`2026-06-24-v0807-phase2-report-blocks-extracted`). `Ap
   RemindersPanel/AlertsSettingsModal + NewClientModal/ClientForm/ProfileModal + the App() router.
 
 ### Cleanup finds (green-light, low priority)
-- 🟢 Dead code: `ArchivedSection` (in `components/clientData.jsx`) is exported but unused — remove.
+- ✅ Dead code: `ArchivedSection` removed (v0.80.10, 2026-06-24, autonomous loop).
 - 🟢 Pre-existing React warning: `CompareReportTab` (now in `clientReports.jsx`) renders a whitespace
   text node inside `<tbody>` — fix the `{" "}`/newline between table rows (cosmetic dev warning).
 
