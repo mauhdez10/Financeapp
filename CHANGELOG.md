@@ -2,6 +2,17 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.80.5 — 2026-06-24 (Patch) — Phase 2 decomposition: client-scoped calculators extracted
+
+Third Phase 2 slice. Moved the client-scoped calculators (`ClientIncomeCalc`,
+`ClientDebtCalc`, `ClientCarLoanCalc`, `ClientCalculatorsTab`) out of `App.jsx` into new
+`src/components/clientCalcs.jsx`. Byte-exact move via a reusable extractor that derives
+imports from App.jsx's own import map and flags any dangling reference. App.jsx imports
+back only `ClientCalculatorsTab` (the other 3 are used only within it). App.jsx
+3,789 → **3,425 lines**. Build green; verified live — the Calculators tab renders and the
+Debt calc's charts (PayoffProgression/RankedHBars) draw. Remaining: report blocks/tabs,
+then the `ClientDetail` shell (last).
+
 ## v0.80.4 — 2026-06-14 (Patch) — Phase 2 decomposition: client workbook sections extracted
 
 Second Phase 2 slice. Moved the 11 client workbook section components
