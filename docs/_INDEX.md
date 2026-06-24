@@ -7,6 +7,7 @@
 
 | Doc | What it is | Read when |
 |---|---|---|
+| [BACKLOG.md](BACKLOG.md) | The single ordered green-light queue for autonomous `/loop` work (PLAYBOOK §2) — 🟢 pre-approved scope vs ⛔ owner-only | Every `/loop` iteration; triaging owner batches |
 | [ARCHITECTURE-PLAN.md](ARCHITECTURE-PLAN.md) | The modularization & cleanup plan (D-37): phased extraction of App.jsx into constants/utils/services/components/pages + doc hygiene | Before any structural refactor |
 | [DESIGN-MODE.md](DESIGN-MODE.md) | The design-tool pipeline + overlap rulings (design-principles → Impeccable → ui-ux-pro-max → Magic → Emil) | Before any visual/UI work |
 | [DESIGN-POLISH-PUNCHLIST.md](DESIGN-POLISH-PUNCHLIST.md) | 38 concrete professional-polish directives (Mercury/Linear/Stripe research, 2026-06-10) — the spec for the professionalization pass | During any design/polish work |
