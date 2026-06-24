@@ -10,7 +10,17 @@
 - **Task 1** DB: summary columns + `client_monthly_summary` + 2 dashboard RPCs, RLS-scoped, anon-revoked. Verified.
 - **Task 2** Write path: `gaSaveClient` derives summary cols + monthly rows on save. Verified live.
 - **Backfill**: existing demo clients (3 on test acct) populated; matches app math.
-- **Service layer** (additive, UNWIRED): `gaListClients({page,pageSize,sort,search,archived})`, `gaLoadClient(userId,localId)`, `gaDashboardSummary()`, `gaDashboardTrend()` in `src/services/supabase.js`. RPC aggregates verified (3 clients → debt 363550, income 30200).
+- **Service layer** (additive, UNWIRED): `gaListClients({page,pageSize,sort,search,archived})`, `gaLoadClient(userId,localId)`, `gaDashboardSummary()`, `gaDashboardTrend()` in `src/services/supabase.js`.
+- **v0.81.2** Derived `monthly_bills`/`monthly_debt_min` summary columns (Sankey/Practice-Health inputs).
+- **Dashboard RPCs extended + verified** (migration `extend_dashboard_rpcs_tiers_bills_counts`, anon-revoked):
+  - `ga_dashboard_summary()` → adds `total_bills, total_min, total_nw` + net-worth tier counts
+    `nw_neg/nw_low/nw_mid/nw_high` (buckets <0 / <50k / <250k / ≥250k — match dashboard.jsx:268).
+  - `ga_dashboard_trend()` → adds per-month `client_count` (KPI sparkline). Verified live (tiers
+    1/1/1/0, total_nw 237116, trend 6 months). **NOTE:** bills/min totals are currently PARTIAL —
+    only re-saved clients carry the columns; backfill ALL clients first thing in the wiring session.
+
+**⇒ The entire additive data layer (3 layers + write path + service wrappers + all dashboard
+aggregates) is DONE, verified, secured. The ONLY remaining work is non-additive APP WIRING below.**
 
 ## The spine: every consumer of the full `clients` array (src/App.jsx)
 
