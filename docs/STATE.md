@@ -23,14 +23,14 @@
   5 dashboard RPCs; reminders RPC; paged loaders. Source: `superpowers/` reports (archived).
 
 ## In flight (this work)
-- **Documentation-lifecycle system** (PLAYBOOK §4b/§4c) being set up: `LOGIC_MAP`, `UNIVERSAL_RULES`,
-  `ISSUES_LEDGER`, this file, `DEPENDENCY-MAP`, the archive sweep, kill-conditions, the
-  `finance-review-mode` + `finance-feedback-intake` skills, and the self-orienting `CLAUDE.md`
-  bootstrap.
-- **CRUISE MODE infra** (next, after the docs system): `docs/CRUISE_MODE.md` ordered map +
-  `CRUISE_HEARTBEAT.md` + the dual-worker loop. Design approved; registration **paused** pending the
-  docs foundation. Decisions locked: approve→main (done), additive+verified→main, Playwright-only
-  testing, never-touch-Velo.
+- **Documentation-lifecycle system (PLAYBOOK §4b/§4c) — ✅ DONE (2026-06-25).** `LOGIC_MAP`,
+  `UNIVERSAL_RULES`, `STATE`, `ISSUES_LEDGER`, `DEPENDENCY-MAP` created; 12 done docs archived +
+  stamped + dropped from the map; every ephemeral doc has a kill-condition; `CLAUDE.md` has a
+  self-orienting bootstrap; the **`finance-review-mode`** + **`finance-feedback-intake`** skills are live.
+- **CRUISE MODE infra — NEXT (paused for owner go-ahead).** `docs/CRUISE_MODE.md` ordered map +
+  `CRUISE_HEARTBEAT.md` + the dual-worker loop, then optional cloud-task registration. Design
+  approved; decisions locked: approve→main (done), additive+verified→main, Playwright-only testing,
+  never-touch-Velo, two workers (`finance-cron` 15-min + `finance-session`) heartbeat-coordinated.
 
 ## Where things live (so a fresh chat checks instead of asking)
 - **Secrets / keys / logins:** `finance-credentials.md` (gitignored, repo root) — never commit/print.

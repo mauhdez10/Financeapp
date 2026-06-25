@@ -21,6 +21,8 @@
 | [../SKILL.md](../SKILL.md) | ① | **`finance-app-updater`** — the procedure to safely edit the app/docs | Before ANY app or canonical-doc change |
 | [.claude/skills/golden-anchor-logic/SKILL.md](../.claude/skills/golden-anchor-logic/SKILL.md) | ① | Role rules, portal allow-list, every money formula + targets | Before money/role/RLS/SSN/split code |
 | [.claude/skills/golden-anchor-design-surface/SKILL.md](../.claude/skills/golden-anchor-design-surface/SKILL.md) | ② | Design-system skill (brand colors/type/assets) for hi-fi mocks | Brand/visual design artifacts |
+| [.claude/skills/finance-review-mode/SKILL.md](../.claude/skills/finance-review-mode/SKILL.md) | ① | The §4c handler for EVERY owner input (log → impact-check → replace → update+flip → verify) | Every time the owner gives feedback/answers/a bug |
+| [.claude/skills/finance-feedback-intake/SKILL.md](../.claude/skills/finance-feedback-intake/SKILL.md) | ① | Big-batch front-end: parse → tag → round doc → recurrence check → refill → ask-once | A large/multi-item owner batch |
 
 ## Data & relationships
 | Doc | Tag | What | Read when |
