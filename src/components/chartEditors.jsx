@@ -6,6 +6,7 @@ import { ChartConfigCtx, useTh } from "../contexts/theme";
 import { GOLD, mINP } from "../styles/theme";
 import { AmortizationArea, BulletChart, Donut, Dumbbell, ForecastCone, GroupedYoY, HeatmapCalendar, NetWorthBridge, PayoffProgression, Radar5, RadialGauge, RankedHBars, Sankey, SlopeGraph, SmoothAreaLine, Sparkline, StackedBars, Sunburst, Treemap, Waterfall } from "./charts";
 import { BSolid, Modal, useViewport } from "./primitives";
+import { dashChartOptions } from "../constants/chartOptions";
 
 export function ChartGalleryCard({name,status,desc,th,t,templateId,onEdit,isCustomized,density="comfortable",children}){
   const isNew=status==="new";

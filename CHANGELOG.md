@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.7 — 2026-06-25 (Patch) — fix: ChartSettingsModal crash — `dashChartOptions` was undefined after Phase-2 split
+
+`ChartSettingsModal` (avatar menu → "Chart Settings", `src/components/chartEditors.jsx:117`) called
+`dashChartOptions(t)`, but that factory was a non-exported `const` living only in `dashboard.jsx` — so the
+modal referenced an undefined symbol and **threw `ReferenceError: dashChartOptions is not defined` on open**
+(white-screen for that modal). Surfaced by the v0.83.x lint-scope cleanup (last real source `no-undef`).
+Couldn't simply export it from `dashboard.jsx` and import it into `chartEditors.jsx` — `dashboard.jsx` already
+imports from `chartEditors.jsx`, so that would create a dashboard ⇄ chartEditors import cycle (fragile TDZ for
+a top-level `const`). Instead extracted the pure `t => [{id,label}]` factory **verbatim** into a new no-cycle
+module `src/constants/chartOptions.js` and imported it into both consumers. Behavior unchanged (same 21 slot
+options, same `t?.*` keys + English fallbacks → EN/ES symmetry N/A).
+
+Verified in preview (test advisor, real Supabase, dev server): dashboard renders fully with **no console
+errors** (it consumes `dashChartOptions(t)` at `dashboard.jsx:521` for the per-chart slot picker, proving the
+new module resolves at runtime); a dynamic `import('/src/constants/chartOptions.js')` in the live app returned
+the function and its full 21-element array (`incomeVsSpending`→`kpiSparklines`, labels intact). Build green;
+source `no-undef` 1 → 0. Marker bumped v0836 → v0837.
+
+**⚠️ HELD LOCAL — NOT pushed.** Additive (new pure module + corrected imports) + a verified crash fix
+(fix-and-push-eligible on its own), but `origin/main` is at v0.83.0 with the held **v0.83.1 save-toast gate**
+between origin and HEAD — pushing would ship that unapproved live-save-path commit. Stacks as the next held
+commit; ships once the owner approves v0.83.1.
+
 ## Tooling — 2026-06-25 (no app change, no marker bump) — ESLint stops linting build output + agent worktrees
 
 `eslint.config.js` ignored only top-level `dist`, so `npm run lint` was also scanning `.claude/worktrees/agent-a79f77ab4d262a299/` — a full stale repo copy including its own minified `dist/` vendor bundles — and that copy's `api/` files (which miss the `api/**/*.js` Node-globals override). Result: ~1,400 phantom errors (`process`/`Buffer`/`Deno`/`define`/`val`/etc. from minified bundles) drowning the real source signal. Ignore list widened to `['dist', '**/dist', '.claude']`. `npm run lint` now reports ~430 **real** source problems (down from 1,465), and `no-undef` — the latent-crash class — drops from **164 → 1** (only `dashChartOptions` in `chartEditors.jsx` remains; next fix). No app-bundle change → `__GA_BUILD__` deliberately NOT bumped (the marker tracks deployed app versions). Committed LOCAL (push still blocked by held v0.83.1).
