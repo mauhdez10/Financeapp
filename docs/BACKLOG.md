@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Standing green-light queue. Items drain into shipped work; refills from REVIEW_QUEUE. The file persists; entries don't linger once done.
+
 # BACKLOG.md — Golden Anchor Finance green-light queue
 
 > THE single ordered execution queue for autonomous `/loop` work (cross-project PLAYBOOK §2).

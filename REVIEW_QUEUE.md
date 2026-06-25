@@ -1,21 +1,20 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](docs/LOGIC_MAP.md)). **Kill-condition:** Owner checklist. Items REMOVED once the owner verifies them (lean — never archived in place). The file persists.
+
 # REVIEW_QUEUE.md — what Mauricio needs to check, in plain steps
 
 > Running owner checklist (cross-project playbook §2). I append on every batch; items
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
 > confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
 
-## ⏳ Cron tick — 2026-06-24 (NOTHING pushed; full detail in docs/CRUISE_QUESTIONS.md)
-- [ ] **One decision unblocks 5 commits.** `origin/main` is at v0.83.0; local `main` is 5 commits ahead
-      (v0.83.1 → v0.83.5), all held. The held **v0.83.1 save-toast gate** sits between origin and HEAD, so
-      **no push is possible without shipping v0.83.1 to prod.** Review v0.83.1 (gate the "Client saved"
-      toast on the save result so a failed save can't show success). Approve → `git push origin main` ships
-      all five. Hold longer → cherry-pick the 3 additive ones (v0.83.2 reminders RPC, v0.83.3 export-all,
-      v0.83.5 Compare `<tbody>` fix). See `docs/CRUISE_QUESTIONS.md` Q1.
-- [ ] **v0.83.5 (this tick):** fixed the Compare-tab React whitespace-in-`<tbody>` dev warning — cosmetic,
-      verified, committed LOCAL only (stacked behind v0.83.1).
-- [ ] **Infra note:** the CRUISE_MODE/HEARTBEAT/QUESTIONS files referenced by the scheduled task didn't
-      exist; the tick fell back to the scale-data-layer→REVIEW_QUEUE→BACKLOG chain. See Q2 — pick whether
-      to author the infra files or update the task prompt.
+## ✅ RESOLVED 2026-06-25 — held stack shipped + docs lifecycle adopted
+- [x] **The 9-commit held stack (v0.83.1→v0.83.7) is LIVE on main.** Owner approved (test-mode, no
+      real data) → pushed; `origin/main == HEAD` at **v0.83.7**, hold cleared. Includes the v0.83.1
+      save-toast gate, the reminders RPC, export-all full blobs, >1000 pagination, and 3 latent-crash
+      fixes (Compare `<tbody>`, import.js `MS`, ChartSettingsModal `dashChartOptions`).
+- [x] **Docs lifecycle (PLAYBOOK §4b/§4c) adopted.** New: LOGIC_MAP, UNIVERSAL_RULES, STATE,
+      ISSUES_LEDGER, DEPENDENCY-MAP; 12 done docs archived + stamped; ephemeral docs got kill-conditions.
+- [ ] **Phone spot-check (optional):** open https://finance.goldenanchor.life — confirm `__GA_BUILD__`
+      ends `v0837…` and the dashboard + Chart Settings modal open without error.
 
 ## Finish-the-project run — 2026-06-11 (v0.75.2 → v0.76.1)
 

@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## Process/Docs — 2026-06-25 — held stack shipped to main + documentation lifecycle adopted (PLAYBOOK §4b/§4c)
+
+Two things, no app-code change beyond what already shipped:
+1. **The 9-commit held stack landed on `main`** (v0.83.1→v0.83.7), owner-approved in test-mode. The
+   v0.83.1 save-toast gate, reminders RPC, export-all full blobs, >1000 pagination, and the three
+   latent-crash fixes (Compare `<tbody>`, import.js `MS`, ChartSettingsModal `dashChartOptions`) are
+   now live. `origin/main == HEAD` at v0.83.7 — no held stack.
+2. **Adopted the Mauricio-OS documentation lifecycle** (PLAYBOOK §4b/§4c). New canonical infra:
+   `docs/LOGIC_MAP.md` (live-only doc index, replaces the stale `_INDEX.md`), `docs/UNIVERSAL_RULES.md`,
+   `docs/STATE.md`, `docs/ISSUES_LEDGER.md`, `docs/DEPENDENCY-MAP.md`. Archived 12 done/superseded docs
+   to `docs/archive/` with "⛔ ARCHIVED" banners + dropped from the live map (incl. the shipped
+   MASTER-DIRECTIVE, the scalable-data-layer plan/spec/reports, dashboard-rewrite, PRICING-AUDIT,
+   MODERN-REDESIGN). Gave every ephemeral doc a kill-condition. Caught a doc-rot bug: root `SKILL.md`
+   is the **`finance-app-updater`** skill (CLAUDE.md had it mislabeled as a design manifest — fixed).
+   Still to come: the `finance-review-mode` + `finance-feedback-intake` skills, the CLAUDE.md bootstrap
+   block, and the CRUISE_MODE infra.
+
 ## v0.83.7 — 2026-06-25 (Patch) — fix: ChartSettingsModal crash — `dashChartOptions` was undefined after Phase-2 split
 
 `ChartSettingsModal` (avatar menu → "Chart Settings", `src/components/chartEditors.jsx:117`) called

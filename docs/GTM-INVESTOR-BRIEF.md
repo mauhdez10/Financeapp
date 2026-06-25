@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when GTM materials are finalized/launched.
+
 # GTM — Investor Brief
 
 > Audience: prospective angel / pre-seed investors. Honest by design: live product,

@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when all 38 polish items ship or are descoped.
+
 # Golden Anchor Finance — Professional Polish Punch-List
 *Research basis: motionsites.ai showcase patterns; Mercury (incl. Blake Crosley's full teardown w/ exact values); Linear's two published redesign retrospectives + design-system extractions; Stripe dashboard/app design docs; Ramp design system; Origin & Copilot Money. Compiled 2026-06-10. This is the SPEC for the professionalization pass — implement items as written; each is concrete on purpose.*
 

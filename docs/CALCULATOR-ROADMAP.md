@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when the P1 calculators ship or are descoped.
+
 # Calculator Roadmap — gap analysis, additions, and hub layout fix
 
 > Created 2026-06-11. Audit of the public Calculators page (`src/components/calculators.jsx`,

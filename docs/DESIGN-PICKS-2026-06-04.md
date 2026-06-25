@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive once these design-lab picks are ported into the app.
+
 # Golden Anchor — Design Picks (2026-06-04)
 
 Owner picks from the Design Lab (`preview/design-lab.html` v2 dual-mode). Captured for the next session.

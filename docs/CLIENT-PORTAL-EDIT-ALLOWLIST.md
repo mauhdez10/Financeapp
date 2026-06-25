@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when portal-write (client_update_own_data) ships or is rejected.
+
 # Portal — Client Edit Allow-List PROPOSAL (needs Mauricio's approval)
 
 For portal migration 02 (`client_update_own_data` / `client_get_own_data`). Built from the

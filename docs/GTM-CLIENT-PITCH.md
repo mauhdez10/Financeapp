@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when GTM materials are finalized/launched.
+
 # GTM — Client Pitch (prospective clients)
 
 > Audience: low-income families and older / low-tech users, bilingual EN/ES. US-based

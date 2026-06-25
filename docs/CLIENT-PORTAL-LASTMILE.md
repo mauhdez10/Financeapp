@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when feature/client-portal merges or is abandoned.
+
 # Client Portal — Last-Mile Plan & Review (2026-06-06)
 
 Review of branch `feature/client-portal` (unmerged, not deployed). Foundation is sound and

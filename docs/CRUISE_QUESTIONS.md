@@ -1,9 +1,20 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Each entry REMOVED once the owner answers it. The file persists.
+
 # CRUISE_QUESTIONS.md — unattended-tick questions for the owner
 
 > The cron failsafe tick appends yes/no questions here (with a recommendation) when it
 > hits something it should not decide alone, then moves on. Newest on top.
 
-## 2026-06-24 — cron tick
+## ✅ 2026-06-25 — both open questions ANSWERED (kept briefly for traceability, prune next sweep)
+- **Q1 (held stack)** → **ANSWERED: approve all → main.** Owner approved in test-mode; the 9-commit
+  stack shipped to `origin/main` at v0.83.7. Hold cleared.
+- **Q2 (missing CRUISE infra)** → **ANSWERED: author the infra + docs system.** Done 2026-06-25 —
+  LOGIC_MAP/UNIVERSAL_RULES/STATE/ISSUES_LEDGER/DEPENDENCY-MAP created; CRUISE_MODE.md + heartbeat
+  to follow as part of the cruise build.
+
+---
+
+## 2026-06-24 — cron tick (ANSWERED above — historical)
 
 ### Q1 (BLOCKER for all pushes) — review & approve the held v0.83.1 to unblock the queue
 `origin/main` is still at **v0.83.0** (`179ef52`). The local `main` is **5 commits ahead**, all held:

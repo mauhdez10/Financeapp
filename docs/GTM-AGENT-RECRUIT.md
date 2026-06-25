@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Archive when GTM materials are finalized/launched.
+
 # GTM — Advisor / Agent Recruiting Pitch
 
 > Audience: bilingual insurance agents and money coaches we want on the platform.

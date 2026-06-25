@@ -1,3 +1,5 @@
+> 🔖 **Live · ephemeral** (lifecycle §4b, see [LOGIC_MAP](LOGIC_MAP.md)). **Kill-condition:** Accepted ideas move to BACKLOG; archive the memo when exhausted.
+
 # DIFFERENTIATION IDEAS — "make us huge and different from the rest"
 
 > Strategy memo, 2026-06-11. Responds to MASTER-DIRECTIVE §K.4 ("more differentiation

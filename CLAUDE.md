@@ -4,6 +4,17 @@
 > Pair with `claude-mem` plugin (installed) — between the two, you should not
 > need to re-upload AGENT/SKILL/WORKPLAN files at the start of new sessions.
 
+> ## 🧭 SESSION BOOTSTRAP — read these FIRST, every chat (self-orient before acting)
+> 1. **[docs/UNIVERSAL_RULES.md](docs/UNIVERSAL_RULES.md)** — always-on owner rules + doc lifecycle + the review handler.
+> 2. **[docs/STATE.md](docs/STATE.md)** — 60-second current snapshot (live version, what's in flight). *Trust this + the build marker over prose below, which can lag.*
+> 3. **[docs/LOGIC_MAP.md](docs/LOGIC_MAP.md)** — the single index of every **LIVE** doc. Archived work (`docs/archive/`) is deliberately NOT listed — do **not** re-open it. New chats start here.
+>
+> **Where things live (check, don't ask):** secrets → `finance-credentials.md` (gitignored, repo root — never commit/print). Real client sample files → **none yet** (test-mode, no real data; a `docs/reference/` folder will hold them when added). Code structure → [docs/DEPENDENCY-MAP.md](docs/DEPENDENCY-MAP.md) + `graphify-out/`. DB → `supabase-finance` MCP (project `ukqqcrupyooqyksotieu`).
+>
+> **Lifecycle (PLAYBOOK §4b):** every doc is canonical / cross-project / ephemeral / archived; LOGIC_MAP lists only live; archive on **done+reviewed** only (never delete). **Every owner input runs the `finance-review-mode` handler** (§4c): log → bidirectional impact-check → replace-not-parallel → update canonical files + flip states → verify on real files. Big batches → `finance-feedback-intake`.
+>
+> **NEVER touch Velo** (separate repo + Supabase). Changing the app or a canonical doc? Run the **`finance-app-updater`** skill — that's what root `SKILL.md` is.
+
 > ## 📐 CROSS-PROJECT PLAYBOOK (inherited — NOT copied here)
 > The portable way-of-working lives in the canonical
 > **`C:\Users\mauhd\Projects\mauricio-os\PLAYBOOK.md`** (single source of truth; its header points
@@ -102,7 +113,7 @@ The v0.60 → v0.69 arc in one table (full detail in CHANGELOG.md):
 
 - **`CLAUDE.md`** (this file) — auto-loaded by Claude Code
 - **`.env.local`** — Supabase URL + anon key set; dev server can log in. NEVER edit/commit this file. `.env.local.example` is the template that ships in repo.
-- **`AGENT.md`** — full decision log + locked decisions (D-1 to D-37) + pitfalls (#1-#19). Read on demand. `SKILL.md` is the design-system manifest (Claude.ai/design only). `WORKPLAN-archive-2026-05.md` is preserved historical only.
+- **`AGENT.md`** — full decision log + locked decisions (D-1 to D-37) + pitfalls (#1-#19). Read on demand. Root `SKILL.md` is the **`finance-app-updater`** skill (the safe-edit procedure) — NOT a design manifest; the design-system skill lives at `.claude/skills/golden-anchor-design-surface/`. `WORKPLAN-archive-2026-05.md` is preserved historical only.
 - **Single folder**: this repo is the working copy AND the deploy clone (two-folder workflow retired 2026-06-05).
 - **Plugins installed**: `claude-mem`, `vercel`, `playwright`, `ui-ux-pro-max`, `github`, `gitlab`. The vercel + playwright MCPs may need a Claude Code restart to load. Once active, USE them to verify deploys + run e2e tests instead of manual.
 
@@ -145,13 +156,13 @@ GitHub repo: **https://github.com/mauhdez10/Financeapp** (`main` branch only).
 | `src/engagementLetterTemplate.js` | Engagement letter body + token substitutions | Only when the engagement letter itself changes |
 | `api/*.js` | 5 Vercel serverless functions (intake invites, support email, PDF render, etc.) | When server-side work is needed |
 | `AGENT.md` | **Project architectural truth** — locked decisions (D-1 through D-36), pitfalls (#1 through #17), current version, smoke tests | Read §1 + §3 + §4 + §7 on first session; otherwise grep for specific D-NN or pitfall numbers |
-| `SKILL.md` | **Design-system skill** (`golden-anchor-design`) — brand colors, type, asset paths, UI-kit references. Used by Claude.ai/design when generating brand-correct mocks. Not an editing procedure. | Only when working on brand/visual design artifacts — not for code edits |
+| `SKILL.md` (root) | The **`finance-app-updater`** skill — the procedure to safely edit App.jsx + canonical docs (pre-flight, atomic writes, verification). | Before ANY app or canonical-doc change. (The design-system skill is `.claude/skills/golden-anchor-design-surface/`.) |
 | `WORKPLAN-archive-2026-05.md` | **Archived.** Old chat-upload workflow notes from the claude.ai-with-uploads era. No longer current — superseded by this `CLAUDE.md`. | Don't read for procedure — kept for history only |
 | `CHANGELOG.md` | Per-version release notes — newest on top | Skim the top 1-2 entries to know what just shipped |
 | `package.json` | Deps + scripts | Rarely |
 | `vercel.json` | SPA rewrite + per-function memory/timeout config | When touching `api/` or routing |
 
-**`ui_kits/`, `preview/`, `HANDOFF.md`, `SKILL.md` (the design-system one at root)** — these are **design-system reference docs from claude.ai/design**, NOT app code. Don't load unless explicitly working on brand/visual port.
+**`ui_kits/`, `preview/`, `HANDOFF.md`** — these are **design-system reference docs from claude.ai/design**, NOT app code. Don't load unless explicitly working on brand/visual port. (Root `SKILL.md` is NOT in this group — it's the `finance-app-updater` editing procedure.)
 
 ---
 
