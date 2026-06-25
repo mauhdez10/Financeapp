@@ -12,3 +12,6 @@
 
 ---
 finance-session · 2026-06-25T22:00:00Z · seed line (infra created; no tick run yet)
+finance-session · 2026-06-25T23:26:47Z · starting: ordered-map step 2 (competitor + feature-gap scan) — supervised test tick
+
+finance-cron · 2026-06-25T23:25:44Z · starting tick (ordered-map item 1: bugs/correctness scan)

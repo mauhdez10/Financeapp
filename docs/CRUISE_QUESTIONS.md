@@ -5,6 +5,25 @@
 > The cron failsafe tick appends yes/no questions here (with a recommendation) when it
 > hits something it should not decide alone, then moves on. Newest on top.
 
+## 2026-06-25 — feature-gap scan (cruise map step 2) · owner yes/no
+Scanned Monarch, Copilot, Origin, EveryDollar, and **Fintor** (the one direct bilingual EN/ES
+competitor). Candidates below are filtered for fit with GA's model (coaching ≠ management;
+advisor-entered data; low-income/older/low-tech audience). Each is a yes/no — **none built without your go.**
+
+- **FG-1 — In-app AI assistant (bilingual Q&A over the client's own data).** Monarch/Copilot/Fintor
+  all ship a built-in "ask anything about your finances" assistant; GA only has "Copy AI summary"
+  (export to an external AI). **Rec: YES** — strong coaching fit, GA already has the data + the summary
+  groundwork; scope/cost (Claude API) is your call. *(Refs: Monarch, Copilot, Fintor.)*
+- **FG-2 — Auto-generated personalized plan (multi-section, from the client's data, ends in your
+  free-consult CTA).** Fintor's "7-section AI plan." GA has reports but no one-tap tailored plan.
+  **Rec: YES** — leverages existing data + funnels to you (the advisor). Owner scope call.
+- **FG-3 — Daily habit / streak + micro-lessons (bilingual).** Fintor + EveryDollar use streaks/daily
+  coaching for engagement. GA has none. **Rec: MAYBE** — fits the mission and the low-tech audience,
+  but it's a sizable new surface; worth it only if you want an engagement loop.
+- **FG-4 — Optional automatic bank linking (Plaid), manual entry stays default.** Every major app
+  auto-syncs; GA is manual (advisor-entered). **Rec: HOLD** — conflicts with the coaching/low-tech/
+  advisor-entered model + adds cost & compliance; revisit only as an optional Premium add-on later.
+
 ## ✅ 2026-06-25 — both open questions ANSWERED (kept briefly for traceability, prune next sweep)
 - **Q1 (held stack)** → **ANSWERED: approve all → main.** Owner approved in test-mode; the 9-commit
   stack shipped to `origin/main` at v0.83.7. Hold cleared.
