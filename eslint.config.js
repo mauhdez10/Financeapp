@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // 'dist' is build output; '.claude' holds agent worktrees (full repo copies,
+  // incl. their own dist/ + minified vendor bundles) that must never be linted.
+  globalIgnores(['dist', '**/dist', '.claude']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

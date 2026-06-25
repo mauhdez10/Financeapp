@@ -2,6 +2,10 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## Tooling — 2026-06-25 (no app change, no marker bump) — ESLint stops linting build output + agent worktrees
+
+`eslint.config.js` ignored only top-level `dist`, so `npm run lint` was also scanning `.claude/worktrees/agent-a79f77ab4d262a299/` — a full stale repo copy including its own minified `dist/` vendor bundles — and that copy's `api/` files (which miss the `api/**/*.js` Node-globals override). Result: ~1,400 phantom errors (`process`/`Buffer`/`Deno`/`define`/`val`/etc. from minified bundles) drowning the real source signal. Ignore list widened to `['dist', '**/dist', '.claude']`. `npm run lint` now reports ~430 **real** source problems (down from 1,465), and `no-undef` — the latent-crash class — drops from **164 → 1** (only `dashChartOptions` in `chartEditors.jsx` remains; next fix). No app-bundle change → `__GA_BUILD__` deliberately NOT bumped (the marker tracks deployed app versions). Committed LOCAL (push still blocked by held v0.83.1).
+
 ## v0.83.6 — 2026-06-25 (Patch) — fix: import.js missing `MS` import (latent ReferenceError in Excel/CSV importer)
 
 `src/utils/import.js` uses the month-abbreviation array `MS` in two places — `shToLabel` (line 13, sheet-name →
