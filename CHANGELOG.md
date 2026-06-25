@@ -2,6 +2,25 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.6 — 2026-06-25 (Patch) — fix: import.js missing `MS` import (latent ReferenceError in Excel/CSV importer)
+
+`src/utils/import.js` uses the month-abbreviation array `MS` in two places — `shToLabel` (line 13, sheet-name →
+"Mon YYYY" label) and the month-sheet parser (line 161, `MS.indexOf(moName)+1`) — but never imported it. `MS`
+was left undefined when the importer was carved out of App.jsx in Phase 2 (D-37), so any Excel/CSV import that
+hit those paths would throw `ReferenceError: MS is not defined`. Same class of bug as the admin.jsx
+`expBackup`/`BackupImportModal` import loss fixed in v0.83.3. Added `import { MS } from "../constants/meta";`
+(`MS` is exported there and consumed identically by App.jsx and clientReports.jsx; verified no import cycle —
+`constants/meta.js` only pulls `GOLD` from `styles/theme`).
+
+Verified: build green; ESLint on `import.js` went from 3 `no-undef` errors ('MS' is not defined ×3) to **0**;
+no visible string changed (EN/ES symmetry N/A). Marker bumped v0835 → v0836. Could not drive the full Excel
+import in headless preview (needs a multi-sheet .xlsx fixture); the fix is proven at build+lint level (the
+symbol now resolves), matching how the same bug class was handled in v0.83.3.
+
+**⚠️ HELD LOCAL — NOT pushed.** Additive + a clear crash fix (fix-and-push-eligible on its own), but
+`origin/main` is at v0.83.0 with the held **v0.83.1 save-toast gate** between origin and HEAD — pushing would
+ship that unapproved live-save-path commit. Stacks as the 6th held commit; ships once the owner approves v0.83.1.
+
 ## v0.83.5 — 2026-06-24 (Patch) — fix: Compare tab `<tbody>` whitespace text-node React warning
 
 `CompareReportTab` (`src/components/clientReports.jsx`) closed both of its comparison tables with

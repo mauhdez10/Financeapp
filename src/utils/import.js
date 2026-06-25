@@ -2,6 +2,7 @@
 // docs/ARCHITECTURE-PLAN.md (D-37). Pure data helpers (only finance utils + XLSX).
 import * as XLSX from "xlsx";
 import { gid, sumB, toM } from "./finance";
+import { MS } from "../constants/meta";
 
 export const expBackup=async(clients,settings)=>{const data=JSON.stringify({__ga_backup__:true,v:2,ts:Date.now(),clients,settings},null,2);const fname="golden_anchor_backup_"+new Date().toISOString().slice(0,10)+".json";try{if(typeof window!=="undefined"&&window.showSaveFilePicker){const h=await window.showSaveFilePicker({suggestedName:fname,types:[{description:"Golden Anchor backup (JSON)",accept:{"application/json":[".json"]}}]});const w=await h.createWritable();await w.write(data);await w.close();return;}}catch(e){if(e&&e.name==="AbortError")return;}const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;a.click();};
 export const validateBackup=json=>{try{const d=JSON.parse(json);return d.__ga_backup__&&Array.isArray(d.clients)?d:null;}catch{return null;}};
