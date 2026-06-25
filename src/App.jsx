@@ -14,7 +14,7 @@ import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgra
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v0830-advisor-summary-rows-lazy-blobs";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v0831-advisor-save-toast-gated";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaSetArchived, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -669,15 +669,18 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     try{const blob=await gaLoadClient(authUser.id,row.id);setSelected(blob?mig(blob):mig(row));}
     finally{setLoadingClient(false);}
   },[_isAdvisor,authUser]);
-  const upClient=useCallback(async c=>{const mc=mig(c);
-    if(_isAdvisor()&&authUser){await gaSaveClient(authUser.id,mc);setSelected(mc);await refreshSummaries();}
+  const upClient=useCallback(async c=>{const mc=mig(c);let ok=true;
+    // v0.83.1 — gate the success toast on the advisor save result. gaSaveClient returns false +
+    // dispatches ga-save-failed (error toast) on failure; without this guard the green "saved"
+    // toast immediately overwrote that error → user told "saved" when it wasn't (silent data loss).
+    if(_isAdvisor()&&authUser){ok=await gaSaveClient(authUser.id,mc);setSelected(mc);await refreshSummaries();}
     else{setClients(p=>p.map(x=>x.id===mc.id?mc:x));setSelected(mc);}
-    toastSaved(t.savedClientToast||"Client saved");
+    if(ok)toastSaved(t.savedClientToast||"Client saved");
   },[toastSaved,t,_isAdvisor,authUser,refreshSummaries]);
-  const addClient=async newC=>{const mc=mig(newC);
-    if(_isAdvisor()&&authUser){await gaSaveClient(authUser.id,mc);setSelected(mc);await refreshSummaries();}
+  const addClient=async newC=>{const mc=mig(newC);let ok=true;
+    if(_isAdvisor()&&authUser){ok=await gaSaveClient(authUser.id,mc);setSelected(mc);await refreshSummaries();}
     else{setClients(p=>[...p,mc]);setSelected(mc);}
-    setAddOpen(false);setSelectedTab("monthly");setNav("clients");toastSaved(t.savedClientAddedToast||"Client added");
+    setAddOpen(false);setSelectedTab("monthly");setNav("clients");if(ok)toastSaved(t.savedClientAddedToast||"Client added");
   };
   const importMultiple=useCallback(async cs=>{const arr=cs.map(mig);
     if(_isAdvisor()&&authUser){for(const c of arr)await gaSaveClient(authUser.id,c);await refreshSummaries();}

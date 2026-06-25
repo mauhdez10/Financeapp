@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.1 — 2026-06-24 (Patch) — fix: advisor save-success toast no longer masks a failed save
+
+Adversarial bug-sweep of the v0.83.0 rework surfaced one real regression: advisor `upClient`/`addClient`
+`await gaSaveClient(...)` but ignored its boolean result, then unconditionally fired the green "Client
+saved"/"Client added" toast. On a genuine save failure `gaSaveClient` returns `false` and dispatches
+`ga-save-failed` (the error toast) — but the success toast immediately overwrote it, so the advisor was
+told the save succeeded when it hadn't (the edit lived only in `selected`, lost on reload). Pre-v0.83
+advisor saves ran through the array-diff effect with no competing success toast, so this masking was new
+in v0.83.0. Fix: gate the success toast on the save result (`if(ok)…`); on failure the `ga-save-failed`
+error toast now stands. Client-role path unchanged (`ok` stays true). No string/schema changes.
+
+Swept and judged correct (no change needed): the array-diff save effect is guarded to client-role only
+(no risk of summary rows persisted as blobs); `mig(row)` backfills all arrays so the null-blob fallback
+renders a valid empty client (no crash); split/join load both blobs fresh before merge; the `client_type`
+column exists (no empty-list risk); the `color1` deterministic-hash default and the reminders
+No-Contact-only change are intended behavior (follow-ups, not bugs).
+
 ## v0.83.0 — 2026-06-24 (Minor) — scale: advisor App-state holds summary rows + lazy-loads blobs
 
 The final scalability piece: the **advisor** `App()` no longer loads every client's full JSONB blob.
