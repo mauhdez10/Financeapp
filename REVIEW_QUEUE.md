@@ -4,6 +4,19 @@
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
 > confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
 
+## ⏳ Cron tick — 2026-06-24 (NOTHING pushed; full detail in docs/CRUISE_QUESTIONS.md)
+- [ ] **One decision unblocks 5 commits.** `origin/main` is at v0.83.0; local `main` is 5 commits ahead
+      (v0.83.1 → v0.83.5), all held. The held **v0.83.1 save-toast gate** sits between origin and HEAD, so
+      **no push is possible without shipping v0.83.1 to prod.** Review v0.83.1 (gate the "Client saved"
+      toast on the save result so a failed save can't show success). Approve → `git push origin main` ships
+      all five. Hold longer → cherry-pick the 3 additive ones (v0.83.2 reminders RPC, v0.83.3 export-all,
+      v0.83.5 Compare `<tbody>` fix). See `docs/CRUISE_QUESTIONS.md` Q1.
+- [ ] **v0.83.5 (this tick):** fixed the Compare-tab React whitespace-in-`<tbody>` dev warning — cosmetic,
+      verified, committed LOCAL only (stacked behind v0.83.1).
+- [ ] **Infra note:** the CRUISE_MODE/HEARTBEAT/QUESTIONS files referenced by the scheduled task didn't
+      exist; the tick fell back to the scale-data-layer→REVIEW_QUEUE→BACKLOG chain. See Q2 — pick whether
+      to author the infra files or update the task prompt.
+
 ## Finish-the-project run — 2026-06-11 (v0.75.2 → v0.76.1)
 
 ### 🧊 The landing hero, take 3 — gold cube, Resend × Letter direction (v0.79)
