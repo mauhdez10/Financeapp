@@ -14,9 +14,9 @@ import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgra
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v0822-roster-windowed";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-24-v0830-advisor-summary-rows-lazy-blobs";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
-import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
+import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaSetArchived, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
 import { ThemeCtx, useTh, HideCtx, useHN, ChartConfigCtx, useChartConfig } from "./contexts/theme";
 import { ACCT_META, LOAN_META, ACCA, LOKA, CP, PC, SVCS, svcPayUrl, DEF_PORT_RATES, TICKER_META, PORTFOLIOS, ALT_PACKS, MAIN_PACKS, MS, MS_ES, ML_ES, mLabel, ML, CERTS, PHYS_CATS, ACCT_L_ES, LOAN_L_ES, PHYS_L_ES, _gaLang, acctL, loanL, physL, DEF_SETTINGS } from "./constants/meta";
@@ -239,7 +239,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   const _preAuthUrl=(v)=>v==="pricing"?"/pricing":v==="login"?"/login":v==="about"?"/about-us":v==="contact"?"/contact":v==="faq"?"/faq":"/";
   const[preAuth,setPreAuthRaw]=useState(()=>{if(typeof window==="undefined")return"landing";return _preAuthOf(window.location.pathname);});
   const[linkedView,setLinkedView]=useState(null); // MD-C: sanitized advisor record for a LINKED client account
-  const[selected,setSelected]=useState(null);const[selectedTab,setSelectedTab]=useState((_gaInitRoute&&_gaInitRoute.selectedTab)||"report");const[selectedCalc,setSelectedCalc]=useState((_gaInitRoute&&_gaInitRoute.selectedCalc)||null);// v0.13.1 — which calculator is open inside the /calculators page
+  const[selected,setSelected]=useState(null);const[loadingClient,setLoadingClient]=useState(false);const[selectedTab,setSelectedTab]=useState((_gaInitRoute&&_gaInitRoute.selectedTab)||"report");const[selectedCalc,setSelectedCalc]=useState((_gaInitRoute&&_gaInitRoute.selectedCalc)||null);// v0.13.1 — which calculator is open inside the /calculators page
   const[addOpen,setAddOpen]=useState(false);const[profileOpen,setProfileOpen]=useState(false);const[profileSection,setProfileSection]=useState(null);const[importDupResolver,setImportDupResolver]=useState(null);const[sidebarCollapsed,setSidebarCollapsed]=useState(false);const[drawerOpen,setDrawerOpen]=useState(false);const[avatarPickerOpen,setAvatarPickerOpen]=useState(false);const[chartSettingsOpen,setChartSettingsOpen]=useState(false);const[clientsMenuOpen,setClientsMenuOpen]=useState(false);const[clientsSort,setClientsSort]=useState("name");const[sidebarImportOpen,setSidebarImportOpen]=useState(false);const vp=useViewport();const isPublicIntakeRoute=typeof window!=="undefined"&&/\/intake\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));const isPublicPortalRoute=typeof window!=="undefined"&&/\/portal\/?(\?|$)/.test((window.location.pathname||"")+(window.location.search||""));
   // Close Clients hamburger on outside click
   useEffect(()=>{if(!clientsMenuOpen)return;const h=e=>{const el=document.getElementById("ga-clients-menu");if(el&&!el.contains(e.target))setClientsMenuOpen(false);};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[clientsMenuOpen]);
@@ -304,17 +304,25 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
       if(_foreignCache){gaClearLocalCache();setClients([]);setSettings(s=>({...DEF_SETTINGS,lang:s.lang,isDark:s.isDark}));}
       try{localStorage.setItem("ga_cache_uid",authUser.id);}catch(e){}
       try{
+        const _isClient=(authUser?.user_metadata?.role)==="client";
         if(!_foreignCache)await gaMigrateLocalStorage(authUser.id);
-        const remote=await gaLoadClients(authUser.id);
-        if(cancelled)return;
-        if(Array.isArray(remote)&&remote.length>0){
-          const mapped=remote.map(mig);
-          _lastClientsRef.current=mapped;  // seed BEFORE setClients so save effect sees no diff
-          setClients(mapped);
+        if(_isClient){
+          // CLIENT ROLE (unchanged): single self-record, full blob in clients[0].
+          const remote=await gaLoadClients(authUser.id);
+          if(cancelled)return;
+          if(Array.isArray(remote)&&remote.length>0){
+            const mapped=remote.map(mig);
+            _lastClientsRef.current=mapped;  // seed BEFORE setClients so save effect sees no diff
+            setClients(mapped);
+          }else if(_foreignCache){_lastClientsRef.current=[];setClients([]);}
+          else{const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});_lastClientsRef.current=[];setClients([_self]);}
         }else{
-          if(_foreignCache){_lastClientsRef.current=[];setClients([]);}
-          else if((authUser?.user_metadata?.role)==="client"){const _self=mig({id:gid(),firstName:(authUser?.user_metadata?.firstName)||"",lastName:"",email:authUser?.email||"",clientType:"financeOnly",color1:GOLD});_lastClientsRef.current=[];setClients([_self]);}
-          else{_lastClientsRef.current=clients;}  // local data became the seed (migration uploaded it)
+          // ADVISOR ROLE (v0.83 scale): load lightweight SUMMARY rows; full blobs load on open via gaLoadClient.
+          const sums=await gaLoadClientSummaries(authUser.id);
+          if(cancelled)return;
+          const rows=Array.isArray(sums)?sums:[];
+          _lastClientsRef.current=rows;  // seed so the (client-role-guarded) save effect sees no diff
+          setClients(rows);
         }
         const remoteSettings=await gaLoadSettings(authUser.id);
         if(cancelled)return;
@@ -339,8 +347,12 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     return()=>{cancelled=true;};
   },[authUser?.id]);
   // Persist clients to Supabase only (no localStorage full-cache as of v0.81.1 — see scale plan)
+  // v0.83 — ADVISOR persistence is now EXPLICIT (mutation callbacks call gaSaveClient/gaSetArchived/
+  // gaDeleteClient directly). The advisor `clients` array holds SUMMARY rows, not blobs, so the
+  // array-diff save below would persist summaries — wrong. Guard it to the CLIENT role (1 self-blob).
   useEffect(()=>{
     if(!authUser||!supabase||!_cloudReadyRef.current)return;
+    if((authUser?.user_metadata?.role)!=="client")return;
     const prev=_lastClientsRef.current||[];
     const prevById=new Map(prev.map(c=>[c.id,c]));
     const nextIds=new Set(clients.map(c=>c.id));
@@ -389,7 +401,8 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
     if(parsed.selectedTab!==selectedTab)setSelectedTab(parsed.selectedTab);
     if(parsed.clientId!=null){
       const c=clients.find(x=>String(x.id)===parsed.clientId);
-      if(c&&c.id!==selected?.id)setSelected(c);
+      // v0.83 — advisor rows are summaries; load the full blob for `selected`. Client-role rows are blobs.
+      if(c&&c.id!==selected?.id){if(_isAdvisor()&&authUser&&c._summary){gaLoadClient(authUser.id,c.id).then(b=>{if(b)setSelected(mig(b));});}else setSelected(c);}
     }
     // v0.13.1 — calculator deep-link
     if((parsed.selectedCalc||null)!==selectedCalc)setSelectedCalc(parsed.selectedCalc||null);
@@ -431,7 +444,9 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         setSelectedTab(st.selectedTab||"report");
         setSelectedCalc(st.selectedCalc||null); // v0.13.1
         if(st.selectedId==null){setSelected(null);}
-        else{const c=clients.find(x=>x.id===st.selectedId);setSelected(c||null);}
+        else{const c=clients.find(x=>x.id===st.selectedId);
+          // v0.83 — load the blob for advisor summary rows; client-role rows are already blobs.
+          if(c&&_isAdvisor()&&authUser&&c._summary){gaLoadClient(authUser.id,c.id).then(b=>setSelected(b?mig(b):null));}else setSelected(c||null);}
       }else{
         // v0.13.0 — Back/Forward landed on a state-less entry (e.g. an external
         // link or manual URL edit). Parse the current URL and apply.
@@ -441,7 +456,8 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           setSelectedTab(parsed.selectedTab);
           setSelectedCalc(parsed.selectedCalc||null); // v0.13.1
           if(parsed.clientId==null){setSelected(null);}
-          else{const c=clients.find(x=>String(x.id)===parsed.clientId);setSelected(c||null);}
+          else{const c=clients.find(x=>String(x.id)===parsed.clientId);
+            if(c&&_isAdvisor()&&authUser&&c._summary){gaLoadClient(authUser.id,c.id).then(b=>setSelected(b?mig(b):null));}else setSelected(c||null);}
         }else{
           setNav("dashboard");setSelected(null);setSelectedTab("report");setSelectedCalc(null);
         }
@@ -638,20 +654,98 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   },[]);
   // v0.26.0 — "✓ Saved" toast helper (UI/UX Pro Max guideline #6 — Submit Feedback)
   const toastSaved=useCallback((msg)=>setToast({kind:"success",msg:msg||(t.savedToast||"Saved"),ts:Date.now()}),[t]);
-  const upClient=useCallback(c=>{const mc=mig(c);setClients(p=>p.map(x=>x.id===mc.id?mc:x));setSelected(mc);toastSaved(t.savedClientToast||"Client saved");},[toastSaved,t]);
-  const addClient=newC=>{const mc=mig(newC);setClients(p=>[...p,mc]);setAddOpen(false);setSelectedTab("monthly");setSelected(mc);setNav("clients");toastSaved(t.savedClientAddedToast||"Client added");};
-  const importMultiple=useCallback(cs=>{setClients(prev=>[...prev,...cs.map(mig)]);},[]);
-  const archiveClient=useCallback(id=>{setClients(p=>p.map(c=>c.id===id?{...c,archived:!c.archived}:c));toastSaved(t.archivedToast||"Client archived");},[toastSaved,t]);
-  const restoreClient=useCallback(id=>{setClients(p=>p.map(c=>c.id===id?{...c,archived:false}:c));toastSaved(t.restoredToast||"Client restored");},[toastSaved,t]);
-  const deleteClient=useCallback(id=>{setClients(p=>p.filter(c=>c.id!==id));setSelected(null);toastSaved(t.deletedToast||"Client deleted");},[toastSaved,t]);
-  const restoreBackup=useCallback((backup,mode)=>{const mc=backup.clients.map(mig);if(mode==="replace"){setClients(mc);if(backup.settings)setSettings(s=>({...s,...backup.settings}));}else{setClients(prev=>{const newClients=[];const updated=[...prev];mc.forEach(bc=>{const dup=findDuplicate(bc,updated);if(dup){const idx=updated.findIndex(c=>c.id===dup.id);updated[idx]=smartMerge(dup,bc);}else newClients.push(bc);});return[...updated,...newClients];});}},[])
-  const splitClient=(p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==selected?.id),p1,p2]);setSelected(null);setNav("clients");};
-  const joinClients=(c1,c2)=>{const joined=mig({...c1,id:c1.id,partnerFirst:c2.firstName,partnerLast:c2.lastName,color2:c2.color1,incomeStreams:[...c1.incomeStreams,...c2.incomeStreams.map(s=>({...s,id:gid(),person:"p2"}))],bills:[...c1.bills,...c2.bills.filter(b=>!c1.bills.some(x=>x.name===b.name)).map(b=>({...b,id:gid(),assignedTo:"p2",split:{p1:0,p2:100}}))],cards:[...c1.cards,...c2.cards.map(cc=>({...cc,id:gid(),owedBy:"p2"}))],accounts:[...c1.accounts,...c2.accounts.map(a=>({...a,id:gid(),owner:"p2"}))],loans:[...c1.loans,...c2.loans.map(l=>({...l,id:gid(),owner:"p2"}))]});setClients(prev=>[...prev.filter(x=>x.id!==c1.id&&x.id!==c2.id),joined]);setSelected(joined);setNav("clients");};
+  // v0.83 — advisor scale: `clients` holds SUMMARY rows; full blobs live in Supabase and load on
+  // open (gaLoadClient). Advisor mutations call the service fns directly, then refresh the summary
+  // rows. CLIENT role (single self-blob in clients[0]) keeps the setClients path — its save effect
+  // still persists. `_isAdvisor()` is read at call time (authUser is stable across a session).
+  const _isAdvisor=useCallback(()=>(authUser?.user_metadata?.role)!=="client",[authUser]);
+  const refreshSummaries=useCallback(async()=>{if(!authUser)return;const s=await gaLoadClientSummaries(authUser.id);if(s){_lastClientsRef.current=s;setClients(s);}},[authUser]);
+  // Open a client = load its full blob (advisor rows are summaries). Client-role rows are already blobs.
+  const openClient=useCallback(async(row,tab)=>{
+    if(tab)setSelectedTab(tab);
+    if(!row)return;
+    if(!_isAdvisor()||!row._summary||!authUser){setSelected(mig(row));return;}
+    setLoadingClient(true);
+    try{const blob=await gaLoadClient(authUser.id,row.id);setSelected(blob?mig(blob):mig(row));}
+    finally{setLoadingClient(false);}
+  },[_isAdvisor,authUser]);
+  const upClient=useCallback(async c=>{const mc=mig(c);
+    if(_isAdvisor()&&authUser){await gaSaveClient(authUser.id,mc);setSelected(mc);await refreshSummaries();}
+    else{setClients(p=>p.map(x=>x.id===mc.id?mc:x));setSelected(mc);}
+    toastSaved(t.savedClientToast||"Client saved");
+  },[toastSaved,t,_isAdvisor,authUser,refreshSummaries]);
+  const addClient=async newC=>{const mc=mig(newC);
+    if(_isAdvisor()&&authUser){await gaSaveClient(authUser.id,mc);setSelected(mc);await refreshSummaries();}
+    else{setClients(p=>[...p,mc]);setSelected(mc);}
+    setAddOpen(false);setSelectedTab("monthly");setNav("clients");toastSaved(t.savedClientAddedToast||"Client added");
+  };
+  const importMultiple=useCallback(async cs=>{const arr=cs.map(mig);
+    if(_isAdvisor()&&authUser){for(const c of arr)await gaSaveClient(authUser.id,c);await refreshSummaries();}
+    else{setClients(prev=>[...prev,...arr]);}
+  },[_isAdvisor,authUser,refreshSummaries]);
+  const archiveClient=useCallback(async id=>{
+    if(_isAdvisor()&&authUser){const cur=(_lastClientsRef.current||[]).find(c=>c.id===id);await gaSetArchived(authUser.id,id,!(cur&&cur.archived));await refreshSummaries();}
+    else{setClients(p=>p.map(c=>c.id===id?{...c,archived:!c.archived}:c));}
+    toastSaved(t.archivedToast||"Client archived");
+  },[toastSaved,t,_isAdvisor,authUser,refreshSummaries]);
+  const restoreClient=useCallback(async id=>{
+    if(_isAdvisor()&&authUser){await gaSetArchived(authUser.id,id,false);await refreshSummaries();}
+    else{setClients(p=>p.map(c=>c.id===id?{...c,archived:false}:c));}
+    toastSaved(t.restoredToast||"Client restored");
+  },[toastSaved,t,_isAdvisor,authUser,refreshSummaries]);
+  const deleteClient=useCallback(async id=>{
+    if(_isAdvisor()&&authUser){await gaDeleteClient(authUser.id,id);setSelected(null);await refreshSummaries();}
+    else{setClients(p=>p.filter(c=>c.id!==id));setSelected(null);}
+    toastSaved(t.deletedToast||"Client deleted");
+  },[toastSaved,t,_isAdvisor,authUser,refreshSummaries]);
+  const restoreBackup=useCallback(async(backup,mode)=>{const mc=backup.clients.map(mig);
+    if(_isAdvisor()&&authUser){
+      // Replace vs merge over the SERVER set: load current blobs to dedupe/merge, then persist.
+      if(mode==="replace"){const prev=_lastClientsRef.current||[];for(const p of prev)await gaDeleteClient(authUser.id,p.id);for(const bc of mc)await gaSaveClient(authUser.id,bc);if(backup.settings)setSettings(s=>({...s,...backup.settings}));}
+      else{const sums=_lastClientsRef.current||[];for(const bc of mc){const dupRow=findDuplicate(bc,sums);if(dupRow){const full=await gaLoadClient(authUser.id,dupRow.id);await gaSaveClient(authUser.id,smartMerge(full?mig(full):dupRow,bc));}else await gaSaveClient(authUser.id,bc);}}
+      await refreshSummaries();
+    }else{
+      if(mode==="replace"){setClients(mc);if(backup.settings)setSettings(s=>({...s,...backup.settings}));}else{setClients(prev=>{const newClients=[];const updated=[...prev];mc.forEach(bc=>{const dup=findDuplicate(bc,updated);if(dup){const idx=updated.findIndex(c=>c.id===dup.id);updated[idx]=smartMerge(dup,bc);}else newClients.push(bc);});return[...updated,...newClients];});}
+    }
+  },[_isAdvisor,authUser,refreshSummaries])
+  // splitClient operates on the OPEN `selected` blob (already a full blob). p1/p2 are new blobs.
+  const splitClient=async(p1,p2)=>{
+    if(_isAdvisor()&&authUser){await gaSaveClient(authUser.id,p1);await gaSaveClient(authUser.id,p2);if(selected?.id!=null)await gaDeleteClient(authUser.id,selected.id);setSelected(null);await refreshSummaries();}
+    else{setClients(prev=>[...prev.filter(x=>x.id!==selected?.id),p1,p2]);setSelected(null);}
+    setNav("clients");
+  };
+  // joinClients(target,partner): args may be SUMMARY rows — load both blobs, then merge.
+  const _mergeJoin=(c1,c2)=>mig({...c1,id:c1.id,partnerFirst:c2.firstName,partnerLast:c2.lastName,color2:c2.color1,incomeStreams:[...c1.incomeStreams,...c2.incomeStreams.map(s=>({...s,id:gid(),person:"p2"}))],bills:[...c1.bills,...c2.bills.filter(b=>!c1.bills.some(x=>x.name===b.name)).map(b=>({...b,id:gid(),assignedTo:"p2",split:{p1:0,p2:100}}))],cards:[...c1.cards,...c2.cards.map(cc=>({...cc,id:gid(),owedBy:"p2"}))],accounts:[...c1.accounts,...c2.accounts.map(a=>({...a,id:gid(),owner:"p2"}))],loans:[...c1.loans,...c2.loans.map(l=>({...l,id:gid(),owner:"p2"}))]});
+  const joinClients=async(c1,c2)=>{
+    if(_isAdvisor()&&authUser){
+      const a=await gaLoadClient(authUser.id,c1.id);const b=await gaLoadClient(authUser.id,c2.id);
+      if(!a||!b){setToast({kind:"error",msg:t.saveFailedToast?t.saveFailedToast.replace("{x}","client"):"Couldn't load client data to join.",ts:Date.now()});return;}
+      const joined=_mergeJoin(mig(a),mig(b));
+      await gaSaveClient(authUser.id,joined);await gaDeleteClient(authUser.id,c2.id);
+      setSelected(joined);await refreshSummaries();
+    }else{
+      const joined=_mergeJoin(c1,c2);setClients(prev=>[...prev.filter(x=>x.id!==c1.id&&x.id!==c2.id),joined]);setSelected(joined);
+    }
+    setNav("clients");
+  };
   // v0.8.0 — bulk client actions (Chat 4)
-  const archiveMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.map(c=>s.has(c.id)?{...c,archived:true}:c));},[]);
-  const restoreMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.map(c=>s.has(c.id)?{...c,archived:false}:c));},[]);
-  const deleteMany=useCallback(ids=>{const s=new Set(ids);setClients(p=>p.filter(c=>!s.has(c.id)));setSelected(null);},[]);
-  const splitClientPair=useCallback((origId,p1,p2)=>{setClients(prev=>[...prev.filter(x=>x.id!==origId),p1,p2]);setSelected(null);},[]);
+  const archiveMany=useCallback(async ids=>{
+    if(_isAdvisor()&&authUser){for(const id of ids)await gaSetArchived(authUser.id,id,true);await refreshSummaries();}
+    else{const s=new Set(ids);setClients(p=>p.map(c=>s.has(c.id)?{...c,archived:true}:c));}
+  },[_isAdvisor,authUser,refreshSummaries]);
+  const restoreMany=useCallback(async ids=>{
+    if(_isAdvisor()&&authUser){for(const id of ids)await gaSetArchived(authUser.id,id,false);await refreshSummaries();}
+    else{const s=new Set(ids);setClients(p=>p.map(c=>s.has(c.id)?{...c,archived:false}:c));}
+  },[_isAdvisor,authUser,refreshSummaries]);
+  const deleteMany=useCallback(async ids=>{
+    if(_isAdvisor()&&authUser){for(const id of ids)await gaDeleteClient(authUser.id,id);setSelected(null);await refreshSummaries();}
+    else{const s=new Set(ids);setClients(p=>p.filter(c=>!s.has(c.id)));setSelected(null);}
+  },[_isAdvisor,authUser,refreshSummaries]);
+  // splitClientPair: from the ClientList picker — origId/p1/p2 are full blobs (SplitAssignModal output).
+  const splitClientPair=useCallback(async(origId,p1,p2)=>{
+    if(_isAdvisor()&&authUser){await gaSaveClient(authUser.id,p1);await gaSaveClient(authUser.id,p2);await gaDeleteClient(authUser.id,origId);setSelected(null);await refreshSummaries();}
+    else{setClients(prev=>[...prev.filter(x=>x.id!==origId),p1,p2]);setSelected(null);}
+  },[_isAdvisor,authUser,refreshSummaries]);
   // v0.44.0 — Sidebar items use Lucide icons (`icon` key) instead of emoji prefixes
   const role=(authUser?.user_metadata?.role==="client")?"client":"advisor";
   // v0.71.1 — role-access guard: a client deep-linking to an advisor surface
@@ -802,8 +896,8 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
         />
         <div style={{flex:1,overflowY:"auto"}}>
         {selected?<ClientDetail client={selected} onUpdate={upClient} lang={lang} t={t} onBack={()=>setSelected(null)} startTab={selectedTab} allClients={clients} onSplit={splitClient} onJoin={joinClients} onArchive={archiveClient} onDelete={deleteClient} settings={settings} onTabChange={setSelectedTab}/>:
-          nav==="dashboard"?(role==="client"?(linkedView?<LinkedOverview data={linkedView} lang={lang}/>:clients[0]?<ClientDetail client={clients[0]} clientMode={true} onUpdate={upClient} lang={lang} t={t} onBack={()=>{}} startTab={selectedTab} allClients={clients} settings={settings} onTabChange={setSelectedTab}/>:<div className="ga-np" style={{padding:24,color:theme.muted,fontSize:13}}>{t.settingUpProfile||"Setting up your profile…"}</div>):<Dashboard clients={clients} dashData={dashData} t={t} settings={settings} onSelect={c=>{setSelectedTab("report");setSelected(c);setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>):
-          nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>{setSelectedTab("report");setSelected(c);}} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
+          nav==="dashboard"?(role==="client"?(linkedView?<LinkedOverview data={linkedView} lang={lang}/>:clients[0]?<ClientDetail client={clients[0]} clientMode={true} onUpdate={upClient} lang={lang} t={t} onBack={()=>{}} startTab={selectedTab} allClients={clients} settings={settings} onTabChange={setSelectedTab}/>:<div className="ga-np" style={{padding:24,color:theme.muted,fontSize:13}}>{t.settingUpProfile||"Setting up your profile…"}</div>):<Dashboard clients={clients} dashData={dashData} t={t} settings={settings} onSelect={c=>{openClient(c,"report");setNav("clients");}} setSettings={setSettings} onAdd={()=>setAddOpen(true)} onImportNew={importMultiple} onArchive={archiveClient} onRestore={restoreClient} onDelete={deleteClient} onRestoreBackup={restoreBackup} onToggleHide={()=>setSettings(s=>({...s,hideNumbers:!s.hideNumbers}))} hideNumbers={settings.hideNumbers||false}/>):
+          nav==="clients"?<ClientList clients={clients} t={t} onSelect={c=>openClient(c,"report")} loadClientBlob={_isAdvisor()&&authUser?(id=>gaLoadClient(authUser.id,id)):null} onAdd={()=>setAddOpen(true)} onRestore={restoreClient} onImportNew={importMultiple} onRestoreBackup={restoreBackup} onArchiveMany={archiveMany} onRestoreMany={restoreMany} onDeleteMany={deleteMany} onSplit={splitClientPair} onJoin={joinClients}/>:
           nav==="intake-submissions"?<IntakeSubmissionsPage t={t} authUser={authUser} settings={settings} onConvert={c=>{addClient(c);}}/>:
           nav==="calculators"?<CalculatorsPage t={t} activeCalc={selectedCalc} onActiveChange={setSelectedCalc}/>:
           nav==="pricing"?<PricingPage variant="app" t={t} lang={lang} settings={settings} onRequest={null}/>:nav==="promotions"?<PromotionsPage settings={settings} onSettingsChange={setSettings} t={t}/>:
@@ -813,7 +907,7 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
           nav==="settings"?<SettingsPage role={role} onUpdateClient={upClient} settings={settings} clients={clients} onEdit={(sec)=>{setProfileSection(sec||null);setProfileOpen(true);}} onSave={patch=>{setSettings(s=>({...s,...patch}));if(patch.lang==="en"||patch.lang==="es")setLang(patch.lang);}} t={t}/>:
           nav==="security"?<SecurityPage t={t}/>:
           nav==="billing"?<BillingPage settings={settings} onSettingsChange={setSettings} t={t}/>:
-          nav==="backup"?<BackupPage clients={clients} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
+          nav==="backup"?<BackupPage clients={clients/* TODO scale: advisor `clients` is summary rows; export-all/backup needs to page full blobs via gaLoadClient */} settings={settings} onRestoreBackup={restoreBackup} t={t}/>:
           nav==="archived"?<ArchivedClientsPage clients={clients} onRestore={restoreClient} onDelete={deleteClient} t={t}/>:
           nav==="whats-new"?<WhatsNewPage t={t} role={role}/>:
           nav==="help"?<HelpSupportPage t={t} settings={settings} authUser={authUser}/>:

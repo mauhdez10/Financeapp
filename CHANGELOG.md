@@ -2,6 +2,28 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.0 — 2026-06-24 (Minor) — scale: advisor App-state holds summary rows + lazy-loads blobs
+
+The final scalability piece: the **advisor** `App()` no longer loads every client's full JSONB blob.
+It now holds lightweight SUMMARY rows (`gaLoadClientSummaries` — name/email/net_worth/total_debt/
+monthly_income/snapshot_count/last_activity/archived/color1), and lazy-loads the full blob via
+`gaLoadClient` only when a client is opened (ClientList select, Dashboard roster, all 3 URL-routing
+paths). The array-diff save effect is guarded to client-role only; advisor persistence is now explicit
+per mutation: `upClient`/`addClient`/`importMultiple`→`gaSaveClient`, archive/restore→`gaSetArchived`
+RPC, delete→`gaDeleteClient`, split/join load blobs then save+delete — each followed by a summaries
+refresh. ClientList + dashboard roster read summary fields (not blob-derivers). **Client-role path
+unchanged.** Combined with v0.82.x (dashboard server-aggregates + windowed render), the app no longer
+loads all blobs anywhere.
+
+Verified live (test acct, real Supabase): summary-list load, open-on-select + open-by-URL lazy-load the
+blob, edit→Save **persists** (note round-tripped to `data->notes`), summaries refresh, dashboard renders,
+zero new console errors. `ga_set_archived` RPC verified (column + blob stay in sync).
+
+Reminders: advisor `RemindersPanel` now derives the **No-Contact** reminder from the summary's
+`last_activity` (other advisor reminders await a server RPC over the summary/monthly tables — TODO).
+Export/Backup still page the full array (TODO: stream blobs). **Owner: please spot-check split + join**
+(the two flows that couldn't be headlessly driven; revert is one commit if either misbehaves).
+
 ## v0.82.2 — 2026-06-24 (Patch) — scale: windowed dashboard roster
 
 The Dashboard's bottom client roster now renders at most `rosterShown` (60) per-client cards with the
