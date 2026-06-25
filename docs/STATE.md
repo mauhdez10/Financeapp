@@ -27,10 +27,12 @@
   `UNIVERSAL_RULES`, `STATE`, `ISSUES_LEDGER`, `DEPENDENCY-MAP` created; 12 done docs archived +
   stamped + dropped from the map; every ephemeral doc has a kill-condition; `CLAUDE.md` has a
   self-orienting bootstrap; the **`finance-review-mode`** + **`finance-feedback-intake`** skills are live.
-- **CRUISE MODE infra — NEXT (paused for owner go-ahead).** `docs/CRUISE_MODE.md` ordered map +
-  `CRUISE_HEARTBEAT.md` + the dual-worker loop, then optional cloud-task registration. Design
-  approved; decisions locked: approve→main (done), additive+verified→main, Playwright-only testing,
-  never-touch-Velo, two workers (`finance-cron` 15-min + `finance-session`) heartbeat-coordinated.
+- **CRUISE MODE infra — ✅ BUILT (2026-06-25).** `docs/CRUISE_MODE.md` (GOAL + ordered map +
+  push-safety + gates + guards + testing + Velo isolation) and `docs/CRUISE_HEARTBEAT.md` (dual-worker
+  handshake) are live; the registered prompt is version-controlled in CRUISE_MODE.md's appendix. Two
+  workers (`finance-cron` ~15-min + `finance-session`) coordinate via the heartbeat. **Remaining: the
+  owner's go-ahead to REGISTER the `finance-cron` cloud scheduled task** (the only step not yet done —
+  it's an outward/durable action, held for explicit approval).
 
 ## Where things live (so a fresh chat checks instead of asking)
 - **Secrets / keys / logins:** `finance-credentials.md` (gitignored, repo root) — never commit/print.

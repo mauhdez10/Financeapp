@@ -45,6 +45,8 @@
 | [REVIEW_QUEUE.md](../REVIEW_QUEUE.md) | ③ | Owner checklist of pending items | Items removed once owner verifies |
 | [BACKLOG.md](BACKLOG.md) | ③ | Ordered green-light execution queue | Drains into shipped work |
 | [CRUISE_QUESTIONS.md](CRUISE_QUESTIONS.md) | ③ | Unattended-tick yes/no questions for owner | Entries removed once answered |
+| [CRUISE_MODE.md](CRUISE_MODE.md) | ① | The autonomous-loop protocol — follow EXACTLY (GOAL, ordered map, push-safety, gates, guards, testing) | Any unattended/cruise work |
+| [CRUISE_HEARTBEAT.md](CRUISE_HEARTBEAT.md) | ① | Dual-worker collision handshake (append-only) | Before each cruise tick |
 
 ## Design
 | Doc | Tag | What | Kill-condition |
