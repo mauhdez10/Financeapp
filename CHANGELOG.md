@@ -2,6 +2,28 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.2 — 2026-06-24 (Patch) — scale: server RPC restores advisor reminders (No-Contact + High-DSR + Debt-Rising)
+
+v0.83.0 reduced advisor reminders to No-Contact only (the panel's blob-derivers can't see the new
+summary rows). New RLS-scoped, anon-revoked, SECURITY-DEFINER RPC `ga_advisor_reminders(p_no_contact_days)`
+computes reminders server-side over the `clients` + `client_monthly_summary` tables (no blob reads):
+**No-Contact** (days since `last_activity`), **High-DSR** (`monthly_debt_min/monthly_income` > 0.36), and
+**Debt-Rising** (latest-month debt > earliest-month debt, ≥2 monthly snapshots) — matching the original
+`getAdvRem` thresholds, labels, and dismissal keys (`<type>:<local_id>`) so existing snoozes still apply.
+`RemindersPanel` fetches it (`gaAdvisorReminders`) when it holds summary rows and prefers it; the v0.83.1
+client-side `last_activity` No-Contact derivation stays as an offline fallback when the RPC hasn't loaded
+or errors. Purely additive read path — does NOT touch the save/load/mutation path.
+
+Verified: migration applied; RPC logic proven at the DB level (No-Contact positive case = 4 rows;
+High-DSR/Debt-Rising compute correctly and the real thresholds filter as expected); RPC round-trips
+through the real advisor session JWT (RLS-scoped, HTTP 200 — `p=0`→all 3 clients, `p=30`→none); build
+green; panel mounts cleanly with no new console errors. No new user-facing strings (labels mirror the
+existing English `getAdvRem` reminders — the whole advisor-reminder feature is English-only).
+
+**Still blob-only (not derivable from current summary columns — follow-up):** `promoExpiring` (needs
+promo end-dates) and the per-bill/per-card "Client Due" reminders (need bill/card due-days). Restoring
+those would mean extending the save-path summary derivation + a backfill — owner call.
+
 ## v0.83.1 — 2026-06-24 (Patch) — fix: advisor save-success toast no longer masks a failed save
 
 Adversarial bug-sweep of the v0.83.0 rework surfaced one real regression: advisor `upClient`/`addClient`

@@ -5,6 +5,7 @@ import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip a
 import { useTh } from "../contexts/theme";
 import { GOLD, mCARD, mINP } from "../styles/theme";
 import { fmt, fmtD, fmtS, getAdvRem, getClientRem, isAlertDismissed } from "../utils/finance";
+import { gaAdvisorReminders } from "../services/supabase";
 import { ChartSettingsModal, DashSlotPicker } from "./chartEditors";
 import { Donut, Dumbbell, ForecastCone, GroupedYoY, HeatmapCalendar, NetWorthBridge, PayoffProgression, Radar5, RadialGauge, RankedHBars, Sankey, SlopeGraph, SmoothAreaLine, Sparkline, StackedBars, Sunburst, Treemap, Waterfall } from "./charts";
 import { BackupImportModal, ExportModal, ImportWizard } from "./clientData";
@@ -29,6 +30,31 @@ export function RemindersPanel({clients,settings,t,onSettingsChange}){
   const alertTypes=settings.alertTypes||{noContact:true,highDSR:true,promoExpiring:true,debtRising:true,billDue:true,lowCashFlow:true,lowEF:true,missedSnap:true};
   // v0.28.0 — dismissal storage. Each entry: {key, until (ISO|null=forever), dismissedAt}
   const dismissals=settings.alertDismissals||[];
+  // v0.83.2 — advisor reminders from the server RPC (over summary + monthly tables, RLS-scoped).
+  // Restores noContact + highDSR + debtRising for advisors whose `clients` are now blob-less summaries.
+  // serverAdv=null means "not loaded / RPC failed / not advisor" → fall back to the client-side _advSum
+  // (last_activity No-Contact only). Keyed/labelled to match the original getAdvRem reminders so old
+  // dismissals still apply. (promoExpiring + the per-bill/card "Client Due" reminders need due-date
+  // fields not present in the summary columns — still blob-only; tracked as a follow-up.)
+  const[serverAdv,setServerAdv]=useState(null);
+  const _hasSummaryRows=(clients||[]).some(c=>c._summary);
+  const _ncDaysSetting=+settings.noContactDays||30;
+  useEffect(()=>{
+    if(!_hasSummaryRows){setServerAdv(null);return;}
+    let dead=false;
+    gaAdvisorReminders(_ncDaysSetting).then(rows=>{
+      if(dead)return;
+      if(!Array.isArray(rows)){setServerAdv(null);return;}
+      const TASKS={noContact:"📞 No Contact",highDSR:"⚠️ High DSR",debtRising:"📈 Debt Rising"};
+      setServerAdv(rows.map(r=>{const type=r.rem_type;const id=r.client_local_id;let detail;
+        if(type==="noContact")detail="Last review "+(+r.val>=999?"never":Math.round(+r.val)+"d ago");
+        else if(type==="highDSR")detail="DSR "+Math.round((+r.val||0)*100)+"%";
+        else detail="+"+fmt(+r.val||0);
+        return{type,clientId:id,clientName:(r.client_name||"").trim(),priority:r.priority||"med",task:TASKS[type]||type,detail,key:type+":"+id};
+      }));
+    }).catch(()=>{if(!dead)setServerAdv(null);});
+    return()=>{dead=true;};
+  },[_hasSummaryRows,_ncDaysSetting,clients]);
   // Cleanup expired dismissals on mount (no-op if list is clean).
   useEffect(()=>{const now=Date.now();const cleaned=dismissals.filter(d=>d&&d.key&&(!d.until||new Date(d.until).getTime()>now));if(cleaned.length!==dismissals.length)onSettingsChange({...settings,alertDismissals:cleaned});/* eslint-disable-next-line react-hooks/exhaustive-deps */},[]);
   const dismissAlert=(key,kind)=>{let until,toastMsg;if(kind==="due"){const d=new Date();until=new Date(d.getFullYear(),d.getMonth()+1,1).toISOString();toastMsg=t?.dismissedCycleToast||"Marked handled for this cycle — re-appears next month";}else if(kind==="forever"){until=null;toastMsg=t?.dismissedForeverToast||"Muted forever";}else if(kind==="snooze30"){until=new Date(Date.now()+30*86400000).toISOString();toastMsg=t?.dismissed30dToast||"Snoozed for 30 days";}else{until=new Date(Date.now()+7*86400000).toISOString();toastMsg=t?.dismissed7dToast||"Snoozed for 7 days";}const nextList=[...dismissals.filter(x=>x.key!==key),{key,until,dismissedAt:new Date().toISOString()}];onSettingsChange({...settings,alertDismissals:nextList});if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("ga-toast",{detail:{kind:"success",msg:toastMsg}}));};
@@ -49,7 +75,9 @@ export function RemindersPanel({clients,settings,t,onSettingsChange}){
     if(d==null||d<_ncDays)return null;
     return{key:"ncsum-"+c.id,type:"noContact",priority:d>=_ncDays*2?"high":"med",clientName:(c.firstName+" "+c.lastName).trim(),clientId:c.id,task:"No Contact",detail:String(d)+"d"};
   }).filter(Boolean);
-  adv=[...adv,..._advSum];
+  // v0.83.2 — prefer the server reminders (noContact + highDSR + debtRising); fall back to the
+  // client-side last_activity No-Contact derivation only when the RPC hasn't loaded / errored.
+  adv=[...adv,...(serverAdv!==null?serverAdv:_advSum)];
   // Filter by enabled types — we match by task keyword
   const typeKeyMap={"No Contact":"noContact","High DSR":"highDSR","Promo":"promoExpiring","Debt Rising":"debtRising","Bill Due":"billDue","Cash Flow":"lowCashFlow","Emergency":"lowEF","Snapshot":"missedSnap"};
   adv=adv.filter(a=>{const key=Object.entries(typeKeyMap).find(([k])=>a.task?.includes(k));return!key||alertTypes[key[1]]!==false;});
