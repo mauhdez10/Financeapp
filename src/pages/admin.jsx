@@ -12,6 +12,11 @@ import { Donut, Waterfall } from "../components/charts";
 import { Modal, SaveBar } from "../components/primitives";
 import { supabase, gaSendSupportEmail } from "../services/supabase";
 import { SignaturePad } from "../components/legal";
+// v0.83.3 — BackupPage uses these but the Phase-2b extraction never imported them into admin.jsx,
+// so both the Download-backup click (expBackup) and the Restore-backup modal (BackupImportModal) were
+// latent ReferenceErrors. Importing here fixes both. import.js / clientData.jsx don't import admin → no cycle.
+import { expBackup } from "../utils/import";
+import { BackupImportModal } from "../components/clientData";
 
 const AVATAR_PRESETS=[
   {group:"Brand",  id:"mh-gold",       label:"MH · gold"},
@@ -195,9 +200,12 @@ function ReferralNetworkEditor({settings,onSettingsChange,t}){
 }
 
 /* ── BackupPage — download + restore all data. v0.18.0 ─────────────────── */
-function BackupPage({clients,settings,onRestoreBackup,t}){
+function BackupPage({clients,settings,onRestoreBackup,loadAllBlobs,t}){
   const th=useTh();
   const[restoreOpen,setRestoreOpen]=useState(false);
+  const[busy,setBusy]=useState(false);
+  // v0.83.3 — page the FULL blobs (advisor `clients` are summary rows) before writing the backup.
+  const doDownload=async()=>{if(busy)return;setBusy(true);try{const all=loadAllBlobs?await loadAllBlobs():clients;await expBackup(all,settings);}finally{setBusy(false);}};
   return <div className="ga-np" style={{padding:24,maxWidth:680,margin:"0 auto"}}>
     {restoreOpen&&<BackupImportModal onImport={(b,m)=>{onRestoreBackup(b,m);setRestoreOpen(false);}} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}
     {/* v0.24.0 — page title removed (TopBar shows it). */}
@@ -205,7 +213,7 @@ function BackupPage({clients,settings,onRestoreBackup,t}){
     <div style={{...mCARD(th),padding:18,marginBottom:14}}>
       <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:8}}>{t?.downloadEverything||"Download Everything"}</div>
       <div style={{fontSize:12,color:th.muted,marginBottom:12,lineHeight:1.5}}>{(t?.downloadEverythingHelp||"Downloads {n} clients + all your settings as a single JSON file.").replace("{n}",clients.length)}</div>
-      <button onClick={()=>expBackup(clients,settings)} style={{width:"100%",padding:"12px",borderRadius:10,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:"pointer"}}>⬇ {t?.downloadBackup||"Download backup (JSON)"}</button>
+      <button onClick={doDownload} disabled={busy} style={{width:"100%",padding:"12px",borderRadius:10,background:GOLD,color:"#0D1B2A",fontWeight:800,fontSize:13,border:"none",cursor:busy?"wait":"pointer",opacity:busy?0.7:1}}>{busy?(t?.preparingBackup||"Preparing…"):"⬇ "+(t?.downloadBackup||"Download backup (JSON)")}</button>
     </div>
     <div style={{...mCARD(th),padding:18,marginBottom:14}}>
       <div style={{fontSize:11,fontWeight:700,color:th.accent,letterSpacing:".06em",textTransform:"uppercase",marginBottom:8}}>{t?.restoreFromBackup||"Restore from Backup"}</div>

@@ -10,7 +10,7 @@ import { JoinModal, SplitAssignModal } from "./clientModals";
 import { Btn, Kebab, Modal, useViewport } from "./primitives";
 import { Archive } from "lucide-react";
 
-export function ClientList({clients,t,onSelect,loadClientBlob,onAdd,onRestore,onImportNew,onRestoreBackup,onArchiveMany,onRestoreMany,onDeleteMany,onSplit,onJoin}){
+export function ClientList({clients,t,onSelect,loadClientBlob,loadAllBlobs,onAdd,onRestore,onImportNew,onRestoreBackup,onArchiveMany,onRestoreMany,onDeleteMany,onSplit,onJoin}){
   const th=useTh();
   const{isMobile}=useViewport();
   const[search,setSearch]=useState("");
@@ -77,7 +77,7 @@ export function ClientList({clients,t,onSelect,loadClientBlob,onAdd,onRestore,on
     {label:"📥 "+(t.kebabImportClients||"Import Clients"),onClick:()=>setImportOpen(true)},
     {label:"⬇️ "+(t.kebabExportClients||"Export Clients"),onClick:()=>setExportOpen(true)},
     {divider:true},
-    {label:"💾 "+(t.kebabExportBackup||"Backup All"),onClick:()=>expBackup(clients,{})},
+    {label:"💾 "+(t.kebabExportBackup||"Backup All"),onClick:async()=>{const all=loadAllBlobs?await loadAllBlobs():clients;await expBackup(all,{});}},
     {label:"📥 "+(t.kebabRestoreBackup||"Restore Backup"),onClick:()=>setRestoreOpen(true)},
     {divider:true},
     {label:"📦 "+(t.bulkArchiveSel||"Archive")+"…",onClick:()=>enterMode("archive")},
@@ -89,7 +89,7 @@ export function ClientList({clients,t,onSelect,loadClientBlob,onAdd,onRestore,on
   ];
   return <div style={{padding:isMobile?14:24}}>
     {importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}
-    {exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}
+    {exportOpen&&<ExportModal clients={clients} loadAllBlobs={loadAllBlobs} onClose={()=>setExportOpen(false)} t={t}/>}
     {restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}
     {confirmOpen&&mm&&<Modal title={mm.icon+" "+mm.title} onClose={()=>setConfirmOpen(false)}>
       {mode==="delete"

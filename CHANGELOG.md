@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.3 — 2026-06-24 (Patch) — scale: export-all / backup-all pages the FULL blobs (+ fixes broken Backup page)
+
+After v0.83.0 the advisor `clients` array holds blob-less summary rows, so every "export all" / "backup all"
+surface was exporting summaries (no financial data, no phone/dob/address/ssn). New paged loader
+`gaLoadAllClientBlobs(userId)` fetches every full blob (selecting only `data`, ordered by `local_id`,
+ranging past PostgREST's 1000-row cap so a large book exports completely, de-duped by id). App threads a
+`loadAllBlobs` callback (advisor → loader+`mig`; client role → its existing self-blob) into **BackupPage**,
+**ExportModal** (Dashboard + ClientList), and the ClientList **"Backup All"** kebab; each now `await`s the
+full blobs before `expBackup`/CSV. Busy state + `preparingBackup` label (EN/ES) while loading. Single-client
+exports (ClientDetail kebab, `expCSV`) were already full blobs — untouched. Purely additive READ path —
+does NOT touch the save/load/mutation path.
+
+**Also fixed a pre-existing bug surfaced here:** `pages/admin.jsx` never imported `expBackup` or
+`BackupImportModal` (lost in the Phase-2b extraction), so BOTH Backup-page actions — Download-backup and
+Restore-from-backup — were latent `ReferenceError`s that threw on click. Added the two imports
+(no circular dependency — neither `utils/import` nor `components/clientData` imports `pages/admin`).
+
+Verified in preview (test advisor, real Supabase): `gaLoadAllClientBlobs` replicated through the live
+session JWT returns 3 full blobs (Miguel 4 cards/5 snaps, Carlos 1/0, Amanda 1/3, all `_summary=false`,
+RLS-scoped, HTTP 200); the **Backup-page download** and the **ExportModal "All Active / Full Backup"** were
+both driven through the UI and the captured JSON contained full blobs + settings (no summary rows); build
+green; no new console errors.
+
 ## v0.83.2 — 2026-06-24 (Patch) — scale: server RPC restores advisor reminders (No-Contact + High-DSR + Debt-Rising)
 
 v0.83.0 reduced advisor reminders to No-Contact only (the panel's blob-derivers can't see the new

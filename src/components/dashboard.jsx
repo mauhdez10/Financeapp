@@ -243,7 +243,7 @@ const _mlabel=(mk)=>{const[y,m]=String(mk).split("-");const MON=["","Jan","Feb",
 // ── apply the trendRange window to a trend array (last n rows)
 const _win=(rows,range)=>{const n=range==="3"?3:range==="6"?6:range==="12"?12:rows.length;return rows.slice(-n);};
 
-export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAdd,onImportNew,onArchive,onRestore,onDelete,onRestoreBackup,onToggleHide,hideNumbers}){const th=useTh();const{isMobile}=useViewport();const[importOpen,setImportOpen]=useState(false);const[restoreOpen,setRestoreOpen]=useState(false);const[exportOpen,setExportOpen]=useState(false);const[rosterShown,setRosterShown]=useState(60);/* v0.82.2 — windowed roster: cap DOM nodes at high client counts */
+export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAdd,onImportNew,onArchive,onRestore,onDelete,onRestoreBackup,loadAllBlobs,onToggleHide,hideNumbers}){const th=useTh();const{isMobile}=useViewport();const[importOpen,setImportOpen]=useState(false);const[restoreOpen,setRestoreOpen]=useState(false);const[exportOpen,setExportOpen]=useState(false);const[rosterShown,setRosterShown]=useState(60);/* v0.82.2 — windowed roster: cap DOM nodes at high client counts */
   // v0.81 — dashboard charts now render from server-side aggregates (dashData),
   // not the in-memory clients array (scales to ~50k clients). `clients` kept ONLY
   // for the Import/Export/Backup modals + the bottom client roster list.
@@ -257,7 +257,7 @@ export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAd
   const getDebtForMode=row=>{if(!row)return 0;const cards=+row.l_cards||0;if(trendMode==="all")return cards+(+row.l_loans_all||0);if(trendMode==="current")return cards+(+row.l_loans_current||0);return cards;};
   const _w=_win(TR,trendRange);
   const _shownLabels=_w.map(r=>r.month_key);
-  const trend=_w.map(r=>({m:_mlabel(r.month_key),debt:getDebtForMode(r),savings:+r.savings||0}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} onClose={()=>setExportOpen(false)} t={t}/>}{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
+  const trend=_w.map(r=>({m:_mlabel(r.month_key),debt:getDebtForMode(r),savings:+r.savings||0}));return<div style={{padding:isMobile?14:24}}>{importOpen&&<ImportWizard onClose={()=>setImportOpen(false)} onImport={cs=>{onImportNew(cs);setImportOpen(false);}} existingClients={clients} t={t}/>}{restoreOpen&&<BackupImportModal onImport={onRestoreBackup} onClose={()=>setRestoreOpen(false)} existingClients={clients} t={t}/>}{exportOpen&&<ExportModal clients={clients} loadAllBlobs={loadAllBlobs} onClose={()=>setExportOpen(false)} t={t}/>}{/* v0.16.0 Phase 8 — 4 wide KPI cards matching Claude design */}
 {/* v0.56 — KpiTile with inline sparkline per Mauricio's image 3.
    Each tile builds its own series from the practice-wide trend data. */}
 {(()=>{
