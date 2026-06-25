@@ -1,3 +1,5 @@
+> **⛔ ARCHIVED — do not use.** This work is DONE/SHIPPED or SUPERSEDED. Kept for history only; NOT in LOGIC_MAP. For current truth see [docs/STATE.md](STATE.md) + [CHANGELOG.md](../../CHANGELOG.md).
+
 # Dashboard rewrite report — render from server aggregates (`dashData`)
 
 Scope: rewrote `src/components/dashboard.jsx` so every CHART reads from the new

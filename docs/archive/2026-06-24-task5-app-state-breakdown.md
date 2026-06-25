@@ -1,3 +1,5 @@
+> **⛔ ARCHIVED — do not use.** This work is DONE/SHIPPED or SUPERSEDED. Kept for history only; NOT in LOGIC_MAP. For current truth see [docs/STATE.md](STATE.md) + [CHANGELOG.md](../../CHANGELOG.md).
+
 # Task 5 — App-state rewire: turnkey decomposition
 
 > Companion to `2026-06-24-scalable-data-layer.md`. Captures the EXACT App.jsx

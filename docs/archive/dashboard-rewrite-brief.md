@@ -1,3 +1,5 @@
+> **⛔ ARCHIVED — do not use.** This work is DONE/SHIPPED or SUPERSEDED. Kept for history only; NOT in LOGIC_MAP. For current truth see [docs/STATE.md](STATE.md) + [CHANGELOG.md](../../CHANGELOG.md).
+
 # Task brief — rewrite dashboard.jsx to render from server aggregates (no client blobs)
 
 ## Why

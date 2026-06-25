@@ -1,3 +1,5 @@
+> **⛔ ARCHIVED — do not use.** This work is DONE/SHIPPED or SUPERSEDED. Kept for history only; NOT in LOGIC_MAP. For current truth see [docs/STATE.md](STATE.md) + [CHANGELOG.md](../../CHANGELOG.md).
+
 # Modern Redesign — Porting Plan (2026-06-07)
 
 The new design language is locked across **four** standalone labs in `preview/`. This is the

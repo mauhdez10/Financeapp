@@ -1,3 +1,5 @@
+> **⛔ ARCHIVED — do not use.** The 2026-06-11 master directive (all 12 workstreams MD-A…MD-L) **shipped in v0.76.2.** Kept for history only; NOT in LOGIC_MAP. Treat these workstreams as DONE — do not re-open. Current truth: [docs/STATE.md](STATE.md) + [CHANGELOG.md](../../CHANGELOG.md).
+
 # MASTER DIRECTIVE — owner brief of 2026-06-11 ("next level" mandate)
 
 > Mauricio's full directive, logged verbatim-in-spirit and divided into workstreams, per his

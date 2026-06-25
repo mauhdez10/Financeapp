@@ -85,7 +85,7 @@ Decisions in this section have been agreed and should NOT be changed without the
 
 ### Business
 
-- **D-13 — Pricing tier (RE-LOCKED 2026-06-11 at catalog prices; owner picked catalog over the old year-1 numbers — see docs/PRICING-AUDIT.md):**
+- **D-13 — Pricing tier (RE-LOCKED 2026-06-11 at catalog prices; owner picked catalog over the old year-1 numbers — see docs/archive/PRICING-AUDIT.md, archived):**
   - Financial Checkup: $149 — ONE product for new AND returning clients; returning clients get a Stripe promo code (~$50 off ⇒ $99 net; `client-checkup` product retired per F1)
   - Quarterly Review: $199 per checkup
   - Annual bundle: $499/yr (saves $297 vs 4 quarterlies)

@@ -1,3 +1,5 @@
+> **⛔ ARCHIVED — do not use.** Superseded by [LOGIC_MAP.md](../LOGIC_MAP.md) (the live-only doc index, 2026-06-25). Kept for history only.
+
 # docs/_INDEX.md — documentation map
 
 > One-line guide to every doc in this repo, in reading order. Each topic has exactly one home.
