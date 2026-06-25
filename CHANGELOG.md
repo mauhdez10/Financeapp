@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.4 — 2026-06-24 (Patch) — scale: gaLoadClientSummaries pages past the 1000-row cap (full roster)
+
+`gaLoadClientSummaries` selected all summary rows in a single PostgREST request, which silently caps at
+1000 — so an advisor with >1000 clients only ever loaded the first 1000 into the roster/list. It now
+loops `.range(from, from+999)` ordered by `local_id` (stable key) until a short page returns, accumulating
+the full set. Error contract preserved: a **first-page** error returns `null` (so `refreshSummaries` keeps
+the current list on a transient blip rather than clearing it); a **later-page** error logs and returns the
+rows gathered so far (graceful partial instead of wiping everything). Display sort is unchanged (ClientList
+re-sorts client-side, so the `local_id` load order is irrelevant to the UI). No schema/string changes.
+
+Verified in preview (test advisor, real Supabase): the 3-client account loads + renders the full roster
+through the paged function (no regression); the paging algorithm was driven against real data with a forced
+`PAGE=2` to exercise multiple iterations — pages `0-1`→2 rows (continue), `2-3`→1 row (break), 3 collected,
+ordered by `local_id`, **no duplicates, clean termination**; build green; no new console errors. A true
+>1000-row end-to-end couldn't be run (no test advisor has 1000+ clients), so the >1000 behavior rests on
+the verified algorithm — flagged for owner awareness.
+
 ## v0.83.3 — 2026-06-24 (Patch) — scale: export-all / backup-all pages the FULL blobs (+ fixes broken Backup page)
 
 After v0.83.0 the advisor `clients` array holds blob-less summary rows, so every "export all" / "backup all"
