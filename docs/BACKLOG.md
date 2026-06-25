@@ -32,8 +32,9 @@ Live marker **v0.80.7** (`2026-06-24-v0807-phase2-report-blocks-extracted`). `Ap
 
 ### Cleanup finds (green-light, low priority)
 - ✅ Dead code: `ArchivedSection` removed (v0.80.10, 2026-06-24, autonomous loop).
-- 🟢 Pre-existing React warning: `CompareReportTab` (now in `clientReports.jsx`) renders a whitespace
-  text node inside `<tbody>` — fix the `{" "}`/newline between table rows (cosmetic dev warning).
+- ✅ Pre-existing React warning: `CompareReportTab` (now in `clientReports.jsx`) rendered a whitespace
+  text node inside `<tbody>` (stray space in `;})} </tbody>`, both tables). Fixed v0.83.5 (2026-06-24,
+  cron tick) — committed LOCAL only (stacked behind the held v0.83.1; see CHANGELOG + REVIEW_QUEUE).
 
 ### Doc hygiene (green-light)
 - ✅ Backfill `CHANGELOG.md` entries for v0.80, v0.80.1, v0.80.2 (done 2026-06-24, autonomous loop).

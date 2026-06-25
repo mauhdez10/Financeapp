@@ -2,6 +2,25 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.5 — 2026-06-24 (Patch) — fix: Compare tab `<tbody>` whitespace text-node React warning
+
+`CompareReportTab` (`src/components/clientReports.jsx`) closed both of its comparison tables with
+`;})} </tbody>` — a stray space between the `.map()` closure and `</tbody>` rendered a whitespace
+text node as a direct child of `<tbody>`, which React warns about ("whitespace text nodes cannot be a
+child of `<tbody>`"). Removed the two stray spaces (`;})}</tbody>`). Purely cosmetic — the change deletes
+two whitespace text nodes; rendered output is byte-identical and no computed value, formula, role gate,
+or string is touched. Was the top 🟢 green-light cleanup item in `docs/BACKLOG.md`.
+
+Verified: build green (480ms); ESLint on `clientReports.jsx` unchanged at 70 pre-existing errors before
+and after the edit (zero new lint introduced); no visible string changed (EN/ES symmetry N/A). Marker
+bumped v0834 → v0835.
+
+**⚠️ HELD LOCAL — NOT pushed.** Not because of this change (it is additive + fully verified and would be
+fix-and-push-eligible on its own) but because `origin/main` is still at v0.83.0 and the local branch has
+the held **v0.83.1 save-toast gate** between origin and HEAD — any `git push origin main` would ship that
+unapproved live-save-path commit to production. This commit stacks as the 5th in the held queue and ships
+with the rest once the owner approves v0.83.1.
+
 ## v0.83.4 — 2026-06-24 (Patch) — scale: gaLoadClientSummaries pages past the 1000-row cap (full roster)
 
 `gaLoadClientSummaries` selected all summary rows in a single PostgREST request, which silently caps at
