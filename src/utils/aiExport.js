@@ -3,7 +3,7 @@
 // client record holds (per the golden-anchor-logic §6 field dictionary) into clean
 // structured markdown an LLM can reason over. Pure data — no JSX (D-29-style module).
 // explicit .js extension so the module also runs under plain node (testability)
-import { toM, sumB, sumN, sumMin, cardMoInt, totalA, totalL, liquidA, payM } from "./finance.js";
+import { toM, sumB, sumN, sumMin, cardMoInt, totalA, totalL, liquidA, effectiveMin } from "./finance.js";
 
 const $ = (n) => "$" + Math.round(+n || 0).toLocaleString("en-US");
 const pct = (n) => (Math.round((+n || 0) * 10) / 10) + "%";
@@ -59,7 +59,7 @@ function gaClientAIText(client) {
   push("");
   push("## Credit cards");
   (c.cards || []).forEach(cd => {
-    push(line(cd.name || "Card", "balance " + $(cd.balance) + ", APR " + (cd.apr || 0) + "%, limit " + $(cd.limit || 0) + ", min " + $(payM(cd)) + "/mo, interest " + $(cardMoInt(cd)) + "/mo" + (cd.dueDay ? ", due day " + cd.dueDay : "")));
+    push(line(cd.name || "Card", "balance " + $(cd.balance) + ", APR " + (cd.apr || 0) + "%, limit " + $(cd.limit || 0) + ", min " + $(effectiveMin(cd)) + "/mo, interest " + $(cardMoInt(cd)) + "/mo" + (cd.dueDay ? ", due day " + cd.dueDay : "")));
     (cd.promos || []).forEach(p => push("  - promo: " + (p.desc || "promo") + " " + (p.apr != null ? p.apr + "% APR" : "") + (p.ends ? " ends " + p.ends : "")));
   });
   if (!(c.cards || []).length) push("- none recorded");
