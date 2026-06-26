@@ -16,3 +16,5 @@ finance-session · 2026-06-25T23:26:47Z · starting: ordered-map step 2 (competi
 
 finance-cron · 2026-06-25T23:25:44Z · starting tick (ordered-map item 1: bugs/correctness scan)
 finance-cron · 2026-06-26T14:21:27Z · starting: ordered-map item 1 (bugs/correctness scan)
+
+finance-cron · 2026-06-26T15:03:28Z · starting: ordered-map (BACKLOG top green) — write FG-3 habit/streak spec to docs/superpowers/specs/, queue for owner
