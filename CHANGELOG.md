@@ -2,6 +2,32 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.25 — 2026-06-26 — fix(i18n): owner-dropdown labels in Card/Account/Loan modals bilingual (ISS-57)
+
+**FIX (D-3):** `CardModal`, `AccountModal`, and `LoanModal` (`components/clientModals.jsx`) built their
+person/owner `<select>` options from **hardcoded English** — `[["joint","Joint"],["p1",
+client?.firstName||"Person 1"],["p2",client?.partnerFirst||"Person 2"]]` — so the "Owed by" / "Owner"
+dropdown rendered **"Joint" / "Person 1" / "Person 2" in English regardless of language**. The sibling
+`IncomeModal` and `BillModal` already wire these to `t.joint`/`t.p1`/`t.p2`, so the same data-entry
+surface was inconsistent: an income's person dropdown localized, a card's owner dropdown did not. Same
+class as ISS-30–33 / ISS-55 (hardcoded English in extracted components). Also: `CardModal.save` raised a
+bare `setErr("Name required.")` while every sibling modal uses `t.nameReqErr||"Name required."`.
+
+**CHANGED:**
+- `clientModals.jsx` — all three owner dropdowns now read `t?.joint||"Joint"`,
+  `client?.firstName||t?.p1||"Person 1"`, `client?.partnerFirst||t?.p2||"Person 2"` (mirrors
+  Income/Bill modals; English literal kept as a final defensive fallback).
+- `clientModals.jsx` — `CardModal` "Name required." validation now reuses `t.nameReqErr`.
+- `App.jsx` — build marker → `2026-06-26-v08325-modal-owner-dropdown-i18n`.
+
+**SCOPE / SAFETY:** Pure display wiring — the stored values (`owedBy`/`owner` = `"joint"`/`"p1"`/`"p2"`)
+are unchanged; only the option **labels** localize. **Not the save path** → autonomous-safe push.
+**Zero new translation keys** — reused `joint`/`p1`/`p2`/`nameReqErr`, all already present in both `T.en`
+and `T.es` → EN/ES symmetry unchanged by construction. Found in the item-1 `clientModals.jsx` i18n scan
+(continuation of the ISS-55 D-3 sweep).
+
+**GATES:** build clean (565ms); lint 427/408 = baseline (0 new); no new strings (EN/ES symmetry intact).
+
 ## v0.83.24 — 2026-06-26 — fix(reminders): client "Card Min" reminder uses canonical effectiveMin (ISS-56)
 
 **FIX:** `getClientRem` (`utils/finance.js:87`) — the **client-side** reminder engine that feeds the

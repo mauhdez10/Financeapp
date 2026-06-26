@@ -6,7 +6,7 @@
 > [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-26**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-06-26-v08324-client-card-reminder-effectivemin` (v0.83.24).
+- **Marker:** `__GA_BUILD__ = 2026-06-26-v08325-modal-owner-dropdown-i18n` (v0.83.25).
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).
