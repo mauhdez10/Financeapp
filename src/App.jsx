@@ -14,7 +14,7 @@ import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgra
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-26-v08311-admin-grant-paginate-past-200-users";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-26-v08312-html-lang-a11y-sync";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaLoadAllClientBlobs, gaSetArchived, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
@@ -473,6 +473,10 @@ const theme={..._baseTh,bg:_baseTh.bg,card:_cardOv||_baseTh.card,glassBg:_baseTh
   useEffect(()=>{if(typeof document==="undefined")return;document.documentElement.style.background=theme.bg;document.body.style.background=theme.bg;document.body.style.margin="0";},[theme.bg]);
   // v0.6.1 — Mirror lang+isDark into settings so they persist (settings persists to LS + Supabase).
   useEffect(()=>{setSettings(s=>(s.lang===lang&&s.isDark===isDark)?s:{...s,lang,isDark});},[lang,isDark]);
+  // a11y (WCAG 3.1.1) — keep <html lang> in sync with the active language so screen
+  // readers pronounce content correctly. Skip the public portal/intake routes — those
+  // pages early-return and manage their own lang (they set documentElement.lang themselves).
+  useEffect(()=>{if(typeof document==="undefined"||isPublicPortalRoute||isPublicIntakeRoute)return;document.documentElement.lang=lang;},[lang,isPublicPortalRoute,isPublicIntakeRoute]);
   useEffect(()=>{
     const s=document.createElement("style");
     s.id="ga-styles";

@@ -28,3 +28,5 @@ finance-cron · 2026-06-26T16:05:24Z · starting: ordered-map item 1 (bugs/corre
 finance-cron · 2026-06-26T16:21:29Z · starting: ordered-map item 2 (competitor + feature-gap scan)
 
 finance-cron · 2026-06-26T16:36:29Z · starting: ordered-map item 3 (security review — npm audit + secrets/auth/RLS pass)
+
+finance-cron · 2026-06-26T16:51:31Z · starting: ordered-map item 4 (website/UX — objective a11y/perf/copy scan)

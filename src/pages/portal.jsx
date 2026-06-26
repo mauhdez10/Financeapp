@@ -85,6 +85,8 @@ function PublicPortal(){
     if(r.lang==="es"||r.lang==="en")setLang(r.lang);
   })();},[]);
   useEffect(()=>{try{localStorage.setItem("ga_portal_mode",mode);}catch(e){}if(typeof document!=="undefined"){const b=isDark?"#0C0D11":"#F5F3EF";document.documentElement.style.background=b;document.body.style.background=b;}},[mode,isDark]);
+  // a11y (WCAG 3.1.1) — sync <html lang> with the portal's resolved language.
+  useEffect(()=>{if(typeof document!=="undefined")document.documentElement.lang=lang;},[lang]);
   const adv=st.advisor||{};
   const th=isDark?makeDark(adv.darkAccent||GOLD):makeLight(adv.lightAccent||"#C9A84C");
   const L=(en,es)=>lang==="es"?es:en;

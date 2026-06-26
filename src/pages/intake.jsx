@@ -240,6 +240,8 @@ function PublicIntake(){
   const[inviteError,setInviteError]=useState("");
   const vp=useViewport();
   const isMobile=vp.isMobile;
+  // a11y (WCAG 3.1.1) — sync <html lang> with the intake form's language.
+  useEffect(()=>{if(typeof document!=="undefined")document.documentElement.lang=lang;},[lang]);
   // v0.31.0 — Browser back navigation. Pushes a history entry on each step
   // transition and listens for popstate so the back button walks through the
   // flow naturally. Initial mount uses replaceState so back from welcome

@@ -2,6 +2,21 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.12 — 2026-06-26 — a11y: keep `<html lang>` in sync with the active language (WCAG 3.1.1)
+
+`index.html` hard-codes `<html lang="en">`, but the app is bilingual (D-3) and the language can flip to
+Spanish at runtime — the `lang` attribute never followed. Assistive tech (screen readers) then pronounces
+Spanish content with English phonetics: a Success-Criterion 3.1.1 (Language of Page) failure.
+- **FIX:** sync `document.documentElement.lang` with the live language across all three independent
+  language-bearing render paths — the main app/marketing shell (`App.jsx`, skipping the public routes which
+  early-return), the read-only share page (`pages/portal.jsx` `PublicPortal`), and the public intake form
+  (`pages/intake.jsx` `PublicIntake`). Each is a small `useEffect` keyed to its own `lang` state.
+- **WHY:** objective accessibility fix surfaced in the cruise website/UX scan (ordered-map item 4). Additive,
+  no save-path, no role/money logic, no visible strings → no EN/ES key changes.
+- **CHANGED:** `src/App.jsx` (one effect + marker → `v08312`), `src/pages/portal.jsx`, `src/pages/intake.jsx`
+  (one effect each). Build clean; lint unchanged vs baseline (411 errors, 0 new — effects use complete dep
+  arrays). 🟢loop-ok (objective a11y, fix-and-push per CRUISE_MODE item 4).
+
 ## v0.83.11 — 2026-06-26 — fix: admin grant/revoke silently no-op'd past 200 auth users (ISS-27, api/scale)
 
 `api/admin-members.js` `patchByEmail` (the worker behind the Members-admin **grant** and **revoke**
