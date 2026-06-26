@@ -2,6 +2,36 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.16 — 2026-06-26 — fix(reminders): exact "days until due" — real month lengths, not hardcoded 31
+
+`getClientRem()` (the dashboard "Client Due" reminders feed) computed each bill/card's days-until-due
+with two off-by-N bugs, both rooted in ignoring real month lengths:
+- **Bills:** `diff = dueDay >= today ? dueDay - today : dueDay + (31 - today)` — the wrap branch
+  **hardcoded 31**. In a 28/30-day month it over-counts: e.g. **Feb 25 → a bill due the 3rd** is 6 real
+  days away but computed as **9**, so the `if(diff<=7)` filter **hides the reminder** (and a 31-day month
+  computes fine, masking it). Near month-end this silently **drops bills due within a week** — a real
+  under-reminding defect for an advisor coaching tool.
+- **Cards:** `daysUntil: Math.max(0, dueDay - today)` — **no wrap at all**. A card already past its
+  due-day this month (e.g. due the 5th, viewed the 20th) reported **0 days** instead of the ~15 to next
+  cycle, so it mislabeled and sorted to the **top** of the panel (default sort is `daysUntil` ascending,
+  `dashboard.jsx:90`).
+- **FIX:** one shared `_daysUntilDue(dueDay, today)` helper computes the exact day delta to the next
+  occurrence of `dueDay`, respecting the target month's real length (`new Date(y,m+1,0).getDate()`),
+  **clamping** `dueDay` to that length (a `31` due-day lands on Feb 28), and naturally rolling **Dec→Jan
+  of the next year**. Both the bill `diff` and the card `daysUntil` now call it.
+- **WHY:** objective correctness bug found in the cruise item-1 deep scan of `utils/finance.js` pure
+  helpers. Read-only display derivation — **does not touch the live save/load path**, no money/role/RLS
+  change, no new strings (the rendered value is already `daysUntil`). Keys/dismissals are unaffected
+  (they embed `YYYY-MM`, not the day delta).
+- **VERIFIED:** node harness, 8/8 edge cases pass (short-month wrap, year rollover, `due==today`,
+  day-31 clamp on 30- and 28-day months); each old formula reproduced and shown wrong on the same input.
+  Build clean (540ms); full-repo lint **428 problems, 0 new** (removed the now-unused `day` var, so no
+  added `no-unused-vars`). EN/ES symmetry intact. **Owner eyeball (optional):** dashboard reminders near
+  a month boundary should now show bills due within 7 *real* days and accurate "Xd" on cards. 🟢loop-ok
+  (objective correctness, fix-and-push).
+- **CHANGED:** `src/utils/finance.js` (`_daysUntilDue` helper + `getClientRem` bill/card paths),
+  `src/App.jsx` (marker → `v08316`).
+
 ## v0.83.15 — 2026-06-26 — fix(i18n): abbreviated values (`fmtS`) honor the active currency
 
 The `fmtS` helper (compact `$5K` / `$1.2M` rendering, used in **13 places** — dashboard slots,
