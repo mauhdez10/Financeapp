@@ -2,6 +2,27 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.27 — 2026-06-26 — fix(reports): Cash Flow Statement + Full Report per-card debt-service uses canonical effectiveMin (ISS-59)
+
+**FIX (money / display — ISS-56 class):** two report surfaces in `components/clientReports.jsx` itemized
+the per-card minimum from **raw `c.min`** while their own footer/total used canonical `sumMin`
+(= Σ `effectiveMin`), so the breakdown rows did not reconcile to the total directly below them:
+
+- **CashFlowStatement (`:156`)** — the "DEBT SERVICE" list filtered `c.min>0` and showed `value={c.min}`,
+  sitting immediately above "Total Debt Service" = `minD` (`sumMin`).
+- **FullReport (`:307`)** — the per-card "Min Pay" column showed `fmtD(c.min)` while the table footer
+  showed `fmtD(minD)` (`sumMin`).
+
+Four divergence modes (per `golden-anchor-logic §3` `effectiveMin` = `balance>0 ? min(balance, max(25,
+min ?? derived)) : 0`): (1) card with a balance but **unset** `min` → row **hidden** yet counted in the
+total; (2) **paid-off** card with a stale `min>0` → **phantom** row for a $0-balance card; (3) min below
+the **$25 floor** shown raw; (4) min **above balance** shown uncapped. Fix: both surfaces use
+`effectiveMin(c)` for the filter and the value. **Pure display — not the save path** (NMModal/monthlyRows
+already use `sumMin`; the raw-min save-path snapshot is the separate ⛔ ISS-48). node harness
+`scratchpad/iss_cfmin.mjs` (4 cases): OLD rows sum $205 ≠ $230 footer → NEW rows sum $230 = footer.
+Gates: build clean; lint 427/408 = baseline (0 new); no new strings (EN/ES symmetry unchanged). Found in
+the item-1 `clientReports.jsx` raw-`.min` correctness scan.
+
 ## v0.83.26 — 2026-06-26 — fix(i18n): full bilingual sweep of clientModals.jsx (ISS-58)
 
 **FIX (D-3):** ISS-57 fixed the owner dropdowns in `components/clientModals.jsx` but left **~30 other

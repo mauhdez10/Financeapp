@@ -6,6 +6,24 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — ISS-60: `monthlyRows.spending` uses raw `c.min` (save path) · queued (appended by finance-cron, ordered-map item 1)
+
+While fixing the **display** raw-`c.min` divergences (ISS-59, shipped v0.83.27), I traced the same
+raw-min pattern into the **save path**: `monthlyRows` (`utils/finance.js:118`) computes
+`cardMins = Σ (+cd.min||0)` and writes `spending = (+s.bills||0) + cardMins` into the persisted
+**`client_monthly_summary`** row. Canonical debt service is `sumMin` = Σ `effectiveMin` (§3), so the stored
+`spending` diverges for the same four cases as ISS-59 (unset min, paid-off stale min, sub-$25 floor,
+min>balance). This is a **persisted summary derivation over historical snapshot data**, same ⛔attended
+disposition as ISS-18 (`monthlyRows.net_worth`) — a fix changes the cms save path **and** needs a backfill
+of existing rows, so I did **not** touch it.
+
+**Owner yes/no (my rec in *italics*):**
+1. **Fix `monthlyRows.spending` to use `effectiveMin`** (one-line: `cardMins = cards.reduce((a,cd)=>a+
+   effectiveMin(cd),0)`) at the next **attended** session, paired with a re-save/backfill of existing
+   `client_monthly_summary` rows? *Rec: **YES, attended** — bundle it with the ISS-18 net_worth backfill
+   (same function, same row, same one-pass backfill); low urgency (it only affects the persisted
+   `spending` series, not live numbers).*
+
 ## 2026-06-26 — Supabase security-advisor sweep · triaged (appended by finance-cron, ordered-map item 3)
 
 Ran the Supabase **security advisor** (`get_advisors security`) + **`npm audit`** read-only. `npm audit`:
