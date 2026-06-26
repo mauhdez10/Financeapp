@@ -30,6 +30,22 @@ Deep item-1 scan of the calculators + shared money math (`finance.js`, `calculat
   if you prefer the chart stay a simple monthly illustration, say NO and I'll just annotate the
   chart "monthly approximation" so the mismatch is explained.)** Either way I'll update
   `golden-anchor-logic §4` in the same change.
+- **ISS-42 (NEW) — RetirementCalc growth chart + forecast cone stop short of the retirement year.**
+  Deepened the item-1 scan into the 5 not-yet-reviewed calculators (Retirement, Portfolio, CarLoan,
+  Affordability, DebtReduction) against `golden-anchor-logic §4` — **every headline formula is
+  correct** (employer-match, 4%-rule income, mthPmt/payM usage, the affordability iteration, the
+  Portfolio `||8.5` guard that prevents a 0-rate divide). One presentation issue: the growth-projection
+  chart samples at `step = round(years/10)` and the ForecastCone at `round(years/8)`, so when `years`
+  isn't a multiple of the step the loop's last point lands **before** retirement age. At the **default
+  30→65 (35-yr) horizon** `step = 4` → the chart ends at **Yr 32**, and the cone ends at **Age 62** —
+  3 years short — while the scenario cards (full `totalMonths`) show the correct year-35 balance, so the
+  chart visually *understates* the headline. Same class as ISS-40 (chart endpoint vs headline), but
+  here it is **not** documented as intended. **The fix is small + safe:** after each sampling loop,
+  append the exact final point (`y = years` for the chart, `Age = currentAge+years` for the cone) when
+  the loop missed it — purely additive, no headline math touched, headlessly verifiable (last
+  `chartData` point's `base` equals `proj(f.base)`). **Rec: YES — append the final-year point so the
+  chart/cone reach the stated horizon and match the scenario cards.** (Visual output = owner-gated per
+  §8, so queued not pushed; say NO to leave the round-step sampling as-is.)
 
 ## 2026-06-26 — security review (ordered-map item 3) · owner yes/no (appended by finance-cron)
 
