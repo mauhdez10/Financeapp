@@ -6,7 +6,16 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
-## ✅ No open questions (as of 2026-06-26)
+## 2026-06-26 — whole-app review · owner yes/no (the 🟡owner findings; full list in ISSUES_LEDGER)
+- **ISS-24 — advisor signup bypasses Premium.** Anyone can self-select "Advisor" at signup, and advisors are never gated → the Free/Premium model is bypassable. Is that acceptable (advisor = your firm, low abuse risk pre-launch) or should advisor signup be restricted (invite/allowlist)? **Rec: restrict advisor signup before public launch.**
+- **ISS-25 — client-side Premium activation.** "I already subscribed — activate" flips the account to Premium with no server check. Now that `stripe-webhook` exists, tighten to webhook-only activation? **Rec: keep the honor-system button pre-launch, tighten at launch.**
+- **ISS-26 — Stripe webhook grants premium before payment capture** (no `payment_status==='paid'`/mode check, no event de-dup). **Rec: YES, fix — add the paid/mode guard + idempotency (api change; do when you greenlight billing work).**
+- **ISS-19 — portal sanitize leaks nested free-text** (`customAssets[].desc` etc. reach the public portal). Which nested fields are advisor-private vs client-visible? Once you say, I strip them server-side in `api/_sanitize.js`. **Rec: treat `desc`/any notes-like sub-field as private.**
+- **ISS-21 — admin gated by mutable email.** The master-admin `list` is gated by auth email, not a stable uid. To harden, I need your real admin **user-ids** (from Supabase auth) to gate by uid. **Rec: send the uids; low urgency if Supabase email-confirm is on.**
+
+> The cruise loop is cleared to fix the 🟢loop-ok findings (ISS-27 pagination, ISS-28/29 calc, ISS-30–33 i18n) without asking. ⛔attended findings (ISS-12–18, ISS-20 auth-gate, ISS-23) wait for a focused attended session.
+
+## ✅ Earlier questions — answered (as of 2026-06-26)
 
 All prior questions answered — decisions recorded in their canonical homes:
 - **Feature-gap scan (FG-1..4):** FG-1 (AI assistant), FG-2 (auto-plan), FG-3 (habit/streak) = **YES** →
