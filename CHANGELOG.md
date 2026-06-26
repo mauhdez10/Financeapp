@@ -2,6 +2,15 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## Fix — 2026-06-26 — standards: add `mobile-web-app-capable` PWA meta tag (no app-code change)
+
+`index.html` declared only the deprecated `apple-mobile-web-app-capable` meta; modern browsers log a
+console deprecation warning and ask for the standardized `mobile-web-app-capable`. Added it alongside
+the apple-prefixed one in the PWA block. Objective standards fix found during an attended verification
+pass (Playwright on prod surfaced the warning). Static-HTML only — no `__GA_BUILD__` bump (the marker
+tracks App.jsx behavior, unchanged). Build clean; lint baseline unchanged (434). Verified the live
+console warning clears post-deploy.
+
 ## Process/Docs — 2026-06-25 — held stack shipped to main + documentation lifecycle adopted (PLAYBOOK §4b/§4c)
 
 Two things, no app-code change beyond what already shipped:
