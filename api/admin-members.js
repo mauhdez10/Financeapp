@@ -76,9 +76,20 @@ export default async function handler(req, res) {
   }
 
   async function patchByEmail(email, patch) {
-    const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    if (error) throw new Error(error.message);
-    const u = (data?.users || []).find(x => (x.email || "").toLowerCase() === email.toLowerCase() && (x.user_metadata?.role || "") === "client");
+    // Paginate the full auth-user list (ISS-27): listUsers caps at 200/page, so a
+    // single page-1 fetch silently no-ops grant/revoke for any account past user #200.
+    // Mirror loadClients' loop — stop early once the target client is found.
+    const target = email.toLowerCase();
+    let u = null;
+    let page = 1;
+    for (;;) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      if (error) throw new Error(error.message);
+      const users = data?.users || [];
+      u = users.find(x => (x.email || "").toLowerCase() === target && (x.user_metadata?.role || "") === "client");
+      if (u || users.length < 200) break;
+      page++;
+    }
     if (!u) throw new Error("no client account with that email");
     const { data: rows, error: e1 } = await admin.from("clients").select("id,data").eq("user_id", u.id).limit(1);
     if (e1 || !rows?.length) throw new Error("client profile row not found");

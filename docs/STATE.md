@@ -3,10 +3,10 @@
 > The 60-second orientation for a fresh chat: where the project is **right now**. Updated on every
 > batch (part of definition-of-done). For the full doc index see [LOGIC_MAP.md](LOGIC_MAP.md);
 > always-on rules in [UNIVERSAL_RULES.md](UNIVERSAL_RULES.md); known issues in
-> [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-25**.
+> [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-26**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-06-26-v08310-calculator-i18n-amort-equity-clientcalcs` (v0.83.10).
+- **Marker:** `__GA_BUILD__ = 2026-06-26-v08311-admin-grant-paginate-past-200-users` (v0.83.11).
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).

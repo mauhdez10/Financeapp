@@ -22,3 +22,5 @@ finance-cron · 2026-06-26T15:03:28Z · starting: ordered-map (BACKLOG top green
 finance-cron · 2026-06-26T15:20:08Z · starting: ordered-map item 1 (bugs/correctness) — ISS-28/29 HomeEquityCalc months/interest-saved fix
 
 finance-cron · 2026-06-26T15:55:40Z · starting: ordered-map item 1 (bugs/correctness) — calculator i18n ISS-30–33 / pagination ISS-27
+
+finance-cron · 2026-06-26T16:05:24Z · starting: ordered-map item 1 (bugs/correctness) — ISS-27 patchByEmail pagination past 200-user cap

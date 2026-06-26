@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.11 — 2026-06-26 — fix: admin grant/revoke silently no-op'd past 200 auth users (ISS-27, api/scale)
+
+`api/admin-members.js` `patchByEmail` (the worker behind the Members-admin **grant** and **revoke**
+actions) looked the target account up with a single `admin.auth.admin.listUsers({ page: 1, perPage: 200 })`
+call. Supabase caps `listUsers` at one page, so for any client account that sorts past user #200 the lookup
+returned no match and the action threw "no client account with that email" — i.e. comping or revoking
+Premium **silently no-op'd** once the auth user-base grows beyond 200.
+- **FIX:** paginate the lookup in a `for (;;)` loop (page++, `perPage: 200`), breaking early the moment the
+  target client is found or a short page signals the end — the exact pattern `loadClients` already uses two
+  functions above. Same find-predicate (email match **and** `role === "client"`), same error on miss.
+- **WHY:** correctness at scale (master-directive 50k-client goal); only bites once >200 accounts exist, so
+  invisible today but a latent silent-failure on the grant path.
+- **CHANGED:** `api/admin-members.js` (`patchByEmail` only — no auth/authorization logic, no live
+  client-save path, no UI strings, no DB schema). Build clean; lint unchanged (1 pre-existing
+  `no-unused-vars` in the Stripe catch, 0 new); marker → `v08311`. Found + fixed in the cruise correctness
+  scan (ordered-map item 1, 🟢loop-ok). Server-only behavior — not browser-verifiable headlessly.
+
 ## v0.83.10 — 2026-06-26 — fix: calculator i18n — translate hardcoded English in amort/equity tables + client calcs (ISS-30–33, D-3)
 
 Four D-3 (bilingual) violations: visible strings hardcoded English-only, never rendering in Spanish.

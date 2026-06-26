@@ -39,7 +39,7 @@
 | ISS-24 | product | med | 🟡owner | Signup lets anyone self-select "Advisor"; advisors are never Premium-gated → Free/Premium model bypassable at registration (D-13b territory). |
 | ISS-25 | product | med | 🟡owner | PremiumUpgrade "I already subscribed — activate" flips `accountPlan` client-side with no server verify (known honor-system; tighten now that the webhook exists?). |
 | ISS-26 | api / billing | med | 🟡owner | `stripe-webhook` grants premium from `client_reference_id` without checking `payment_status==='paid'`/`mode`, and no event de-dup → premium before capture / on replay. |
-| ISS-27 | api / scale | med | 🟢loop-ok | `patchByEmail` lists only first 200 auth users → grant/revoke silently no-ops for accounts past page 1 (only bites >200 users). Fix: paginate like `loadClients`. |
+| ISS-27 | api / scale | 🟢 | `patchByEmail` listed only first 200 auth users → grant/revoke silently no-op'd past page 1. **FIXED** v0.83.11 (paginated like `loadClients`). |
 | ISS-28 | calc | 🟢 | `HomeEquityCalc` "Months Saved" rounded payoff up to whole years → understated/0/negative. **FIXED** v0.83.9. |
 | ISS-29 | calc | 🟢 | `HomeEquityCalc` "Interest Saved" was a fabricated approx unrelated to the amort table. **FIXED** v0.83.9. |
 | ISS-30 | i18n (D-3) | 🟢 | `AmortTablePaginated` hardcoded English headers + "Yr". **FIXED** v0.83.10 (passed `t`, new keys). |
@@ -51,6 +51,7 @@
 
 | ID | Area | Status | One-line | Shipped |
 |---|---|---|---|---|
+| ISS-27 | api / scale | 🟢 | `admin-members` grant/revoke `patchByEmail` paged only first 200 auth users → silent no-op past #200; now paginates like `loadClients` | v0.83.11 (2026-06-26) |
 | ISS-30–33 | i18n (D-3) | 🟢 | Calculator hardcoded-English (amort/equity table headers + clientCalcs prefill helpers + household block) → bilingual; 14 new keys EN+ES, 4 reused | v0.83.10 (2026-06-26) |
 | ISS-29 | review / calc | 🟢 | `HomeEquityCalc` Interest Saved fabricated approx → now real (baseInt − extraInt) from shared amort loop | v0.83.9 (2026-06-26) |
 | ISS-28 | review / calc | 🟢 | `HomeEquityCalc` Months Saved year-rounded vs exact → understated/0/neg; now exact-month difference | v0.83.9 (2026-06-26) |
