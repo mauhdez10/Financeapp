@@ -6,6 +6,34 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — Supabase security-advisor sweep · triaged (appended by finance-cron, ordered-map item 3)
+
+Ran the Supabase **security advisor** (`get_advisors security`) + **`npm audit`** read-only. `npm audit`:
+**0 vulnerabilities.** The advisor returned **12 WARN-level** lints; I verified each against the live
+function/policy definitions (read-only). **Verdict: no exploitable finding — nothing autonomous-code-
+fixable** (every remaining item is production DDL or an Auth-dashboard toggle, both owner-only). Detail:
+
+- **✅ BENIGN — verified, no action.** The 8 `SECURITY DEFINER` warnings (6 authenticated:
+  `ga_dashboard_summary/asset_alloc/client_deltas/top_debts/trend`, `ga_advisor_reminders`; 2 anon:
+  `resolve_invite_token`, `mark_invite_submitted`). I read every definition: **all authenticated dashboard
+  fns filter `WHERE user_id = auth.uid()`** — no cross-advisor leak; both anon fns are **single-row,
+  scoped to a secret `p_token`**; **all 8 pin `SET search_path TO 'public'`.** DEFINER is required so the
+  fns can read base tables the caller's role can't touch directly — correct by-design. Recorded so future
+  sweeps don't re-investigate.
+
+**Owner yes/no (3 items — all owner-only; my rec in *italics*):**
+1. **Leaked-password protection is OFF.** Supabase Auth can reject passwords found in HaveIBeenPwned.
+   It's a free dashboard toggle (Auth → Policies → "Leaked password protection"). *Rec: **YES, enable** —
+   one switch, real account-takeover defense, no code.*
+2. **`set_updated_at` trigger has a mutable `search_path`** (the only fn missing the pin). Trivial
+   hardening: `ALTER FUNCTION public.set_updated_at() SET search_path = ''`. Prod DDL, so I won't apply it
+   unattended. *Rec: **YES**, run at the next attended DB session — low urgency, near-zero risk on a
+   `NEW.updated_at = now()` trigger.*
+3. **`intake_submissions` allows anon/auth `INSERT` with `WITH CHECK (true)`** — flagged "always-true RLS."
+   This is **intentional** (the public intake form must accept anonymous submissions); only real exposure
+   is spam/flooding. *Rec: **accept pre-launch.** Optional later hardening: require a valid open invite
+   token in the `WITH CHECK` clause, or add a rate-limit, to blunt form-spam.*
+
 ## 2026-06-26 — ISS-51 `smartMerge` drops `marketInvestments` on duplicate merge · owner yes/no (appended by finance-cron)
 
 `smartMerge` (`utils/import.js:222`) unions exactly six arrays —

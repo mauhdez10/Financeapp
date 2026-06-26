@@ -53,3 +53,4 @@ finance-cron · 2026-06-26T19:36:10Z · starting: ordered-map item 1 (bugs — I
 finance-cron · 2026-06-26T19:50:57Z · starting: ordered-map item 1 (bugs — ISSUES_LEDGER scan for autonomous-safe fix)
 
 finance-cron · 2026-06-26T20:06:00Z · starting: ordered-map item 1 (bugs — ISSUES_LEDGER scan for autonomous-safe fix)
+finance-cron · 2026-06-26T20:21:00Z · starting: ordered-map item 3 (security — advisors/RLS audit via supabase-finance MCP)
