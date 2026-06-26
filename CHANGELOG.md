@@ -2,6 +2,26 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.20 — 2026-06-26 — fix(summary): SummarySection uses effectiveMin + includes marketInvestments
+
+`SummarySection` (the advisor's **Summary** report tab, `clientReports.jsx:52`) was the last report
+surface still using the **raw, non-canonical** money basis that ISS-46/ISS-47 already fixed elsewhere.
+Two recurrences (ISS-50):
+- **Min debt service** (`:60`) summed **raw `c.min`** (`Σ c.min`) instead of canonical `Σ effectiveMin(c)`.
+  `mnd` feeds the Summary's **DSR**, **cash flow**, the **Min Pay KPI**, the "Where Income Goes" pie, and
+  the DSR-based recommendation text — all diverged from `golden-anchor-logic §3` for no-min cards
+  (under-counted), **paid-off cards carrying a stale `min`** (over-counted), and below-$25-floor mins.
+  This also contradicted the Financial-Statements DSR on the very next tab (canonical since ISS-46).
+- **Total assets** for the Health-Score radar (`:72`) computed `totA = liquid + non-liquid accounts +
+  customAssets` and **omitted `marketInvestments`** (ISS-47 class). `totA` drives the radar's **D/A axis**
+  (`radarVals[3]=1−dta/0.8`) → DTA overstated → health understated for any client holding market
+  investments.
+- **Fix:** `mnd` → `Σ effectiveMin(c)` (preserves the p1/p2 view filtering); `totA` → `+ Σ
+  marketInvestments.value`. Both are pure display derivations in a report component — **not** the save
+  path (NMModal already saves `sumMin`; `saveHistoricalUpdate`'s raw-min path is the separate ⛔attended
+  ISS-48). No new strings (numeric only) → D-3 N/A. node harness (`iss50.mjs`): raw `mnd 160 → 125`,
+  `totA 491k → 611k` (+120k MI). Build clean, lint 427 (0 new).
+
 ## v0.83.19 — 2026-06-26 — fix(statements): totalA includes marketInvestments in RatioContent + balance sheet
 
 `RatioContent` (Financial Statements → Ratios, `clientReports.jsx:189`, also the Full Report) and the

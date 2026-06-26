@@ -57,7 +57,7 @@ const fC=c=>view==="both"?c:c.filter(x=>x.owedBy==="joint"||x.owedBy===view);
 const sB=b=>{if(!hasP2||view==="both")return toM(b.cost,b.freq);const sp=b.split||{p1:50,p2:50};return toM(b.cost,b.freq)*(sp[view]||50)/100;};
 const inc=fI(client.incomeStreams).reduce((s,i)=>s+toM(i.net,i.freq),0);
 const bls=fB(actB(client.bills)).reduce((s,b)=>s+sB(b),0);
-const mnd=fC(client.cards).reduce((s,c)=>s+c.min,0);
+const mnd=fC(client.cards).reduce((s,c)=>s+effectiveMin(c),0);
 const cash=inc-bls-mnd;const dsr=inc>0?mnd/inc:0;
 const liveSnap={label:"▶ Now",debt:Math.round(client.cards.reduce((s,c)=>s+(+c.balance||0),0)*scales.debt),savings:Math.round(liquidA(client)*scales.savings)};
 const trend=[...(client.monthSnapshots||[]).slice(-4).map(s=>({...s,debt:Math.round((s.debt||0)*scales.debt),savings:Math.round((s.savings||0)*scales.savings)})),liveSnap];
@@ -69,7 +69,7 @@ return<div>{hasP2&&<div style={{display:"flex",gap:6,marginBottom:14}}>{[["both"
   const liq=liquidA(client)*scales.savings;
   const ef=bls>0?liq/bls:0;
   const totL=client.cards.reduce((s,c)=>s+(+c.balance||0),0)+(client.loans||[]).reduce((s,l)=>s+(+l.balance||0),0);
-  const totA=liquidA(client)+(client.accounts||[]).filter(a=>!ACCT_META[a.type]?.liquid).reduce((s,a)=>s+(+a.value||0),0)+(client.customAssets||[]).reduce((s,a)=>s+(+a.value||0),0);
+  const totA=liquidA(client)+(client.accounts||[]).filter(a=>!ACCT_META[a.type]?.liquid).reduce((s,a)=>s+(+a.value||0),0)+(client.customAssets||[]).reduce((s,a)=>s+(+a.value||0),0)+(client.marketInvestments||[]).reduce((s,a)=>s+(+a.value||0),0);
   const dta=totA>0?totL/totA:1;
   const sr=inc>0?Math.max(0,cash)/inc:0;
   const radarVals=[
