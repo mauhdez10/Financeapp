@@ -80,7 +80,7 @@ export function ImportWizard({onClose,onImport,existingClients,t}){
   // ── RENDER STEPS ──
   if(step==='choose')return<Modal title={"📥 "+(t?.importClientData||"Import Client Data")} onClose={onClose}>
     <div style={{fontSize:12,color:th.muted,marginBottom:16}}>{t.whatImport||"What would you like to import?"}</div>
-    {[['excel','📊','Financial Excel File','Import months of income, bills and debt from your Google Sheets export (.xlsx)'],['csv','👤','CRM Client List','Import client profiles from your insurance/health CRM export (.csv)'],['both','🔗','Link Both','Import Excel financial data and link it to a CRM client profile']].map(([m,icon,title,desc])=>
+    {[['excel','📊',t?.impExcelTitle||"Financial Excel File",t?.impExcelDesc||"Import months of income, bills and debt from your Google Sheets export (.xlsx)"],['csv','👤',t?.impCsvTitle||"CRM Client List",t?.impCsvDesc||"Import client profiles from your insurance/health CRM export (.csv)"],['both','🔗',t?.impBothTitle||"Link Both",t?.impBothDesc||"Import Excel financial data and link it to a CRM client profile"]].map(([m,icon,title,desc])=>
       <div key={m} onClick={()=>{setMode(m);setStep('upload');}} style={{...mCARD(th),padding:16,marginBottom:10,cursor:'pointer',display:'flex',gap:14,alignItems:'flex-start'}} onMouseEnter={e=>e.currentTarget.style.border=`1px solid ${th.accent}`} onMouseLeave={e=>e.currentTarget.style.border=`1px solid ${th.cardBorder}`}>
         <div style={{fontSize:28,flexShrink:0}}>{icon}</div>
         <div><div style={{fontWeight:700,color:th.text,marginBottom:3}}>{title}</div><div style={{fontSize:11,color:th.muted,lineHeight:1.5}}>{desc}</div></div>
@@ -88,61 +88,61 @@ export function ImportWizard({onClose,onImport,existingClients,t}){
     )}
   </Modal>;
 
-  if(step==='upload')return<Modal title={`📥 Upload File${mode==='both'?'s':''}`} onClose={onClose}>
+  if(step==='upload')return<Modal title={"📥 "+(mode==='both'?(t?.impUploadFiles||"Upload Files"):(t?.impUploadFile||"Upload File"))} onClose={onClose}>
     <input ref={xlRef} type="file" accept=".xlsx" onChange={e=>{if(e.target.files[0])handleXLUpload(e.target.files[0]);}} style={{display:'none'}}/>
     <input ref={csvRef} type="file" accept=".csv" onChange={e=>{if(e.target.files[0])handleCSVUpload(e.target.files[0]);}} style={{display:'none'}}/>
     {(mode==='excel'||mode==='both')&&<div style={{marginBottom:14}}>
-      <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:6}}>📊 EXCEL FILE (.xlsx)</div>
+      <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:6}}>📊 {t?.impExcelFileHdr||"EXCEL FILE (.xlsx)"}</div>
       <div onClick={()=>xlRef.current?.click()} style={{...mCARD(th),padding:24,textAlign:'center',cursor:'pointer',border:`2px dashed ${xlFile&&!loading?th.pos:th.cardBorder}`,borderRadius:10}}>
-        {loading?<><div style={{fontSize:14,marginBottom:4}}>⏳</div><div style={{fontSize:12,color:th.muted}}>{t.parsingMonths||"Parsing months…"}</div></>:xlFile?<><div style={{fontSize:14,marginBottom:4}}>✅</div><div style={{fontSize:12,color:th.pos,fontWeight:700}}>{xlFile.name}</div>{parsed&&<div style={{fontSize:11,color:th.muted,marginTop:4}}>{parsed.months.length} months found</div>}</>:<><div style={{fontSize:24,marginBottom:4}}>📂</div><div style={{fontSize:12,color:th.muted}}>{t.clickSelectXlsx||"Click to select .xlsx file"}<br/><span style={{fontSize:10}}>{t.googleSheetsExport||"Google Sheets export"}</span></div></>}
+        {loading?<><div style={{fontSize:14,marginBottom:4}}>⏳</div><div style={{fontSize:12,color:th.muted}}>{t.parsingMonths||"Parsing months…"}</div></>:xlFile?<><div style={{fontSize:14,marginBottom:4}}>✅</div><div style={{fontSize:12,color:th.pos,fontWeight:700}}>{xlFile.name}</div>{parsed&&<div style={{fontSize:11,color:th.muted,marginTop:4}}>{(t?.impMonthsFound||"{n} months found").replace(/\{n\}/g,parsed.months.length)}</div>}</>:<><div style={{fontSize:24,marginBottom:4}}>📂</div><div style={{fontSize:12,color:th.muted}}>{t.clickSelectXlsx||"Click to select .xlsx file"}<br/><span style={{fontSize:10}}>{t.googleSheetsExport||"Google Sheets export"}</span></div></>}
       </div>
       {parsed&&<div style={{...mCARD(th),padding:10,marginTop:8,fontSize:11}}>
         <div style={{color:th.muted,marginBottom:3}}>📅 {parsed.months.join(' · ')}</div>
-        <div style={{color:th.muted,marginBottom:3}}>👤 {parsed.isCouple?`Couple: ${parsed.p1n||'P1'} & ${parsed.p2n||'P2'}`:`Single: ${parsed.p1n||'P1'}`}</div>
-        <div style={{color:th.muted}}>💳 {parsed.rawCards.length} cards · 📋 {parsed.bills.length} bills · 💼 {parsed.incomeStreams.length} income streams</div>
+        <div style={{color:th.muted,marginBottom:3}}>👤 {parsed.isCouple?`${t?.impCoupleLbl||"Couple:"} ${parsed.p1n||'P1'} & ${parsed.p2n||'P2'}`:`${t?.impSingleLbl||"Single:"} ${parsed.p1n||'P1'}`}</div>
+        <div style={{color:th.muted}}>💳 {parsed.rawCards.length} {t?.impCardsU||"cards"} · 📋 {parsed.bills.length} {t?.impBillsU||"bills"} · 💼 {parsed.incomeStreams.length} {t?.impIncomeU||"income streams"}</div>
       </div>}
       {error&&<div style={{fontSize:11,color:th.neg,marginTop:8,padding:8,background:th.neg+'11',borderRadius:8}}>⚠️ {error}</div>}
     </div>}
     {(mode==='csv'||mode==='both')&&<div style={{marginBottom:14}}>
-      <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:6}}>{mode==='both'?'👤 OPTIONAL: CRM CSV FILE':'👤 CRM CSV FILE'}</div>
+      <div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:6}}>{mode==='both'?'👤 '+(t?.impCsvOptHdr||"OPTIONAL: CRM CSV FILE"):'👤 '+(t?.impCsvHdr||"CRM CSV FILE")}</div>
       <div onClick={()=>csvRef.current?.click()} style={{...mCARD(th),padding:20,textAlign:'center',cursor:'pointer',border:`2px dashed ${csvClients.length?th.pos:th.cardBorder}`,borderRadius:10}}>
-        {csvClients.length?<><div style={{fontSize:14,marginBottom:4}}>✅</div><div style={{fontSize:12,color:th.pos,fontWeight:700}}>{csvClients.length} clients found</div></>:<><div style={{fontSize:24,marginBottom:4}}>📂</div><div style={{fontSize:12,color:th.muted}}>{t.clickSelectCsv||"Click to select .csv file"}</div></>}
+        {csvClients.length?<><div style={{fontSize:14,marginBottom:4}}>✅</div><div style={{fontSize:12,color:th.pos,fontWeight:700}}>{(t?.impClientsFound||"{n} clients found").replace(/\{n\}/g,csvClients.length)}</div></>:<><div style={{fontSize:24,marginBottom:4}}>📂</div><div style={{fontSize:12,color:th.muted}}>{t.clickSelectCsv||"Click to select .csv file"}</div></>}
       </div>
     </div>}
     <div style={{display:'flex',gap:8,justifyContent:'space-between',marginTop:8}}>
-      <Btn onClick={()=>setStep('choose')}>Back</Btn>
+      <Btn onClick={()=>setStep('choose')}>{t?.back||"Back"}</Btn>
       <div style={{display:'flex',gap:8}}>
         {mode==='excel'&&parsed&&!loading&&<BSolid onClick={()=>setStep('names')}>{t.continueArrow||"Continue →"}</BSolid>}
         {mode==='csv'&&csvClients.length>0&&<BSolid onClick={()=>setStep('csv_pick')}>{t.continueArrow||"Continue →"}</BSolid>}
-        {mode==='both'&&parsed&&!loading&&<BSolid onClick={()=>setStep('names')}>{csvClients.length?'Continue →':'Skip CSV →'}</BSolid>}
+        {mode==='both'&&parsed&&!loading&&<BSolid onClick={()=>setStep('names')}>{csvClients.length?(t?.continueArrow||"Continue →"):(t?.impSkipCsv||"Skip CSV →")}</BSolid>}
       </div>
     </div>
   </Modal>;
 
   if(step==='names')return<Modal title={"👤 "+(t?.clientNamesTitle||"Client Names")} onClose={onClose}>
-    <div style={{fontSize:11,color:th.muted,marginBottom:14}}>Names detected from the file — edit as needed.</div>
+    <div style={{fontSize:11,color:th.muted,marginBottom:14}}>{t?.impNamesDetected||"Names detected from the file — edit as needed."}</div>
     <Row2><Field label={t?.firstName||"First Name"}><input style={INP} value={names.firstName} onChange={e=>setNames(n=>({...n,firstName:e.target.value}))}/></Field><Field label={t?.lastName||"Last Name"}><input style={INP} value={names.lastName} onChange={e=>setNames(n=>({...n,lastName:e.target.value}))}/></Field></Row2>
-    {parsed?.isCouple&&<><div style={{height:1,background:th.cardBorder,margin:'12px 0'}}/><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>👥 Partner (detected in file)</div><Row2><Field label={t?.partnerFirst||"Partner First Name"}><input style={INP} value={names.partnerFirst} onChange={e=>setNames(n=>({...n,partnerFirst:e.target.value}))}/></Field><Field label={t?.partnerLast||"Partner Last Name"}><input style={INP} value={names.partnerLast} onChange={e=>setNames(n=>({...n,partnerLast:e.target.value}))}/></Field></Row2></>}
+    {parsed?.isCouple&&<><div style={{height:1,background:th.cardBorder,margin:'12px 0'}}/><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:8}}>👥 {t?.impPartnerDetected||"Partner (detected in file)"}</div><Row2><Field label={t?.partnerFirst||"Partner First Name"}><input style={INP} value={names.partnerFirst} onChange={e=>setNames(n=>({...n,partnerFirst:e.target.value}))}/></Field><Field label={t?.partnerLast||"Partner Last Name"}><input style={INP} value={names.partnerLast} onChange={e=>setNames(n=>({...n,partnerLast:e.target.value}))}/></Field></Row2></>}
     <div style={{height:1,background:th.cardBorder,margin:'12px 0'}}/>
     <div style={{display:'flex',gap:16,marginBottom:4}}>
-      <Field label={`${names.firstName||'P1'} Color`}><input type="color" value={names.color1} onChange={e=>setNames(n=>({...n,color1:e.target.value}))} style={{width:48,height:32,border:'none',cursor:'pointer',background:'none'}}/></Field>
-      {parsed?.isCouple&&names.partnerFirst&&<Field label={`${names.partnerFirst} Color`}><input type="color" value={names.color2} onChange={e=>setNames(n=>({...n,color2:e.target.value}))} style={{width:48,height:32,border:'none',cursor:'pointer',background:'none'}}/></Field>}
+      <Field label={`${names.firstName||'P1'} ${t?.impColorSuffix||"Color"}`}><input type="color" value={names.color1} onChange={e=>setNames(n=>({...n,color1:e.target.value}))} style={{width:48,height:32,border:'none',cursor:'pointer',background:'none'}}/></Field>
+      {parsed?.isCouple&&names.partnerFirst&&<Field label={`${names.partnerFirst} ${t?.impColorSuffix||"Color"}`}><input type="color" value={names.color2} onChange={e=>setNames(n=>({...n,color2:e.target.value}))} style={{width:48,height:32,border:'none',cursor:'pointer',background:'none'}}/></Field>}
     </div>
     <div style={{display:'flex',gap:8,justifyContent:'space-between',marginTop:16}}>
-      <Btn onClick={()=>setStep('upload')}>Back</Btn>
+      <Btn onClick={()=>setStep('upload')}>{t?.back||"Back"}</Btn>
       <BSolid onClick={()=>setStep(parsed?.rawCards?.length?'cards':mode==='both'&&csvClients.length?'csv_pick':'confirm')}>{t.continueArrow||"Continue →"}</BSolid>
     </div>
   </Modal>;
 
   if(step==='cards')return<Modal title={"💳 "+(t?.assignCardTitle||"Assign Card Ownership")} onClose={onClose} width={560}>
     <div style={{fontSize:11,color:th.muted,marginBottom:12}}>
-      {parsed?.isCouple?'Cards default to Joint. ⚑ = originally detected under a specific person.':'Assign each card to the client.'}
+      {parsed?.isCouple?(t?.impCardsCoupleHint||"Cards default to Joint. ⚑ = originally detected under a specific person."):(t?.impCardsSingleHint||"Assign each card to the client.")}
     </div>
     <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:360,overflowY:'auto',marginBottom:16}}>
       {parsed?.rawCards.map(card=>{
         const detectedPerson=card.owedBy!=='__joint__'?card.owedBy:null;
         const cur=cardOwn[card.id]||'joint';
-        const opts=[['p1',names.firstName||'P1'],parsed?.isCouple&&['joint','Joint'],parsed?.isCouple&&['p2',names.partnerFirst||'P2']].filter(Boolean);
+        const opts=[['p1',names.firstName||'P1'],parsed?.isCouple&&['joint',t?.joint||'Joint'],parsed?.isCouple&&['p2',names.partnerFirst||'P2']].filter(Boolean);
         return<div key={card.id} style={{...mCARD(th),padding:'10px 14px',display:'flex',alignItems:'center',gap:12}}>
           <div style={{flex:1}}>
             <div style={{fontSize:12,fontWeight:700,color:th.text}}>{card.name}{detectedPerson&&<span style={{fontSize:10,color:th.warn,marginLeft:6}}>⚑ {detectedPerson}</span>}</div>
@@ -155,14 +155,14 @@ export function ImportWizard({onClose,onImport,existingClients,t}){
       })}
     </div>
     <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
-      <Btn onClick={()=>setStep('names')}>Back</Btn>
+      <Btn onClick={()=>setStep('names')}>{t?.back||"Back"}</Btn>
       <BSolid onClick={()=>setStep(mode==='both'&&csvClients.length?'csv_pick':'confirm')}>{t.continueArrow||"Continue →"}</BSolid>
     </div>
   </Modal>;
 
   if(step==='csv_pick'){const filteredCSV=csvClients.filter(c=>`${c.firstName} ${c.lastName} ${c.email}`.toLowerCase().includes(csvSearch.toLowerCase()));return<Modal title={"👥 "+(t?.selectClientTitle||"Select Client Profile")} onClose={onClose} width={520}>
-    <div style={{fontSize:11,color:th.muted,marginBottom:10}}>{mode==='both'?'Select ONE client to link as profile for this import:':'Select which clients to import:'}</div>
-    <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}><input placeholder={t?.searchClientsPh||"Search clients…"} aria-label={t?.searchClientsPh||"Search clients"} value={csvSearch} onChange={e=>setCsvSearch(e.target.value)} style={{...mINP(th),flex:1,padding:'5px 10px',fontSize:12}}/>{mode!=='both'&&<><Btn small onClick={()=>setSelCSV(new Set(csvClients.map(x=>x.id)))}>All</Btn><Btn small onClick={()=>setSelCSV(new Set())}>None</Btn></>}</div>
+    <div style={{fontSize:11,color:th.muted,marginBottom:10}}>{mode==='both'?(t?.impSelectOneLink||"Select ONE client to link as profile for this import:"):(t?.impSelectWhich||"Select which clients to import:")}</div>
+    <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}><input placeholder={t?.searchClientsPh||"Search clients…"} aria-label={t?.searchClientsPh||"Search clients"} value={csvSearch} onChange={e=>setCsvSearch(e.target.value)} style={{...mINP(th),flex:1,padding:'5px 10px',fontSize:12}}/>{mode!=='both'&&<><Btn small onClick={()=>setSelCSV(new Set(csvClients.map(x=>x.id)))}>{t?.impAll||"All"}</Btn><Btn small onClick={()=>setSelCSV(new Set())}>{t?.impNone||"None"}</Btn></>}</div>
     <div style={{display:'flex',flexDirection:'column',gap:5,maxHeight:320,overflowY:'auto',marginBottom:12}}>
       {filteredCSV.map(cl=>{
         const sel=selCSV.has(cl.id);
@@ -173,11 +173,11 @@ export function ImportWizard({onClose,onImport,existingClients,t}){
       })}
       {!filteredCSV.length&&<div style={{fontSize:12,color:th.dim,padding:'12px',textAlign:'center'}}>{t.noClientsMatch||"No clients match search."}</div>}
     </div>
-    <div style={{fontSize:11,color:th.dim,marginBottom:10}}>{mode==='both'?`${selCSV.size===1?'1 client selected':'Select 1 client to link'}`:`${selCSV.size} of ${csvClients.length} selected`}</div>
+    <div style={{fontSize:11,color:th.dim,marginBottom:10}}>{mode==='both'?(selCSV.size===1?(t?.impOneClientSel||"1 client selected"):(t?.impSelectOneToLink||"Select 1 client to link")):(t?.impNofMSelected||"{s} of {n} selected").replace(/\{s\}/g,selCSV.size).replace(/\{n\}/g,csvClients.length)}</div>
     <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
-      <Btn onClick={()=>setStep(parsed?'cards':'upload')}>Back</Btn>
+      <Btn onClick={()=>setStep(parsed?'cards':'upload')}>{t?.back||"Back"}</Btn>
       <BSolid onClick={()=>mode==='csv'?doImport():setStep('confirm')} style={{opacity:selCSV.size===0?0.5:1}}>
-        {mode==='csv'?`Import ${selCSV.size} Client${selCSV.size!==1?'s':''}`:mode==='both'&&selCSV.size===1?'Link & Continue →':'Select 1 to link'}
+        {mode==='csv'?(t?.impImportNClients||"Import {n} Client{ps}").replace(/\{n\}/g,selCSV.size).replace(/\{ps\}/g,selCSV.size!==1?'s':''):mode==='both'&&selCSV.size===1?(t?.impLinkContinue||"Link & Continue →"):(t?.impSelectOneToLinkShort||"Select 1 to link")}
       </BSolid>
     </div>
   </Modal>;}
@@ -189,18 +189,18 @@ export function ImportWizard({onClose,onImport,existingClients,t}){
       <div style={{...mCARD(th),padding:18,marginBottom:14,background:th.pos+'08',border:`1px solid ${th.pos}33`}}>
         <div style={{fontSize:16,fontWeight:800,color:th.text,marginBottom:8}}>{names.firstName} {names.lastName}{names.partnerFirst?` & ${names.partnerFirst}`:''}</div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,fontSize:12}}>
-          <div style={{color:th.accent,fontWeight:600}}>📅 {parsed?.snapshots?.length||0} months of data</div>
-          <div style={{color:th.neg,fontWeight:600}}>💳 {parsed?.rawCards?.length||0} credit cards</div>
-          <div style={{color:th.warn,fontWeight:600}}>📋 {parsed?.bills?.length||0} bills</div>
-          <div style={{color:th.pos,fontWeight:600}}>💼 {fmt(net)}/mo income</div>
+          <div style={{color:th.accent,fontWeight:600}}>📅 {parsed?.snapshots?.length||0} {t?.impMonthsData||"months of data"}</div>
+          <div style={{color:th.neg,fontWeight:600}}>💳 {parsed?.rawCards?.length||0} {t?.impCreditCardsU||"credit cards"}</div>
+          <div style={{color:th.warn,fontWeight:600}}>📋 {parsed?.bills?.length||0} {t?.impBillsU||"bills"}</div>
+          <div style={{color:th.pos,fontWeight:600}}>💼 {fmt(net)}{t?.impMoIncome||"/mo income"}</div>
         </div>
       </div>
-      {linkedCsv&&<div style={{...mCARD(th),padding:10,marginBottom:14,fontSize:11,color:th.muted}}>📎 Profile linked: {linkedCsv.firstName} {linkedCsv.lastName} · {linkedCsv.email}</div>}
-      <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>Accounts, loans, and physical assets are not in the Excel — add them via the Intake tab after importing.</div>
-      {(()=>{const fullName=`${names.firstName} ${names.lastName}`.toLowerCase();const dup=(existingClients||[]).find(c=>`${c.firstName} ${c.lastName}`.toLowerCase()===fullName);return dup?<div style={{...mCARD(useTh()),padding:12,marginBottom:14,background:useTh().warn+"11",border:`1px solid ${useTh().warn}44`,fontSize:12,color:useTh().warn}}>⚠️ A client named <b>{names.firstName} {names.lastName}</b> already exists. Importing will create a duplicate — consider archiving the existing one first.</div>:null;})()}
+      {linkedCsv&&<div style={{...mCARD(th),padding:10,marginBottom:14,fontSize:11,color:th.muted}}>📎 {t?.impProfileLinked||"Profile linked:"} {linkedCsv.firstName} {linkedCsv.lastName} · {linkedCsv.email}</div>}
+      <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>{t?.impConfirmNote||"Accounts, loans, and physical assets are not in the Excel — add them via the Intake tab after importing."}</div>
+      {(()=>{const fullName=`${names.firstName} ${names.lastName}`.toLowerCase();const dup=(existingClients||[]).find(c=>`${c.firstName} ${c.lastName}`.toLowerCase()===fullName);return dup?<div style={{...mCARD(useTh()),padding:12,marginBottom:14,background:useTh().warn+"11",border:`1px solid ${useTh().warn}44`,fontSize:12,color:useTh().warn}}>⚠️ {t?.impDupWarnA||"A client named"} <b>{names.firstName} {names.lastName}</b> {t?.impDupWarnB||"already exists. Importing will create a duplicate — consider archiving the existing one first."}</div>:null;})()}
       <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
-        <Btn onClick={()=>setStep(parsed?.rawCards?.length?'cards':mode==='both'&&csvClients.length?'csv_pick':'names')}>Back</Btn>
-        <BSolid onClick={doImport}>✅ Import Client</BSolid>
+        <Btn onClick={()=>setStep(parsed?.rawCards?.length?'cards':mode==='both'&&csvClients.length?'csv_pick':'names')}>{t?.back||"Back"}</Btn>
+        <BSolid onClick={doImport}>✅ {t?.impImportClientBtn||"Import Client"}</BSolid>
       </div>
     </Modal>;
   }

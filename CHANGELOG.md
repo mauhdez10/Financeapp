@@ -2,6 +2,45 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.30 — 2026-06-26 — fix(i18n): Import Wizard fully bilingual (ISS-63)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61/62 class):** `ImportWizard` (`components/clientData.jsx`)
+— the advisor multi-step "Import Client Data" flow — wired only its step **titles** and a handful of
+helper keys through `t`; **~30 hardcoded-English body strings across all six steps rendered regardless
+of language.** Localized every step:
+
+- **choose:** the three import-type tiles (Financial Excel File / CRM Client List / Link Both) titles
+  + descriptions.
+- **upload:** the modal title ("Upload File"/"Upload Files"), "EXCEL FILE (.xlsx)" + "CRM CSV FILE" /
+  "OPTIONAL: CRM CSV FILE" headers, "{n} months found", "{n} clients found", the
+  "Couple:"/"Single:" prefix, the "cards · bills · income streams" unit line, "Back", "Skip CSV →".
+- **names:** "Names detected from the file — edit as needed.", "Partner (detected in file)", the
+  "{name} Color" picker labels, "Back".
+- **cards:** the couple/single ownership hint, the "Joint" option label (reused `t.joint`), "Back".
+- **csv_pick:** "Select ONE client to link…" / "Select which clients to import:", the All/None
+  buttons, "{s} of {n} selected" / "1 client selected" / "Select 1 client to link", the dynamic
+  action button ("Import {n} Client{ps}" / "Link & Continue →" / "Select 1 to link"), "Back".
+- **confirm:** the "{n} months of data / credit cards / bills / /mo income" summary grid units,
+  "Profile linked:", the "Accounts, loans, and physical assets are not in the Excel…" note, the
+  duplicate-name warning (pre/post bold split), "✅ Import Client", "Back".
+
+**+42 new EN/ES keys** (reused `back`/`continueArrow`/`joint`/`firstName`/`lastName`/`partnerFirst`/
+`partnerLast`/`whatImport`/`parsingMonths`/`clickSelectXlsx`/`clickSelectCsv`/`googleSheetsExport`/
+`noClientsMatch`/`searchClientsPh` + the step-title keys already present). Global-token `.replace()`
+pluralization (`{n}`/`{s}`/`{ps}`) keeps one key/language correct singular+plural in both EN+ES.
+
+**WHY:** D-3 hard-lock — every visible string must exist in both `T.en` and `T.es`. The Import Wizard
+was the last large advisor surface still rendering English-only body copy.
+
+**SCOPE — pure display, NOT the save path:** only JSX text nodes/labels were rewired; the import logic
+(`doImport`, `parseWorkbook`, `mig`/`mk` blob construction, `onImport` payloads, the `'Unnamed'`/
+`'Client'` data fallbacks) is byte-for-byte unchanged → autonomous-safe push (matches ISS-57/58/61/62).
+
+**Gates:** build clean; lint 427/408 = baseline (0 new); EN/ES symmetry 1976/1976; node interpolation
+harness clean (no leftover tokens; EN/ES singular+plural correct). **Remaining sub-scope (future tick):**
+`ExportModal` (SSN CSV export → needs `golden-anchor-logic` guard). Found in the item-4 advisor-surface
+i18n scan.
+
 ## v0.83.29 — 2026-06-26 — fix(i18n): Restore-Backup modal bilingual (ISS-62)
 
 **FIX (D-3 bilingual — ISS-58/61 class):** `BackupImportModal` (`components/clientData.jsx`) — the advisor
