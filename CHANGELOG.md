@@ -2,6 +2,36 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.19 — 2026-06-26 — fix(statements): totalA includes marketInvestments in RatioContent + balance sheet
+
+`RatioContent` (Financial Statements → Ratios, `clientReports.jsx:189`, also the Full Report) and the
+**Balance Sheet** of `FinancialStatementsTab` (`:190-191`) computed `totalA` as **accounts + customAssets
+only** — `marketInvestments` was omitted from both. (ISS-47.)
+- **Why it's wrong:** `golden-anchor-logic §3` defines `totalA = Σaccounts + Σproperties(=customAssets
+  fallback) + ΣmarketInvestments`, and the sibling `AssetsLiabilitiesTab` (`:562/:566`) already includes
+  `miAcct` correctly. Effect for any client holding market investments: the **Total-Assets KPI**, **Net
+  Worth**, and the **debt-to-assets (DTA) ratio** were all understated, and the holdings didn't even appear
+  as a balance-sheet line — contradicting the Summary/Full Report (which call canonical `totalA()`) and the
+  A/L tab on the same screen.
+- **FIX:**
+  - `RatioContent`: `tA` now adds `Σ marketInvestments.value`, view-scaled by the same `_vMul`
+    (1 for Both / no-partner, 0.5 for a single-person filter) already applied to `customAssets`.
+  - `FinancialStatementsTab`: new `miA` (gated to the Both/no-partner view like its `customAssets`) folded
+    into `tA = curA+invA+miA+hhA`; market-investment holdings now render as `📈 {ticker} {name}` rows inside
+    the existing **Investment Assets** section, and the **Total Investment** subtotal is `invA+miA` so the
+    section reconciles with the rows shown.
+- **WHY:** objective money-display correctness bug found in the 2026-06-26 cruise item-1 deep scan of the
+  financial-statement derivations (same scan as ISS-45/46). **Pure presentation — does not touch the live
+  save/load path.** Folded into the existing `Investment Assets` section, so **no new visible strings**
+  (ticker/name are client data, the header already uses `t.investmentAssets`) → D-3/EN-ES not engaged.
+- **VERIFIED:** node harness (accounts 10k liquid + 50k brokerage, customAssets 300k, MI 25k VOO + 8k BTC,
+  liabilities 205k): both derivations `360k → 393k` (= canonical `totalA`); DTA `56.94% → 52.16%`; Net Worth
+  `155k → 188k`; the Total-Investment subtotal `83k` reconciles with its three displayed rows; RatioContent
+  and the Balance Sheet now agree on the same screen. Build clean (448ms); full-repo lint **427 problems
+  (0 new vs baseline)**. **Owner eyeball (optional):** open a client holding market investments → Financial
+  Statements → Balance Sheet — the MI holdings now appear under Investment Assets and Total Assets / Net
+  Worth match the A/L tab and the Summary.
+
 ## v0.83.18 — 2026-06-26 — fix(ratios): DSR numerator uses effectiveMin, not raw card min
 
 `RatioContent` (Financial Statements → Ratios card, `clientReports.jsx:189`; also the Full Report
