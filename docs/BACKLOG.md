@@ -25,14 +25,16 @@ lines. Scale data layer + crash fixes shipped; docs lifecycle + cruise infra in 
 > Approved from the feature-gap scan. These are **large new surfaces** — each gets brainstorm → spec
 > (`docs/superpowers/specs/`) → plan before implementation; build to spec, EN/ES (D-3), consult
 > `golden-anchor-logic` for any client-data read.
-- 🟢⛔ **FG-1 — In-app bilingual AI assistant** ("ask anything about your finances" over the client's
-  own data). **BLOCKED on owner dependency:** a Claude API key in Vercel env + cost sign-off (server
-  route in `api/`, mind the 12-function cap — merge into an action-router). Spec the data-scoping
-  (advisor vs client; never leak cross-client) before building.
-- 🟢⛔ **FG-2 — Auto-generated personalized plan** (multi-section, from the client's data, ends in the
-  free-consult CTA). Same Claude-API dependency as FG-1; reuses the report/aiExport groundwork.
-- 🟢💤 **FG-3 — Daily habit / streak + micro-lessons** (bilingual). No external key; large new surface
-  + a little persistence (streak state). Spec the engagement loop first.
+- ⏸️ **FG-1 — In-app bilingual AI assistant** — **DEFERRED by owner 2026-06-26 ("no cost things right
+  now").** Needs a Claude API key + cost sign-off → out of scope until the owner re-greens it. The
+  cruise loop must NOT pursue this. (Spec note for later: server route in `api/`, mind the 12-function
+  cap; scope data per role, never leak cross-client.)
+- ⏸️ **FG-2 — Auto-generated personalized plan** — **DEFERRED by owner 2026-06-26 (same "no cost" call;
+  same Claude-API dependency).** Cruise loop must NOT pursue. Reuses report/aiExport groundwork later.
+- 🟢 **FG-3 — Daily habit / streak + micro-lessons** (bilingual) — **active, no cost.** Large new
+  surface + streak persistence. **SPEC FIRST:** the loop (or an attended session) writes a spec to
+  `docs/superpowers/specs/` and queues it for owner review — do NOT blind-build the full surface in an
+  autonomous tick. Build only after the spec is approved.
 - ⏸️ **FG-4 — Plaid auto bank-linking — HOLD** (owner decision: conflicts with the coaching/low-tech/
   advisor-entered model; revisit later as an optional Premium add-on).
 

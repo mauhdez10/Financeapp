@@ -30,9 +30,9 @@
 - **CRUISE MODE infra — ✅ BUILT (2026-06-25).** `docs/CRUISE_MODE.md` (GOAL + ordered map +
   push-safety + gates + guards + testing + Velo isolation) and `docs/CRUISE_HEARTBEAT.md` (dual-worker
   handshake) are live; the registered prompt is version-controlled in CRUISE_MODE.md's appendix. Two
-  workers (`finance-cron` ~15-min + `finance-session`) coordinate via the heartbeat. **Remaining: the
-  owner's go-ahead to REGISTER the `finance-cron` cloud scheduled task** (the only step not yet done —
-  it's an outward/durable action, held for explicit approval).
+  workers (`finance-cron` ~15-min + `finance-session`) coordinate via the heartbeat. **LIVE as of
+  2026-06-26** — `finance-backlog-loop` ENABLED (owner go-ahead). Already proven: a cron tick shipped a
+  real PWA fix (`0ee6afc`) + ran the security audit. Pause anytime via the Scheduled sidebar.
 
 ## Where things live (so a fresh chat checks instead of asking)
 - **Secrets / keys / logins:** `finance-credentials.md` (gitignored, repo root) — never commit/print.
@@ -43,8 +43,9 @@
 - **DB:** `supabase-finance` MCP, project `ukqqcrupyooqyksotieu` (read-only for checks).
 
 ## Owner-pending (won't move without you)
-- **Claude API key (+ cost sign-off) in Vercel env** → unblocks the approved **FG-1 (AI assistant)** and
-  **FG-2 (auto-plan)** features. FG-3 (habit/streak) needs no key. (See BACKLOG.)
+- **FG-1 (AI assistant) + FG-2 (auto-plan) are DEFERRED** — owner 2026-06-26: "no cost things right now."
+  They need a Claude API key + cost sign-off; the cruise loop will NOT pursue them until you re-green.
+  FG-3 (habit/streak, no cost) is the active feature (spec-first).
 - 2 Vercel env vars (`STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`) → unlock auto-activation /
   any-amount checkout / MRR panel.
 - Rotate all pasted secrets pre-launch (Stripe / Resend / GitHub PAT / Supabase `sbp_`).
