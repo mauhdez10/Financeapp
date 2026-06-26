@@ -32,7 +32,8 @@ const LIGHT_BG_PRESETS=["#FAF6EC","#F7F4EC","#FFFFFF","#F1F5F9","#ECEFF3","#E6EB
 // v0.61.2 — modern aesthetic strips emoji-as-iconography from headers/labels/tabs.
 // Render-time strip of a LEADING emoji (+ trailing space) so we don't have to edit
 // hundreds of call sites or touch data (account-type icons etc. stay). String-only.
-const stripLeadEmoji=s=>typeof s==="string"?s.replace(/^(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}️‍⃣]\s*)+/u,""):s;
+// eslint-disable-next-line no-misleading-character-class -- FE0F/ZWJ/20E3 are intentional single-code-point class members: the (?:[...]\s*)+ loop strips a trailing variation-selector/ZWJ/keycap left after a leading emoji (e.g. "[warn-emoji] x" -> "x").
+const stripLeadEmoji=s=>typeof s==="string"?s.replace(/^(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{20E3}]\s*)+/u,""):s;
 const mINP=th=>({background:th.inp,border:`1px solid ${th.inpBorder}`,color:th.text,borderRadius:8,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"});
 // v0.61 — glass card: translucent bg + thin hairline + backdrop blur (dark) or
 // soft shadow (light). Falls back to solid card tokens if glass tokens absent

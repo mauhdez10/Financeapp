@@ -23,6 +23,7 @@
 
 | ID | Area | Status | One-line | Shipped |
 |---|---|---|---|---|
+| ISS-11 | lint / theme | 🟢 | `no-misleading-character-class` ×3 in `stripLeadEmoji` (invisible FE0F/ZWJ/20E3 in source) | 2026-06-26 — rewrote literal combining chars as `\u{…}` escapes + justified disable; behavior identical. **Footgun pattern: never leave raw combining/ZWJ code points in source — they resist byte patching; use `\u{…}` escapes.** |
 | ISS-10 | security / deps | 🟢 | `npm audit` 4 vulns (form-data/ws/js-yaml/@babel) → 0 | 2026-06-26 — `npm audit fix` (lock-only; puppeteer-core unchanged, ws patch 8.20.1→8.21.0). Owner optional: PDF spot-check on prod. |
 | ISS-02 | extraction / imports | 🟢 | Missing imports after Phase-2 carve-out → `ReferenceError` (admin.jsx `expBackup`; import.js `MS`; chartEditors `dashChartOptions`) | v0.83.3 / v0.83.6 / v0.83.7 — **recurrence pattern: watch every extraction for lost imports.** |
 | ISS-01 | save path | 🟢 | Advisor save-success toast fired unconditionally — a failed save showed "✓ saved" (silent data-loss risk) | v0.83.1 (shipped to main 2026-06-25, owner-approved in test-mode) |

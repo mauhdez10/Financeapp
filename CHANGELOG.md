@@ -2,6 +2,20 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## Fix — 2026-06-26 — lint: clear 3 `no-misleading-character-class` errors in `stripLeadEmoji` (no behavior change)
+
+`src/styles/theme.js`'s `stripLeadEmoji` regex (runs on every rendered label) had three combining
+code points written **literally** inside its character class — `U+FE0F` (variation selector),
+`U+200D` (ZWJ), `U+20E3` (keycap) — tripping ESLint's `no-misleading-character-class` ×3 and leaving
+invisible characters in source (a real edit footgun — they silently resisted byte-level patching this
+tick). Rewrote them as explicit `\u{FE0F}\u{200D}\u{20E3}` escapes (byte-for-byte identical matching —
+a character class is an unordered set of code points; verified equivalent on a 20-string EN/ES emoji/
+keycap/ZWJ battery against the genuine pre-change regex) and added a justified
+`eslint-disable-next-line` — their membership is **intentional**: the `(?:[...]\s*)+` loop relies on
+them to strip a trailing variation-selector/ZWJ/keycap left after a leading emoji (so the rule is a
+false positive here). No `__GA_BUILD__` bump (zero behavior change). Build clean; lint 425→422 errors,
+the 3 target errors gone, `no-undef` still 0, no new errors. Found during the cruise correctness scan.
+
 ## Fix — 2026-06-26 — standards: add `mobile-web-app-capable` PWA meta tag (no app-code change)
 
 `index.html` declared only the deprecated `apple-mobile-web-app-capable` meta; modern browsers log a
