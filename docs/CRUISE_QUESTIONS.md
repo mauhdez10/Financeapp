@@ -5,6 +5,32 @@
 > The cron failsafe tick appends yes/no questions here (with a recommendation) when it
 > hits something it should not decide alone, then moves on. Newest on top.
 
+## 2026-06-26 — security audit (cruise map step 3: `npm audit`) · owner yes/no
+`npm audit` reports **4 vulnerabilities (2 high, 1 moderate, 1 low)**, all with a non-breaking
+`npm audit fix` (no `--force`, semver-compatible — touches `package-lock.json` only, no top-level
+`package.json` dep change). **Reachability analysis says none are exploitable in our production
+deployment:**
+
+| Pkg | Sev | Chain | Reachable in prod? |
+|---|---|---|---|
+| `form-data` 4.0.0–4.0.5 (CRLF injection) | high | `wait-on → axios` | **No** — `wait-on` is dev-only (dev-server/playwright readiness); never deployed |
+| `ws` 8.0.0–8.20.1 (memory-exhaustion DoS) | high | `puppeteer-core` (api/ PDF render, D-34) | **No** — DoS needs a malicious WS *server*; puppeteer connects only to the chromium WE launch, not an attacker |
+| `js-yaml` ≤4.1.1 (quadratic DoS) | moderate | `eslint → @eslint/eslintrc` | **No** — dev-only (lint) |
+| `@babel/core` ≤7.29.0 (arbitrary file read) | low | `eslint-plugin-react-hooks` | **No** — dev-only (lint) |
+
+**Why this is queued, not auto-pushed:** 3 of 4 are pure dev tooling (verifiable headlessly — `npm run
+build` + `npm run lint` still pass after a fix), but the `ws` bump rides inside `puppeteer-core`, which
+runs in the production `api/render` PDF path that **cannot be verified headlessly** in an unattended
+tick (needs the Vercel serverless chromium env). A cloud checkout is ephemeral, so a local-only fix
+would be lost. Per push-safety §6 + ordered-map step 3 ("fix the safe ones, queue anything risky"),
+this is a queue. Tracked as **ISS-10**.
+
+**Rec: YES, but in an attended session** — run `npm audit fix`, then `npm run build` + `npm run lint`
+(confirms the dev-tooling fixes), then generate ONE client PDF on a Vercel preview (confirms the
+`ws`/puppeteer bump didn't break PDF render) before pushing to `main`. Low urgency (nothing
+prod-exploitable today) but it's pre-launch hygiene — a clean `npm audit` before go-live.
+**Yes = clear it this way next time you're at the keyboard?**
+
 ## 2026-06-25 — feature-gap scan (cruise map step 2) · owner yes/no
 Scanned Monarch, Copilot, Origin, EveryDollar, and **Fintor** (the one direct bilingual EN/ES
 competitor). Candidates below are filtered for fit with GA's model (coaching ≠ management;

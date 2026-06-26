@@ -11,6 +11,7 @@
 
 | ID | Area | Status | One-line | Notes / owner question |
 |---|---|---|---|---|
+| ISS-10 | security / deps | 🟡 | `npm audit` = 4 vulns (2 high `form-data`+`ws`, 1 mod `js-yaml`, 1 low `@babel/core`) | All dev-only OR not attacker-reachable in prod (analysis in CRUISE_QUESTIONS 2026-06-26). `npm audit fix` is non-breaking but `ws` rides puppeteer-core (api/ PDF path) — verify in an attended session, don't auto-push. |
 | ISS-09 | lint / hooks | 🟡 | `react-hooks/*` ×183 (static-components, rules-of-hooks, exhaustive-deps, set-state-in-effect) | Component-structure + hook-order (pitfalls #13/#17). Attended review only — NOT a safe autonomous bulk sweep. |
 | ISS-08 | lint / cosmetic | 🔴 | `no-unused-vars` ×199 + `no-empty` ×26 | Cosmetic debt in dense extracted code. Bulk patches need scope-aware review (D-36) — don't blind-fix. |
 | ISS-07 | perf / build | 🔴 | Bundle >800 KB after minify (index ~1.3 MB) | Code-splitting / dynamic import opportunity. Single-bundle by D-1 history; needs a deliberate split plan. |
