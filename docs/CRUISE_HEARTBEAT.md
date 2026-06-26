@@ -24,3 +24,5 @@ finance-cron · 2026-06-26T15:20:08Z · starting: ordered-map item 1 (bugs/corre
 finance-cron · 2026-06-26T15:55:40Z · starting: ordered-map item 1 (bugs/correctness) — calculator i18n ISS-30–33 / pagination ISS-27
 
 finance-cron · 2026-06-26T16:05:24Z · starting: ordered-map item 1 (bugs/correctness) — ISS-27 patchByEmail pagination past 200-user cap
+
+finance-cron · 2026-06-26T16:21:29Z · starting: ordered-map item 2 (competitor + feature-gap scan)

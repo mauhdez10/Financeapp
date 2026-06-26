@@ -12,6 +12,16 @@
 
 ---
 
+> **🔄 2026-06-26 scan refresh (finance-cron, cruise item 2).** Re-ran the competitor/feature-gap
+> scan 15 days on. **Field is stable** — no competitor move forces a re-think; the Tier A/B/C list and
+> the §4 kills still hold. Three updates: **(1) one NEW candidate — FG-5 "Money Runway" forward
+> cash-flow projection** (no-bank-feed, no-cost; the top 2026 budget-app feature GA lacks but that fits
+> the advisor-entered model) → logged yes/no in [CRUISE_QUESTIONS.md](CRUISE_QUESTIONS.md). **(2) A4
+> intel:** white-label coach platforms are an active market (SuiteDash, TradingFront $100/mo, and
+> **pocketnest** = white-label *financial-wellness* coaching — A4's closest analog) → price-anchors the
+> per-seat play. **(3) B1 intel:** Finhabits launched 401(k)s for small Latino-owned businesses →
+> confirms the employer-paid B2B2C channel is heating up (investing rails stay out of GA's lane).
+
 ## 1. The competitive gap (why these ideas, not generic ones)
 
 What the research says about the field:

@@ -6,6 +6,39 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — competitor / feature-gap scan refresh · owner yes/no (appended by finance-cron)
+
+Re-ran the ordered-map **item 2** scan (the 2026-06-11 `DIFFERENTIATION-IDEAS.md` memo is the
+canonical home; FG-1..4 already decided). 15 days on, the field is **stable** — no competitor move
+forces a re-think. One genuinely **new** feature-gap candidate surfaced; two findings are competitive
+intel that only *validate* existing ideas (logged, no decision needed):
+
+- **FG-5 (NEW) — "Money Runway" forward cash-flow projection.** Every mainstream budget app
+  (Quicken Simplifi, Rocket Money, PocketGuard) leads 2026 with "safe-to-spend" / forward cash-flow
+  forecasting; GA has only *backward-looking* trend charts + DSR. A forward version **fits GA's model
+  with no bank feeds**: pure arithmetic on data the advisor already enters (income − recurring bills −
+  debt minimums, against current liquid savings) → a 6–12-month liquid-balance trajectory that names
+  the month a cushion runs out ("at this pace, savings dip below 1 month of expenses in March") or the
+  surplus building. No Plaid, no AI, no cost, no new Vercel function — coaching-framed ("here's where
+  today's habits lead"), not the killed bank-aggregation play. Overlaps the dormant `payoffProgression`
+  placeholder (ISS-05) — same forward-chart plumbing, broader scope. **Build path if YES:** spec-first
+  like other FG items; consult `golden-anchor-logic` (it derives money); EN/ES; informational-not-advice
+  framing. **Rec: YES — queue behind FG-3.** It's the single most-common feature GA lacks that *doesn't*
+  cross a regulatory/cost line, and it deepens the coaching story instead of chasing bank-feed parity.
+  - *(Sub-note, not a question:* the 2026 coaching-app theme is "proactive intervention." GA already
+    has `RemindersPanel` / `AlertsSettingsModal`; a small **rule-based money-health alert** — DSR or
+    emergency-fund crossing a threshold — could ride that existing infra as a tweak. No new surface;
+    fold into FG-5 or an alerts polish later. Flagging only so it isn't lost.)*
+- **Intel — A4 (Advisor-in-a-Box) price anchors.** White-label advisor/coaching platforms are an
+  active 2026 market: SuiteDash (branded client portal), TradingFront ($100/mo first 100 accts),
+  and notably **pocketnest** — a white-label *financial-wellness* (coaching, not robo) platform, the
+  closest analog to A4. Confirms the per-seat SaaS play is real and price-anchors the $49–99/agent/mo
+  estimate. No decision needed — recorded for when A4 graduates.
+- **Intel — B1 (employer charlas / B2B2C) validation.** Finhabits just launched **401(k) plans for
+  small businesses**, targeting California's ~800k Latino-owned firms. Investing rails (GA's killed
+  lane), but it confirms the *employer-paid Latino financial-wellness* channel B1 bets on is heating
+  up. No decision needed.
+
 ## 2026-06-26 — whole-app review · owner yes/no (the 🟡owner findings; full list in ISSUES_LEDGER)
 - **ISS-24 — advisor signup bypasses Premium.** Anyone can self-select "Advisor" at signup, and advisors are never gated → the Free/Premium model is bypassable. Is that acceptable (advisor = your firm, low abuse risk pre-launch) or should advisor signup be restricted (invite/allowlist)? **Rec: restrict advisor signup before public launch.**
 - **ISS-25 — client-side Premium activation.** "I already subscribed — activate" flips the account to Premium with no server check. Now that `stripe-webhook` exists, tighten to webhook-only activation? **Rec: keep the honor-system button pre-launch, tighten at launch.**
