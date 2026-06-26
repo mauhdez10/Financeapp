@@ -2,6 +2,38 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.28 — 2026-06-26 — fix(i18n): client-management confirmation modals bilingual (ISS-61)
+
+**FIX (D-3 bilingual — ISS-58 class):** the advisor data-management modals in `components/clientData.jsx`
+wired their **titles** through `t?.x||…` but rendered **all body content hardcoded English** regardless of
+language. This batch localizes the two client-management **confirmation** modals (the destructive/decision
+surfaces shown most prominently):
+
+- **DuplicateResolverModal** — the "Found N possible duplicates and M new clients…" summary, the
+  "POSSIBLE DUPLICATES" header, the 📥 Incoming / 📂 Existing column captions, the `partner:` inline label,
+  the three action buttons (🔄 Merge (update empty fields) / ⏭️ Skip / ➕ Import as New), the
+  "N new clients will be imported." line, and the Cancel / Apply footer.
+- **DeleteClientModal** — "⚠️ This action is permanent", the "All data for {name} including {n} months of
+  snapshots will be permanently deleted. This cannot be undone." warning, Cancel, and 🗑️ Delete Forever.
+
+**+14 new EN/ES keys** (reused `cancel`). Pluralization/number interpolation done with a global-token
+`.replace()` pattern (`{n}`/`{m}` counts; `{ps}`/`{ms}`/`{pe}`/`{mv}` plural/verb suffixes all driven by
+`count!==1`) so one key per language stays correct across singular and plural — EN duplicate→duplicates,
+ES posible→posibles / duplicado→duplicados / cliente→clientes / nuevo→nuevos / mes→meses, verb
+importará→importarán. The `<b>{name}</b>` emphasis is preserved by splitting the delete warning into a
+pre-name (`deleteClientWarnA`) and post-name (`deleteClientWarnB`) fragment.
+
+**WHY:** D-3 hard-locks EN/ES symmetry for every visible string; these advisor modals violated it for their
+bodies. **Pure display** — stored `onSave`/import payloads, the delete/merge logic, and all save paths are
+untouched (only labels + fallbacks changed) → autonomous-safe push (matches ISS-57/58). **Remaining
+sub-scope (clientData.jsx, future ticks):** `BackupImportModal`, `ExportModal` (touches SSN CSV export →
+needs the `golden-anchor-logic` SSN guard), and the `ImportWizard` step screens.
+
+**Gates:** build clean; lint 427/408 = baseline (0 new); EN/ES symmetry 1922/1922; node interpolation
+harness verified no leftover `{tokens}` and correct EN/ES pluralization in both singular and plural.
+**CHANGED:** `src/components/clientData.jsx` (12 string sites, 2 modals), `src/translations.js` (+14×2 keys),
+`src/App.jsx` (marker). Found in the item-4 (website/UX) advisor-surface i18n scan.
+
 ## v0.83.27 — 2026-06-26 — fix(reports): Cash Flow Statement + Full Report per-card debt-service uses canonical effectiveMin (ISS-59)
 
 **FIX (money / display — ISS-56 class):** two report surfaces in `components/clientReports.jsx` itemized

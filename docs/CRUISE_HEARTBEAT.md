@@ -67,3 +67,7 @@ finance-cron · 2026-06-26T21:36:00Z · starting: ordered-map item 1 (bugs — I
 
 finance-cron · 2026-06-26T21:51:00Z · starting: ordered-map item 1 (bugs — ISSUES_LEDGER scan for autonomous-safe fix)
 finance-cron · 2026-06-26T22:06:56Z · starting: ordered-map item 1 (bugs — Cash Flow Statement + FullReport per-card min uses raw c.min vs canonical effectiveMin; ISS-56-class display divergence)
+
+finance-cron · 2026-06-26T22:21:30Z · starting: ordered-map item 1 (bugs — fresh correctness scan for autonomous-safe display bug; ledger autonomous queue drained)
+
+finance-cron · 2026-06-26T22:36:36Z · starting: ordered-map item 4 (website/UX — objective a11y/i18n/copy scan for autonomous-safe fix)
