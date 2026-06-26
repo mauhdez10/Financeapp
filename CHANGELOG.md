@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.13 — 2026-06-26 — fix: calculator view flash on browser back/forward + cascading-render lint
+
+`CalculatorsPage` held local `active` state but synced it to the `activeCalc` prop inside a `useEffect`
+that called `setActive` synchronously after commit. When `activeCalc` changed while the page stayed
+mounted — i.e. on browser **back/forward** (popstate) between the grid and an open calculator — the
+component first re-rendered with the *stale* view, then the effect fired and swapped: a one-frame flash
+of the previous view. ESLint flagged the same code as `react-hooks` "Calling setState synchronously
+within an effect can trigger cascading renders" plus a missing-`active` dep warning.
+- **FIX:** replaced the effect with React's documented "adjust state on a prop change" pattern — derive
+  the sync **during render** via a `prevAC` guard (`if(activeCalc!==prevAC){setPrevAC(activeCalc);
+  setActive(activeCalc||null);}`). React restarts the render with the corrected state before painting, so
+  the right view shows on the first frame — no flash, no effect, no cascading render. Behavior is otherwise
+  identical (verified). Dropped the now-unused `useEffect` and the already-unused `useRef` from the import.
+- **WHY:** objective UX/correctness fix from the cruise bugs/correctness scan (ordered-map item 1). The old
+  pattern is a React anti-pattern ("You Might Not Need an Effect"); the new one is the canonical fix.
+- **VERIFIED:** local dev server + headless preview, logged in as the test advisor. Deep-link mount
+  (`/calculators/retirement`) renders the calc; calc Back → grid; tile click → calc (pushState to
+  `/calculators/portfolio`); **browser back → grid with no calc remnant** (the popstate path the fix
+  targets); browser forward → calc. Zero console errors (no render loop).
+- **CHANGED:** `src/components/calculators.jsx` (state-sync rewrite + import trim), `src/App.jsx` (marker →
+  `v08313`). Build clean; full-repo lint 411 → **409** errors (−2: the cascading-render error + the unused
+  `useRef`), **0 new**. No visible strings → no EN/ES key changes. 🟢loop-ok (objective UX, fix-and-push).
+
 ## v0.83.12 — 2026-06-26 — a11y: keep `<html lang>` in sync with the active language (WCAG 3.1.1)
 
 `index.html` hard-codes `<html lang="en">`, but the app is bilingual (D-3) and the language can flip to

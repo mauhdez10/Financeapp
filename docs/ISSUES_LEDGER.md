@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | ISS-38 | security / db | 🟡 | `set_updated_at` trigger fn has mutable `search_path` (Supabase advisor `0011`) | Low risk; fix = 1-line DDL `ALTER FUNCTION … SET search_path=''`. Prod-DB migration → attended/owner-greenlit, not autonomous. Queued in CRUISE_QUESTIONS 2026-06-26. |
 | ISS-37 | security / auth | 🟡 | Leaked-password protection (HaveIBeenPwned) disabled in Supabase Auth | Owner dashboard toggle, free, no code. Rec: enable. Queued in CRUISE_QUESTIONS 2026-06-26. |
-| ISS-09 | lint / hooks | 🟡 | `react-hooks/*` ×183 (static-components, rules-of-hooks, exhaustive-deps, set-state-in-effect) | Component-structure + hook-order (pitfalls #13/#17). Attended review only — NOT a safe autonomous bulk sweep. |
+| ISS-09 | lint / hooks | 🟡 | `react-hooks/*` (static-components, rules-of-hooks, exhaustive-deps, set-state-in-effect) | Component-structure + hook-order (pitfalls #13/#17). Attended review only — NOT a safe autonomous bulk sweep. (One single, verifiable instance — the `CalculatorsPage` cascading-render — was fixed in isolation v0.83.13; the bulk remains attended.) |
 | ISS-08 | lint / cosmetic | 🔴 | `no-unused-vars` ×199 + `no-empty` ×26 | Cosmetic debt in dense extracted code. Bulk patches need scope-aware review (D-36) — don't blind-fix. |
 | ISS-07 | perf / build | 🔴 | Bundle >800 KB after minify (index ~1.3 MB) | Code-splitting / dynamic import opportunity. Single-bundle by D-1 history; needs a deliberate split plan. |
 | ISS-06 | calc | 🟡 | `IncomeCalc` uses hardcoded 2025 tax brackets | Annual maintenance item — refresh brackets each tax year. |
@@ -59,6 +59,7 @@
 | ISS-28 | review / calc | 🟢 | `HomeEquityCalc` Months Saved year-rounded vs exact → understated/0/neg; now exact-month difference | v0.83.9 (2026-06-26) |
 | ISS-36 | review / money | 🟢 | aiExport card "min" called `payM(cd)` (wrong fn+arity) → always $0; now `effectiveMin(cd)` | v0.83.8 (2026-06-26) |
 | ISS-35 | review / calc | 🟢 | `SavingsCalc` 0% APY divided by rate → NaN→$0; now guarded to simple sum | v0.83.8 (2026-06-26) |
+| ISS-39 | review / calc-nav | 🟢 | `CalculatorsPage` synced `active`←`activeCalc` in a `useEffect` (synchronous setState → cascading render); on browser back/forward the prior view flashed one frame. Now derived during render (React "adjust state on prop change") — no flash, no effect. −2 lint errors. **Verified** deep-link + tile + back/forward on dev preview. | v0.83.13 (2026-06-26) |
 | ISS-34 | review / nav | 🟢 | advisor Back/Forward compared string summary-id `===` number selectedId; now `String()===String()` | v0.83.8 (2026-06-26) |
 | ISS-11 | lint / theme | 🟢 | `no-misleading-character-class` ×3 in `stripLeadEmoji` (invisible FE0F/ZWJ/20E3 in source) | 2026-06-26 — rewrote literal combining chars as `\u{…}` escapes + justified disable; behavior identical. **Footgun pattern: never leave raw combining/ZWJ code points in source — they resist byte patching; use `\u{…}` escapes.** |
 | ISS-10 | security / deps | 🟢 | `npm audit` 4 vulns (form-data/ws/js-yaml/@babel) → 0 | 2026-06-26 — `npm audit fix` (lock-only; puppeteer-core unchanged, ws patch 8.20.1→8.21.0). Owner optional: PDF spot-check on prod. |
