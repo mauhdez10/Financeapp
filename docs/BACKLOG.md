@@ -16,10 +16,25 @@
 > roles / portal / RLS / SSN / splits / visibility MUST consult `golden-anchor-logic` first.
 
 ## Cursor (where we are)
-Live marker **v0.80.7** (`2026-06-24-v0807-phase2-report-blocks-extracted`). `App.jsx` = 3,023 lines
-(down from 8,502). Phase 2 decomposition in progress — 5 slices shipped this run.
+Live marker **v0.83.7** (`2026-06-25-v0837-chartsettingsmodal-dashchartoptions-fix`). `App.jsx` ≈ 3,023
+lines. Scale data layer + crash fixes shipped; docs lifecycle + cruise infra in place; `npm audit` clean.
 
 ## Queue (top = next)
+
+### Owner-approved features — 2026-06-26 (direction GREEN; each needs a spec/plan before code)
+> Approved from the feature-gap scan. These are **large new surfaces** — each gets brainstorm → spec
+> (`docs/superpowers/specs/`) → plan before implementation; build to spec, EN/ES (D-3), consult
+> `golden-anchor-logic` for any client-data read.
+- 🟢⛔ **FG-1 — In-app bilingual AI assistant** ("ask anything about your finances" over the client's
+  own data). **BLOCKED on owner dependency:** a Claude API key in Vercel env + cost sign-off (server
+  route in `api/`, mind the 12-function cap — merge into an action-router). Spec the data-scoping
+  (advisor vs client; never leak cross-client) before building.
+- 🟢⛔ **FG-2 — Auto-generated personalized plan** (multi-section, from the client's data, ends in the
+  free-consult CTA). Same Claude-API dependency as FG-1; reuses the report/aiExport groundwork.
+- 🟢💤 **FG-3 — Daily habit / streak + micro-lessons** (bilingual). No external key; large new surface
+  + a little persistence (streak state). Spec the engagement loop first.
+- ⏸️ **FG-4 — Plaid auto bank-linking — HOLD** (owner decision: conflicts with the coaching/low-tech/
+  advisor-entered model; revisit later as an optional Premium add-on).
 
 ### Phase 2 decomposition — pure refactors, build + runtime verified (very green-light)
 - ✅ **Import/backup/export cluster** → `utils/import.js` (13 helpers) + `components/clientData.jsx`

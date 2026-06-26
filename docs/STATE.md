@@ -43,6 +43,8 @@
 - **DB:** `supabase-finance` MCP, project `ukqqcrupyooqyksotieu` (read-only for checks).
 
 ## Owner-pending (won't move without you)
+- **Claude API key (+ cost sign-off) in Vercel env** → unblocks the approved **FG-1 (AI assistant)** and
+  **FG-2 (auto-plan)** features. FG-3 (habit/streak) needs no key. (See BACKLOG.)
 - 2 Vercel env vars (`STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`) → unlock auto-activation /
   any-amount checkout / MRR panel.
 - Rotate all pasted secrets pre-launch (Stripe / Resend / GitHub PAT / Supabase `sbp_`).
