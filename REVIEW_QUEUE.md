@@ -6,6 +6,16 @@
 > stay until YOU confirm them. Newest sprint on top. Hard-refresh first (Ctrl+Shift+R);
 > confirm `window.__GA_BUILD__` ends in `v0723-…` in DevTools console.
 
+## 📋 FOR REVIEW 2026-06-26 — FG-3 spec (habit/streak) ready, not built
+- [ ] **Read `docs/superpowers/specs/FG-3-habit-streak-microlessons.md`** — the design for the daily
+      habit/streak + bilingual micro-lessons feature (the no-cost FG-3 you greenlit). Client-only
+      "Today" card on the Overview, isolated `habit_state` table (never touches the live save path),
+      static bilingual lesson library — no Claude API, no new Vercel function. **Nothing is built yet.**
+- [ ] **Answer the 7 numbered questions in `docs/CRUISE_QUESTIONS.md`** (gating / done-trigger /
+      forgiveness / persistence / advisor-visibility / reminders / lesson-voice). Each has my
+      recommendation — numbered shorthand ("1. a 2. yes …") is enough. The loop builds it to spec
+      after you answer.
+
 ## ✅ RESOLVED 2026-06-25 — held stack shipped + docs lifecycle adopted
 - [x] **The 9-commit held stack (v0.83.1→v0.83.7) is LIVE on main.** Owner approved (test-mode, no
       real data) → pushed; `origin/main == HEAD` at **v0.83.7**, hold cleared. Includes the v0.83.1

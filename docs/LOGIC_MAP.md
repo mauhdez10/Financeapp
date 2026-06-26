@@ -65,6 +65,7 @@
 | [CLIENT-PORTAL-EDIT-ALLOWLIST.md](CLIENT-PORTAL-EDIT-ALLOWLIST.md) | ③ | Portal-write editable-field allow-list | Archive when portal-write ships or is rejected |
 | [CLIENT-PORTAL-LASTMILE.md](CLIENT-PORTAL-LASTMILE.md) | ③ | feature/client-portal completion notes | Archive when that branch merges or is abandoned |
 | [DIFFERENTIATION-IDEAS.md](DIFFERENTIATION-IDEAS.md) | ③ | 16 growth ideas, top-5 sequenced | Accepted ideas move to BACKLOG; archive when exhausted |
+| [superpowers/specs/FG-3-habit-streak-microlessons.md](superpowers/specs/FG-3-habit-streak-microlessons.md) | ③ | FG-3 daily habit/streak + micro-lessons spec (awaiting owner review; 7 open questions) | Graduates to a plan on approval, or archived on rejection |
 
 ## Presentations & intake (live, ephemeral)
 | Doc | Tag | What | Kill-condition |

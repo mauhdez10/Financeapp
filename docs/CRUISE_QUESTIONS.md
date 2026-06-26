@@ -15,6 +15,28 @@
 
 > The cruise loop is cleared to fix the 🟢loop-ok findings (ISS-27 pagination, ISS-28/29 calc, ISS-30–33 i18n) without asking. ⛔attended findings (ISS-12–18, ISS-20 auth-gate, ISS-23) wait for a focused attended session.
 
+## 2026-06-26 — FG-3 spec ready for review (appended by finance-cron)
+
+The **FG-3 spec is written** → `docs/superpowers/specs/FG-3-habit-streak-microlessons.md` (daily
+habit/streak + bilingual micro-lessons; client-only, no-cost, isolated from the live save path —
+no Claude API, no new Vercel function). Before the loop builds it, please answer (numbered shorthand
+fine, "1. a 2. yes …"); my recommendation is in *italics*:
+
+1. **Gating** — FREE for all client accounts, or Premium-only? *Rec: FREE — it drives the engagement
+   that converts to Premium; gating it blunts the metric.*
+2. **"Done" trigger** — a simple "Mark done today" tap, or require a real in-app action (updated a
+   field / ran a calculator)? *Rec: self-report tap for v1.*
+3. **Streak forgiveness** — hard reset on a missed day, or a 1-day grace / freeze? *Rec: hard reset
+   v1; revisit if it feels punishing.*
+4. **Persistence** — a new `habit_state` table, or a key on the existing `settings` row? *Rec: new
+   table — `settings` has a cross-account cache-leak history (pitfall #18).*
+5. **Advisor visibility** — should advisors see a client's streak / last-active (sanitized server
+   read), or keep v1 client-only? *Rec: client-only v1; advisor hint in v2.*
+6. **Reminders** — add a "don't lose your streak" email later (uses existing Resend), or never?
+   *Rec: defer to v2 — it sends mail, so owner-gated.*
+7. **Lesson voice** — OK for me to draft the ~30 bilingual micro-lessons in your coaching voice for
+   you to edit, or do you want to write the seed set yourself?
+
 ## ✅ Earlier questions — answered (as of 2026-06-26)
 
 All prior questions answered — decisions recorded in their canonical homes:

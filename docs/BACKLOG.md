@@ -31,10 +31,12 @@ lines. Scale data layer + crash fixes shipped; docs lifecycle + cruise infra in 
   cap; scope data per role, never leak cross-client.)
 - ⏸️ **FG-2 — Auto-generated personalized plan** — **DEFERRED by owner 2026-06-26 (same "no cost" call;
   same Claude-API dependency).** Cruise loop must NOT pursue. Reuses report/aiExport groundwork later.
-- 🟢 **FG-3 — Daily habit / streak + micro-lessons** (bilingual) — **active, no cost.** Large new
-  surface + streak persistence. **SPEC FIRST:** the loop (or an attended session) writes a spec to
-  `docs/superpowers/specs/` and queues it for owner review — do NOT blind-build the full surface in an
-  autonomous tick. Build only after the spec is approved.
+- 🔵 **FG-3 — Daily habit / streak + micro-lessons** (bilingual) — **active, no cost. SPEC WRITTEN
+  2026-06-26 (cron tick), awaiting owner review** → `docs/superpowers/specs/FG-3-habit-streak-microlessons.md`
+  (queued in REVIEW_QUEUE + 7 open questions in CRUISE_QUESTIONS). Design: client-only Overview "Today"
+  card, isolated `habit_state` table (never touches the live save path), static bilingual lesson
+  library — no Claude API, no new Vercel function. **Build only after the owner answers the open
+  questions / approves the spec.**
 - ⏸️ **FG-4 — Plaid auto bank-linking — HOLD** (owner decision: conflicts with the coaching/low-tech/
   advisor-entered model; revisit later as an optional Premium add-on).
 
