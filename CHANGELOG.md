@@ -2,6 +2,35 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.29 — 2026-06-26 — fix(i18n): Restore-Backup modal bilingual (ISS-62)
+
+**FIX (D-3 bilingual — ISS-58/61 class):** `BackupImportModal` (`components/clientData.jsx`) — the advisor
+backup-restore flow — wired only its **title** through `t?.restoreBackupTitle` and the search placeholder;
+**all other body text rendered hardcoded English** regardless of language. Localized:
+
+- The "Invalid backup file. Must be a Golden Anchor .json backup." validation error (`setErr`).
+- The "N clients in backup" count + "From {date}" stamp on the file-drop card, and the
+  "Select .json backup file" prompt.
+- The mode toggle ("🔄 Restore (select clients)" / "⚠️ Replace All"), the **Select All / Clear** buttons.
+- Per-client badges ("⚑ exists — will update" / "new"), the "Nmo" snapshot suffix.
+- The restore summary line ("S of N selected · U will update · A will be added"), the
+  "⚠️ Replace All will permanently delete…" warning, the "{name} · {n} months" replace-list rows.
+- The **Cancel** + the dynamic action button ("⚠️ Replace All" / "✅ Restore N Clients").
+
+**+12 new EN/ES keys** (reused `cancel`/`clear`/`months`/`selectAllVisible`/`searchClientsPh`/
+`restoreBackupTitle`). Count/plural interpolation uses the established global-token `.replace()` pattern
+(`{n}`/`{s}`/`{u}`/`{a}` counts, `{ps}` plural suffix driven by `count!==1`, `{d}` date) — one key/language
+stays correct singular+plural. **Pure display — the restore/replace import logic, stored payloads, and
+`onImport(...,"restore"/"replace")` calls are untouched** → not the save path → autonomous-safe push
+(matches ISS-57/58/61). `ExportModal` (SSN CSV → needs the `golden-anchor-logic` guard) + `ImportWizard`
+steps remain for future ticks.
+
+**Gates:** build clean; lint 427/408 = baseline (0 new); EN/ES 1934/1934; node interpolation harness clean
+(no leftover tokens, EN/ES plurals correct singular+plural). Found in the item-4 advisor-surface i18n scan.
+
+**CHANGED:** `src/components/clientData.jsx` (14 string sites), `src/translations.js` (+12 EN/ES keys),
+`src/App.jsx` (build marker), `CHANGELOG.md`, `docs/ISSUES_LEDGER.md`, `docs/STATE.md`.
+
 ## v0.83.28 — 2026-06-26 — fix(i18n): client-management confirmation modals bilingual (ISS-61)
 
 **FIX (D-3 bilingual — ISS-58 class):** the advisor data-management modals in `components/clientData.jsx`

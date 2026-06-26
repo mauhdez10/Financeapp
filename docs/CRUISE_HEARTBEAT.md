@@ -71,3 +71,5 @@ finance-cron · 2026-06-26T22:06:56Z · starting: ordered-map item 1 (bugs — C
 finance-cron · 2026-06-26T22:21:30Z · starting: ordered-map item 1 (bugs — fresh correctness scan for autonomous-safe display bug; ledger autonomous queue drained)
 
 finance-cron · 2026-06-26T22:36:36Z · starting: ordered-map item 4 (website/UX — objective a11y/i18n/copy scan for autonomous-safe fix)
+
+finance-cron · 2026-06-26T22:47:45Z · starting: ordered-map item 1 (bugs/correctness scan — fresh sweep after v0.83.28 i18n cycle)
