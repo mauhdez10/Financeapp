@@ -13,7 +13,7 @@
 - **ISS-19 — portal sanitize leaks nested free-text** (`customAssets[].desc` etc. reach the public portal). Which nested fields are advisor-private vs client-visible? Once you say, I strip them server-side in `api/_sanitize.js`. **Rec: treat `desc`/any notes-like sub-field as private.**
 - **ISS-21 — admin gated by mutable email.** The master-admin `list` is gated by auth email, not a stable uid. To harden, I need your real admin **user-ids** (from Supabase auth) to gate by uid. **Rec: send the uids; low urgency if Supabase email-confirm is on.**
 
-> The cruise loop is cleared to fix the 🟢loop-ok findings (ISS-27 pagination, ISS-28/29 calc, ISS-30–33 i18n) without asking. ⛔attended findings (ISS-12–18, ISS-20 auth-gate, ISS-23) wait for a focused attended session.
+> The cruise loop is cleared to fix the 🟢loop-ok findings without asking. **Shipped:** ISS-28/29 (HomeEquityCalc months/interest-saved) → v0.83.9. **Remaining loop-ok:** ISS-27 pagination, ISS-30–33 i18n. ⛔attended findings (ISS-12–18, ISS-20 auth-gate, ISS-23) wait for a focused attended session.
 
 ## 2026-06-26 — FG-3 spec ready for review (appended by finance-cron)
 

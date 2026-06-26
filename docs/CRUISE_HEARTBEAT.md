@@ -18,3 +18,5 @@ finance-cron · 2026-06-25T23:25:44Z · starting tick (ordered-map item 1: bugs/
 finance-cron · 2026-06-26T14:21:27Z · starting: ordered-map item 1 (bugs/correctness scan)
 
 finance-cron · 2026-06-26T15:03:28Z · starting: ordered-map (BACKLOG top green) — write FG-3 habit/streak spec to docs/superpowers/specs/, queue for owner
+
+finance-cron · 2026-06-26T15:20:08Z · starting: ordered-map item 1 (bugs/correctness) — ISS-28/29 HomeEquityCalc months/interest-saved fix

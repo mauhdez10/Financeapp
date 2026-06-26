@@ -2,6 +2,27 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.9 — 2026-06-26 — fix: HomeEquityCalc Amortization "Months Saved" / "Interest Saved" (ISS-28/29)
+
+The Amortization tab's extra-payment summary showed wrong savings figures. Two root causes:
+- **Months Saved (ISS-28):** `withExtraMonths` was re-derived from the display table's last *year* row
+  (`yr*12`, where `yr = Math.ceil(mo/12)`) and compared against a closed-form *exact-month* count for
+  the no-extra case. Mixing year-rounded vs exact months **understated** the saving, pinned it to whole
+  years, and could even show **0 or negative** (a $0-extra payment falsely showed "1 month / $583 saved").
+- **Interest Saved (ISS-29):** was a fabricated approximation `loanAmt·(apr/100)·monthsSaved/12`,
+  unrelated to the actual amortization schedule, and inherited the bad `monthsSaved`.
+
+**Fix:** both figures now derive from one shared monthly amortization loop (`simAmort`, the same
+interest/principal recurrence as the on-screen table) run twice — extra=0 vs extra=current — with
+`saved = base − withExtra`. Months saved is now the true difference in exact payoff months; interest
+saved is the true difference in total interest paid. Both clamp at 0 (defensive `Number.isFinite`
+guard for a payment-can't-outrun-interest edge). Display-only calculator math — no save/load path
+touched. No new strings (reused `amortMonthsSaved`/`amortInterestSaved`/`refiMonthsSuffix`).
+Verified by replicating both old and new formulas in a standalone Node harness across 5 input sets
+(confirmed the $0-extra phantom-saving disappears and intSaved == baseInt − extraInt exactly). Build
+clean; lint unchanged (431 problems, no new errors); marker → `v0839`. Found + fixed in the cruise
+correctness scan (ordered-map item 1, 🟢loop-ok).
+
 ## Fix — 2026-06-26 — lint: clear 3 `no-misleading-character-class` errors in `stripLeadEmoji` (no behavior change)
 
 `src/styles/theme.js`'s `stripLeadEmoji` regex (runs on every rendered label) had three combining

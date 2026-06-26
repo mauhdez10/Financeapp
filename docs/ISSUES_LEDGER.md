@@ -40,8 +40,8 @@
 | ISS-25 | product | med | 🟡owner | PremiumUpgrade "I already subscribed — activate" flips `accountPlan` client-side with no server verify (known honor-system; tighten now that the webhook exists?). |
 | ISS-26 | api / billing | med | 🟡owner | `stripe-webhook` grants premium from `client_reference_id` without checking `payment_status==='paid'`/`mode`, and no event de-dup → premium before capture / on replay. |
 | ISS-27 | api / scale | med | 🟢loop-ok | `patchByEmail` lists only first 200 auth users → grant/revoke silently no-ops for accounts past page 1 (only bites >200 users). Fix: paginate like `loadClients`. |
-| ISS-28 | calc | med | 🟢loop-ok | `HomeEquityCalc` "Months Saved" rounds payoff up to whole years → understated, can show 0/negative. |
-| ISS-29 | calc | med | 🟢loop-ok | `HomeEquityCalc` "Interest Saved" is a fabricated approx (loanAmt·apr·monthsSaved/12) unrelated to the amort table + inherits the bad monthsSaved. |
+| ISS-28 | calc | 🟢 | `HomeEquityCalc` "Months Saved" rounded payoff up to whole years → understated/0/negative. **FIXED** v0.83.9. |
+| ISS-29 | calc | 🟢 | `HomeEquityCalc` "Interest Saved" was a fabricated approx unrelated to the amort table. **FIXED** v0.83.9. |
 | ISS-30 | i18n (D-3) | med | 🟢loop-ok | `AmortTablePaginated` hardcoded English headers (Year/Balance/Paid Interest/Paid Principal) + "Yr" labels. |
 | ISS-31 | i18n (D-3) | med | 🟢loop-ok | `EquityTablePaginated` hardcoded English headers (Year/Home Value/Mortgage/Equity) + "Yr". |
 | ISS-32 | i18n (D-3) | med | 🟢loop-ok | `clientCalcs` helper text hardcoded English ("Prefilled from client data…", lines 84/88/89/126/268). |
@@ -51,6 +51,8 @@
 
 | ID | Area | Status | One-line | Shipped |
 |---|---|---|---|---|
+| ISS-29 | review / calc | 🟢 | `HomeEquityCalc` Interest Saved fabricated approx → now real (baseInt − extraInt) from shared amort loop | v0.83.9 (2026-06-26) |
+| ISS-28 | review / calc | 🟢 | `HomeEquityCalc` Months Saved year-rounded vs exact → understated/0/neg; now exact-month difference | v0.83.9 (2026-06-26) |
 | ISS-36 | review / money | 🟢 | aiExport card "min" called `payM(cd)` (wrong fn+arity) → always $0; now `effectiveMin(cd)` | v0.83.8 (2026-06-26) |
 | ISS-35 | review / calc | 🟢 | `SavingsCalc` 0% APY divided by rate → NaN→$0; now guarded to simple sum | v0.83.8 (2026-06-26) |
 | ISS-34 | review / nav | 🟢 | advisor Back/Forward compared string summary-id `===` number selectedId; now `String()===String()` | v0.83.8 (2026-06-26) |
