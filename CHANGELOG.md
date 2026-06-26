@@ -2,6 +2,40 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.31 — 2026-06-26 — fix(i18n): Export Clients modal bilingual (ISS-64)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61/62/63 class):** `ExportModal` (`components/clientData.jsx`)
+— the advisor "Export Clients" modal — wired only its **title** + the search input through `t`;
+every other body string rendered hardcoded English regardless of language. Localized:
+
+- **Format section:** the "Format" group label; both format tiles — "💾 Full Backup (.json)" +
+  "Includes all financial data, snapshots — re-importable", "👤 Profile CSV" + "Names, email,
+  phone, DOB — importable as CRM profiles" (emoji kept in JSX, text in keys, mirroring the title's
+  `"⬇️ "+t.exportClientsTitle` pattern).
+- **Which-clients section:** the "Which clients" group label; the "All Active" / "Select Clients"
+  mode toggle; the "All" / "None" selection buttons (reused `t.impAll`/`t.impNone`); the
+  "{n} selected" count (global-token `.replace()`).
+- **Footer:** "Cancel" (reused `t.cancel`); the dynamic action button "💾 Export Backup" /
+  "📄 Export CSV" (emoji in JSX). The busy state already used `t.preparingBackup`.
+
+**+11 EN/ES keys** (`expFormatLbl`, `expFullBackup`, `expFullBackupDesc`, `expProfileCsv`,
+`expProfileCsvDesc`, `expWhichClients`, `expAllActive`, `expSelectClients`, `expNSelected`,
+`exportBackupBtn`, `exportCsvBtn`); reused `exportClientsTitle`/`preparingBackup`/`searchPh`/
+`searchClientsPh`/`impAll`/`impNone`/`cancel`.
+
+**The CSV column-header row (`Name,Email,Phone,DOB,Address,SSN,Type,Referred By`) stays English on
+purpose** — it is a data-interchange format consumed on re-import (Profile CSV → CRM profiles);
+translating it would break the round-trip. **Pure display — `doExport`, the CSV row builder, the
+`c.social` (SSN) field, and the export payloads are untouched → not the save path → autonomous-safe
+push (matches ISS-61/62/63).** SSN guard (`golden-anchor-logic §2/§6`) consulted: this is advisor-side
+export of the advisor's own client data (SSN they already own), distinct from the portal where SSN
+never leaves the server — the i18n change touches no SSN handling. **Completes the `clientData.jsx`
+advisor-surface i18n sweep** (ImportWizard/BackupImportModal/Duplicate/Delete already done).
+
+**Gates:** build clean; lint 427/408 = baseline (0 new); EN/ES **1987/1987**; node interpolation
+harness clean (`{n}` → "3 selected" / "3 seleccionados"). Found in the item-1/4 advisor-surface
+i18n scan.
+
 ## v0.83.30 — 2026-06-26 — fix(i18n): Import Wizard fully bilingual (ISS-63)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61/62 class):** `ImportWizard` (`components/clientData.jsx`)
