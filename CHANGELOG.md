@@ -2,6 +2,35 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.18 — 2026-06-26 — fix(ratios): DSR numerator uses effectiveMin, not raw card min
+
+`RatioContent` (Financial Statements → Ratios card, `clientReports.jsx:189`; also the Full Report
+"Financial Ratios" section, `:311`) computed the **debt-service ratio numerator** from the raw stored
+`card.min` field — `minD = cards.reduce((s,c)=>s+(+c.min||0),0)` — instead of the canonical
+`effectiveMin(card)`.
+- **Why it's wrong:** `golden-anchor-logic §3` defines DSR's debt payments as `sumMin = Σ effectiveMin`,
+  and `effectiveMin = balance>0 ? min(balance, max(25, min ?? round(1%·bal + monthly interest))) : 0`.
+  The raw-`min` path diverges in three real cases: (a) a card with **no stated min** contributes `0` here
+  but a computed floor everywhere else → DSR **understated**; (b) a **paid-off card** (balance 0) carrying
+  a stale `min` value contributes that min here but `0` elsewhere → DSR **overstated**; (c) a `min`
+  **below the $25 floor** is undercounted. The same `minD` also feeds the RSR card's available-cash base
+  (`net − bills − minD`), so that drifted too.
+- **The contradiction:** the **Cash Flow Statement** in the *same* Financial-Statements tab
+  (`clientReports.jsx:144`) already uses `sumMin(client.cards)` for its DSR, as do the live/historical
+  ratio snapshots in Compare (`getSnap`, `:750`/`:752`, via `sumMin`/`effectiveMin`). So one client could
+  see two different DSR values on adjacent sections of the same screen — the same ISS-45 class of a
+  `clientReports` display derivation drifting from the canonical model.
+- **FIX:** `minD = cards.reduce((s,c)=>s+effectiveMin(c),0)` (`effectiveMin` was already imported). One
+  expression; `currentRatio`/`dta`/`efr` denominators (card *balances*, not mins) are untouched.
+- **WHY:** objective display-correctness bug found in the cruise item-1 deep scan of the financial-statement
+  derivations. **Pure presentation — does not touch the live save/load path**; the ratio numerator is the
+  only thing that changes, no money is persisted. No new visible strings, so D-3/EN-ES is not engaged.
+- **VERIFIED:** node harness (net $5k) — no-min $4k@24% card: DSR `0% → 2.4%`; paid-off card w/ stale
+  min=35: `0.7% → 0%`; below-floor min=10: `0.2% → 0.5%`; normal min=120: `2.4%` unchanged. Build clean
+  (470ms); full-repo lint **427 problems (0 new vs baseline)**. **Owner eyeball (optional):** open a client
+  with a card that has no stated minimum → Financial Statements → Ratios — the DSR now matches the Cash
+  Flow Statement's DSR on the same tab. 🟢loop-ok
+
 ## v0.83.17 — 2026-06-26 — fix(ratios): DSR now displays as a percentage, not a "×" multiple
 
 `ratFmt("dsr", v)` rendered the debt-service ratio as **`0.36x`** instead of **`36%`**. Root cause: in

@@ -6,7 +6,7 @@
 > [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-26**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-06-26-v08317-dsr-ratio-percent-format` (v0.83.17).
+- **Marker:** `__GA_BUILD__ = 2026-06-26-v08318-ratios-dsr-effectivemin` (v0.83.18).
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).
