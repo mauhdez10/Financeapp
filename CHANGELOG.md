@@ -2,6 +2,31 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.23 — 2026-06-26 — fix(i18n): Market Investments section + modal now bilingual (ISS-55, D-3)
+
+**FIX:** `MarketInvestmentsSection` and `MarketInvestmentModal` (`components/clientSections.jsx`) rendered
+several visible strings in **hardcoded English** only, violating D-3 (bilingual EN/ES is launch-required).
+The advisor's Savings → Market Investments editor showed English text regardless of the user's language.
+
+**Strings wired to `T` (7 keys, EN+ES added to `src/translations.js`):**
+- Modal title `Edit / Add Market Investment` → `t.editMarketInv` / `t.addMarketInv`
+- "＋ Add Investment" button → `t.addInvestment`
+- Empty state "No market investments yet…" → `t.noMarketInv`
+- Footer "Value:" / "Gain/Loss:" → `t.valueColon` / `t.gainLoss`
+- Inline "{n} shares" unit → `t.sharesUnit`
+- The "Ticker and name required." save alert now uses the **already-existing** `t.tickerNameReq`
+  key (was hardcoded despite the key existing) — no new key needed.
+
+**WHY:** Same omission class as ISS-30–33 (calculator hardcoded-English, fixed v0.83.10) — the section
+was only partially internationalized (header used `t.marketInvestments`, the rest did not). The modal's
+field/category keys (`tickerField`, `catUSLarge`, …) already existed; only these surface strings lagged.
+
+**CHANGED:** `src/components/clientSections.jsx` (6 edits, display-only — no save-path, no money/role
+logic touched), `src/translations.js` (+7 keys × EN/ES = symmetric 1881/1881), build marker
+→ `v08323-market-investments-i18n`. Gates: build clean; lint 408 errors (no new vs baseline); EN/ES
+symmetry verified. Pure display i18n, not the live save path → autonomous-safe push. Found in the
+item-1 `clientSections.jsx` correctness/i18n scan (2026-06-26 cruise tick).
+
 ## v0.83.22 — 2026-06-26 — fix(portal): asset-allocation donut no longer double-counts property (ISS-54)
 
 **FIX:** The share-portal overview (`pages/portal.jsx`, the `/portal?token=…` page) and the linked-client
