@@ -2,6 +2,34 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.32 — 2026-06-26 — fix(a11y+i18n): chart accessible names bilingual (ISS-65)
+
+**FIX (WCAG 4.1.2 accessible-name + D-3 bilingual — ISS-41 a11y class):** four pure-SVG chart
+primitives in `components/charts.jsx` carried **hardcoded-English `aria-label`s** — `Waterfall`
+("Cash flow waterfall"), `SmoothAreaLine` ("Trend line chart"), `RankedHBars` ("Ranked horizontal
+bars"), `Radar5` ("Radar chart"). These are the accessible name a screen reader announces for the
+`role="img"` SVG, so the chart's name stayed English even in Spanish (an a11y + i18n gap). Also
+`profileModal.jsx` had two hardcoded `title` tooltips on the Stripe-link status dots ("Stripe link
+set" / "No Stripe link").
+
+- **Charts:** none of the four components receive `t` (shared primitives — the ISS-41 footgun).
+  Added a **local `gaLabel(key,fallback)`** to `charts.jsx` that resolves the label from the active
+  `document.documentElement.lang` (kept in sync with the language state since v0.83.12), identical to
+  the helper in `primitives.jsx`. Defined locally rather than imported because `primitives.jsx`
+  already imports from `charts.jsx` — importing back would create a circular dependency. `charts.jsx`
+  now imports `T` from the pure-data `../translations` module (no cycle).
+- **profileModal:** `t` is already in scope (`t.svcUnnamed`), so the two tooltips use `t.stripeLinkSet`
+  / `t.noStripeLink` directly.
+
+**+6 EN/ES keys** (`chartCashFlowWaterfall`, `chartTrendLine`, `chartRankedBars`, `chartRadar`,
+`stripeLinkSet`, `noStripeLink`). **Pure display — no chart data, geometry, or save path touched →
+autonomous-safe push.** Guard: `golden-anchor-logic` not implicated (no money/role/RLS/SSN). Gates:
+build clean (530ms); lint 427/408 = baseline (0 new); EN/ES symmetry 1993/1993; node resolver harness
+confirms EN/ES + fallbacks. Found in the item-4 a11y/i18n attribute scan (charts/profileModal).
+
+**CHANGED:** `src/components/charts.jsx`, `src/components/profileModal.jsx`, `src/translations.js`,
+`src/App.jsx` (build marker).
+
 ## v0.83.31 — 2026-06-26 — fix(i18n): Export Clients modal bilingual (ISS-64)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61/62/63 class):** `ExportModal` (`components/clientData.jsx`)

@@ -4,7 +4,16 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useTh, useChartConfig } from "../contexts/theme";
 import { GOLD, stripLeadEmoji } from "../styles/theme";
 import { fmt } from "../utils/finance";
+import { T } from "../translations";
 import { useTweenedData, useSvgId, useReducedMotion } from "../hooks/anim";
+
+// a11y helper (WCAG 4.1.2) — resolve a localized accessible name from the active
+// <html lang> for chart primitives that don't receive `t` (same pattern as the
+// gaLabel in primitives.jsx, ISS-41). The app keeps documentElement.lang in sync
+// with the language state (v0.83.12) so an SVG role="img" gets an EN/ES name
+// without threading t props. Defined locally (not imported from primitives) to
+// avoid the primitives→charts circular import.
+const gaLabel=(key,fallback)=>{const lng=(typeof document!=="undefined"&&document.documentElement.lang==="es")?"es":"en";return (T[lng]&&T[lng][key])||fallback;};
 
 /* ── v0.35.0 — Phase 5 Charts: Donut (v0.37 tween + drop shadow) ───────────
    Pure-SVG donut chart. Slice angles tween between states; soft drop-shadow
@@ -92,7 +101,7 @@ function Waterfall({segments,height=160,width=600,bg}){
   const xAt=i=>padL+(innerW-items.length*barW-(items.length-1)*gap)/2+i*(barW+gap);
   const barColor=it=>it.isTotal?GOLD:(it.delta>=0?(it.color||GOLD):(it.color||"#ED7D31"));
   return<div style={{width:"100%",overflow:"hidden"}}>
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Cash flow waterfall">
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label={gaLabel("chartCashFlowWaterfall","Cash flow waterfall")}>
       <defs>
         {items.map((it,i)=>{const c=barColor(it);const ascending=it.delta>=0||it.isTotal;return<linearGradient key={i} id={`${baseId}-g${i}`} x1="0" y1={ascending?"0":"1"} x2="0" y2={ascending?"1":"0"}>
           <stop offset="0%" stopColor={c} stopOpacity="0.55"/>
@@ -321,7 +330,7 @@ function SmoothAreaLine({data,height=170,debtColor,savingsColor,bg,muted,dim,lab
        bug v0.58 fixed on Waterfall — labels were stretching vertically when
        the container was wide). Area gradients pulled in (0.42→0.25 / 0.22→0.15)
        for thinner, modern line-chart read per Mauricio's reference image. */}
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Trend line chart">
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label={gaLabel("chartTrendLine","Trend line chart")}>
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={savingsColor} stopOpacity="0.10"/>
@@ -624,7 +633,7 @@ function RankedHBars({data,maxBars=10,barH=14,gap=8,width=460,labelW=140,valueW=
   const totalH=items.length*(barH+gap)-gap;
   const fmtV=v=>v>=1e6?(v/1e6).toFixed(1).replace(/\.0$/,"")+"M":v>=1000?Math.round(v/100)/10+"K":Math.round(v);
   return<div style={{width:"100%",overflow:"hidden"}}>
-    <svg viewBox={`0 0 ${width} ${totalH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Ranked horizontal bars">
+    <svg viewBox={`0 0 ${width} ${totalH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"auto",display:"block",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label={gaLabel("chartRankedBars","Ranked horizontal bars")}>
       <defs>
         {items.map((d,i)=>{const color=d.color||GOLD;return<linearGradient key={i} id={`${gid}-${i}`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor={color} stopOpacity="0.55"/>
@@ -735,7 +744,7 @@ function Radar5({axes,values,target,size=240,color,placeholder}){
   const c=color||GOLD;
   const targetPath=target?safeAxes.map((_,i)=>{const p=pt(target,i);return`${p.x} ${p.y}`;}).join(" L"):null;
   const gid=useSvgId("rd");
-  return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label="Radar chart">
+  return<svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",overflow:"visible",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}} role="img" aria-label={gaLabel("chartRadar","Radar chart")}>
     <defs>
       {/* v0.42 — radial gradient on polygon fill: dense at center → fading toward edge */}
       <radialGradient id={gid} cx="50%" cy="50%" r="50%">
