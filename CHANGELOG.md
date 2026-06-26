@@ -2,6 +2,28 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.10 — 2026-06-26 — fix: calculator i18n — translate hardcoded English in amort/equity tables + client calcs (ISS-30–33, D-3)
+
+Four D-3 (bilingual) violations: visible strings hardcoded English-only, never rendering in Spanish.
+- **ISS-30:** `AmortTablePaginated` headers ("Year / Balance / Paid Interest / Paid Principal") and the
+  "Yr {n}" row prefix were literal English. The component took only `{data}` — now `{data,t={}}` and the
+  caller (`HomeEquityCalc` Amortization tab) passes `t={t}`.
+- **ISS-31:** `EquityTablePaginated` headers ("Year / Home Value / Mortgage / Equity") + "Yr" — same fix;
+  Equity-Projection tab now passes `t={t}`.
+- **ISS-32:** the five italic "Prefilled from …" helper lines across `ClientIncomeCalc` /
+  `ClientDebtCalc` / `ClientCarLoanCalc` were hardcoded. Name-interpolated ones use a `{n}` token +
+  `.replace()` so Spanish word order is correct (`…de {n}` vs EN `{n}'s …`).
+- **ISS-33:** the `ClientIncomeCalc` "HOUSEHOLD COMBINED" stat block (header + Gross/yr · Taxable ·
+  Total Tax · Net/yr) — header gets a new key; the four cells **reuse** the existing
+  `grossPerYr`/`incomeTaxable`/`incomeTotalTaxes`/`netPerYr` keys (identical to the per-person result rows).
+
+**Strings:** 14 new keys added to BOTH `T.en` and `T.es` (symmetry verified 2× each). ES keeps "Equity"
+untranslated to match the app's existing `currentEquity:"Equity Actual"` choice. The debt helper's inline
+`<b>＋ Scenario</b>` bold was folded into the plain translated sentence (cosmetic, matches the other
+helpers). Presentational-only — no money math, no role/RLS, no save/load path touched; `t={}` defaults
+keep the tables crash-safe even without a dictionary. Build clean; lint unchanged (431 problems, 0 new
+errors); marker → `v08310`. Found + fixed in the cruise correctness scan (ordered-map item 1, 🟢loop-ok).
+
 ## v0.83.9 — 2026-06-26 — fix: HomeEquityCalc Amortization "Months Saved" / "Interest Saved" (ISS-28/29)
 
 The Amortization tab's extra-payment summary showed wrong savings figures. Two root causes:

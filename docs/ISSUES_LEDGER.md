@@ -42,15 +42,16 @@
 | ISS-27 | api / scale | med | 🟢loop-ok | `patchByEmail` lists only first 200 auth users → grant/revoke silently no-ops for accounts past page 1 (only bites >200 users). Fix: paginate like `loadClients`. |
 | ISS-28 | calc | 🟢 | `HomeEquityCalc` "Months Saved" rounded payoff up to whole years → understated/0/negative. **FIXED** v0.83.9. |
 | ISS-29 | calc | 🟢 | `HomeEquityCalc` "Interest Saved" was a fabricated approx unrelated to the amort table. **FIXED** v0.83.9. |
-| ISS-30 | i18n (D-3) | med | 🟢loop-ok | `AmortTablePaginated` hardcoded English headers (Year/Balance/Paid Interest/Paid Principal) + "Yr" labels. |
-| ISS-31 | i18n (D-3) | med | 🟢loop-ok | `EquityTablePaginated` hardcoded English headers (Year/Home Value/Mortgage/Equity) + "Yr". |
-| ISS-32 | i18n (D-3) | med | 🟢loop-ok | `clientCalcs` helper text hardcoded English ("Prefilled from client data…", lines 84/88/89/126/268). |
-| ISS-33 | i18n (D-3) | med | 🟢loop-ok | `clientCalcs` "HOUSEHOLD COMBINED" block hardcoded English labels (Gross/yr, Taxable, Total Tax, Net/yr). |
+| ISS-30 | i18n (D-3) | 🟢 | `AmortTablePaginated` hardcoded English headers + "Yr". **FIXED** v0.83.10 (passed `t`, new keys). |
+| ISS-31 | i18n (D-3) | 🟢 | `EquityTablePaginated` hardcoded English headers + "Yr". **FIXED** v0.83.10. |
+| ISS-32 | i18n (D-3) | 🟢 | `clientCalcs` 5 "Prefilled from…" helper lines hardcoded. **FIXED** v0.83.10 ({n}-token replace). |
+| ISS-33 | i18n (D-3) | 🟢 | `clientCalcs` "HOUSEHOLD COMBINED" block hardcoded. **FIXED** v0.83.10 (reused income keys + new header key). |
 
 ## Recently fixed (recurrence-watch — prune after a few clean cycles)
 
 | ID | Area | Status | One-line | Shipped |
 |---|---|---|---|---|
+| ISS-30–33 | i18n (D-3) | 🟢 | Calculator hardcoded-English (amort/equity table headers + clientCalcs prefill helpers + household block) → bilingual; 14 new keys EN+ES, 4 reused | v0.83.10 (2026-06-26) |
 | ISS-29 | review / calc | 🟢 | `HomeEquityCalc` Interest Saved fabricated approx → now real (baseInt − extraInt) from shared amort loop | v0.83.9 (2026-06-26) |
 | ISS-28 | review / calc | 🟢 | `HomeEquityCalc` Months Saved year-rounded vs exact → understated/0/neg; now exact-month difference | v0.83.9 (2026-06-26) |
 | ISS-36 | review / money | 🟢 | aiExport card "min" called `payM(cd)` (wrong fn+arity) → always $0; now `effectiveMin(cd)` | v0.83.8 (2026-06-26) |
