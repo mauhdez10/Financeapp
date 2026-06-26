@@ -2,6 +2,32 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.17 — 2026-06-26 — fix(ratios): DSR now displays as a percentage, not a "×" multiple
+
+`ratFmt("dsr", v)` rendered the debt-service ratio as **`0.36x`** instead of **`36%`**. Root cause: in
+`src/utils/finance.js` the `dsr` key was grouped with `currentRatio` in the formatter
+(`if(key==="currentRatio"||key==="dsr") … `${v.toFixed(2)}x``) — correct for a liquidity *multiple*, wrong
+for a debt-service *percentage*.
+- **Where it showed:** `RatioContent` (Financial Statements → Ratios, `clientReports.jsx:189`) renders the
+  DSR value via `RATIOS_META.dsr.fmt(minD/net)`. The card displayed **`0.36x`** sitting right next to its
+  own benchmark label **`< 36%`** — internally contradictory, and inconsistent with **every other DSR
+  surface** (the `RadialGauge` trio uses `dsr*100 + "%"`, the advisor "High DSR" reminder uses
+  `(dsr*100).toFixed(0)+"%"`). The canonical model (`golden-anchor-logic §3`: "dsr = debt payments ÷ net
+  income — target < 36%") defines DSR as a percentage, so the code had drifted from the documented logic.
+- **FIX:** split the branch — `currentRatio` keeps its exact `×` formatting (incl. the legacy `99+`
+  no-debt sentinel, **byte-for-byte unchanged**); `dsr` now formats as `` `${(v*100).toFixed(0)}%` ``, with
+  `v>=1 → "99+%"` so the rare "no income, has debt" sentinel (`99`) and any >100% DSR read as
+  off-the-charts rather than a broken `9900%`. Also dropped the dead `const abs=Math.abs(v)` in that branch
+  (already documented as harmless; removing it clears one `no-unused-vars`).
+- **WHY:** objective display-correctness bug found in the cruise item-1 deep scan of `utils/finance.js`.
+  Pure presentation — **does not touch the live save/load path**, no money *computation*, role, or RLS
+  change; the ratio value itself is untouched. No new visible word strings (`%`/`99+%` are
+  language-neutral symbols), so D-3/EN-ES symmetry is not engaged.
+- **VERIFIED:** node harness — DSR `0.36 → "36%"`, `0.50 → "50%"`, sentinel `99 → "99+%"`; `currentRatio`
+  proven unchanged across `[0, 0.5, 1, 1.5, 2.34, 99, 100, 999]`. Build clean (484ms); full-repo lint
+  **427 problems (−1 vs 428 baseline, 0 new)**. **Owner eyeball (optional):** open any client → Financial
+  Statements → Ratios — the DSR card now reads e.g. `36%` matching its `< 36%` benchmark. 🟢loop-ok
+
 ## v0.83.16 — 2026-06-26 — fix(reminders): exact "days until due" — real month lengths, not hardcoded 31
 
 `getClientRem()` (the dashboard "Client Due" reminders feed) computed each bill/card's days-until-due
