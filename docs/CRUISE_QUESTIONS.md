@@ -6,6 +6,34 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — ISS-51 `smartMerge` drops `marketInvestments` on duplicate merge · owner yes/no (appended by finance-cron)
+
+`smartMerge` (`utils/import.js:222`) unions exactly six arrays —
+`["incomeStreams","bills","cards","accounts","loans","customAssets"]` — and **omits
+`marketInvestments`** (a canonical client asset array: `mk`/`mig` seed it, `totalA` includes it,
+ISS-47/50 territory). Both call sites feed the **live save path** directly:
+`gaSaveClient(…, smartMerge(…))` on **backup restore (merge mode)** (`App.jsx:715`) and **import
+merge** (`App.jsx:718`). A backup round-trips the full blob (`expBackup` writes raw `clients`;
+`validateBackup` only checks the envelope), so the incoming side genuinely carries
+`marketInvestments`.
+
+**Effect:** restore/import a duplicate client in *merge* mode and the incoming market-investment
+holdings are **silently dropped** → understated assets / net worth (same omission class as the
+already-fixed display bugs ISS-47/50, but here it's persisted). Node harness (`scratchpad/iss51.mjs`,
+replicates `smartMerge` verbatim): current merge drops $60,000 / 2 holdings → **0**; one-key fix
+preserves both.
+
+**Why queued not pushed:** the result is written by `gaSaveClient` (live save path) and the
+end-to-end restore can't be verified headlessly (no backup fixtures; prod-mutation classifier
+correctly blocks it) — consistent with ISS-16 (`importMultiple`) being ⛔attended.
+
+**Fix (trivial, additive, function-proven):** add `"marketInvestments"` to `arrKeys` — identical
+union-by-id logic as the other five arrays; can only *add back* dropped data, never overwrite.
+**Rec: YES** — fold into the next attended import/backup session. (Side-note for that session:
+`smartMerge`'s output is **not** re-`mig`'d before `gaSaveClient`, so the phantom `properties` alias
+can desync from the merged `customAssets` — the ISS-49 fix in `mig` neutralizes this; no separate
+action needed if ISS-49's `mig` re-derivation lands.)
+
 ## 2026-06-26 — ISS-49 write-path traced: premise INVERTED, real save-path bug found · owner yes/no (appended by finance-cron)
 
 Traced the `customAssets` vs `properties` write path the ISS-49 note flagged for follow-up, and
