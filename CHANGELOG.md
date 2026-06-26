@@ -2,6 +2,30 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.14 — 2026-06-26 — a11y: accessible names for icon-only close buttons (WCAG 4.1.2)
+
+Three icon-only buttons rendered just a `×` glyph with **no accessible name** (no `aria-label`, no
+`title`) — a WCAG 2.1 SC 4.1.2 (Name, Role, Value) failure: a screen reader announces "button" with no
+purpose. The biggest was the shared `Modal` primitive's close button, which renders inside **all 44
+modals** app-wide (Profile & Settings, Alert Settings, every data-entry modal, etc.).
+- **FIX:** added a bilingual `aria-label` + `title` to the three no-name buttons:
+  `Modal` close + `IAdd` (inline add-row) cancel in `components/primitives.jsx`, and the Intake
+  detail-panel close in `pages/intake.jsx`. The intake one had `t` in scope (`t?.close||"Close"`). The
+  two shared primitives don't receive `t`, so a tiny `gaLabel(key,fallback)` helper resolves the label
+  from `T[…]` keyed on the active `document.documentElement.lang` (which the app keeps in sync with the
+  language state since v0.83.12). Reused existing keys — `close` (Close/Cerrar) and `cancel`
+  (Cancel/Cancelar); **no new translation keys**.
+- **WHY:** objective a11y fix from the cruise website/UX scan (ordered-map item 4). Purely additive
+  (adds two static attributes per button); no logic, no save-path, no visible-layout change.
+- **VERIFIED:** headless preview, logged-in advisor. Opened the Alert Settings modal → the `Modal` close
+  button reports `aria-label="Close"` / `title="Close"` in EN and, with `<html lang>="es"`,
+  `aria-label="Cerrar"` / `title="Cerrar"` — confirming `gaLabel` resolves EN+ES from the live lang.
+  Zero console errors (the new `T` import resolves).
+- **CHANGED:** `src/components/primitives.jsx` (T import + `gaLabel` helper + 2 buttons),
+  `src/pages/intake.jsx` (1 button), `src/App.jsx` (marker → `v08314`). Build clean; full-repo lint **428
+  problems, 0 new** (added symbols are all used). No new strings → EN/ES symmetry intact. 🟢loop-ok
+  (objective a11y, fix-and-push). Tracks as ISS-41.
+
 ## v0.83.13 — 2026-06-26 — fix: calculator view flash on browser back/forward + cascading-render lint
 
 `CalculatorsPage` held local `active` state but synced it to the `activeCalc` prop inside a `useEffect`

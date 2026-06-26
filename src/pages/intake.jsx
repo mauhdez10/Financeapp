@@ -795,7 +795,7 @@ function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
     {sel&&<div style={{...mCARD(th),padding:isMobile?16:20,marginTop:18}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div style={{fontSize:14,fontWeight:700,color:th.text}}>{((sel.data?.firstName||"")+" "+(sel.data?.lastName||"")).trim()}</div>
-        <button onClick={()=>setSel(null)} style={{background:"none",border:"none",color:th.muted,fontSize:22,cursor:"pointer",minWidth:36,minHeight:36}}>×</button>
+        <button onClick={()=>setSel(null)} aria-label={t?.close||"Close"} title={t?.close||"Close"} style={{background:"none",border:"none",color:th.muted,fontSize:22,cursor:"pointer",minWidth:36,minHeight:36}}>×</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fit,minmax(220px,1fr))",gap:8,marginBottom:18,fontSize:12}}>
         {Object.entries(sel.data||{}).map(([k,v])=>{
