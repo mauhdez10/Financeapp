@@ -2,6 +2,43 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.26 — 2026-06-26 — fix(i18n): full bilingual sweep of clientModals.jsx (ISS-58)
+
+**FIX (D-3):** ISS-57 fixed the owner dropdowns in `components/clientModals.jsx` but left **~30 other
+hardcoded-English strings** scattered across the same data-entry modals — visible English regardless of
+the language toggle. This is the same omission class as ISS-30–33 / ISS-55 / ISS-57 (hardcoded English in
+Phase-2-extracted components). All instances are **pure display** (modal titles, field labels,
+placeholders, footer copy, and validation/alert messages); the stored `onSave` payloads, the `np.label||
+"Promo"` stored default, and the `/mo` abbreviation are untouched.
+
+**CHANGED — `clientModals.jsx`:**
+- **Modal titles (edit case):** `${t.editLabel} Card/Account/Loan/Bill/Asset` → `${t.editLabel} ${t.card/
+  account/loan/bill/asset}` (mirrors `IncomeModal`'s existing `${t.editLabel} ${t.income}` pattern).
+- **CardModal:** the 4 promo-validation `setErr(...)` messages, the save-time over-balance error, the
+  "Suggested:" hint, the "Limit ($)" field label, the "(1-31, optional)" due-day hint, the "e.g. 15"
+  placeholder, the "No promotional rates. All balance at {apr}% APR." empty state, the "at … % APR · ends
+  …" promo-list line, the "e.g. Balance Transfer" placeholder, and the "Add" promo button — all wired to
+  `t`.
+- **IncomeModal:** footer "Annual:" → `{t.annual}:`.
+- **AccountModal:** "e.g. Chase Checking" placeholder + the liquid/investment/household asset-class
+  caption ("Liquid — counts toward Emergency Fund" / "Investment asset" / "Household asset").
+- **LoanModal:** "e.g. Honda Accord" placeholder.
+- **AssetModal:** "Equity:" / "Gain:" inline labels.
+- **SplitAssignModal:** the "Personal items automatically go to their owner…" note, the per-bill "Day"
+  label, and the "{n} items" tallies.
+- **JoinModal:** "becomes Person 1. Select Person 2:" sentence + the "Select a client first." alert.
+
+**TRANSLATIONS:** +27 new keys in **both** `T.en` and `T.es` (`card`, `account`, `loan`, `bill`, `asset`,
+`promoBalReq`, `promoBalGtTotal`, `promoBalsExceed`, `suggestedColon`, `dueDayHint`, `egDueDayPh`,
+`noPromoRates`, `atLbl`, `endsLbl`, `egPromoPh`, `addBtn`, `liquidEmergency`, `investmentAsset`,
+`householdAsset`, `egAcctPh`, `egLoanPh`, `equityColon`, `gainColon`, `splitAutoNote`, `joinBecomesP1`,
+`selectClientFirst`, `itemsLbl`); reused existing `editLabel`, `annual`, `dayLbl`, `limitField` (the last
+two already existed — the initial insert duplicated them and `no-dupe-keys` caught it; dupes removed).
+
+**SAFETY/GATES:** pure display, not the save path → autonomous-safe push (same disposition as ISS-57).
+Build clean; lint 427/408 = baseline (0 new); EN/ES symmetry 1908/1908. Found in the item-1
+`clientModals.jsx` i18n correctness scan (2026-06-26).
+
 ## v0.83.25 — 2026-06-26 — fix(i18n): owner-dropdown labels in Card/Account/Loan modals bilingual (ISS-57)
 
 **FIX (D-3):** `CardModal`, `AccountModal`, and `LoanModal` (`components/clientModals.jsx`) built their
