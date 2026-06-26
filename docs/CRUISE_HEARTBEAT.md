@@ -26,3 +26,5 @@ finance-cron · 2026-06-26T15:55:40Z · starting: ordered-map item 1 (bugs/corre
 finance-cron · 2026-06-26T16:05:24Z · starting: ordered-map item 1 (bugs/correctness) — ISS-27 patchByEmail pagination past 200-user cap
 
 finance-cron · 2026-06-26T16:21:29Z · starting: ordered-map item 2 (competitor + feature-gap scan)
+
+finance-cron · 2026-06-26T16:36:29Z · starting: ordered-map item 3 (security review — npm audit + secrets/auth/RLS pass)

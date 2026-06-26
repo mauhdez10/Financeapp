@@ -11,6 +11,8 @@
 
 | ID | Area | Status | One-line | Notes / owner question |
 |---|---|---|---|---|
+| ISS-38 | security / db | 🟡 | `set_updated_at` trigger fn has mutable `search_path` (Supabase advisor `0011`) | Low risk; fix = 1-line DDL `ALTER FUNCTION … SET search_path=''`. Prod-DB migration → attended/owner-greenlit, not autonomous. Queued in CRUISE_QUESTIONS 2026-06-26. |
+| ISS-37 | security / auth | 🟡 | Leaked-password protection (HaveIBeenPwned) disabled in Supabase Auth | Owner dashboard toggle, free, no code. Rec: enable. Queued in CRUISE_QUESTIONS 2026-06-26. |
 | ISS-09 | lint / hooks | 🟡 | `react-hooks/*` ×183 (static-components, rules-of-hooks, exhaustive-deps, set-state-in-effect) | Component-structure + hook-order (pitfalls #13/#17). Attended review only — NOT a safe autonomous bulk sweep. |
 | ISS-08 | lint / cosmetic | 🔴 | `no-unused-vars` ×199 + `no-empty` ×26 | Cosmetic debt in dense extracted code. Bulk patches need scope-aware review (D-36) — don't blind-fix. |
 | ISS-07 | perf / build | 🔴 | Bundle >800 KB after minify (index ~1.3 MB) | Code-splitting / dynamic import opportunity. Single-bundle by D-1 history; needs a deliberate split plan. |

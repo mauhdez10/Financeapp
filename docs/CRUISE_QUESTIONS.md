@@ -6,6 +6,37 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — security review (ordered-map item 3) · owner yes/no (appended by finance-cron)
+
+Ran a full security pass: `npm audit`, tracked-source secret scan, and the Supabase security
+advisor + a read-only catalog check of every RLS table and SECURITY DEFINER RPC. **Posture is
+solid** — nothing leaking, nothing to hot-fix:
+- **0 npm vulnerabilities** (ISS-10 still holds). No secret values in tracked source (only env-var
+  *names* in comments/docs; `finance-credentials.md` confirmed gitignored, `.env.local` untracked).
+- **RLS enabled on all 8 public tables** (clients, client_monthly_summary, client_links,
+  portal_links, settings, intake_invites, intake_submissions, sms_consent_log).
+- **All 6 SECURITY DEFINER RPCs are caller-scoped** — every `ga_dashboard_*` + `ga_advisor_reminders`
+  filters internally by `auth.uid()`, so the definer privilege does **not** leak cross-advisor data
+  (the advisor's "public can execute DEFINER" warnings are the correct, intended pattern).
+- The `intake_submissions` anon/auth `INSERT … WITH CHECK (true)` and the anon-executable
+  `resolve_invite_token` / `mark_invite_submitted` RPCs are **by-design public flows** (the public
+  intake form + pre-login invite-token resolution). Not vulnerabilities. *(Minor: the public intake
+  INSERT has no rate-limit — a spam-insert abuse vector, not a data leak. Note only; fold into a
+  later hardening pass if owner wants.)*
+
+Two **genuine low-effort hardening items** surfaced. Both are owner/config-gated (an Auth dashboard
+toggle and a prod-DB migration) — out of bounds for an autonomous push, so queued here:
+
+1. **Enable leaked-password protection (HaveIBeenPwned).** Supabase Auth → Providers → Password —
+   currently **off**. One toggle, free, blocks signups/resets using known-breached passwords.
+   **Rec: YES — enable it; pure defensive win, no code, no downside.**
+2. **Pin `search_path` on the `set_updated_at` trigger function.** It has a mutable `search_path`
+   (advisor WARN `0011`). Low risk (a trigger fn), but the standard hardening is
+   `ALTER FUNCTION public.set_updated_at() SET search_path = ''` (or `= pg_catalog, public`).
+   It's a one-line **DDL migration against the production DB**, which cruise push-safety bars me from
+   applying unattended. **Rec: YES — I apply it via `supabase-migrations/` + the MCP when you're
+   present to confirm, or you greenlight it here.**
+
 ## 2026-06-26 — competitor / feature-gap scan refresh · owner yes/no (appended by finance-cron)
 
 Re-ran the ordered-map **item 2** scan (the 2026-06-11 `DIFFERENTIATION-IDEAS.md` memo is the
