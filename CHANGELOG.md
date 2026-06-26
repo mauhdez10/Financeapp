@@ -2,6 +2,36 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.24 — 2026-06-26 — fix(reminders): client "Card Min" reminder uses canonical effectiveMin (ISS-56)
+
+**FIX:** `getClientRem` (`utils/finance.js:87`) — the **client-side** reminder engine that feeds the
+dashboard "Client Due" panel — gated and displayed the per-card "Card Min" reminder from **raw `cc.min`**
+(`if(cc.min>0)` … `amount:cc.min`) instead of canonical `effectiveMin(cc)` (golden-anchor-logic §3:
+`balance>0 ? min(balance, max(25, min ?? round(1%·bal + moInt))) : 0`). The **advisor** path (`getAdvRem`
+highDSR) already uses `sumMin`/`effectiveMin`, so the two reminder surfaces disagreed on the same data.
+
+**Four divergences (node harness `scratchpad/iss56.mjs`, 5 cases):**
+- **Real reminder hidden** — a card with a balance but no stated `min` (`min:0`) had no reminder emitted,
+  even though a minimum is genuinely due (`effectiveMin` computes 1%·balance + interest).
+- **Phantom reminder shown** — a paid-off card (`balance:0`) with a **stale** `min` still emitted a
+  "Card Min" reminder for a $0-balance card (`effectiveMin` returns 0 → now correctly suppressed).
+- **Below-$25 floor** — a stated `min` of $10 displayed `$10`; canonical floors to `$25`.
+- **Min exceeds balance** — a $200 stated min on a $40 balance displayed `$200`; canonical caps at the
+  balance (`$40`).
+
+**Fix:** `const em=effectiveMin(cc); if(em>0) … amount:em` (one-line; `effectiveMin` already in module
+scope, `finance.js:48`). Same divergence class as ISS-45/46/48/50 (raw `card.min` vs `effectiveMin`),
+here in the client reminder surface.
+
+**Scope/safety:** pure read-only **display** derivation (the panel sorts/filters/dismisses; the dismissal
+key is `cardDue:{cid}:{cardId}:{YYYY-MM}`, **independent of the amount**, so existing dismissals are
+unaffected). **NOT** the save path → autonomous-safe push (same disposition as ISS-44, which fixed
+`getClientRem` date math in v0.83.16). No new visible string (`amount` renders through existing `fmt`;
+`task:"Card Min"` unchanged) → no EN/ES change.
+
+**Gates:** build clean (446ms); lint 427 problems / 408 errors = baseline, 0 new; EN/ES symmetry
+unchanged. Found in the item-1 `utils/finance.js` reminder-engine correctness scan (2026-06-26).
+
 ## v0.83.23 — 2026-06-26 — fix(i18n): Market Investments section + modal now bilingual (ISS-55, D-3)
 
 **FIX:** `MarketInvestmentsSection` and `MarketInvestmentModal` (`components/clientSections.jsx`) rendered
