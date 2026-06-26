@@ -29,7 +29,11 @@ const FREQ={weekly:52/12,biweekly:26/12,semimonthly:2,monthly2:1,annual:1/12};
 const toM=(a,f)=>a*(FREQ[f]??1);
 let _GA_CCY="USD";const fmt=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:_GA_CCY||"USD",maximumFractionDigits:0}).format(n||0);
 const fmtD=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
-const fmtS=n=>{if(n>=1000000)return"$"+(n/1000000).toFixed(1)+"M";if(n>=1000)return"$"+(n/1000).toFixed(0)+"K";return fmt(n);};
+// v0.83.15 — abbreviated values must honor the active currency (settings.currency → _GA_CCY),
+// not a hardcoded "$". The symbol is extracted from the SAME Intl config fmt() uses, so K/M
+// prefixes match the non-abbreviated fmt() output exactly (USD→"$", EUR→"€", GBP→"£", MXN→"MX$").
+const _ccySym=()=>{try{const p=new Intl.NumberFormat("en-US",{style:"currency",currency:_GA_CCY||"USD"}).formatToParts(0);return (p.find(x=>x.type==="currency")||{}).value||"$";}catch{return "$";}};
+const fmtS=n=>{const s=_ccySym();if(n>=1000000)return s+(n/1000000).toFixed(1)+"M";if(n>=1000)return s+(n/1000).toFixed(0)+"K";return fmt(n);};
 const bE=e=>['e','E','+','-'].includes(e.key)&&e.preventDefault();
 const vEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const fmtPh=r=>{const d=r.replace(/\D/g,"").slice(0,10);if(d.length<=3)return d;if(d.length<=6)return`(${d.slice(0,3)}) ${d.slice(3)}`;return`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;};

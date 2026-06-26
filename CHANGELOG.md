@@ -2,6 +2,30 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.15 — 2026-06-26 — fix(i18n): abbreviated values (`fmtS`) honor the active currency
+
+The `fmtS` helper (compact `$5K` / `$1.2M` rendering, used in **13 places** — dashboard slots,
+calculators, client reports, primitives, intake) **hardcoded a `"$"` prefix** in its K and M branches,
+while its companion `fmt()` correctly renders the user's selected currency via `_GA_CCY`
+(`settings.currency` → `setLocale`, wired in v0.69 localization). So when an advisor picks a non-USD
+currency from the Localization selector (USD/EUR/GBP/MXN/CAD all offered, `pages/admin.jsx:606`), every
+abbreviated value still showed `$` while non-abbreviated values showed `€`/`£`/`MX$` — an inconsistent,
+objectively-wrong display.
+- **FIX:** `fmtS` now derives its symbol from a tiny `_ccySym()` that reads the **same** Intl currency
+  config `fmt()` uses (`formatToParts(0)` → the `currency` part), so the K/M prefix matches `fmt()`'s
+  output exactly: USD→`$`, EUR→`€`, GBP→`£`, MXN→`MX$`, CAD→`CA$`. K/M rounding (`toFixed(0)`/`toFixed(1)`)
+  is **unchanged** — only the symbol was wrong. Falls back to `"$"` on any Intl error.
+- **WHY:** objective i18n display bug found in the cruise item-1 deep scan of `utils/finance.js` pure
+  helpers (after the full EN/ES key+value symmetry audit came back clean, 1874/1874). Aligns `fmtS` with
+  the canonical `fmt()` per `golden-anchor-logic §6` (currency is presentational; `fmt` is the renderer).
+  Pure display — no formula, no save-path, no role/data change.
+- **VERIFIED:** node check confirms `_ccySym()` returns the exact symbol prefix `fmt()` emits for all 5
+  offered currencies (`$5K`↔`$5,200`, `€5K`↔`€5,200`, `£5K`, `MX$5K`, `CA$5K`). Build clean; full-repo
+  lint **428 problems, 0 new** (the added `_ccySym` is used). No new visible strings → EN/ES symmetry
+  intact. **Owner eyeball (optional):** Settings → Localization → set Currency = EUR, glance at any
+  dashboard KPI/abbreviated figure — symbols should all read `€`. 🟢loop-ok (objective i18n, fix-and-push).
+- **CHANGED:** `src/utils/finance.js` (`_ccySym` helper + `fmtS` symbol), `src/App.jsx` (marker → `v08315`).
+
 ## v0.83.14 — 2026-06-26 — a11y: accessible names for icon-only close buttons (WCAG 4.1.2)
 
 Three icon-only buttons rendered just a `×` glyph with **no accessible name** (no `aria-label`, no

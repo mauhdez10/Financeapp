@@ -55,6 +55,7 @@
 
 | ID | Area | Status | One-line | Shipped |
 |---|---|---|---|---|
+| ISS-43 | i18n (D-3) / fmt | 🟢 | `fmtS` (abbreviated `$5K`/`$1.2M`, 13 call sites) hardcoded `"$"` while `fmt` honors the user's currency (`_GA_CCY`) → non-USD picks (EUR/GBP/MXN/CAD) showed `$` on abbreviated values, `€`/`£`/`MX$` elsewhere. Now derives the symbol from the same Intl config `fmt` uses (`_ccySym`), K/M rounding unchanged. Found in the item-1 `utils/finance.js` helper scan (EN/ES symmetry audit clean 1874/1874). | v0.83.15 (2026-06-26) |
 | ISS-41 | a11y (WCAG 4.1.2) | 🟢 | 3 icon-only `×` buttons had no accessible name (shared `Modal` close → all 44 modals; `IAdd` cancel; Intake detail close). Added bilingual `aria-label`+`title` via a `gaLabel` helper (reads `<html lang>`, reuses `close`/`cancel` keys). **Footgun: shared primitives don't receive `t` — resolve labels from `document.documentElement.lang`, kept in sync since v0.83.12.** | v0.83.14 (2026-06-26) |
 | ISS-27 | api / scale | 🟢 | `admin-members` grant/revoke `patchByEmail` paged only first 200 auth users → silent no-op past #200; now paginates like `loadClients` | v0.83.11 (2026-06-26) |
 | ISS-30–33 | i18n (D-3) | 🟢 | Calculator hardcoded-English (amort/equity table headers + clientCalcs prefill helpers + household block) → bilingual; 14 new keys EN+ES, 4 reused | v0.83.10 (2026-06-26) |
