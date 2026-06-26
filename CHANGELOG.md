@@ -2,6 +2,28 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.21 — 2026-06-26 — fix(aiExport): market investments now itemized in the AI client export (ISS-52)
+
+**FIX:** The AI-readable client export (`utils/aiExport.js`, `gaClientAIText`) never listed the client's
+**market investments**. Its "Investments" section keyed on `c.investments` and "Physical assets" on
+`c.physicalAssets` and "Portfolio model" on `c.portfolio` — **none of which exist** in the data model
+(`golden-anchor-logic §6`: the canonical fields are `c.marketInvestments`, `c.customAssets`, and
+`c.savedPortfolio`). So both guessed sections never fired.
+
+**WHY it mattered:** `marketInvestments[].value` IS counted in canonical `totalA` (the "Total assets"
+metric the export prints), so the export showed a Total-assets number that the AI could not reconcile
+against the itemized holdings — e.g. $68k total assets but only $8k of assets actually listed, the $60k
+of stock/crypto holdings invisible. Same omission class as ISS-36 (aiExport wrong field) and ISS-47/50
+(marketInvestments dropped from asset totals).
+
+**CHANGED:** rewrote the Investments section to read `c.marketInvestments` (ticker — name, value, category,
+shares, cost basis, gain/loss) and `c.savedPortfolio` (model name + holding count); dropped the dead
+`c.physicalAssets` branch (customAssets are the physical assets — now surfaced with their `cat` under
+"Accounts & savings"). Pure read-only export serialization — **not** the save path. node harness
+(`_aiexport_harness.mjs`, replicates the section verbatim): current omits $60k MI → fixed itemizes both
+holdings and the listed assets reconcile exactly to `totalA` ($68k). English-only AI-prompt content (no
+new translation keys — D-3 N/A). Found in the item-1 `utils/aiExport.js` correctness scan.
+
 ## v0.83.20 — 2026-06-26 — fix(summary): SummarySection uses effectiveMin + includes marketInvestments
 
 `SummarySection` (the advisor's **Summary** report tab, `clientReports.jsx:52`) was the last report

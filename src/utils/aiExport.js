@@ -70,18 +70,28 @@ function gaClientAIText(client) {
   push("");
   push("## Accounts & savings");
   (c.accounts || []).forEach(a => push(line(a.name || "Account", (a.type || "account") + " " + $(a.value) + (a.apy ? " @ " + a.apy + "% APY" : ""))));
-  (c.customAssets || []).forEach(a => push(line(a.name || "Asset", $(a.value))));
+  // customAssets ARE the "physical assets" (golden-anchor-logic §6 — there is no c.physicalAssets field);
+  // surface each asset's category so the AI knows real estate vs vehicle vs metals.
+  (c.customAssets || []).forEach(a => push(line(a.name || "Asset", $(a.value) + (a.cat ? " (" + a.cat + ")" : ""))));
   if (!(c.accounts || []).length && !(c.customAssets || []).length) push("- none recorded");
   push("");
-  if ((c.physicalAssets || []).length) {
-    push("## Physical assets");
-    (c.physicalAssets || []).forEach(p => push(line(p.name || "Asset", (p.cat || "") + " " + $(p.value))));
-    push("");
-  }
-  if ((c.investments || []).length || c.portfolio) {
+  // Market investments (golden-anchor-logic §6: c.marketInvestments {ticker,name,value,cat,shares,costBasis}).
+  // These ARE counted in totalA (the "Total assets" metric above) — without itemizing them the AI sees an
+  // unexplained gap between Total assets and the listed holdings. (The old code keyed on c.investments /
+  // c.portfolio, neither of which exists in the data model, so investments never appeared. ISS-52.)
+  const mInvest = Array.isArray(c.marketInvestments) ? c.marketInvestments : [];
+  if (mInvest.length || c.savedPortfolio) {
     push("## Investments");
-    (c.investments || []).forEach(iv => push(line(iv.ticker || iv.name || "Holding", $(iv.value || 0) + (iv.shares ? " (" + iv.shares + " sh)" : ""))));
-    if (c.portfolio) push(line("Portfolio model", typeof c.portfolio === "string" ? c.portfolio : JSON.stringify(c.portfolio)));
+    mInvest.forEach(iv => {
+      const v = +iv.value || 0, cb = +iv.costBasis || 0, g = v - cb;
+      push(line((iv.ticker || iv.name || "Holding") + (iv.ticker && iv.name ? " — " + iv.name : ""),
+        $(v) + (iv.cat ? " (" + iv.cat + ")" : "") + (iv.shares ? ", " + iv.shares + " sh" : "")
+        + (cb ? ", cost basis " + $(cb) + " (" + (g >= 0 ? "+" : "−") + $(Math.abs(g)) + ")" : "")));
+    });
+    if (c.savedPortfolio) {
+      const sp = c.savedPortfolio;
+      push(line("Portfolio model", typeof sp === "string" ? sp : (sp.nameKey || sp.name || "custom") + (Array.isArray(sp.holdings) ? " (" + sp.holdings.length + " holdings)" : "")));
+    }
     push("");
   }
   push("## Goals");
