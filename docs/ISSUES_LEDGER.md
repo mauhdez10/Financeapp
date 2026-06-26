@@ -11,6 +11,7 @@
 
 | ID | Area | Status | One-line | Notes / owner question |
 |---|---|---|---|---|
+| ISS-40 | calc / chart | 🟡 | `InterestCalc` summary "Final value" honors the compound-frequency selector (pf=12/4/1, v0.72.3); the `CompoundGrowthStack` chart below it always compounds monthly → chart endpoint disagrees with the headline number for Quarterly/Annual | **Documented** as intended in `golden-anchor-logic §4` ("the growth-stack chart still draws the monthly approximation") — so NOT a blind-fix. Fix is additive (optional `freq` prop on the chart, default 12 preserves all other behavior; only InterestCalc passes it) + headlessly math-verifiable. Queued as owner yes/no in CRUISE_QUESTIONS 2026-06-26. |
 | ISS-38 | security / db | 🟡 | `set_updated_at` trigger fn has mutable `search_path` (Supabase advisor `0011`) | Low risk; fix = 1-line DDL `ALTER FUNCTION … SET search_path=''`. Prod-DB migration → attended/owner-greenlit, not autonomous. Queued in CRUISE_QUESTIONS 2026-06-26. |
 | ISS-37 | security / auth | 🟡 | Leaked-password protection (HaveIBeenPwned) disabled in Supabase Auth | Owner dashboard toggle, free, no code. Rec: enable. Queued in CRUISE_QUESTIONS 2026-06-26. |
 | ISS-09 | lint / hooks | 🟡 | `react-hooks/*` (static-components, rules-of-hooks, exhaustive-deps, set-state-in-effect) | Component-structure + hook-order (pitfalls #13/#17). Attended review only — NOT a safe autonomous bulk sweep. (One single, verifiable instance — the `CalculatorsPage` cascading-render — was fixed in isolation v0.83.13; the bulk remains attended.) |

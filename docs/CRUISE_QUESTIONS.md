@@ -6,6 +6,31 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — bugs/correctness (ordered-map item 1) · owner yes/no (appended by finance-cron)
+
+Deep item-1 scan of the calculators + shared money math (`finance.js`, `calculators.jsx`,
+`charts.jsx`). The known calc bugs are all shipped (ISS-28–36/39); two findings remain:
+
+- **`ratFmt` unused `abs` (finance.js:7)** — confirmed **harmless dead code**, not a bug:
+  `currentRatio` and `dsr` are ratios of non-negative quantities, so `v` is never negative and
+  `Math.abs(v)` could never differ. Pure ISS-08 cosmetic debt — no action, no question.
+- **ISS-40 (NEW) — InterestCalc chart vs headline disagree at Quarterly/Annual.** The summary
+  "Final value" / "Of which interest" honor the compound-frequency selector (pf=12/4/1, wired in
+  the owner-approved v0.72.3), but the `CompoundGrowthStack` chart directly below always compounds
+  **monthly** (`mr=r/12`). So when a user picks **Quarterly** or **Annual**, the chart's endpoint
+  shows a *higher* number than the headline "Final value" — a visible inconsistency. This is
+  **documented as the current behavior** in `golden-anchor-logic §4` ("the growth-stack chart still
+  draws the monthly approximation"), i.e. v0.72.3 deliberately scoped freq to the summary only — so
+  I will not silently change documented logic. **The fix is small + safe:** add an optional
+  `freq=12` prop to `CompoundGrowthStack` (default preserves every other caller — it's used by
+  InterestCalc ONLY) and have it mirror the summary's exact formula (`pr=r/pf, n=y·pf,
+  perDep=monthly·12/pf`); pass `freq={+f.freq||12}` from InterestCalc. Headlessly math-verifiable
+  (the new series equals the summary). **Rec: YES — make the chart honor the selector so its
+  endpoint matches the headline; it's the kind of consistency a finance client would notice. (Or,
+  if you prefer the chart stay a simple monthly illustration, say NO and I'll just annotate the
+  chart "monthly approximation" so the mismatch is explained.)** Either way I'll update
+  `golden-anchor-logic §4` in the same change.
+
 ## 2026-06-26 — security review (ordered-map item 3) · owner yes/no (appended by finance-cron)
 
 Ran a full security pass: `npm audit`, tracked-source secret scan, and the Supabase security
