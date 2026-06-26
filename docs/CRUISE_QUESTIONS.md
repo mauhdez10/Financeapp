@@ -6,6 +6,45 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-26 — ISS-49 write-path traced: premise INVERTED, real save-path bug found · owner yes/no (appended by finance-cron)
+
+Traced the `customAssets` vs `properties` write path the ISS-49 note flagged for follow-up, and
+proved the lifecycle with a node harness (replicates `mk`/`mig`/`getProperties`/`totalA` verbatim).
+**ISS-49's premise is backwards, and the real bug is bigger:**
+
+- `properties[]` has **no user-edit write path** anywhere (grep across `src`: only `mk()`→`[]` and
+  `mig()` ever write it). `CustomAssetsSection.save` writes `customAssets` only. So
+  `getProperties(c)` (`finance.js:59`) prefers a **phantom alias** that `mig` freezes to a one-time
+  snapshot of `customAssets` and then **preserves verbatim** on every later load
+  (`properties:Array.isArray(c.properties)?c.properties:cleanProps`; `upClient` runs `mig` before
+  every save, so the stale value persists).
+- **Harness result.** *Fresh client* (`mk` seeds `properties:[]`): empty → `getProperties` falls back
+  to `customAssets` forever → **no divergence, ever.** *Legacy/SEED blob* (had assets but no
+  `properties` key on first load): first `mig` injects `properties = customAssets` snapshot; a later
+  asset edit (480k→600k) leaves `properties` stale → **`getProperties`→canonical `totalA` = 485,200
+  (STALE)** while RatioContent/FinancialStatementsTab reading raw `customAssets` = **605,200
+  (CURRENT)**. So the two surfaces ISS-49 called "wrong" are the **correct** ones; **`getProperties`
+  is the stale path.**
+- **Why it matters:** `getProperties` feeds `totalA`, which drives Summary, FullReport, the A&L tab,
+  the **share portal + linked overview**, AI export, and `monthlyRows.net_worth`
+  (`finance.js:98` → `client_monthly_summary` → the dashboard trend chart). So an asset-edit on an
+  affected client silently understates net worth across the canonical surfaces **and the saved
+  time-series**.
+
+**This is ⛔attended** — the fix touches `mig`/`getProperties` (shared normalization + canonical money
++ the cms save path) and `properties` sits in the portal sanitize allow-list — so I did **not** push a
+code change; I only re-framed ISS-49 in the ledger.
+
+- **Recommended fix (Rec: YES, attended):** in `mig`, **re-derive `properties` from `cleanProps`
+  every load** — drop the `Array.isArray(c.properties)?c.properties:` preserve-branch so the alias is
+  always == `customAssets` and can never go stale. Safe because **no code writes `properties`
+  independently** (proven by grep), so there is no real value to clobber. When you greenlight, I'll
+  apply it through `finance-app-updater`, re-run the harness + an attended portal/A&L/report spot-check
+  on the test account, and verify the cms net-worth trend re-derives correctly. (Alternative if you'd
+  rather minimize the diff: delete the `c.properties?.length?properties:` preference in
+  `getProperties` and have it always return `customAssets` — but that leaves a now-unused `properties`
+  field still in the portal allow-list, so the `mig` fix is cleaner.)
+
 ## 2026-06-26 — bugs/correctness (ordered-map item 1) · owner yes/no (appended by finance-cron)
 
 Deep item-1 scan of the calculators + shared money math (`finance.js`, `calculators.jsx`,
