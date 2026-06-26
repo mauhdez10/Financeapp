@@ -2,6 +2,31 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.22 — 2026-06-26 — fix(portal): asset-allocation donut no longer double-counts property (ISS-54)
+
+**FIX:** The share-portal overview (`pages/portal.jsx`, the `/portal?token=…` page) and the linked-client
+`LinkedOverview` both computed the "Property & assets" donut slice (`propV`) as
+`[].concat(c.customAssets||[], c.properties||[])` — i.e. the **union** of both arrays. But `customAssets`
+and `properties` are **mutually-exclusive aliases**: `getProperties(c)` (`utils/finance.js:59`) picks
+`properties` when non-empty, else falls back to `customAssets`, and canonical `totalA` counts
+properties-**or**-customAssets **once, never both** (`golden-anchor-logic §6`, stated verbatim).
+
+**WHY it mattered:** the donut's center value is canonical `totalA(c)`, but a slice that unions both arrays
+overstates property value whenever `c.properties` is non-empty — so the allocation slices won't reconcile
+to the donut's own center total. Reachable for any ISS-49-class legacy blob whose `properties` was frozen
+non-empty (the slice sums to ~2× the property value), and it would become **universal** for every client
+with custom assets once the recommended ISS-49 `mig` fix lands (which makes `properties` always equal
+`customAssets`). Same root as ISS-49 (the `properties`/`customAssets` alias) but a distinct,
+independent **display double-count**.
+
+**CHANGED:** both `propV` derivations now use canonical `getProperties(c)` (added to the `utils/finance`
+import) — exactly the chooser `totalA` uses, so the slices reconcile to the donut center. Pure display
+derivation on sanitized/linked read data — **not** the save path. node harness (`scratchpad/iss54.mjs`,
+replicates the exact code): fresh client (`properties:[]`) unchanged; legacy non-empty `properties` $200k
+home → current slices sum $480k vs canonical $280k center (−$200k double-count) → fixed reconciles to
+$280k; post-ISS-49-fix world → fixed reconciles $685k vs current $1.29M. No new visible strings (slice
+labels already EN/ES — D-3 N/A). Found in the item-1 portal/LinkedOverview correctness scan.
+
 ## v0.83.21 — 2026-06-26 — fix(aiExport): market investments now itemized in the AI client export (ISS-52)
 
 **FIX:** The AI-readable client export (`utils/aiExport.js`, `gaClientAIText`) never listed the client's

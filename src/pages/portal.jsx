@@ -5,7 +5,7 @@ import { Anchor } from "lucide-react";
 import { GOLD, makeDark, makeLight, mINP, mCARD } from "../styles/theme";
 import { ThemeCtx, useTh, HideCtx } from "../contexts/theme";
 import { _gaLang } from "../constants/meta";
-import { fmtDate, fmt, vEmail, sumB, sumN, sumMin, totalA, totalL, liquidA } from "../utils/finance";
+import { fmtDate, fmt, vEmail, sumB, sumN, sumMin, totalA, totalL, liquidA, getProperties } from "../utils/finance";
 import { Donut, Waterfall, SmoothAreaLine, RadialGauge } from "../components/charts";
 import { SC, Modal } from "../components/primitives";
 import { supabase, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaCreateClientLink, gaListClientLinks, gaRevokeClientLink, gaSendLinkInvite } from "../services/supabase";
@@ -108,7 +108,7 @@ function PublicPortal(){
   const efMonths=+c.efMonths||3,efTarget=bills*efMonths;
   const cash=Math.round((c.accounts||[]).reduce((s,a)=>s+(+a.value||0),0));
   const invest=Math.round((c.marketInvestments||[]).reduce((s,a)=>s+(+a.value||0),0));
-  const propV=Math.round([].concat(c.customAssets||[],c.properties||[]).reduce((s,a)=>s+(+a.value||0),0));
+  const propV=Math.round(getProperties(c).reduce((s,a)=>s+(+a.value||0),0));
   const assetSlices=[{label:L("Cash & accounts","Efectivo y cuentas"),value:cash,color:th.pos},{label:L("Investments","Inversiones"),value:invest,color:th.accent},{label:L("Property & assets","Propiedad y bienes"),value:propV,color:th.blue||th.warn}].filter(x=>x.value>0);
   const snaps=Array.isArray(c.monthSnapshots)?c.monthSnapshots:[];
   const trend=snaps.slice(-6).map(x=>({label:String(x.label||"").split(" ")[0],debt:Math.round(+x.debt||0),savings:Math.round(+x.savings||0)}));
@@ -213,7 +213,7 @@ function LinkedOverview({data,lang}){
   const efMonths=+c.efMonths||3,efTarget=bills*efMonths;
   const cash=Math.round((c.accounts||[]).reduce((s,a)=>s+(+a.value||0),0));
   const invest=Math.round((c.marketInvestments||[]).reduce((s,a)=>s+(+a.value||0),0));
-  const propV=Math.round([].concat(c.customAssets||[],c.properties||[]).reduce((s,a)=>s+(+a.value||0),0));
+  const propV=Math.round(getProperties(c).reduce((s,a)=>s+(+a.value||0),0));
   const slices=[{label:L("Cash & accounts","Efectivo y cuentas"),value:cash,color:th.pos},{label:L("Investments","Inversiones"),value:invest,color:th.accent},{label:L("Property & assets","Propiedad y bienes"),value:propV,color:th.blue||th.warn}].filter(x=>x.value>0);
   const snaps=Array.isArray(c.monthSnapshots)?c.monthSnapshots:[];
   const trend=snaps.slice(-6).map(x=>({label:String(x.label||"").split(" ")[0],debt:Math.round(+x.debt||0),savings:Math.round(+x.savings||0)}));
