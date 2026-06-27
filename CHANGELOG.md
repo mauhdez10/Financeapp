@@ -2,6 +2,28 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.51 — 2026-06-27 — fix(a11y): name the 5 icon-only "×" remove buttons for screen readers (ISS-85)
+
+**FIX (accessibility):** Five icon-only `×` *remove* controls had no accessible name —
+`clientCalcs.jsx:145` (remove debt scenario), `clientModals.jsx:14` (remove a card promo), and
+`clientReports.jsx:269/286/290` (remove a portfolio / main-pack / alt-pack holding). They carried
+neither `aria-label` nor `title`, so a screen reader announced only the bare glyph ("times") with no
+indication of which row's delete button had focus. The prior a11y sweeps (ISS-72 v0.83.40 covered
+`Modal`/`IAdd`/intake; ISS-83 v0.83.49 covered the admin close buttons) targeted *close* buttons and
+never traced these *remove-row* controls.
+
+**WHY:** Icon-only buttons need a programmatic name (WCAG 4.1.2 / 2.5.3). Reused the row's own
+already-rendered item name so each control speaks its target: `aria-label`/`title` =
+`` `${t?.removeSvc||"Remove"} ${item}` `` where `item` is `d.name` (scenario) / `p.label` (promo) /
+`tOf(h)` / `h.ticker` / `s.ticker` (holdings) → e.g. "Remove VOO" (EN) / "Quitar VOO" (ES).
+
+**CHANGED:** `src/components/clientCalcs.jsx`, `src/components/clientModals.jsx`,
+`src/components/clientReports.jsx` (×3 buttons); build marker → `v08351`. **No translation keys added**
+— reuses the existing bilingual `removeSvc` (`"Remove"`/`"Quitar"`), so D-3 symmetry is unchanged.
+Pure additive DOM attributes — no behavior, save-path, or logic change → autonomous-safe push (same
+class as ISS-72/83). Gates: `npm run build` clean (3.35s); `npm run lint` 408 errors = baseline (0 new
+in the 3 edited files); EN/ES symmetry unchanged.
+
 ## v0.83.50 — 2026-06-27 — fix(pdf): emailed Complete/Financial report assets table omitted market-investment line items (ISS-84)
 
 **FIX (correctness — client-facing PDF deliverable):** In the server-side PDF builder
