@@ -18,8 +18,6 @@ function gaClientAIText(client) {
   const minDebt = sumMin(c.cards || []);
   const loanPay = (c.loans || []).reduce((s, l) => s + (+l.payment || 0), 0);
   const tA = totalA(c), tL = totalL(c), liquid = liquidA(c);
-  const cardDebt = (c.cards || []).reduce((s, x) => s + (+x.balance || 0), 0);
-  const loanDebt = (c.loans || []).reduce((s, x) => s + (+x.balance || 0), 0);
   const leftover = net - bills - minDebt - loanPay;
   const efMonths = bills > 0 ? liquid / bills : 0;
   const dsr = net > 0 ? ((minDebt + loanPay) / net) * 100 : 0;

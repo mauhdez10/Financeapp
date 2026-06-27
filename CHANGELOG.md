@@ -2,6 +2,18 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## chore(lint) — 2026-06-27 — remove 2 dead intermediates from utils/aiExport.js (ISS-08 partial)
+
+**CHORE (no version bump — output byte-identical, no app behavior change):** Deleted the
+`cardDebt` and `loanDebt` `const`s in `src/utils/aiExport.js` (`gaClientAIText`) — both were
+computed via array-reduce then never read anywhere in scope (ESLint `no-unused-vars`). Confirmed
+against `golden-anchor-logic §3`: the canonical liability model is only `totalL = Σloans + Σcards`,
+with no separate "total card debt" / "total loan debt" metric, and the AI-export already prints
+aggregate Total liabilities plus each card/loan balance individually — so these were leftover draft
+intermediates, **not** a dropped canonical field. Pure data module, vars never consumed → export
+output unchanged. Lint errors 408→406 (chips ISS-08's `no-unused-vars` count 199→197). Build clean.
+No `__GA_BUILD__` bump (DoD: marker tracks app-behavior changes only).
+
 ## v0.83.51 — 2026-06-27 — fix(a11y): name the 5 icon-only "×" remove buttons for screen readers (ISS-85)
 
 **FIX (accessibility):** Five icon-only `×` *remove* controls had no accessible name —
