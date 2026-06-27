@@ -3,10 +3,10 @@
 > The 60-second orientation for a fresh chat: where the project is **right now**. Updated on every
 > batch (part of definition-of-done). For the full doc index see [LOGIC_MAP.md](LOGIC_MAP.md);
 > always-on rules in [UNIVERSAL_RULES.md](UNIVERSAL_RULES.md); known issues in
-> [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-26**.
+> [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-27**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-06-27-v08346-portfolio-tab-i18n` (v0.83.46).
+- **Marker:** `__GA_BUILD__ = 2026-06-27-v08347-es-missing-key-fallbacks` (v0.83.47).
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).

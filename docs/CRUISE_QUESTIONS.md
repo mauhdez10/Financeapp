@@ -6,6 +6,33 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-82 leftovers: 2 reused-name translation keys need a call-site split · owner yes/no (appended by finance-cron, ordered-map item 1/4)
+
+ISS-82 (shipped v0.83.47) added **38** missing translation keys to `src/translations.js` — keys that were
+referenced as `t.KEY||"English"` but never defined, so **Spanish users silently saw English** across the
+dashboard, tax calculator, intake form, profile modal, reports, promo card, and landing toggle. Two keys
+were **deliberately excluded** because they reuse ONE name for **different** strings, so adding a single
+shared key would change the **English** render at some call sites (i.e. not the purely-additive,
+EN-unchanged fix the other 38 were):
+
+- **`t.liquidAssets`** — used as both `"Liquid Savings"` and `"Liquid Assets"` (two genuinely different
+  labels). A shared key would force one English wording on both spots.
+- **`t.noClientsYet`** — used for four distinct messages: `"No clients yet"`, `"No clients yet."`,
+  `"No clients."`, and `"Add clients to populate."` (an empty-state title vs an instructional sub-line).
+  One key would collapse all four to a single English string.
+
+These currently render their **own English fallback** in both languages (so ES still leaks English on these
+specific spots), but fixing them properly means **splitting each into distinct keys at the call sites**
+(e.g. `liquidSavingsLbl` vs `liquidAssetsLbl`; `noClientsTitle` vs `noClientsSub`) — a small JSX edit, not a
+pure-data insert. Low risk but it touches component JSX (`dashboard.jsx` and the A&L/links surfaces), so I
+queued it rather than fold it into the data-only push.
+
+**Owner yes/no (my rec in *italics*):**
+1. **Split `liquidAssets` and `noClientsYet` into distinct per-meaning keys** and add proper EN/ES for each,
+   closing the last two ES-leak spots from the ISS-82 class? *Rec: **YES** — same D-3 correctness as ISS-82,
+   just needs the call-site rename; trivial and headlessly verifiable. I can do it autonomously next tick
+   (it's display-only, no save-path) if you'd rather I not wait — say "go" and I'll treat it as loop-ok.*
+
 ## 2026-06-27 — ISS-81: per-month `client_monthly_summary` asset buckets omit `marketInvestments` → dashboard net-worth history understated + phantom jump at "Now" · owner yes/no (appended by finance-cron, ordered-map item 1)
 
 Systematic item-1 `marketInvestments`-omission sweep (the ISS-47/50/51/52/53 bug class). Found a

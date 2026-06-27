@@ -2,6 +2,41 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.47 — 2026-06-27 — fix(i18n): 38 undefined translation keys leaked English to Spanish users (ISS-82)
+
+**FIX (D-3 bilingual — NEW detection class, ISS-30–33/55/57/58/61–79 i18n family):** a
+translation-key **integrity** cross-reference (every `t.KEY` / `gaLabel("KEY")` reference in `src/`
+against the `T.en` / `T.es` key sets) surfaced **38 keys that were referenced but never defined** in
+`src/translations.js`. Because each call site uses the `t.KEY||"English fallback"` pattern, EN rendered
+fine — but for Spanish users `t.KEY` resolved to `undefined`, so the site silently fell through to the
+**English** fallback. Result: ES advisors/clients saw English text on the **advisor dashboard** (Combined
+Debt/Net, Income vs Spending, Net Worth Distribution + tier labels, checking+savings caption), the
+**tax/paycheck calculator** (Effective Tax Rate, Where Each Dollar Goes, the pre-tax/federal/state/SS/
+Medicare slices, Home Value Composition, Locked Equity, Tax Rate), the **intake form** (Goals & notes,
+General notes, Short/Mid/Long-term horizon labels), the **profile/settings modal** (Custom color, Last
+verified backup), **client reports** (Cash flow walk, the donut Income center label), the **promo card**
+(Expired), and the **landing theme toggle** (Switch to dark/light mode).
+
+This class is invisible to a hardcoded-JSX-text scan: the strings *are* wired through `t.KEY` (they look
+localized), so only a key-existence cross-check catches them.
+
+- **WHY:** keys were referenced with an English `||` fallback but never added to the dictionaries, so the
+  fallback masked the gap in English and leaked English into Spanish — a silent D-3 (pitfall #9) violation.
+- **CHANGED:** `src/translations.js` — added all 38 keys to **both** `T.en` and `T.es`. EN value = the
+  existing inline fallback **verbatim** (so every English render is byte-identical — purely additive) and a
+  proper ES translation alongside. Currency-range tier labels (`$250K+`/`$50K–250K`/`$0–50K`) are
+  language-neutral → EN=ES by design. `src/App.jsx` build marker → `v08347-es-missing-key-fallbacks`.
+- **EXCLUDED (queued, not fixed here):** `liquidAssets` and `noClientsYet` reuse a single key name across
+  **distinct** strings ("Liquid Savings" vs "Liquid Assets"; four different no-clients messages), so a shared
+  key would change the EN render at some call sites (not additive). They need a call-site split into distinct
+  keys — queued as an owner yes/no in `CRUISE_QUESTIONS.md` (Rec: distinct keys, attended). `t.pricing` /
+  `t.resourcesHeadline` were left untouched: their fallbacks are already language-aware (`lang==="es"?…`).
+- **Verify:** build clean (790ms); lint 408 errors = baseline (`translations.js` not flagged — 0 new);
+  EN/ES symmetry **2110/2110** (was 2072, +38 each, 0 asymmetry, 0 empty); key-integrity re-scan shows
+  0 dangling-with-fallback keys remaining (only the 2 intentionally-excluded multi-fallback keys and the
+  recharts/Date/string-var false positives `t.value`/`t.x`/`t.getMonth`/`t.match`/…). Pure-data insert +
+  marker bump, every call site keeps its English fallback → no save-path touch → autonomous-safe push.
+
 ## v0.83.46 — 2026-06-27 — fix(i18n): Investments → Portfolio Models tab bilingual (ISS-79)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–78 i18n class):** the advisor **Investments tab**
