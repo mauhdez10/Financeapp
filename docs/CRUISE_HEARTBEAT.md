@@ -93,3 +93,4 @@ finance-cron · 2026-06-27T00:51:08Z · starting: ordered-map scan (bugs first; 
 finance-cron · 2026-06-27T00:55:00Z · shipped ISS-70 (v0.83.37) — ClientDetail archive/restore modal bilingual; completes the ISS-68/69 i18n queue
 
 finance-cron · 2026-06-27T01:06:00Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)
+finance-cron · 2026-06-27T01:12:30Z · shipped ISS-71 (v0.83.38) — PromotionsPage suggested-promos bilingual; pushed 3f362b7
