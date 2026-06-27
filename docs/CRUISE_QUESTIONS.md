@@ -6,6 +6,41 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-88: app-wide form inputs have no programmatic label (no accessible name for screen readers) · owner yes/no (appended by finance-cron, ordered-map item 4)
+
+Item-4 objective-a11y input-labeling sweep. The shared `Field` primitive (`components/primitives.jsx:190`)
+puts its `<label>` **next to** the input (sibling) with **no `htmlFor`**, and the input has no `id`. So the
+visible field label is **not programmatically associated** with the control. Measured:
+
+- `htmlFor` appears **0 times** anywhere in `src`.
+- Only **8 of 175** `<input>` elements carry their own `aria-label`.
+- The other ~150+ inputs (every NewClientModal / ClientForm / CardModal / report editor / profile / intake
+  field that uses `Field`, plus 3 ad-hoc `<div><label></label><input>` blocks in `clientEditor.jsx`)
+  therefore have an **empty accessible name** — a screen reader announces just "edit text". (WCAG 2.1
+  **1.3.1 Info & Relationships** + **4.1.2 Name, Role, Value**, both Level **A**.) Placeholders aren't a
+  label substitute and disappear once the user types.
+
+Same objective-a11y family as the already-shipped ISS-72/83/85 (icon-button names) and ISS-86 (autocomplete) —
+this is the **text-input naming** gap those sweeps didn't reach.
+
+**Why queued, not pushed:** the fix is in the **central shared `Field` primitive**, so it touches ~150 inputs
+on **every form in the app**. I can't headlessly verify the accessible name resolves correctly on all of them
+in an unattended tick, and a shared-primitive change with that blast radius is exactly the "anything you're
+unsure of → queue" case (push-safety §6) — not a blind cron push.
+
+**Recommended fix (additive, low-risk):** in `Field`, generate `const id=useId();`, set `<label htmlFor={id}>`,
+and inject the id into the child with `React.cloneElement(children,{id:children.props.id||id})`. That cleanly
+labels raw `<input>`/`<select>` children and the `{...rest}`-spreading custom inputs (`NumInp`/`MaskedNumInp`/
+`YearInp`); `SSNInput` (doesn't spread `...rest`) and `Row2` children become harmless no-ops (no worse than
+today). Then convert the 3 ad-hoc `clientEditor.jsx` blocks to `Field`. Verify post-change with Playwright
+`getByLabel()` on a sample of forms.
+
+**Q: Approve fixing the `Field` primitive (+ the 3 `clientEditor.jsx` blocks) to programmatically associate
+each label with its input via `useId`/`htmlFor`, in an attended session?** *Rec: **YES, attended** — real
+Level-A gap, additive fix, but verify across forms before pushing because it's the shared form primitive.*
+
+---
+
 ## 2026-06-27 — ISS-87: advisor Debt editing grid shows per-row raw card min/payoff that doesn't reconcile to its own canonical footer total · owner yes/no (appended by finance-cron, ordered-map item 1)
 
 Fresh item-1 correctness scan of `components/clientSections.jsx` (a never-money-traced surface). All the
