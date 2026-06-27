@@ -108,12 +108,12 @@ function PromotionsPage({settings,onSettingsChange,t}){
           return<tr key={p.id}><td colSpan={7} style={{padding:14,borderBottom:`1px solid ${th.cardBorder}`,background:th.accent+"06"}}><div style={{borderLeft:`3px solid ${th.accent}`,paddingLeft:12}}>
             {/* inline edit form (kept original layout) */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-            <div><Label>{(t.promotionName||"Promotion Name")+" *"}</Label><input style={INP} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder='e.g. "New Year Reset 2026"'/></div>
-            <div><Label>{(t.promoCode||"Promo Code")+" (optional)"}</Label><input style={INP} value={draft.code} onChange={e=>setDraft(d=>({...d,code:e.target.value.toUpperCase()}))} placeholder="e.g. WELCOME25"/></div>
+            <div><Label>{(t.promotionName||"Promotion Name")+" *"}</Label><input style={INP} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder={t.promoNamePh||'e.g. "New Year Reset 2026"'}/></div>
+            <div><Label>{(t.promoCode||"Promo Code")+" (optional)"}</Label><input style={INP} value={draft.code} onChange={e=>setDraft(d=>({...d,code:e.target.value.toUpperCase()}))} placeholder={t.promoCodePh||"e.g. WELCOME25"}/></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
             <div><Label>{t.discountTypeLbl||"Discount Type"}</Label><select style={INP} value={draft.type} onChange={e=>setDraft(d=>({...d,type:e.target.value}))}><option value="percent">{t.percentOff||"% off"}</option><option value="flat">{t.flatOff||"$ off"}</option><option value="bundle">{t.bundlePrice||"Bundle price"}</option></select></div>
-            <div><Label>{draft.type==="percent"?"% Off":draft.type==="flat"?"$ Off":"Bundle Price ($)"}</Label><MaskedNumInp style={INP} value={draft.value} onChange={e=>setDraft(d=>({...d,value:+e.target.value||0}))} min={0} max={draft.type==="percent"?100:99999} onKeyDown={bE}/></div>
+            <div><Label>{draft.type==="percent"?(t.percentOff||"% Off"):draft.type==="flat"?(t.flatOff||"$ Off"):((t.bundlePrice||"Bundle Price")+" ($)")}</Label><MaskedNumInp style={INP} value={draft.value} onChange={e=>setDraft(d=>({...d,value:+e.target.value||0}))} min={0} max={draft.type==="percent"?100:99999} onKeyDown={bE}/></div>
             <div><Label>{t.applyToLbl||"Applies To"}</Label><select style={INP} value={draft.appliesTo} onChange={e=>setDraft(d=>({...d,appliesTo:e.target.value}))}><option value="initial">{t.initialCheckup||"Initial Checkup"}</option><option value="quarterly">{t.quarterlyCheckup||"Quarterly Checkup"}</option><option value="monthly">{t.monthlySubscription||"Monthly Subscription"}</option><option value="yearly">{t.annualBundleLbl||"Annual Bundle"}</option><option value="all">{t.allServices||"All Services"}</option></select></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
@@ -158,12 +158,12 @@ function PromotionsPage({settings,onSettingsChange,t}){
     {editing&&!promos.find(p=>p.id===editing)&&<div style={{...mCARD(th),padding:14,marginBottom:20,borderLeft:`4px solid ${th.accent}`}}>
       <div style={{fontSize:13,fontWeight:800,color:th.accent,marginBottom:10}}>＋ {t.newPromotion||"New Promotion"}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        <div><Label>{(t.promotionName||"Promotion Name")+" *"}</Label><input style={INP} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder='e.g. "New Year Reset 2026"'/></div>
-        <div><Label>{(t.promoCode||"Promo Code")+" (optional)"}</Label><input style={INP} value={draft.code} onChange={e=>setDraft(d=>({...d,code:e.target.value.toUpperCase()}))} placeholder="e.g. WELCOME25"/></div>
+        <div><Label>{(t.promotionName||"Promotion Name")+" *"}</Label><input style={INP} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder={t.promoNamePh||'e.g. "New Year Reset 2026"'}/></div>
+        <div><Label>{(t.promoCode||"Promo Code")+" (optional)"}</Label><input style={INP} value={draft.code} onChange={e=>setDraft(d=>({...d,code:e.target.value.toUpperCase()}))} placeholder={t.promoCodePh||"e.g. WELCOME25"}/></div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
         <div><Label>{t.discountTypeLbl||"Discount Type"}</Label><select style={INP} value={draft.type} onChange={e=>setDraft(d=>({...d,type:e.target.value}))}><option value="percent">{t.percentOff||"% off"}</option><option value="flat">{t.flatOff||"$ off"}</option><option value="bundle">{t.bundlePrice||"Bundle price"}</option></select></div>
-        <div><Label>{draft.type==="percent"?"% Off":draft.type==="flat"?"$ Off":"Bundle Price ($)"}</Label><MaskedNumInp style={INP} value={draft.value} onChange={e=>setDraft(d=>({...d,value:+e.target.value||0}))} min={0} max={draft.type==="percent"?100:99999} onKeyDown={bE}/></div>
+        <div><Label>{draft.type==="percent"?(t.percentOff||"% Off"):draft.type==="flat"?(t.flatOff||"$ Off"):((t.bundlePrice||"Bundle Price")+" ($)")}</Label><MaskedNumInp style={INP} value={draft.value} onChange={e=>setDraft(d=>({...d,value:+e.target.value||0}))} min={0} max={draft.type==="percent"?100:99999} onKeyDown={bE}/></div>
         <div><Label>{t.applyToLbl||"Applies To"}</Label><select style={INP} value={draft.appliesTo} onChange={e=>setDraft(d=>({...d,appliesTo:e.target.value}))}><option value="initial">{t.initialCheckup||"Initial Checkup"}</option><option value="quarterly">{t.quarterlyCheckup||"Quarterly Checkup"}</option><option value="monthly">{t.monthlySubscription||"Monthly Subscription"}</option><option value="yearly">{t.annualBundleLbl||"Annual Bundle"}</option><option value="all">{t.allServices||"All Services"}</option></select></div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>

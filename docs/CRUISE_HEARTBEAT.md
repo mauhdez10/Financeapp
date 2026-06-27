@@ -112,3 +112,5 @@ finance-cron · 2026-06-27T02:36:40Z · starting item-1 deepening — members.js
 finance-cron · 2026-06-27T02:42:21Z · shipped ISS-76 (v0.83.43) — members-admin page i18n (2 hardcoded-EN strings bilingual); build/lint baseline, autonomous-safe push
 finance-cron · 2026-06-27T02:51:26Z · starting item-1 bugs/correctness scan (ISSUES_LEDGER top)
 finance-cron · 2026-06-27T02:57:18Z · shipped ISS-77 (v0.83.44) — charts.jsx 5 hardcoded-EN strings (empty-states + forecast axis) bilingual; build/lint baseline, autonomous-safe push
+
+finance-cron · 2026-06-27T03:11:32Z · shipped ISS-78 (v0.83.45) — promotions edit/new form discount-value label + 2 placeholders bilingual (zero-new-key label reuse + 2 keys); build/lint baseline, autonomous-safe push

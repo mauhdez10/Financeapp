@@ -2,6 +2,31 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.45 — 2026-06-27 — fix(i18n): Promotions edit/new form — discount-value label + placeholders bilingual (ISS-78)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–77 i18n class):** the Promotions create/edit form
+(`src/pages/marketing.jsx`, advisor surface) — present **twice**, the inline-edit row and the
+"＋ New Promotion" card — rendered the always-visible discount-value `<Label>` and two input
+placeholders in **hardcoded English regardless of language**. The ISS-71 sweep localized the
+*suggested-promotions* examples but missed this interactive form:
+
+- **`:116` & `:166`** the dynamic discount-value label — `draft.type==="percent"?"% Off":draft.type==="flat"?"$ Off":"Bundle Price ($)"`
+  → reuses existing **`percentOff`** ("% Off"/"% Descuento") / **`flatOff`** ("Flat $ Off"/"Descuento Fijo $")
+  / **`bundlePrice`** ("Bundle Price"/"Precio del Paquete")`+" ($)"`. This is the genuine violation —
+  an always-rendered form label, not a disappearing hint.
+- **`:111` & `:161`** the promo-name placeholder `'e.g. "New Year Reset 2026"'` → `t.promoNamePh`.
+- **`:112` & `:162`** the promo-code placeholder `"e.g. WELCOME25"` → `t.promoCodePh`.
+
+**+2 new EN/ES keys** (`promoNamePh`/`promoCodePh`) + 3 reused for the label (zero-new-key label fix).
+Each wired with an English fallback (`t.key||"…"`).
+
+**WHY autonomous-safe push:** pure display — the promo `draft` state, the `save`/`del`/`toggleActive`
+payloads, and `onSave` are untouched; only the rendered label/placeholder text changed. Not the save
+path (matches ISS-71/72/73/75/76/77).
+
+**Gates:** build clean (538ms); lint 427 (408 err, 19 warn) = baseline (0 new); new keys present
+EN+ES (promoNamePh×2, promoCodePh×2). Found in the item-1/4 advisor-form placeholder/label i18n re-scan.
+
 ## v0.83.44 — 2026-06-27 — fix(i18n): Chart empty-state + forecast axis labels bilingual (ISS-77)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–76 i18n class):** five user-visible strings in
