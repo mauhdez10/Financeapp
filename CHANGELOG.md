@@ -2,6 +2,22 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.40 — 2026-06-27 — fix(a11y/i18n): ClientDetail tab-scroll arrows aria-label + title bilingual (ISS-73)
+
+**FIX (WCAG 4.1.2 + D-3 bilingual — ISS-41/ISS-65/ISS-72 class):** the two icon-only tab-scroll
+arrows in `ClientDetail` (`src/App.jsx`) — the `‹`/`›` buttons that scroll the overflowing client-detail
+tab row — carried a **hardcoded-English `title`** (`"Scroll left"`/`"Scroll right"`) and **no
+`aria-label` at all**, so their only accessible name was the bare `‹`/`›` glyph and the tooltip stayed
+English in Spanish.
+
+- **`src/App.jsx`** — both buttons now set `title` **and** `aria-label` from `t.scrollTabsLeft` /
+  `t.scrollTabsRight` (each with an English fallback). `ClientDetail` already receives `t` in scope.
+- **+2 new EN/ES keys:** `scrollTabsLeft` (`"Scroll tabs left"` / `"Desplazar pestañas a la izquierda"`),
+  `scrollTabsRight` (`"Scroll tabs right"` / `"Desplazar pestañas a la derecha"`).
+- **Pure display/a11y attribute** — no scroll behavior, data, callbacks, or save path touched →
+  autonomous-safe push (matches ISS-41/65/72).
+- **Gates:** build clean; lint 427/408 = baseline (0 new); EN/ES symmetry 2050/2050.
+
 ## v0.83.39 — 2026-06-27 — fix(a11y/i18n): carousel + landing toggle aria-labels bilingual (ISS-72)
 
 **FIX (WCAG 4.1.2 + D-3 bilingual — ISS-41/ISS-65 class):** five icon-only `<button>`s exposed a

@@ -96,3 +96,5 @@ finance-cron · 2026-06-27T01:06:00Z · starting: ordered-map scan (bugs first; 
 finance-cron · 2026-06-27T01:12:30Z · shipped ISS-71 (v0.83.38) — PromotionsPage suggested-promos bilingual; pushed 3f362b7
 
 finance-cron · 2026-06-27T01:25:11Z · shipped ISS-72 (v0.83.39) — carousel + landing toggle aria-labels bilingual (a11y/i18n)
+
+finance-cron · 2026-06-27T01:39:07Z · shipped ISS-73 (v0.83.40) — ClientDetail tab-scroll arrows aria-label+title bilingual (a11y/i18n)
