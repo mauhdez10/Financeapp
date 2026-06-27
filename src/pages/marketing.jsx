@@ -17,7 +17,6 @@ function PromotionsPage({settings,onSettingsChange,t}){
   const[livePromos,setLivePromos]=useState(null);
   useEffect(()=>{let dead=false;fetch("/api/billing").then(r=>r.json()).then(j=>{if(!dead&&j&&j.ok&&j.configured&&(j.promos||[]).length)setLivePromos(j.promos);}).catch(()=>{});return()=>{dead=true;};},[]);
   const promos=Array.isArray(settings.promotions)?settings.promotions:[];
-  const services=Array.isArray(settings.services)&&settings.services.length?settings.services:["initial","quarterly","monthly","all"];
   const[editing,setEditing]=useState(null);
   const[draft,setDraft]=useState(null);
   const newPromo=()=>({id:gid(),name:"",type:"percent",value:25,appliesTo:"initial",startDate:"",endDate:"",code:"",clientFilter:"all",active:true,createdAt:new Date().toISOString()});
@@ -27,7 +26,6 @@ function PromotionsPage({settings,onSettingsChange,t}){
   const cancel=()=>{setEditing(null);setDraft(null);};
   const del=id=>{if(!confirm(t.confirmDeletePromo||"Delete this promotion?"))return;onSettingsChange({...settings,promotions:promos.filter(p=>p.id!==id)});};
   const toggleActive=id=>onSettingsChange({...settings,promotions:promos.map(p=>p.id===id?{...p,active:!p.active}:p)});
-  const describe=p=>{const val=p.type==="percent"?`${p.value}% off`:p.type==="flat"?`$${p.value} off`:`$${p.value} bundle price`;const when=p.startDate&&p.endDate?`${p.startDate} → ${p.endDate}`:p.startDate?`from ${p.startDate}`:p.endDate?`until ${p.endDate}`:"always active";return`${val} · ${when}`;};
   const isActive=p=>{if(!p.active)return false;const today=new Date().toISOString().slice(0,10);if(p.startDate&&today<p.startDate)return false;if(p.endDate&&today>p.endDate)return false;return true;};
   const Label=({children})=><div style={{fontSize:11,fontWeight:700,color:th.dim,marginBottom:4}}>{children}</div>;
   // v0.56 — stats derived from promo list for the header KPI strip.

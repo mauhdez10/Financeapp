@@ -534,9 +534,7 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
     blur:"blur(0px)", shadow:"0 1px 2px rgba(20,20,16,0.04), 0 12px 34px rgba(20,20,16,0.04)", pos:"#1F9D67", neg:"#DC5B5B",
   };
   const glass={background:P.card,border:`1px solid ${P.border}`,backdropFilter:P.blur,WebkitBackdropFilter:P.blur,boxShadow:P.shadow};
-  const pill={fontSize:12,padding:"10px 15px",minHeight:42,minWidth:52,borderRadius:99,...glass,color:P.muted,cursor:"pointer",fontWeight:600,fontFamily:"inherit"};
   const goldBtn={display:"inline-block",fontSize:13.5,fontWeight:700,padding:"13px 26px",borderRadius:11,background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",border:"none",cursor:"pointer",fontFamily:"inherit",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32), 0 8px 22px rgba(201,168,76,0.25)",letterSpacing:"0.01em"};
-  const ghostBtn={display:"inline-block",fontSize:13.5,fontWeight:600,padding:"13px 24px",borderRadius:11,background:"transparent",color:P.text,border:`1px solid ${P.border}`,cursor:"pointer",fontFamily:"inherit"};
   const eyebrow={fontSize:9.5,fontWeight:500,fontFamily:MONO,textTransform:"uppercase",letterSpacing:"0.14em",color:P.gold};
   const h2={fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:"clamp(1.7rem,3.4vw,2.4rem)",color:P.text,lineHeight:1.12,letterSpacing:"-0.015em",margin:"10px 0 12px"};
   // scroll-reveal: tag sections data-reveal; observer adds the rise. Reduced motion → instant.

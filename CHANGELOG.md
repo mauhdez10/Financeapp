@@ -25,6 +25,23 @@ unchanged). Pure additive DOM attribute, no behavior/logic/save-path change → 
 (same a11y-attribute class as ISS-75/83/85). **CHANGED:** `src/pages/landing.jsx`, `src/pages/intake.jsx`,
 `src/App.jsx` (marker bump), `docs/ISSUES_LEDGER.md`.
 
+## chore(lint) — 2026-06-27 — remove 4 dead standalone declarations in marketing/landing pages (ISS-08)
+
+**CHORE (no version bump — dead-code only, no app behavior change):** Removed 4 `no-unused-vars`
+declarations, all standalone single-line `const`s with side-effect-free RHS in **pure
+presentational/marketing pages** (no money compute, no role/RLS gate, no save/mutation path): in
+`pages/landing.jsx` the unused `pill` (:537) and `ghostBtn` (:539) style-object consts; in
+`pages/marketing.jsx` the unused `services` fallback-array const (:20) and the unused `describe`
+formatter fn (:30). Each was eslint-confirmed zero-reference (an unused `const` cannot affect render
+output by definition) and the RHS is a pure object/array/string expression — the safest dead-code
+sub-class (per ISS-08's "verified precise removals only"). **Gate:** `npx eslint src` `no-unused-vars`
+93→89 (−4, exactly the four removals); **every other rule count unchanged** (`static-components` 123,
+`no-empty` 23, `exhaustive-deps` 22, `rules-of-hooks` 20, …) and **`no-undef` stayed 0** so no live
+binding was dropped; `npm run build` clean. **Deliberately NOT touched:** the `no-unused-vars` residue
+sitting in money/save surfaces (`utils/finance.js`, `services/supabase.js`, `pages/portal.jsx`,
+`pages/intake.jsx`) and any `useState` pair whose value+setter are both dead (removing the hook would
+shift hook order — pitfall #13) — those are attended-only.
+
 ## chore(lint) — 2026-06-27 — document 3 intentional empty catches on the account-link path (ISS-08)
 
 **CHORE (no version bump — comment-only, no app behavior change):** Added intent comments to the 3
