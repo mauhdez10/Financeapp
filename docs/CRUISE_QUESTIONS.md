@@ -6,6 +6,45 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-81: per-month `client_monthly_summary` asset buckets omit `marketInvestments` → dashboard net-worth history understated + phantom jump at "Now" · owner yes/no (appended by finance-cron, ordered-map item 1)
+
+Systematic item-1 `marketInvestments`-omission sweep (the ISS-47/50/51/52/53 bug class). Found a
+**new, previously-unlogged save-path site** in `monthlyRows` (`utils/finance.js:120-122`) — the function
+that derives every `client_monthly_summary` row from a monthly snapshot's frozen client data:
+
+- It partitions assets into four buckets: `accounts` → `a_liquid`/`a_invest`/`a_other` (by `ACCT_META`),
+  `customAssets` → `a_property`. **`marketInvestments` is added to none of them.**
+- So `a_liquid + a_invest + a_property + a_other = totalA − Σ(marketInvestments)`, i.e. the persisted
+  per-month asset partition is short by the client's market holdings (canonical `totalA` **includes** MI,
+  `golden-anchor-logic §3`).
+
+The advisor dashboard reconstructs per-month net worth by summing exactly those four buckets in **three
+slots**: `netWorthBridge` (`dashboard.jsx:342` — its invest band is understated by MI every month),
+`netWorthForecast` history (`:403`), and `kpiSparklines` (`:485`). But each forecast/sparkline slot's
+**live** point uses `S.total_nw` = `Σ(totalA − totalL)` (MI **included**). So for any client holding
+market investments, the portfolio net-worth history sits low across every historical month then **jumps
+up at "Now"** by the aggregate MI amount — the same phantom-jump artifact as ISS-80, but on the net-worth
+series instead of the debt series.
+
+> Note: this **refines** the ISS-80 question's parenthetical ("the net-worth reconstructions include
+> `a_invest`, no market-investments omission"). That observation was correct that the dashboard *reads*
+> `a_invest`; tracing the *producer* shows `a_invest` itself is MI-incomplete at the source.
+
+**Why queued, not pushed:** `monthlyRows` writes the `client_monthly_summary` table (the scale-data-layer
+save path) **and** a real fix needs a backfill of existing rows (their stored `a_invest` already omits MI).
+Same ⛔attended disposition as ISS-18 (`monthlyRows.net_worth`), ISS-53 (`clientSummary.assets`), and
+ISS-60 (`monthlyRows.spending`) — all live in or beside this same function and want one coordinated backfill.
+
+**Owner yes/no (my rec in *italics*):**
+1. **Add `marketInvestments` to the `a_invest` bucket** in `monthlyRows`
+   (`aInvest += (d.marketInvestments||[]).reduce((a,x)=>a+(+x.value||0),0)`) so the four asset buckets sum
+   to canonical `totalA` and the dashboard net-worth history/bridge/sparkline stop understating MI-holding
+   clients? *Rec: **YES, attended** — purely additive (MI→invest band, mirroring the ISS-53 fix), and best
+   done **in one pass with the ISS-18 net_worth + ISS-60 spending fixes and a single `client_monthly_summary`
+   backfill** (same function, same row). Low urgency: it only affects the persisted historical series on the
+   advisor portfolio dashboard, not any live per-client number (per-client surfaces compute from the blob,
+   where `totalA` already counts MI).*
+
 ## 2026-06-27 — ISS-80: `debtVsSavingsTrend` dashboard chart mixes card-only history with total-debt live point · owner yes/no (appended by finance-cron, ordered-map item 1)
 
 Fresh item-1 correctness scan of `components/dashboard.jsx` (a surface prior scans hadn't traced).
