@@ -6,6 +6,38 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-87: advisor Debt editing grid shows per-row raw card min/payoff that doesn't reconcile to its own canonical footer total · owner yes/no (appended by finance-cron, ordered-map item 1)
+
+Fresh item-1 correctness scan of `components/clientSections.jsx` (a never-money-traced surface). All the
+*aggregate* metrics check out canonical vs `golden-anchor-logic §3` (income `sumN`/`sumG`, bills `sumB`,
+debt `sumMin` footer, `totalMoInt`, `liquidA`, `totalA`/`totalL`/net worth, EF target, allocation
+`avail = sumN − sumB − sumMin`). One display divergence in the **DebtSection** card grid (`:19`):
+
+- Per-row **Min Pay** = `fmtD(c.min)` (the raw stated minimum) and **Payoff** = `payM(bal,apr,c.min)`
+  (raw `c.min` as the payment).
+- The grid's own **footer Total** Min Pay = `fmtD(sumMin(client.cards))` = Σ canonical `effectiveMin`.
+- So the Min-Pay rows **don't add up to the Total directly below them**, in the same four cases ISS-59
+  fixed: 0/unset min → row shows `$0` but the total counts ~`round(1%·bal + interest)`; paid-off card
+  with a stale min → row shows the stale `$50` but the total counts `$0`; sub-$25 floor; min>balance
+  uncapped. The Payoff column compounds it — a 0-min card reads "—/never pays off" when `effectiveMin`
+  would actually amortize it.
+
+This is the **same bug class as ISS-59** (which was auto-fixed in the read-only report surfaces), but here
+it's the **advisor editing grid**.
+
+**Why queued, not pushed:** it's pure display (the `save`/`onUpdate` payloads write the raw card objects;
+the CardModal still owns the `min` field — disposition matches ISS-59), BUT it changes a visible number on
+the *primary advisor editing surface*, and unlike a read-only report an editing grid has a legitimate
+"show the value the advisor actually typed" counter-argument. Per push-safety, when unsure → queue.
+
+**Q: Fix the grid to show `effectiveMin(c)` per-row (Min Pay + Payoff), so the column reconciles with its
+footer and matches the canonical minimum used in cash flow — while the CardModal keeps editing the raw
+`min`?** *Rec: **YES** — same reconciliation fix as ISS-59; the grid row is read-only display (editing
+happens in the modal), so showing the effective min there is accurate, additive, and headlessly verifiable.
+The alternative (leave as-is) keeps an editor whose rows don't sum to their own total.*
+
+See ISSUES_LEDGER ISS-87.
+
 ## 2026-06-27 — ✅ RESOLVED autonomously (v0.83.48) — ISS-82 leftover: 2 reused-name keys split (was owner yes/no, now done)
 
 The ISS-82 leftover (`liquidAssets`, `noClientsYet`) was **fixed autonomously in v0.83.48** — no owner
