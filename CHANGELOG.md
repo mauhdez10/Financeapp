@@ -2,6 +2,37 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.50 — 2026-06-27 — fix(pdf): emailed Complete/Financial report assets table omitted market-investment line items (ISS-84)
+
+**FIX (correctness — client-facing PDF deliverable):** In the server-side PDF builder
+(`api/render-report-pdf.js`, `buildPrintHTML`), the **Assets line-item table** mapped only
+`accountsRows` + `customRows` — it **never rendered `marketInvestments` (`miRows`)** — yet its
+**Total row used `agg.totalAssets`, which already includes MI** (`computeAggregates:164-165`, and
+canonical `totalA = Σaccounts + Σproperties/customAssets + ΣmarketInvestments`, `golden-anchor-logic §3`).
+So for any client holding market investments, the PDF's assets table line items summed to
+`totalAssets − ΣMI` while the printed Total showed the full `totalAssets` — the visible rows didn't
+reconcile to the stated total, and the holdings were invisible in the breakdown. The Asset-Map treemap
+directly above already listed MI tiles, and the in-app balance sheet (`FinancialStatementsTab`,
+`clientReports.jsx:191`) renders MI as line rows under "Investment Assets" — so the PDF table was the
+lone surface omitting them. Same MI-omission class as ISS-47/50/53, here in the emailed report.
+
+- Added an `miRows` row map after `customRows` (label `📈 {ticker} {name}`, type = `a.cat` or
+  "Investment"/"Inversión", value = `a.value`), mirroring the treemap + in-app balance sheet.
+- Widened the table's render gate to `(accountsRows.length || customRows.length || miRows.length)` so a
+  client whose only assets are market investments still gets the table (previously hidden while the
+  Total/treemap showed a non-zero figure).
+- **No new translation keys** — the lone label uses the existing `isEs` inline ternary
+  ("Inversión"/"Investment") and otherwise renders stored data values (ticker/name/cat), consistent
+  with how account/custom rows render their data labels. EN/ES symmetry unchanged.
+
+**WHY:** A client with brokerage tickers / crypto now sees those holdings itemized in the emailed
+report's assets table, and the line items reconcile to the printed Total — matching what they already
+see on screen. Server-side display-only change (builds HTML from already-saved data; **no DB write, not
+the save path**); verified headlessly via the exported pure `buildPrintHTML` (node harness: MI rows
+present EN+ES, values + $395,000 total reconcile, MI-only client renders). Gates: build clean (618ms);
+lint 3 errors = pre-existing baseline (lines 720/734/1214, 0 new); EN/ES symmetry unchanged. Marker
+bumped per the ISS-27 (v0.83.11) api-fix precedent. → autonomous-safe push.
+
 ## v0.83.49 — 2026-06-27 — fix(a11y): add `aria-label` to the 2 Members-admin `×` close buttons (ISS-83)
 
 **FIX (a11y — accessible-name consistency):** The 2026-06-26 icon-button a11y sweep (v0.83.40, ISS-72)

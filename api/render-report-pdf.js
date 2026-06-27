@@ -702,12 +702,13 @@ export function buildPrintHTML(client, lang, advisor, include, reportType = "com
         ${liabTM.length ? treemapSVG(liabTM, 280, 180) : `<div style="padding:24px;font-size:10px;color:${MUTED};font-style:italic;text-align:center">${isEs?'Sin deudas':'Debt-free.'}</div>`}
       </div>
     </div>` : '';
-  const assetsTable = inc.assets && (accountsRows.length || customRows.length) ? `
+  const assetsTable = inc.assets && (accountsRows.length || customRows.length || miRows.length) ? `
     <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
       <thead><tr style="background:transparent;border-bottom:1px solid ${BORDER}"><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.item}</th><th style="text-align:left;padding:6px 8px;color:${MUTED};font-weight:600">${L.type}</th><th style="text-align:right;padding:6px 8px;color:${MUTED};font-weight:600">${L.value}</th></tr></thead>
       <tbody>
       ${accountsRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${(ACCT_ICONS[a.type] || "💼") + " " + htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(ACCT_LABELS[a.type] || a.type || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
       ${customRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">${htmlEscape(a.name || a.label || L.none)}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(a.type || a.kind || "")}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
+      ${miRows.map(a => `<tr style="border-bottom:1px solid ${BORDER}"><td style="padding:5px 8px;color:${TEXT}">📈 ${htmlEscape((a.ticker ? a.ticker + " " : "") + (a.name || a.label || L.none))}</td><td style="padding:5px 8px;color:${MUTED}">${htmlEscape(a.cat || (isEs ? "Inversión" : "Investment"))}</td><td style="padding:5px 8px;text-align:right;color:${BLUE};font-weight:600">${fmtUSD(a.value)}</td></tr>`).join("")}
       <tr style="background:#F8F6EF"><td colspan="2" style="padding:6px 8px;font-weight:700;color:${TEXT}">Total</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:${BLUE}">${fmtUSD(agg.totalAssets)}</td></tr></tbody>
     </table>` : (inc.assets ? `<div style="font-size:10px;color:${MUTED};font-style:italic">${L.none}</div>` : '');
 
