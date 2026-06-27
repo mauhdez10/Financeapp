@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.49 — 2026-06-27 — fix(a11y): add `aria-label` to the 2 Members-admin `×` close buttons (ISS-83)
+
+**FIX (a11y — accessible-name consistency):** The 2026-06-26 icon-button a11y sweep (v0.83.40, ISS-72)
+added `aria-label`+`title` to the icon-only close buttons in `Modal`/`IAdd` (`primitives.jsx`) and
+`intake.jsx`, but **missed `pages/admin.jsx`** — its two `×` close buttons (the avatar-picker header
+`:53` and the settings-editor header `:461`) still had **`title` only, no `aria-label`**. `title` is an
+unreliable accessible-name source on touch/mobile screen readers (no hover, inconsistent AT support), so
+those two buttons were the last icon-only controls not following the app's both-attributes convention.
+
+- Added `aria-label={t?.close||"Close"}` alongside the existing `title` on both buttons.
+- **No new translation keys** — reuses the existing `close` key (`"Close"` / `"Cerrar"`), so the ES
+  screen-reader label renders correctly and EN/ES symmetry is unchanged (2116/2116).
+
+**WHY:** Screen-reader users on the Members-admin avatar-picker and settings-editor modals now hear a
+spoken "Close"/"Cerrar" label, matching every other close button in the app. Purely additive DOM
+attribute, no behavior/save-path change → autonomous-safe a11y fix.
+
 ## v0.83.48 — 2026-06-27 — fix(i18n): split the 2 reused-name keys ISS-82 deferred — close the last ES-leak spots (ISS-82 leftover)
 
 **FIX (D-3 bilingual — closes the ISS-82 tail):** ISS-82 (v0.83.47) added 38 missing keys but

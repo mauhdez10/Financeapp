@@ -50,7 +50,7 @@ function AvatarPickerModal({open,current,onPick,onClose,t,theme}){
           <div style={{fontSize:18,fontWeight:800,color:th.text}}>{t?.chooseProfileImage||"Choose a profile image"}</div>
           <div style={{fontSize:11,color:th.muted,marginTop:4}}>{t?.chooseProfileImageHelp||"Click any image to set it as your avatar — it updates the top bar and sidebar instantly."}</div>
         </div>
-        <button onClick={onClose} title={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:4}}>×</button>
+        <button onClick={onClose} aria-label={t?.close||"Close"} title={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:4}}>×</button>
       </div>
       {groups.map(g=><div key={g} style={{marginTop:18}}>
         <div style={{fontSize:10,fontWeight:700,color:th.accent,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}}>{groupLabels[g]}</div>
@@ -458,7 +458,7 @@ function EmailSupportModal({onClose,t,settings,authUser}){
           <div style={{fontSize:18,fontWeight:800,color:th.text}}>📧 {t?.emailSupportTitle||"Email support"}</div>
           <div style={{fontSize:11,color:th.muted,marginTop:4,lineHeight:1.5}}>{t?.emailSupportHelp||"Sends your message to finance@goldenanchor.life. We'll reply to your advisor email on file."}</div>
         </div>
-        <button onClick={onClose} title={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:4}}>×</button>
+        <button onClick={onClose} aria-label={t?.close||"Close"} title={t?.close||"Close"} style={{background:"transparent",border:"none",color:th.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:4}}>×</button>
       </div>
       {!done?<>
         <div style={{marginBottom:10}}>
