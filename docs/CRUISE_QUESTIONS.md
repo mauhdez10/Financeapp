@@ -6,6 +6,42 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-89: app-wide custom interactive controls (`<div onClick>`) are not keyboard-operable · owner yes/no (appended by finance-cron, ordered-map item 4)
+
+Item-4 objective-a11y keyboard-operability sweep (the natural next dimension after ISS-88's label gap).
+Enumerated every `<div>`/`<span>` carrying an `onClick`: **49 sites across 15 files** have **no `tabIndex`,
+no `role`, and no `onKeyDown`** — so they're built as mouse-only controls and a keyboard or screen-reader
+user can't reach or activate them (WCAG 2.1 **2.1.1 Keyboard**, Level **A**; also **4.1.2** for the absent role).
+
+The recurring genuine-violation patterns:
+- **Collapsible Settings headers** — the accordion toggles in `profileModal.jsx:84/95/139/147/154/171`
+  (`<div onClick={()=>setXOpen(o=>!o)}>` with a ▲/▼ caret); each is the *only* way to expand that section.
+- **Clickable cards / rows / file-drops** — import mode-cards (`clientData.jsx:84`), the Excel/CSV drop-zones
+  (`:96/:108`, `<div onClick={()=>ref.current?.click()}>`), client-select rows (`:169`), select-all (`clientList.jsx:124`).
+- **Custom form controls in shared primitives** — `Tog` toggle switch (`primitives.jsx:198`) and the `CCircle`
+  color-swatch picker (`:220`).
+
+**Explicitly excluded (NOT violations):** modal/picker **backdrop overlays** (`Modal` `primitives.jsx:228`,
+the `CCircle` scrim) — those click-to-close affordances have a keyboard equivalent (the `×` button), which
+SC 2.1.1 allows.
+
+**Why queued, not pushed:** the highest-frequency fixes are in **shared primitives** (`Tog`/`CCircle`, reused
+everywhere), and the correct remedy — convert to `<button>` or add `role`/`tabIndex={0}`/`onKeyDown` — **adds
+new tab stops and changes focus order across the app.** That's a behavior change I can't headlessly verify on
+every surface in one cron tick → push-safety "anything you're unsure of → queue" + §8 (shared-surface).
+
+**Recommended fix (additive, attended):** (a) make `Tog` a real `<button role="switch" aria-checked>`; (b) give
+`CCircle`'s swatch + grid cells `role`/`tabIndex`/key-handler; (c) wrap the accordion headers + clickable
+cards/rows as `<button>` (or `role="button" tabIndex={0} onKeyDown` for Enter/Space), reusing the existing
+handlers; (d) confirm the hidden file `<input>` behind each drop-zone is focus-reachable, or expose the zone
+as a button. Verify with Playwright keyboard-tab traversal + `getByRole` before pushing.
+
+**Q: Approve making the custom interactive `<div onClick>` controls keyboard-operable (`<button>`/`role`+`tabIndex`+`onKeyDown`),
+in an attended session?** *Rec: **YES, attended** — real Level-A keyboard gap, additive fix, but it changes
+focus/tab order on shared primitives so verify traversal across forms before pushing.*
+
+---
+
 ## 2026-06-27 — ISS-88: app-wide form inputs have no programmatic label (no accessible name for screen readers) · owner yes/no (appended by finance-cron, ordered-map item 4)
 
 Item-4 objective-a11y input-labeling sweep. The shared `Field` primitive (`components/primitives.jsx:190`)
