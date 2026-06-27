@@ -6,6 +6,37 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-90: the debt-payoff plan double-counts installment-loan payments → understated `extra/mo` + projection · owner yes/no (appended by finance-cron, ordered-map item 1)
+
+Item-1 fresh correctness trace of `reportBlocks.jsx` (which also confirmed the two plan implementations —
+`PlanReportBlock` and the interactive `FinancialPlanTab` — are **byte-identical**, so no divergence between
+them; that resolves the older "dual implementation" lead).
+
+**The bug:** both plan surfaces compute `extra = max(0, net − bills − totalMin)`, where `totalMin` = card
+`effectiveMin` (canonical ✓) **plus a synthetic loan min** `max(25, round(1%·balance))` for every loan.
+But per `golden-anchor-logic §3/§6`, **loan payments already live in `bills`** — only card mins are a separate
+line (canonical cash flow = `sumN − sumB − sumMin`, cards-only). So `net − bills` already removed loan debt
+service; adding the synthetic loan min to `totalMin` subtracts it a **second time**. Net effect for any client
+with installment loans (mortgage/auto/student): **"Extra/mo" is understated, and the payoff timeline, EF-start,
+and invest-start months all skew** (the simulation also drives the loan to zero on its synthetic min while the
+real loan bill is separately draining cash).
+
+**Why queued, not pushed:** it changes a **visible projection on the primary advisor surface**, and the correct
+model is a **product decision**, not a mechanical fix — the plan deliberately synthesizes a loan min because
+loans store no `min` and a bill isn't linked 1:1 to a loan. → push-safety "anything you're unsure of → queue."
+
+**Options:** (a) loans treated like cards — loan payments NOT entered as bills, keep the synthetic min (current
+math becomes correct); (b) keep loan payments in bills and **drop loans from the payoff engine** (accelerate
+cards only); (c) keep loans in the engine but derive each loan's min from its real amortization (`mthPmt`) and
+**exclude that from `bills`** so it's counted once. Must align with how ISS-48/80 treat loan debt in snapshots/trend.
+
+**Q: Which loan-treatment model should the debt-payoff plan use — (a), (b), or (c)?** *Rec: confirm the intended
+model; likely **(c)** (most accurate) or **(a)** (simplest, if your data-entry convention already keeps loan
+payments out of bills). Whatever you pick, I'll apply it consistently across both plan surfaces + the ISS-48/80
+snapshot convention, with a node-harness before/after on a loan-holding fixture.*
+
+---
+
 ## 2026-06-27 — ISS-89: app-wide custom interactive controls (`<div onClick>`) are not keyboard-operable · owner yes/no (appended by finance-cron, ordered-map item 4)
 
 Item-4 objective-a11y keyboard-operability sweep (the natural next dimension after ISS-88's label gap).
