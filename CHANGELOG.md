@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## chore(lint) — 2026-06-27 — remove 7 dead leftovers across extracted files (ISS-08)
+
+**CHORE (no version bump — dead-code only, no app behavior change):** Removed 7 `no-unused-vars`
+leftovers (lint 336→329; only `no-unused-vars` moved, 106→99, every other rule count unchanged,
+`no-undef` re-lint stayed 0 so no live binding was dropped). (1) 3 dead React-hook imports — drop
+`useEffect`+`useRef` from `components/charts.jsx` (file keeps `useState`/`useMemo`) and `useCallback`
+from `components/primitives.jsx` (keeps `useState`/`useEffect`/`useRef`); each appeared only in its own
+import statement. (2) 2 fully-dead `useState` pairs whose value AND setter were both eslint-flagged and
+grep-confirmed single-occurrence: `newRowModal`/`setNewRowModal` (`components/clientReports.jsx:458`) and
+`clearConfirm`/`setClearConfirm` (`pages/intake.jsx:653`) — each a standalone line, no packed-line surgery.
+**WHY:** D-37-extraction leftovers, same safest-sub-class as the 89-import removal earlier today; `no-undef`
+gate proves nothing live was touched. **NOT removed** (left for an attended tick): the dead `doClearByStatus`
+bulk-delete helper + its sole-consumer import (deleting a *destructive* app capability is a judgment call,
+not an autonomous sweep) and the >250-col packed-line dead pairs in `App.jsx`/`clientData.jsx` (Edit risk
+> 2-error payoff). **CHANGED:** `components/charts.jsx`, `components/primitives.jsx`,
+`components/clientReports.jsx`, `pages/intake.jsx`, `docs/ISSUES_LEDGER.md`.
+
 ## chore(lint) — 2026-06-27 — remove 89 dead named imports from src/App.jsx (ISS-08)
 
 **CHORE (no version bump — dead-code only, no app behavior change):** Removed 89 unused named

@@ -650,7 +650,6 @@ function IntakeSubmissionsPage({t,authUser,onConvert,settings}){
   const[urlCopied,setUrlCopied]=useState("");
   const[editing,setEditing]=useState(null);
   const[deleteConfirm,setDeleteConfirm]=useState(null);
-  const[clearConfirm,setClearConfirm]=useState(null);
   // v0.29.0 — new UI state
   const[urlOpen,setUrlOpen]=useState(false);              // Public URL toggle (collapsed by default)
   const[inviteOpen,setInviteOpen]=useState(false);        // New Invite modal

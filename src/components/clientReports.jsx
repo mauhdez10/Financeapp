@@ -455,7 +455,6 @@ export function BackfillTab({client,onUpdate,t}){
   const[mode,setMode]=useState("update"); // "update" or "new"
   const[selRow,setSelRow]=useState(null);
   const[editDraft,setEditDraft]=useState(null);
-  const[newRowModal,setNewRowModal]=useState(false);
   const[newRowData,setNewRowData]=useState(null); // Data from add modal to push
   const[selMonths,setSelMonths]=useState(new Set());
   const INP=mINP(th);

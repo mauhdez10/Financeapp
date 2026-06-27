@@ -1,6 +1,6 @@
 // Extracted from App.jsx in Phase 1 of docs/ARCHITECTURE-PLAN.md (D-37, 2026-06-10).
 // Code is verbatim from the single-file era; comments may reference old App.jsx line numbers.
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useTh, useChartConfig } from "../contexts/theme";
 import { GOLD, stripLeadEmoji } from "../styles/theme";
 import { fmt } from "../utils/finance";

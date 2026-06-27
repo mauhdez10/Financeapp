@@ -1,6 +1,6 @@
 // Extracted from App.jsx in Phase 1b of docs/ARCHITECTURE-PLAN.md (D-37, 2026-06-10).
 // Code is verbatim from the single-file era; comments may reference old App.jsx line numbers.
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, Bell, HelpCircle, LogOut, ImageIcon, BarChart3 } from "lucide-react";
 import { useTh, useHN } from "../contexts/theme";
 import { GOLD, stripLeadEmoji, mCARD, mINP, mIIN, mTD, mTDR } from "../styles/theme";
