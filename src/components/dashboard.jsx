@@ -247,7 +247,7 @@ export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAd
     <KpiTile label={t?.kpiClients||"Clients"} value={clientCount} color={th.accent} spark={clientSeries} delta={dlt(clientSeries)} sub={t.thisMonth||"this month"}/>
     <KpiTile label={t.combinedNetMo||"Combined Net / mo"} value={hideNumbers?"●●●":fmtS(ti)} color={th.pos} spark={incomeSeries} delta={dlt(incomeSeries)} sub={t.vsLastMo||"vs last mo"}/>
     <KpiTile label={t.combinedDebt||"Combined Debt"} value={hideNumbers?"●●●":fmtS(td)} color={th.neg} spark={debtSeries} delta={(()=>{const d=dlt(debtSeries);if(!d)return null;return{...d,up:debtSeries[debtSeries.length-1]<debtSeries[debtSeries.length-2],down:debtSeries[debtSeries.length-1]>debtSeries[debtSeries.length-2]};})()}/>
-    <KpiTile label={t.liquidAssets||"Liquid Assets"} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
+    <KpiTile label={t.liquidAssetsLbl||"Liquid Assets"} value={hideNumbers?"●●●":fmtS(liqNow)} color={GOLD} spark={liqSeries} delta={dlt(liqSeries)} sub={t.checkingSavingsLbl||"checking + savings"}/>
   </div>;
 })()}
 
@@ -300,9 +300,9 @@ export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAd
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>💎 {t.netWorthDistributionHdr||"Net Worth Distribution"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthDistributionSub||"Active clients grouped by current net worth tier."}</div></div>
         <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minHeight:isMobile?180:200}}>
-          <Donut data={donutData} size={isMobile?120:130} innerRatio={isMobile?(40/60):(46/65)} paddingAngle={donutData.length>1?2:0} centerLabel={t.totalNet||"Total Net"} centerValue={fmtS(totalNW)} centerColor={totalNW>=0?GOLD:th.neg} placeholder={t.noClientsYet||"No clients yet"}/>
+          <Donut data={donutData} size={isMobile?120:130} innerRatio={isMobile?(40/60):(46/65)} paddingAngle={donutData.length>1?2:0} centerLabel={t.totalNet||"Total Net"} centerValue={fmtS(totalNW)} centerColor={totalNW>=0?GOLD:th.neg} placeholder={t.noClientsYetDonut||"No clients yet"}/>
           <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:8}}>
-            {donutData.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"Add clients to populate."}</div>:donutData.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}><span style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/><span style={{color:th.muted,flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.name}</span><span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{d.value}</span></div>)}
+            {donutData.length===0?<div style={{fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.addClientsToPopulate||"Add clients to populate."}</div>:donutData.map(d=><div key={d.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:11}}><span style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/><span style={{color:th.muted,flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.name}</span><span style={{color:d.color,fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{d.value}</span></div>)}
           </div>
         </div>
       </>;
@@ -437,7 +437,7 @@ export function Dashboard({clients,dashData,t,settings,setSettings,onSelect,onAd
       const data=(dashData?.deltas||[]).map(d=>{const a=+d.nw_first||0,b=+d.nw_now||0;return{label:d.first_name+" "+(d.last_name?d.last_name[0]+".":""),a,b,color:b>=a?"#10B981":"#EF4444"};});
       return<>
         <div style={{paddingRight:30}}><div style={{fontSize:11,fontWeight:700,color:th.dim,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>📐 {t.netWorthSlopeSlot||"Net Worth Prior vs Current"}</div><div style={{fontSize:10,color:th.muted,marginBottom:10}}>{t.netWorthSlopeSub||"Tufte slope chart per client."}</div></div>
-        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsYet||"No clients."}</div>:<SlopeGraph data={data} leftLabel={firstLbl||"Prior"} rightLabel="Now" height={isMobile?200:230} width={460}/>}
+        {data.length===0?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:30,fontSize:11,color:th.dim,fontStyle:"italic"}}>{t.noClientsShort||"No clients."}</div>:<SlopeGraph data={data} leftLabel={firstLbl||"Prior"} rightLabel="Now" height={isMobile?200:230} width={460}/>}
       </>;
     }},
     billsStacked:{id:"billsStacked",label:"💳 "+(t.billsStackedSlot||"Bills by Category"),render:()=>{

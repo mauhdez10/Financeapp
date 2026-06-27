@@ -2,6 +2,35 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.48 — 2026-06-27 — fix(i18n): split the 2 reused-name keys ISS-82 deferred — close the last ES-leak spots (ISS-82 leftover)
+
+**FIX (D-3 bilingual — closes the ISS-82 tail):** ISS-82 (v0.83.47) added 38 missing keys but
+**deliberately excluded 2** that reuse ONE name for genuinely different English strings, because a single
+shared key would have changed the EN render at some call sites (not the purely-additive fix the other 38
+were). Those 2 still leaked English to Spanish users on their specific spots. Split each into
+**distinct per-meaning keys**, with every EN value set to the **existing fallback verbatim** (so EN render
+is byte-identical — still purely additive) and a proper ES translation added:
+
+- **`t.liquidAssets`** → `liquidSavingsLbl` (`"Liquid Savings"` / "Ahorros Líquidos", the client-detail KPI,
+  `App.jsx`) **and** `liquidAssetsLbl` (`"Liquid Assets"` / "Activos Líquidos", the advisor portfolio KPI,
+  `dashboard.jsx`).
+- **`t.noClientsYet`** → four empty-state strings on the advisor dashboard: `noClientsYet`
+  (`"No clients yet."` / "Aún no hay clientes." — the 4 period-version sites: Treemap, ranked-bars,
+  KPI-strip, radar), `noClientsYetDonut` (`"No clients yet"` no-period, the Donut center placeholder),
+  `addClientsToPopulate` (`"Add clients to populate."`, the donut-legend empty state), and `noClientsShort`
+  (`"No clients."`, the slope-graph empty state).
+
+**WHY:** Spanish advisors/clients saw English on these last few i18n-class spots; the split removes the
+shared-name collision so each meaning gets its own EN+ES pair. **+6 new EN/ES keys** (2110→2116 each).
+
+**CHANGED:** `src/translations.js` (+6 keys ×2 langs), `src/App.jsx` (1 KPI label key rename + marker),
+`src/components/dashboard.jsx` (advisor KPI + 3 empty-state key renames; the 4 period-version sites keep
+the `t.noClientsYet` reference — now defined). **Autonomous-safe push (matches the ISS-61–82 i18n class):**
+pure display, every call site keeps its English fallback, EN render byte-identical, no logic/save-path
+touch. Gates: build clean (592ms); lint 408 err = baseline (0 new); EN/ES **2116/2116** (+6, 0 asym/empty);
+0 remaining `t.liquidAssets` refs; the 2 owner-queued leftovers from ISS-82 now resolved autonomously
+(EN-preserving split needed no product decision). Marker `2026-06-27-v08348-iss82-reused-key-split`.
+
 ## v0.83.47 — 2026-06-27 — fix(i18n): 38 undefined translation keys leaked English to Spanish users (ISS-82)
 
 **FIX (D-3 bilingual — NEW detection class, ISS-30–33/55/57/58/61–79 i18n family):** a
