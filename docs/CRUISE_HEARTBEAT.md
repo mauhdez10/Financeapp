@@ -114,3 +114,5 @@ finance-cron · 2026-06-27T02:51:26Z · starting item-1 bugs/correctness scan (I
 finance-cron · 2026-06-27T02:57:18Z · shipped ISS-77 (v0.83.44) — charts.jsx 5 hardcoded-EN strings (empty-states + forecast axis) bilingual; build/lint baseline, autonomous-safe push
 
 finance-cron · 2026-06-27T03:11:32Z · shipped ISS-78 (v0.83.45) — promotions edit/new form discount-value label + 2 placeholders bilingual (zero-new-key label reuse + 2 keys); build/lint baseline, autonomous-safe push
+
+finance-cron · 2026-06-27T03:34:18Z · shipped ISS-79 (v0.83.46) — Investments→Portfolio Models tab (InvestmentsTab, clientReports.jsx) ~20 hardcoded-EN strings across Portfolio/Main/Alt views bilingual; +13 keys + reuse of 14 pre-staged; build/lint baseline 2072/2072 sym; autonomous-safe push

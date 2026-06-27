@@ -2,6 +2,39 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.46 — 2026-06-27 — fix(i18n): Investments → Portfolio Models tab bilingual (ISS-79)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–78 i18n class):** the advisor **Investments tab**
+portfolio-model editor (`InvestmentsTab`, `src/components/clientReports.jsx`) — the Portfolio / Main
+Packages / Alternative Packages views — rendered **~20 hardcoded-English strings regardless of
+language** while the surrounding report surface is already bilingual. A Spanish advisor saw an English
+portfolio editor. Localized every UI-chrome string across all three views:
+
+- **Portfolio view:** the `💹 Portfolio` header, the `🗑 Remove from Report` / `📌 Include in Report`
+  / `📥 Export Holdings → Market Investments` action buttons, the per-rate `Save` button, the
+  `Expected annual return` caption, the `⚠️ Over 100%` / `Holdings {pct}%` status line, the
+  `Show Main`/`Show Alt` toggle, the `Name and description are pulled automatically…` note, the inner
+  `Alternative Packages` sub-header, the `Use Package`/`Add` buttons, and the **💡 PROJECTION** panel
+  (`From savings allocation:`, `Stocks:`, `Other:`, the `Contributed`/`Growth`/`Future Value
+  ({years}yr @ {ret}%)` rows).
+- **Main / Alt Packages views:** the two `💡 …help` blurbs, the `＋ Add Holding`/`Cancel` toggle, the
+  `Use Package`, `Add to Package`, and `Add to Client` buttons.
+
+**+13 new EN/ES keys** (`expectedAnnualReturn`, `over100Lbl`, `holdingsPctLbl`, `showMain`, `showAlt`,
+`tickerAutoNote`, `projectionHdr`, `fromSavingsAlloc`, `stocksColon`, `otherColon`, `futureValueLbl`,
+`mainPacksHelp`, `altPacksHelp`) **+ heavy reuse** of pre-staged-but-unwired keys (`usePackage`,
+`addToClient`, `addToPackage`, `addHolding`, `removeFromReport`, `includeInReport`, `contributed`,
+`portfolio`, `alternativePackagesLbl`, `exportHoldingsTitle`, `growth`, `save`, `cancel`, `yrAbbr`) —
+same "wire the existing key" pattern as ISS-71. `{port.risk} Risk` left as-is (constant data label,
+like ticker/pack names — not translated, consistent with prior sweeps).
+
+**WHY:** pure display — portfolio math (projection FV, allocation, payoff), the `onUpdate`
+payloads, `saveRates`/`useP`/`useMain`/`addToMainPack`/`addToAltPack` logic, and all stored values
+untouched; every string keeps an English fallback → **not the save path → autonomous-safe push**
+(matches ISS-71/76/77/78). **CHANGED:** `src/components/clientReports.jsx` (InvestmentsTab wiring),
+`src/translations.js` (+13 EN/ES keys), `src/App.jsx` (build marker).
+**Gates:** build clean (445ms); lint 427/408 = baseline (0 new); EN/ES 2072/2072 (0 asym).
+
 ## v0.83.45 — 2026-06-27 — fix(i18n): Promotions edit/new form — discount-value label + placeholders bilingual (ISS-78)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–77 i18n class):** the Promotions create/edit form
