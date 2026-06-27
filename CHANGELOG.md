@@ -2,6 +2,38 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.34 — 2026-06-27 — fix(i18n): interactive Financial Plan tab bilingual (ISS-67, ISS-66 sub-scope)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–66 class):** the **interactive** `FinancialPlanTab`
+(`components/clientReports.jsx`, the advisor-editable "Plan" tab) shared every Strategy-Plan string
+with the read-only `PlanReportBlock` localized in v0.83.33 (ISS-66), but rendered them **hardcoded
+English regardless of language** — the live editing surface lagged the report/PDF it feeds. Wired
+all of them, reusing the 14 ISS-66 keys verbatim:
+
+- `fmtDur` ("Now"/"mo"/"yr" → `durNow`/`moAbbr`/`yrAbbr`) and `addDate` (hardcoded `en-US` →
+  `_gaLang()`-locale) now bilingual, mirroring `reportBlocks.jsx` exactly.
+- The **"Phase N"** label (`phaseLbl`), the **🗺️ FINANCIAL ROADMAP (editable)** header
+  (`financialRoadmapHdr` + new `editableLbl`), the **🎉 Debt Free** callout (`debtFreeFocus`), the
+  **DEBT PAYOFF ORDER** "Min {x}/mo" line (`minPerMo`), all three **phase subs** + **note defaults**
+  (`phase1/2/3Sub`, `phase1/2/3NoteDefault`; interpolated `{strat}` resolves to localized
+  `avalanche`/`snowball`), the **INVESTMENT PROJECTION** row (`startsLbl`/`ofExtraCash`/
+  `fivePctYears`/`tenYears`/`twentyYears`/`growthSuffix`), the **"Start now"** badge (`startNow`).
+- Editable-UI bits the read-only block lacks: the **Avalanche/Snowball** toggle labels + their
+  short hints (new `avalancheHint`/`snowballHint`), the per-phase **✏️ Edit**/Cancel/Save-Note
+  buttons (reused `editLabel`/`cancel`/`saveNoteBtn`) + empty-note prompt (new `clickEditRec`), the
+  **ADDITIONAL NOTES / RECOMMENDATIONS** header (`additionalNotesRecsHdr.toUpperCase()`) + empty
+  state (new `noAddlNotes`), and the **CLIENT GOALS** block (new `clientGoalsHdr` + `goalShortTerm`/
+  `goalMidTerm`/`goalLongTerm`/`goalsLbl`, reused `noGoalsSet`/`saveGoalsBtn`).
+
+**WHY:** D-3 hard-lock — a Spanish advisor/client saw an English plan-editing UI even though the
+PDF it produces was already bilingual (ISS-66). **+10 new EN/ES keys** + 14 reused ISS-66 keys.
+**Pure display — the plan math (`calcPayoff`/`investFV`/`effectiveMin`) and the `onUpdate` save
+payloads (`planOverrides`/`planStrategy`/`notes`) are untouched; localized strings are defaults/
+labels never persisted (drafts initialize from `override||""`, goals save by key not label) → not
+the save path → autonomous-safe push.** **CHANGED:** `src/translations.js` (10 keys ×EN/ES),
+`src/components/clientReports.jsx` (26 display edits), `src/App.jsx` (marker). Gates: build clean;
+lint 408 err/19 warn = baseline (0 new); EN/ES 2014/2014.
+
 ## v0.83.33 — 2026-06-26 — fix(i18n): Strategy Plan report/PDF block bilingual (ISS-66)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–65 class):** `PlanReportBlock`
