@@ -109,3 +109,4 @@ finance-cron · 2026-06-27T02:11:00Z · shipped ISS-75 (v0.83.42) — Useful-Lin
 finance-cron · 2026-06-27T02:24:36Z · verify tick — prod healthy: live bundle == v0.83.42 (useful-links-search-aria), Playwright landing load 0 console errors, full render confirmed; item-1 autonomous queue drained, items 2/3 freshly done today
 
 finance-cron · 2026-06-27T02:36:40Z · starting item-1 deepening — members.jsx admin-page i18n investigation (obs 9712)
+finance-cron · 2026-06-27T02:42:21Z · shipped ISS-76 (v0.83.43) — members-admin page i18n (2 hardcoded-EN strings bilingual); build/lint baseline, autonomous-safe push
