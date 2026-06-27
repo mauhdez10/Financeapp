@@ -2,6 +2,40 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.33 — 2026-06-26 — fix(i18n): Strategy Plan report/PDF block bilingual (ISS-66)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–65 class):** `PlanReportBlock`
+(`components/reportBlocks.jsx`) — the **Strategy Plan** block rendered in the Monthly Report tab,
+the Financial-Statement Report tab, and the Full Report (so it ships in the **client-facing PDF
+report**) — wired only the KPI labels + strategy-caption keys; the entire roadmap body rendered
+**hardcoded English regardless of language**. A Spanish-speaking client received an English strategy
+plan. Localized every remaining string:
+
+- The **"Phase N"** label (reused `phaseLbl`), the **🗺️ FINANCIAL ROADMAP** header (reused
+  `financialRoadmapHdr`), the **🎉 Debt Free** callout, the **DEBT PAYOFF ORDER** per-debt
+  "Min {x}/mo" line, all three **phase subs** (Pay Off Debt / Build Emergency Fund / Invest), all
+  three **phase note defaults** (the coaching prose shown when the advisor hasn't typed an override),
+  the **INVESTMENT PROJECTION** row ("starts … · …% of extra cash", the 5/10/20-year labels,
+  "growth"), the **"Start now"** badge, and the **📝 Additional Notes / Recommendations** header.
+- **`fmtDur`** ("Now"/"mo"/"yr" → `durNow`/`moAbbr`/`yrAbbr`) and **`addDate`** (hardcoded `en-US`
+  locale → `_gaLang()`-driven, so month abbreviations localize) are now bilingual.
+- The interpolated `{strat}` word ("avalanche"/"snowball") resolves to the localized `avalanche`/
+  `snowball` key rather than the raw English strategy slug.
+
+**+11 EN/ES keys** (`debtFreeFocus`, `minPerMo`, `applyingExtraSub`, `phase1NoteDefault`,
+`phase2Sub`, `phase2NoteDefault`, `phase3Sub`, `startNow`, `phase3NoteDefault`,
+`additionalNotesRecsHdr`, `durNow`); **reused 14 pre-staged keys** (`phaseLbl`,
+`financialRoadmapHdr`, `avalanche`/`snowball`, `startsLbl`, `fivePctYears`/`tenYears`/`twentyYears`,
+`growthSuffix`, `ofExtraCash`, `moAbbr`/`yrAbbr`, plus the already-wired KPI/strategy keys). The
+full-phrase keys use global-token `.replace()` interpolation (`{amt}`/`{n}`/`{dur}`/`{strat}`/
+`{pct}`/`{s}`/`{r}`).
+
+**Pure display — no plan math (`calcPayoff`/`investFV`/`effectiveMin`), no stored payloads, no save
+path touched → autonomous-safe push.** Gates: build clean; lint 427/408 = baseline (0 new); EN/ES
+**2004/2004**; node symmetry+interpolation harness clean (zero asymmetry, zero leftover tokens).
+**Remaining sub-scope (next tick):** the interactive `PlanContent` (`clientReports.jsx`) shares the
+same strings — the keys added here are reused there. Found in the item-1/4 report-surface i18n scan.
+
 ## v0.83.32 — 2026-06-26 — fix(a11y+i18n): chart accessible names bilingual (ISS-65)
 
 **FIX (WCAG 4.1.2 accessible-name + D-3 bilingual — ISS-41 a11y class):** four pure-SVG chart

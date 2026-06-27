@@ -79,3 +79,5 @@ finance-cron · 2026-06-26T23:06:12Z · starting: ordered-map item 1 (bugs/corre
 finance-cron · 2026-06-26T23:21:17Z · starting: ordered-map scan (bugs first; ledger autonomous queue likely drained after v0.83.30 i18n cycle)
 
 finance-cron · 2026-06-26T23:36:14Z · starting: ordered-map scan (bugs first; ledger autonomous queue likely drained after v0.83.31 i18n cycle)
+
+finance-cron · 2026-06-26T23:51:14Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)
