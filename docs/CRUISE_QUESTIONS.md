@@ -6,6 +6,42 @@
 > should not decide alone, then moves on. Newest on top. The owner answers; answered entries are
 > pruned (kept one cycle as a pointer, then removed).
 
+## 2026-06-27 — ISS-80: `debtVsSavingsTrend` dashboard chart mixes card-only history with total-debt live point · owner yes/no (appended by finance-cron, ordered-map item 1)
+
+Fresh item-1 correctness scan of `components/dashboard.jsx` (a surface prior scans hadn't traced).
+Its aggregate ratio math is **correct** — DSR (`total_min/total_income`), savings-rate, EF
+(`liquid/bills`), and the radar's DTA (`total_debt/(total_nw+total_debt)`) all match
+`golden-anchor-logic §3`, and the net-worth reconstructions include `a_invest` (no
+market-investments omission). One **display inconsistency** surfaced in the **Debt vs Savings Trend**
+dashboard slot (`:350-352`):
+
+- Historical points plot **card-only** debt: `debt:+r.l_cards||0`.
+- The appended live `▶ Now` point plots **total** debt: `debt:Math.round(td)`, where `td =
+  S.total_debt` = cards **+** loans (`:226`).
+
+So for any client with installment debt (mortgage/auto/student), the trend line sits low across every
+historical month then **jumps up at "Now"** — purely because loans only appear in the final point —
+which reads as a debt increase that never happened. The chart is titled "Debt vs Savings Trend"
+(legend "Debt") and the dashboard's headline Total-Debt KPI is `S.total_debt`, so total-debt-throughout
+is the consistent reading. The per-month rollup row **already carries `l_loans_all`** (used 2 lines
+down in `netWorthBridge` and the net-worth series), so the fix needs no new data.
+
+**Why queued, not pushed:** `dashboard.jsx` is pure display (no save-path write), so a fix would be the
+same autonomous-safe class as ISS-54/59 — **but** it materially changes a visible main-dashboard chart,
+and an in-code `// CAVEAT:` shows the author was aware of the live-point compromise, leaving the
+card-only-history intent ambiguous (it *could* be a deliberate "revolving/behavioral debt" view).
+Per push-safety "anything you're unsure of → queue," same handling as the documented-intent chart
+mismatches ISS-40/42.
+
+**Owner yes/no (my rec in *italics*):**
+1. **Make the history match the live point** — `debt:(+r.l_cards||0)+(+r.l_loans_all||0)` so the whole
+   series shows total debt (cards + loans), consistent with the live `▶ Now` point and the chart title?
+   *Rec: **YES** — trivial, additive, no new data, headlessly verifiable; removes a misleading
+   debt-spike artifact on the main advisor dashboard. (If you'd rather the chart deliberately track only
+   revolving/credit-card debt — the "behavioral" debt that moves month-to-month — say NO and I'll instead
+   relabel the slot "Card Debt vs Savings" and switch the live point to a card-only figure for
+   consistency the other way.)*
+
 ## 2026-06-26 — ISS-60: `monthlyRows.spending` uses raw `c.min` (save path) · queued (appended by finance-cron, ordered-map item 1)
 
 While fixing the **display** raw-`c.min` divergences (ISS-59, shipped v0.83.27), I traced the same
