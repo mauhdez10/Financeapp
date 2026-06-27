@@ -213,7 +213,7 @@ function ResourcesPage({t}){
         <h1 style={{fontFamily:"'Newsreader',Georgia,serif",fontStyle:"italic",fontWeight:500,fontSize:30,color:th.text,margin:0,lineHeight:1.05}}>{t.resourcesHeadline||(_gaLang()==="es"?"Aprende los fundamentos":"Learn the fundamentals")}</h1>
         <p style={{fontSize:13,color:th.muted,margin:"9px 0 0",maxWidth:540,lineHeight:1.6}}>{t.resourcesDesc}</p>
       </div>
-      {!isMobile&&<div style={{display:"flex",gap:8}}><button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label="Previous">‹</button><button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label="Next">›</button></div>}
+      {!isMobile&&<div style={{display:"flex",gap:8}}><button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label={_gaLang()==="es"?"Anterior":"Previous"}>‹</button><button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label={_gaLang()==="es"?"Siguiente":"Next"}>›</button></div>}
     </div>
     <div ref={ref} onScroll={sync} style={{display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"84%":"400px",gap:20,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",padding:"4px 2px 14px"}}>
       {guides.map(g=>{const Ic=g.Icon;return<a key={g.key} data-rc href={g.url} target="_blank" rel="noopener noreferrer" className="ga-lift" style={{scrollSnapAlign:"start",textDecoration:"none",position:"relative",height:isMobile?340:460,borderRadius:18,overflow:"hidden",border:"1px solid "+th.cardBorder,display:"block",background:"linear-gradient(150deg, "+g.c+"2E 0%, "+th.glassBg+" 58%)"}}>
@@ -316,7 +316,7 @@ function PricingCarousel({lang,settings,onRequest,ctaLabel}){
     if(free)return<button className="ga-press" onClick={()=>{if(onRequest)onRequest(svc);else window.location.href="mailto:"+((settings&&settings.advisorEmail)||"mauricio@goldenanchor.life");}} style={{...base,background:"transparent",color:th.text,border:"1px solid "+th.cardBorder,cursor:"pointer"}}>{lbl}</button>;
     return<a className="ga-press" href={url||undefined} target={url?"_blank":undefined} rel="noreferrer" onClick={e=>{if(!url)e.preventDefault();}} style={{...base,background:url?"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)":th.inp,boxShadow:url?"inset 0 1px 0 rgba(255,255,255,0.32), 0 6px 16px rgba(201,168,76,0.22)":"none",color:url?"#16120A":th.dim,border:"none",cursor:url?"pointer":"not-allowed",opacity:url?1:0.6}}>{lbl}</a>;};
   return<div><div style={{display:"flex",alignItems:"center",gap:isMobile?8:14}}>
-    {!isMobile&&<button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label="Previous">‹</button>}
+    {!isMobile&&<button onClick={()=>scroll(-1)} disabled={stt.s} style={arr(!stt.s)} aria-label={L==="es"?"Anterior":"Previous"}>‹</button>}
     <div ref={ref} onScroll={sync} style={{flex:1,display:"grid",gridAutoFlow:"column",gridAutoColumns:isMobile?"86%":"calc((100% - 36px)/3)",gap:18,overflowX:"auto",scrollSnapType:"x proximity",scrollbarWidth:"none",msOverflowStyle:"none",scrollPaddingLeft:14,scrollPaddingRight:26,padding:"16px 26px 16px 14px"}}>
       {["monthly-lite","monthly-lite-plus","annual-bundle","initial-checkup","quarterly-review","strategy-session","insurance-consult"].map(_id=>SVCS.find(s=>s.id===_id)).filter(Boolean).map(svc=>{const feats=(PLAN_FEATURES[svc.id]||{})[L];const pop=svc.id==="monthly-lite-plus";return<div key={svc.id} data-card className="ga-lift ga-spot" style={{scrollSnapAlign:"start",...mCARD(th),padding:"22px 20px",display:"flex",flexDirection:"column",minHeight:isMobile?350:430,border:pop?("1px solid "+th.glassBorder):undefined}}>
         {pop&&<span style={{alignSelf:"flex-start",fontSize:8.5,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",background:"rgba(198,216,242,0.16)",color:th.text,padding:"4px 10px",borderRadius:99,marginBottom:14,border:"1px solid rgba(198,216,242,0.4)"}}>{L==="es"?"Más popular":"Most popular"}</span>}
@@ -328,7 +328,7 @@ function PricingCarousel({lang,settings,onRequest,ctaLabel}){
         {cta(svc)}
       </div>;})}
     </div>
-    {!isMobile&&<button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label="Next">›</button>}
+    {!isMobile&&<button onClick={()=>scroll(1)} disabled={stt.e} style={arr(!stt.e)} aria-label={L==="es"?"Siguiente":"Next"}>›</button>}
   </div></div>;
 }
 /* v0.63.2 PlanComparison: grouped feature matrix (everything the app does, by plan). */

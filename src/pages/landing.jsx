@@ -183,7 +183,7 @@ function Login({onLogin,t,isDark,onToggle,lang,onLangToggle,onShowPricing,onBack
         </button>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           {onBackToLanding&&<button onClick={onBackToLanding} style={pillTog}>← {lang==="es"?"Inicio":"Home"}</button>}
-          {onShowPricing&&<button onClick={onShowPricing} style={pillTog}>{lang==="es"?"Precios":"Pricing"}</button>}{onLangToggle&&<button onClick={onLangToggle} aria-label="Toggle language" style={pillTog}>{lang==="es"?"EN":"ES"}</button>}
+          {onShowPricing&&<button onClick={onShowPricing} style={pillTog}>{lang==="es"?"Precios":"Pricing"}</button>}{onLangToggle&&<button onClick={onLangToggle} aria-label={lang==="es"?"Cambiar idioma":"Toggle language"} style={pillTog}>{lang==="es"?"EN":"ES"}</button>}
           <button onClick={onToggle} aria-label={isDark?(t.switchToLight||"Switch to light mode"):(t.switchToDark||"Switch to dark mode")} style={pillTog}>{isDark?(t.lightMode||"Light"):(t.darkMode||"Dark")}</button>
         </div>
       </header>
@@ -621,7 +621,7 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
             </nav>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
               <button onClick={onLangToggle} className="ga-liquid" style={{borderRadius:999,padding:"8px 14px",color:"rgba(255,255,255,0.85)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"EN":"ES"}</button>
-              <button onClick={onToggle} aria-label="Toggle theme" className="ga-liquid" style={{borderRadius:999,padding:"8px 14px",color:"rgba(255,255,255,0.85)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
+              <button onClick={onToggle} aria-label={es?"Cambiar tema":"Toggle theme"} className="ga-liquid" style={{borderRadius:999,padding:"8px 14px",color:"rgba(255,255,255,0.85)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{isDark?(es?"Claro":"Light"):(es?"Oscuro":"Dark")}</button>
               <button onClick={onSignIn} className="ga-liquid ga-press" style={{borderRadius:999,padding:"8px 20px",color:"#fff",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",background:"rgba(255,255,255,0.01)"}}>{es?"Iniciar sesión":"Sign in"}</button>
             </div>
           </div>

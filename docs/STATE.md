@@ -6,7 +6,7 @@
 > [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-06-26**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-06-27-v08338-promo-suggestions-i18n` (v0.83.38).
+- **Marker:** `__GA_BUILD__ = 2026-06-27-v08339-carousel-toggle-arialabels-i18n` (v0.83.39).
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).

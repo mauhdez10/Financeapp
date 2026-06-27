@@ -2,6 +2,31 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.39 — 2026-06-27 — fix(a11y/i18n): carousel + landing toggle aria-labels bilingual (ISS-72)
+
+**FIX (WCAG 4.1.2 + D-3 bilingual — ISS-41/ISS-65 class):** five icon-only `<button>`s exposed a
+hardcoded-English **accessible name** (`aria-label`) that a screen reader announces verbatim — so in
+Spanish the control was named in English. The visible glyphs (`‹` `›`, `EN`/`ES`, `Claro`/`Light`)
+were already bilingual; only the a11y label lagged.
+
+- **`src/pages/marketing.jsx`** — `ResourcesPage` guides carousel (`aria-label="Previous"/"Next"`) and
+  `PricingCarousel` prev/next arrows (×2 more). Wired to each component's in-scope language: the
+  ResourcesPage pair uses `_gaLang()` (already used for its headline at the same site); the
+  PricingCarousel pair uses the component's `L` (`lang==="es"?"es":"en"`). → `"Anterior"/"Siguiente"`.
+- **`src/pages/landing.jsx`** — public-landing header language toggle (`aria-label="Toggle language"`,
+  in `lang` scope) and footer theme toggle (`aria-label="Toggle theme"`, in `es` scope). →
+  `"Cambiar idioma"` / `"Cambiar tema"`.
+- **No new translation keys.** `landing.jsx`/`marketing.jsx` localize via inline `lang/es/L/_gaLang()`
+  ternaries (this file's established idiom — `landing.jsx` is the public marketing page with its own
+  inline i18n, not `t.`-keyed). Each ternary carries both EN+ES, so **EN/ES symmetry is unchanged by
+  construction** (zero `translations.js` edits).
+- **WHY:** completes the icon-only-control a11y sweep started by ISS-41 (`×` close buttons) and ISS-65
+  (chart SVG names) — these carousel/toggle arrows were the remaining hardcoded `aria-label`s.
+- **Pure display/a11y attribute** — no data, geometry, callbacks (`scroll`/`onToggle`/`onLangToggle`),
+  or save path touched → autonomous-safe push (matches ISS-41/65). Gates: build clean; lint 427/408 =
+  baseline (0 new, no new `no-undef` — `_gaLang`/`L`/`lang`/`es` all pre-in-scope); EN/ES symmetry
+  unchanged. Found in the item-1/4 hardcoded-`aria-label` attribute scan.
+
 ## v0.83.38 — 2026-06-27 — fix(i18n): PromotionsPage "Suggested Starter Promotions" bilingual (ISS-71)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–70 class):** the **"Suggested Starter Promotions"**
