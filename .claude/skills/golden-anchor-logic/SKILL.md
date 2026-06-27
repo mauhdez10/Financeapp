@@ -118,7 +118,7 @@ latest snapshot debt > first snapshot debt.
 <!-- TODO(owner): annotate any metric above with YOUR "why I coach it this way" — the
      how-to guides will quote those annotations verbatim. -->
 
-## 4. The 9 standalone calculators (implementation: `src/components/calculators.jsx`)
+## 4. The 11 standalone calculators (implementation: `src/components/calculators.jsx`)
 
 > Documented from the actual code (2026-06-10). The math below is what ships — if a
 > change alters any formula, update this section in the same change. Shared helpers
@@ -200,6 +200,22 @@ latest snapshot debt > first snapshot debt.
 - **Outputs:** future value, total contributed, interest earned, dual-line growth chart.
 - **Edge cases:** zero APY/monthly degrade to simple sums; zero years → empty chart.
 - **Plain-English:** what a high-yield savings account earns you over time beyond what you put in.
+
+### LifeInsuranceCalc (Life-Insurance Needs — DIME method) — added v0.75.2
+- **Inputs:** non-mortgage debt ($15,000), annual income ($45,000), years to replace income (10), mortgage balance ($180,000), future education costs ($40,000), existing coverage ($50,000), savings ($10,000).
+- **Method:** DIME = **D**ebt + **I**ncome + **M**ortgage + **E**ducation. `D = debt`; `I = income × years` (income replacement); `M = mortgage`; `E = education`. `gross = D + I + M + E`. **Recommended coverage** = `max(0, gross − coverage − savings)` (existing coverage + liquid savings offset the need).
+- **Assumptions:** flat income replacement (no inflation/raise growth, no discounting to present value — a deliberately simple "starting point"); coverage + savings are a single offset.
+- **Outputs:** recommended coverage (headline), the four D/I/M/E component rows, the "−(coverage & savings)" offset row (reconciles: headline = gross − offset), and a free-consult CTA (mailto). **No chart.**
+- **Edge cases:** need clamps at 0 when coverage+savings ≥ gross.
+- **Plain-English:** a rule-of-thumb estimate of how much life insurance a family needs to cover debts, replace income, pay off the mortgage, and fund education — minus what they've already got. Explicitly a conversation-starter, not a quote (feeds the firm's free insurance consult).
+
+### InflationCalc (Inflation / Purchasing Power) — added v0.75.2
+- **Inputs:** amount today ($10,000), inflation rate (3%/yr), years (10).
+- **Method:** `r = rate/100`. **What it will buy then** (future purchasing power of today's money, in today's dollars) = `amount / (1+r)^years`. **Needed to match today's power** = `amount × (1+r)^years`. **Purchasing power lost** = `(1 − power/amount) × 100%` = `1 − 1/(1+r)^years`.
+- **Assumptions:** constant annual inflation; the 3% default is the same deflator `PortfolioStandaloneCalc`/`InterestCalc` use internally for their real-value overlays — this calc is its standalone front door.
+- **Outputs:** buying power then (headline), amount needed to match, % power lost, declining-buying-power area chart.
+- **Edge cases:** the area chart samples at `step = max(1, round(years/10))`, so for horizons not divisible by the step it **ends short of the headline year** (e.g. 25yr → last point Yr24; 35yr → Yr32) — the same round-step endpoint gap as RetirementCalc/ForecastCone (ISS-42). Headline figures always use the full `years`.
+- **Plain-English:** what today's dollars will actually buy after years of inflation, and how much you'd need then to keep the same purchasing power.
 
 ## 5. Chart catalog — the 23 pure-SVG components (`src/components/charts.jsx`)
 
