@@ -78,7 +78,7 @@ function Waterfall({segments,height=160,width=600,bg}){
   const segs=Array.isArray(segments)?segments.filter(s=>s):[];
   const twVals=useTweenedData(segs.map(s=>+s.value||0),800);
   const baseId=useSvgId("wf");
-  if(segs.length===0)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
+  if(segs.length===0)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{gaLabel("chartNoData","No data")}</div>;
   let cum=0;
   const items=segs.map((s,i)=>{
     const tv=twVals[i]||0;
@@ -140,7 +140,7 @@ function PairedBars({data,debtKey,savingsKey,debtColor,savingsColor,height=160,l
   const th=useTh();
   const pts=Array.isArray(data)?data:[];
   const tw=useTweenedData(pts.map(p=>({d:+p[debtKey]||0,s:+p[savingsKey]||0})),800);
-  if(pts.length<1)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>No data</div>;
+  if(pts.length<1)return<div style={{padding:14,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{gaLabel("chartNoData","No data")}</div>;
   const W=600,H=height,padL=46,padR=22,padT=14,padB=24;
   const innerW=W-padL-padR,innerH=H-padT-padB;
   const mxS=Math.max(1,...tw.map(p=>p.s));
@@ -944,7 +944,7 @@ function AmortizationArea({principal,apr,termMonths,extraPay=0,height=140,width=
   },[principal,apr,termMonths,extraPay]);
   const tw=useTweenedData(trail,800);
   const gid=useSvgId("amr");
-  if(tw.length<2)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>Adjust values</div>;
+  if(tw.length<2)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{gaLabel("chartAdjustValues","Adjust values")}</div>;
   const padT=10,padB=22,padL=42,padR=14;
   const innerW=width-padL-padR,innerH=height-padT-padB;
   const mx=Math.max(...tw);
@@ -1004,7 +1004,7 @@ function CompoundGrowthStack({principal=0,monthly=0,rate=0,years=25,height=220,w
     return out;
   },[principal,monthly,rate,years,simple]);
   const gid=useSvgId("cgs");
-  if(series.length<2)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>Adjust inputs to see growth</div>;
+  if(series.length<2)return<div style={{padding:18,fontSize:11,color:th.dim,fontStyle:"italic",textAlign:"center"}}>{gaLabel("chartAdjustInputs","Adjust inputs to see growth")}</div>;
   const mx=Math.max(1,...series.map(s=>s.total));
   const padT=14,padB=32,padL=56,padR=18;
   const innerW=width-padL-padR,innerH=height-padT-padB;
@@ -1227,7 +1227,7 @@ function ForecastCone({history,projection,confidence=0.2,height=200,width=600,co
       <path d={`M${histPath}`} fill="none" stroke={`url(#${gid}-stroke)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       <path d={`M${projPath}`} fill="none" stroke={c} strokeOpacity="0.55" strokeWidth="1.25" strokeDasharray="3 3" strokeLinecap="round"/>
       <text x={xAt(0)} y={height-8} textAnchor="start" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{hist[0]?.label||""}</text>
-      <text x={xAt(projStart)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>Now</text>
+      <text x={xAt(projStart)} y={height-8} textAnchor="middle" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{gaLabel("durNow","Now")}</text>
       <text x={xAt(all.length-1)} y={height-8} textAnchor="end" fontSize="9" fill={th.muted} style={{letterSpacing:"0.04em",textTransform:"uppercase"}}>{proj[proj.length-1]?.label||""}</text>
     </svg>
   </div>;

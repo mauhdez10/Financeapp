@@ -2,6 +2,34 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.44 — 2026-06-27 — fix(i18n): Chart empty-state + forecast axis labels bilingual (ISS-77)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–76 i18n class):** five user-visible strings in
+`src/components/charts.jsx` rendered **hardcoded English regardless of language** — four chart
+empty/placeholder states and one forecast-cone axis label:
+
+- **`:81`** `Waterfall` empty state (`segs.length===0`) — `>No data<` → `>{gaLabel("chartNoData","No data")}<`.
+- **`:143`** `DebtSavings` empty state (`pts<1`) — `>No data<` → same key.
+- **`:947`** `AmortChart` placeholder (`tw<2`, shown until loan inputs are complete) — `>Adjust values<`
+  → `>{gaLabel("chartAdjustValues","Adjust values")}<`.
+- **`:1007`** `CompoundGrowthStack` placeholder (`series<2`) — `>Adjust inputs to see growth<` →
+  `>{gaLabel("chartAdjustInputs","Adjust inputs to see growth")}<`.
+- **`:1230`** `ForecastCone` SVG axis tick — `<text>…>Now</text>` → reuses existing **`durNow`**
+  ("Now"/"Ahora") via `gaLabel`.
+
+**+3 new EN/ES keys** (`chartNoData`/`chartAdjustValues`/`chartAdjustInputs`) + 1 reused (`durNow`).
+`charts.jsx` already carries the local **`gaLabel(key,fallback)`** helper (resolves from
+`document.documentElement.lang`, imports `T` from the pure-data translations module — the ISS-65
+pattern; not imported from `primitives.jsx` to avoid the `primitives→charts` circular dep), so wiring
+these is one-line each with an English fallback.
+
+**WHY autonomous-safe push:** pure display — no chart data, geometry, tween, or callback touched; the
+placeholders/axis tick are text-only. Not the save path (matches ISS-65/72/73/75/76).
+
+**Gates:** build clean; lint 427 (408 err, 19 warn) = baseline (0 new); EN/ES symmetry 2057/2057.
+Found in the item-1/4 `charts.jsx` hardcoded-JSX-text i18n re-scan (the chart-component surface not
+covered by the prior aria-label sweep, ISS-65).
+
 ## v0.83.43 — 2026-06-27 — fix(i18n): Members-admin page two hardcoded-English strings bilingual (ISS-76)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–75 i18n class):** the **Members admin page**

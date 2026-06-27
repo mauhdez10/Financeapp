@@ -110,3 +110,5 @@ finance-cron · 2026-06-27T02:24:36Z · verify tick — prod healthy: live bundl
 
 finance-cron · 2026-06-27T02:36:40Z · starting item-1 deepening — members.jsx admin-page i18n investigation (obs 9712)
 finance-cron · 2026-06-27T02:42:21Z · shipped ISS-76 (v0.83.43) — members-admin page i18n (2 hardcoded-EN strings bilingual); build/lint baseline, autonomous-safe push
+finance-cron · 2026-06-27T02:51:26Z · starting item-1 bugs/correctness scan (ISSUES_LEDGER top)
+finance-cron · 2026-06-27T02:57:18Z · shipped ISS-77 (v0.83.44) — charts.jsx 5 hardcoded-EN strings (empty-states + forecast axis) bilingual; build/lint baseline, autonomous-safe push
