@@ -98,3 +98,6 @@ finance-cron · 2026-06-27T01:12:30Z · shipped ISS-71 (v0.83.38) — Promotions
 finance-cron · 2026-06-27T01:25:11Z · shipped ISS-72 (v0.83.39) — carousel + landing toggle aria-labels bilingual (a11y/i18n)
 
 finance-cron · 2026-06-27T01:39:07Z · shipped ISS-73 (v0.83.40) — ClientDetail tab-scroll arrows aria-label+title bilingual (a11y/i18n)
+
+finance-cron · 2026-06-27T01:52:00Z · starting ordered-map scan (bugs/correctness first)
+finance-cron · 2026-06-27T01:58:00Z · shipped ISS-74 (v0.83.41) — CC-vs-Loan scenario block bilingual (i18n/D-3)

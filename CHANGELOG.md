@@ -2,6 +2,26 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.41 — 2026-06-27 — fix(i18n): CC-vs-Loan "New Hypothetical Debt" scenario block bilingual (ISS-74)
+
+**FIX (D-3 bilingual — ISS-55/57/58/61–73 class):** the **CC-vs-Loan calculator's "New Hypothetical
+Debt" scenario block** (`components/clientCalcs.jsx`) rendered hardcoded English regardless of language
+while the rest of the same component used the established `t.x||"fallback"` idiom — a Spanish user saw
+a localized calculator with an English scenario sub-form.
+
+- **`src/components/clientCalcs.jsx`** — wired 6 display strings: the **DEBTS TO INCLUDE** section
+  header (`debtsToInclude`), the **＋ Scenario / Cancel** toggle (`addScenarioBtn` + reused `cancel`),
+  the **e.g. New Card** name placeholder (`egNewCard`), the form's **Cancel / Add Scenario** buttons
+  (reused `cancel` + the pre-existing `addScenario` key), the **· scenario** debt-row tag
+  (`scenarioTag`), and the unnamed-debt fallback label **Card / Loan** (reused `card`/`loan`).
+- **+4 new EN/ES keys** (`debtsToInclude`, `addScenarioBtn`, `egNewCard`, `scenarioTag`); `addScenario`
+  + `cancel`/`card`/`loan` reused (the first insert dup'd `addScenario` → `no-dupe-keys` caught it,
+  dup removed). `＋ Escenario` matches the existing ES `prefillCardsLoans` text that references it.
+- **Pure display — the scenario math (`ccMin`/`loanMin`/APR weighting, lines 119–124), `newScen`
+  state, and `addScen`/`delScen` payloads untouched → not save path → autonomous-safe push (matches
+  ISS-55/57/58/61–73).**
+- **Gates:** build clean; lint 427/408 = baseline (0 new); EN/ES symmetry 2054/2054.
+
 ## v0.83.40 — 2026-06-27 — fix(a11y/i18n): ClientDetail tab-scroll arrows aria-label + title bilingual (ISS-73)
 
 **FIX (WCAG 4.1.2 + D-3 bilingual — ISS-41/ISS-65/ISS-72 class):** the two icon-only tab-scroll
