@@ -116,3 +116,6 @@ finance-cron · 2026-06-27T02:57:18Z · shipped ISS-77 (v0.83.44) — charts.jsx
 finance-cron · 2026-06-27T03:11:32Z · shipped ISS-78 (v0.83.45) — promotions edit/new form discount-value label + 2 placeholders bilingual (zero-new-key label reuse + 2 keys); build/lint baseline, autonomous-safe push
 
 finance-cron · 2026-06-27T03:34:18Z · shipped ISS-79 (v0.83.46) — Investments→Portfolio Models tab (InvestmentsTab, clientReports.jsx) ~20 hardcoded-EN strings across Portfolio/Main/Alt views bilingual; +13 keys + reuse of 14 pre-staged; build/lint baseline 2072/2072 sym; autonomous-safe push
+
+finance-cron · 2026-06-27T03:36:21Z · starting item-1 fresh correctness/i18n re-scan (autonomous-safe queue near-exhausted; deciding pivot)
+finance-cron · 2026-06-27T03:38:31Z · DONE item-3 security/dependency audit — CLEAN: npm audit 0 vulns; credentials+.env.local gitignored; no tracked .env; no hardcoded secret literals in src/api; Supabase advisor sweep already triaged (ISS-37/38 owner-gated). Item-1 autonomous-safe i18n queue confirmed swept this tick (placeholders/title/aria-label clean; dashboard/calculators/premium/onboarding/public already localized). No code change → no push.
