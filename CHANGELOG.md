@@ -2,6 +2,35 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.36 — 2026-06-27 — fix(i18n): ExportHoldingsModal body bilingual (ISS-69)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–68 class):** `ExportHoldingsModal`
+(`components/clientReports.jsx` — the advisor "Export Holdings → Market Investments" modal opened
+from the Investments tab) wired only its title + a few keys (`exportHoldingsTitle`,
+`snapCurrentProfile`, `totalValueColon`, `cancel`, `selectOneHolding`); the rest of the modal body
+rendered hardcoded English regardless of language. This was the exact out-of-scope item ISS-68 queued
+for a later tick. Localized:
+
+- the intro paragraph ("Select holdings and enter their current dollar amounts. Each selected
+  holding will be added as a **Market Investment** on the chosen month's snapshot.") — split into
+  `expHoldIntroA` + bolded `marketInvestmentWord` + `expHoldIntroB` to preserve the mid-sentence bold;
+- the **TARGET MONTH** label (`targetMonthLbl`) and **HOLDINGS** label (`holdingsLbl`);
+- the **Select All** / **Clear All** buttons (reused `selectAllVisible` / `clearAll`);
+- the "across {n} holding(s)" summary line (`acrossHoldings` with `{n}`/`{u}` tokens +
+  `holdingWord`/`holdingsWord` for EN/ES-correct singular·plural — EN holding/holdings,
+  ES tenencia/tenencias);
+- the dynamic action button "Add to {Profile | month}" (`addToLabel` + `profileWord`).
+
+**+10 new EN/ES keys** + 5 reused. ES aligns to the existing `exportHoldingsTitle` wording
+("Tenencias" / "Inversiones de Mercado"). Global-token `.replace()` interpolation.
+
+**Pure display — `apply`/`onSave`/`exportHoldings` payloads, the selection/amount state, the
+`current`/snapshot target value, and the SSN-free holding objects untouched → not save path →
+autonomous-safe push (matches ISS-61/64/68).** Gates: build clean; lint 427 (408 err) = baseline
+(0 new, 0 `no-undef`); EN/ES 2041/2041 (0 asym); node interpolation harness clean (EN/ES plurals
+correct, no leftover tokens). Found completing the ISS-68 out-of-scope queue (item-1/4 advisor-surface
+i18n sweep).
+
 ## v0.83.35 — 2026-06-27 — fix(i18n): hardcoded-English alert()/confirm() browser dialogs bilingual (ISS-68)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–67 class):** every remaining hardcoded-English native
