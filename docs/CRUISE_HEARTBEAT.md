@@ -101,3 +101,7 @@ finance-cron · 2026-06-27T01:39:07Z · shipped ISS-73 (v0.83.40) — ClientDeta
 
 finance-cron · 2026-06-27T01:52:00Z · starting ordered-map scan (bugs/correctness first)
 finance-cron · 2026-06-27T01:58:00Z · shipped ISS-74 (v0.83.41) — CC-vs-Loan scenario block bilingual (i18n/D-3)
+
+finance-cron · 2026-06-27T02:06:30Z · starting ordered-map scan (item-1 correctness re-scan; i18n queue appears drained)
+
+finance-cron · 2026-06-27T02:11:00Z · shipped ISS-75 (v0.83.42) — Useful-Links search input aria-label (a11y/i18n)

@@ -2,6 +2,27 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.42 — 2026-06-27 — fix(a11y/i18n): Useful-Links directory search input accessible name (ISS-75)
+
+**FIX (WCAG 4.1.2 / 3.3.2 — ISS-41/65/72/73 a11y-name class):** the **Useful-Links directory search
+box** (`src/pages/links.jsx`, the Premium-gated "help in every life situation" page) had a `placeholder`
+but **no `aria-label`** — its only accessible name was the placeholder, which is not an accessible name
+(a screen reader announces it as an unlabeled edit field, and the hint vanishes the moment the user
+types). Every sibling search input already carried an `aria-label` from the prior a11y sweep — the two
+**Advisor Alerts** / **Client Due** dashboard boxes (`dashboard.jsx`), the **client list** search
+(`clientList.jsx`), and the three **clientData** modal searches — so this was the lone gap.
+
+- **`src/pages/links.jsx`** — added `aria-label={es?"Buscar enlaces útiles":"Search useful links"}` to
+  the directory search `<input>` (line 33).
+- **Zero new translation keys** — `links.jsx` is a public-style page that localizes via the inline
+  `es?"…":"…"` ternary idiom (no `t.` keys), so the label is bilingual by construction and
+  **EN/ES symmetry is unchanged** (no `translations.js` edit). Same approach as ISS-72 (`landing.jsx`).
+- **Pure a11y attribute — the search `value`/`onChange`/filter (`match`/`needle`/`cats`) and all data
+  are untouched → not the save path → autonomous-safe push** (matches ISS-41/65/72/73).
+- Gates: build clean; lint 427/408 = baseline (0 new, no new `no-undef` — `es` already in scope at
+  `links.jsx:13`); EN/ES symmetry unchanged. Found in the item-1/4 standalone-search-input a11y re-scan
+  (the placeholder-only-label sweep that previously covered dashboard/clientList/clientData).
+
 ## v0.83.41 — 2026-06-27 — fix(i18n): CC-vs-Loan "New Hypothetical Debt" scenario block bilingual (ISS-74)
 
 **FIX (D-3 bilingual — ISS-55/57/58/61–73 class):** the **CC-vs-Loan calculator's "New Hypothetical

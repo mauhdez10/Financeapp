@@ -30,7 +30,7 @@ function UsefulLinksPage({lang,client,onUpdateClient}){
           <span>$0 = {es?"gratis":"free"}</span>
         </div>
       </div>
-      <input value={q} onChange={e=>setQ(e.target.value)} placeholder={es?"Buscar… (ej. casa, impuestos, tarjeta)":"Search… (e.g. house, taxes, card)"} style={{padding:"10px 13px",background:th.inp,border:"1px solid "+th.cardBorder,color:th.text,borderRadius:10,fontSize:13,outline:"none",width:260,fontFamily:"inherit"}}/>
+      <input value={q} onChange={e=>setQ(e.target.value)} aria-label={es?"Buscar enlaces útiles":"Search useful links"} placeholder={es?"Buscar… (ej. casa, impuestos, tarjeta)":"Search… (e.g. house, taxes, card)"} style={{padding:"10px 13px",background:th.inp,border:"1px solid "+th.cardBorder,color:th.text,borderRadius:10,fontSize:13,outline:"none",width:260,fontFamily:"inherit"}}/>
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {cats.map(c=>{const on=!!open[c.id]||!!needle;const Icon=Lucide[c.icon]||Lucide.Link;const items=needle?c.hits:c.items;return<div key={c.id} style={{...mCARD(th),padding:0,overflow:"hidden"}}>
