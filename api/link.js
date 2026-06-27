@@ -91,7 +91,7 @@ export default async function handler(req, res) {
     try {
       const { data: own } = await admin.from("clients").select("data").eq("user_id", user.id).limit(1);
       if (own && own.length) island = own[0].data || null;
-    } catch {}
+    } catch { /* non-critical: no own island snapshot ⇒ island stays null */ }
     const { error: e2 } = await admin.from("client_links").update({
       client_uid: user.id, status: "accepted", accepted_at: new Date().toISOString(), island_snapshot: island,
     }).eq("id", link.id);
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
     try {
       await admin.from("portal_links").update({ revoked: true })
         .eq("user_id", link.advisor_uid).eq("client_local_id", link.client_local_id).eq("revoked", false);
-    } catch {}
+    } catch { /* non-critical cleanup: stale portal tokens stay until next regenerate */ }
     return res.status(200).json({ ok: true, advisorUid: link.advisor_uid });
   }
 
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
       const { data: srow } = await admin.from("settings").select("data").eq("user_id", link.advisor_uid).limit(1);
       const s = (srow && srow[0] && srow[0].data) || {};
       advisor = { name: s.advisorName || null, email: s.advisorEmail || null, phone: s.advisorPhone || null, companyName: s.companyName || null, logoLight: s.logoLight || null, logoDark: s.logoDark || null, referralContacts: Array.isArray(s.referralContacts) ? s.referralContacts : [] };
-    } catch {}
+    } catch { /* non-critical: advisor display info absent ⇒ advisor stays null */ }
     return res.status(200).json({ ok: true, linked: true, client: sanitizeClient(crow.data), advisor, linkedAt: link.accepted_at });
   }
 

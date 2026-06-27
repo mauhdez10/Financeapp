@@ -2,6 +2,22 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## chore(lint) — 2026-06-27 — document 3 intentional empty catches on the account-link path (ISS-08)
+
+**CHORE (no version bump — comment-only, no app behavior change):** Added intent comments to the 3
+empty `catch{}` blocks in `api/link.js` (the Link-R account-linking endpoint): line 94 (own-island
+snapshot read on accept), line 105 (auto-revoke of stale portal tokens on accept), line 129 (advisor
+display-info read on overview). All three are deliberate **graceful-degradation** — a `null`/no-op
+fallback is the correct behavior when the non-critical read fails — so the empty catch was intentional,
+not a forgotten error. **WHY:** while clearing ISS-08's `no-empty` debt, the whole linking path was
+re-audited against `golden-anchor-logic` §2b (role gates, client-email hard-match, sanitize-only reads,
+portal auto-revoke) and confirmed intact — no logic drift, no real bug. Documenting the catches clears
+3 `no-empty` lint errors *and* makes the deliberate error-swallowing explicit for the next auditor of
+this security-sensitive path. Standalone `catch` lines, zero logic change. **GATE:** build clean
+(only the known ISS-07 chunk-size warning); lint total 329→326, only `no-empty` moved (26→23),
+`no-undef` stayed 0, all other rule counts unchanged; no EN/ES (server code, no visible strings); no
+`__GA_BUILD__` bump (no app behavior change). **CHANGED:** `api/link.js`, `docs/ISSUES_LEDGER.md`.
+
 ## chore(lint) — 2026-06-27 — remove 7 dead leftovers across extracted files (ISS-08)
 
 **CHORE (no version bump — dead-code only, no app behavior change):** Removed 7 `no-unused-vars`
