@@ -22,6 +22,31 @@
 > per-seat play. **(3) B1 intel:** Finhabits launched 401(k)s for small Latino-owned businesses →
 > confirms the employer-paid B2B2C channel is heating up (investing rails stay out of GA's lane).
 
+> **2026-06-27 scan refresh (finance-cron, cruise item 2 — fresh angle).** Re-ran item 2 against a
+> NEW angle not covered 06-26: bilingual/Latino-specific coaching apps + 2026 AI-coaching feature
+> trends. **No new candidate — every finding validates an idea already on the list** (so the owner
+> queue is unchanged):
+> - **B4 (tanda tracker) is now market-validated.** **R.O.S.C.A** ([roscamoneycircle.com](https://www.roscamoneycircle.com/))
+>   ships as the first dedicated rotating-savings-circle (tanda/cundina/susu) app "by Latines, for
+>   Latines." It proves demand for digitizing the circle, and — critically — it moves money (P2P),
+>   the line section 4 / regulatory bars GA from crossing. So B4's **track-only** framing (who's in /
+>   whose turn / payment history; never hold/pool/transmit) is the right wedge: GA reflects the cultural
+>   practice as a *coaching* tracker without becoming a money transmitter. Strengthens B4; no new
+>   decision.
+> - **FG-3 (habit/streak microlessons) is validated.** Finhabits leads with **"Money Journeys —
+>   develop new habits in five minutes a day"** + a visual Academy — the exact daily-habit loop FG-3
+>   specs. Confirms FG-3's bet; no change.
+> - **FG-1 (AI assistant) + FG-5 (Money Runway / proactive alerts) validated by the 2026 AI-coaching
+>   theme** — personalization, *proactive intervention before a poor decision*, and conversational
+>   plain-language interfaces are now table-stakes (US AI-coaching market ~28% CAGR → ~$41B by 2030).
+>   Nothing new; both already logged. (GA's no-bank-feed posture means FG-5's proactive layer stays
+>   rule-based on advisor-entered data, not transaction-stream monitoring — the differentiator, not a
+>   gap.)
+>
+> Net: field still stable; **no `CRUISE_QUESTIONS.md` entry added** — the value is competitive
+> validation of B4/FG-1/FG-3/FG-5, which already await owner answers. Sources: roscamoneycircle.com;
+> finhabits.com; whistl.app 2026 AI-coaching guides; nbcnews.com Latina-creators wealth-apps.
+
 ## 1. The competitive gap (why these ideas, not generic ones)
 
 What the research says about the field:
