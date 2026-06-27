@@ -179,12 +179,14 @@ function PromotionsPage({settings,onSettingsChange,t}){
     <div style={{...mCARD(th),padding:16}}>
       <div style={{fontSize:12,fontWeight:700,color:th.dim,marginBottom:10}}>💡 {(t.suggestedTitle||"Suggested Starter Promotions").toUpperCase()}</div>
       <div style={{fontSize:11,color:th.muted,lineHeight:1.8}}>
-        <div>• <b>Welcome Discount</b> — 40% off Initial Checkup ($149 → $89) for first 10 clients</div>
-        <div>• <b>Health Client Bundle</b> — Free Initial Checkup for existing insurance clients (retention)</div>
-        <div>• <b>Referral Reward</b> — 25% off Initial Checkup, code REFERRED25</div>
-        <div>• <b>New Year Reset</b> — $99 Initial Checkup, January 1 – January 31</div>
-        <div>• <b>Spring Review</b> — $99 Quarterly Checkup, March 15 – April 30</div>
-        <div>• <b>Annual Bundle</b> — 4 Quarterly Checkups for $299 (save $97)</div>
+        {[
+          t.welcomeDiscountSugg||"Welcome Discount — 40% off Initial Checkup ($149 → $89) for first 10 clients",
+          t.healthClientSugg||"Health Client Bundle — Free Initial Checkup for existing insurance clients (retention)",
+          t.referralRewardSugg||"Referral Reward — 25% off Initial Checkup, code REFERRED25",
+          t.newYearSugg||"New Year Reset — $99 Initial Checkup, January 1 – January 31",
+          t.springSugg||"Spring Review — $99 Quarterly Checkup, March 15 – April 30",
+          t.annualBundleSugg||"Annual Bundle — 4 Quarterly Checkups for $299 (save $97)",
+        ].map((line,i)=>{const ix=line.indexOf(" — ");const ti=ix<0?line:line.slice(0,ix);const bo=ix<0?"":line.slice(ix+3);return<div key={i}>• <b>{ti}</b>{bo?" — "+bo:""}</div>;})}
       </div>
     </div>
   </div>;

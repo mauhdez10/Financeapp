@@ -91,3 +91,5 @@ finance-cron · 2026-06-27T00:40:00Z · shipped ISS-69 (v0.83.36) — ExportHold
 
 finance-cron · 2026-06-27T00:51:08Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)
 finance-cron · 2026-06-27T00:55:00Z · shipped ISS-70 (v0.83.37) — ClientDetail archive/restore modal bilingual; completes the ISS-68/69 i18n queue
+
+finance-cron · 2026-06-27T01:06:00Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)

@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.38 — 2026-06-27 — fix(i18n): PromotionsPage "Suggested Starter Promotions" bilingual (ISS-71)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–70 class):** the **"Suggested Starter Promotions"**
+example block in `PromotionsPage` (`src/pages/marketing.jsx`) rendered its section header via
+`t.suggestedTitle` (localized) but the **6 suggested-promo bullet lines** beneath it were hardcoded
+English `<div>`s — so a Spanish advisor saw a Spanish heading over 6 English example promos.
+
+- **No new translation keys** — all six full-line strings already existed in BOTH `T.en` and `T.es`
+  (`welcomeDiscountSugg`, `healthClientSugg`, `referralRewardSugg`, `newYearSugg`, `springSugg`,
+  `annualBundleSugg`); they were pre-staged but never wired into the page. (`newYearSugg` was
+  single-quoted, which is why an earlier double-quote scan missed it.)
+- **WIRED:** replaced the 6 static `<div>`s with a `.map()` over the 6 keys (each `t.key||"<English
+  fallback>"`), rendering by splitting on the em-dash (`indexOf(" — ")`) so the **bold title** is
+  preserved (`• <b>{title}</b> — {body}`). The split is em-dash-only, so the en-dash (`–`) date
+  ranges in the bodies ("January 1 – January 31", "March 15 – April 30") stay intact; node-verified
+  on EN + ES (incl. ES "Año Nuevo" title).
+- **Pure display** — these are static suggestion examples (no promo data, no `onSave`, no save path)
+  → autonomous-safe push (matches ISS-61–70).
+
+**Gates:** `npm run build` clean; `npm run lint` 427 (408 err / 19 warn) = baseline (0 new); EN/ES
+symmetry unchanged (2048/2048 — zero translations.js edits, reused-keys-only). Found in the item-1/4
+advisor-surface hardcoded-JSX-text i18n scan (the marketing.jsx full-text-node hit).
+
 ## v0.83.37 — 2026-06-27 — fix(i18n): ClientDetail archive/restore modal bilingual (ISS-70)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–69 class):** the `ClientDetail` archive/restore
