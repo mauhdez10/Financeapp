@@ -2,6 +2,33 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## chore(lint) — 2026-06-27 — remove 89 dead named imports from src/App.jsx (ISS-08)
+
+**CHORE (no version bump — dead-code only, no app behavior change):** Removed 89 unused named
+imports left over from the D-37 single-file → module extraction, across 13 import lines in
+`src/App.jsx`. They were imported but never referenced anywhere in App.jsx after their consumers
+moved into `pages/`, `components/`, `services/`. The set: 4 React hooks (`useMemo`/`useId`/
+`createContext`/`useContext`); 20 intake/portal/report service fns from `services/supabase`
+(`gaLoadIntakeSubmissions`…`gaDownloadCompleteReport`); 6 theme table-style helpers
+(`mINP`/`mTH`/`mTHR`/`mTD`/`mTDR`/`mIIN`); the entire `hooks/anim` import
+(`useTweenedData`/`useSvgId`/`useReducedMotion`); 38 `utils/finance` helpers
+(`ratFmt`/`mkAcct`/`effectiveMin`/`getProperties`/…); plus deadweight from `utils/import`
+(`validateBackup`/`parseCRMCsv`/`parseWorkbook`), `engagementLetterTemplate` (`fillTokens`),
+`components/primitives` (`useAnimatedDisplay`/`useSrt`), `components/calculators`
+(`calcFedTax`/`getBracket`), `components/premium` (`planOf`/`planLabel`), `pages/intake`
+(`isMobileViewport`), and `constants/meta` (`svcPayUrl`/`mLabel`/`acctL`/`loanL`/`physL`).
+
+**WHY safe:** dead-import removal is the lowest-risk lint sub-class — a truly-unused named import
+has zero runtime effect (the module stays loaded via other importers). **Verification gate (D-36):**
+esbuild does NOT error on a wrongly-removed import (an undefined identifier is valid JS → runtime
+ReferenceError, not a parse error), so the authoritative check is ESLint scope analysis, not the
+build. Each removed name was eslint-`no-unused-vars`-confirmed (zero references) AND grep-verified to
+occur exactly once in App.jsx (the import line itself). Post-edit: project-wide `no-undef` = **0**
+(no used binding dropped) and the full lint rule histogram is unchanged except `no-unused-vars` −89.
+Uppercase consts (`^[A-Z_]`, eslint-ignored by `varsIgnorePattern`) were all kept regardless.
+Build clean (742ms). Lint errors 406→317 (ISS-08 `no-unused-vars` 195→106). Only `src/App.jsx`
+changed. No `__GA_BUILD__` bump, no EN/ES impact (no visible strings touched).
+
 ## chore(lint) — 2026-06-27 — remove 2 dead intermediates from utils/aiExport.js (ISS-08 partial)
 
 **CHORE (no version bump — output byte-identical, no app behavior change):** Deleted the

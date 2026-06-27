@@ -1,35 +1,34 @@
-import { useState, useEffect, useCallback, useRef, useMemo, useId, createContext, useContext, Fragment } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { AboutPage, LineField, PLAN_FEATURES, PlanComparison, PricingCarousel, PricingPage, PricingPlans, PromotionsPage, ResourcesPage, ServiceRequestModal } from "./pages/marketing";
 import { HeroVisual, LOTTIE_HERO_URL, Login, LandingPage } from "./pages/landing";
 import { EngagementLetter, LogoImg, SignaturePad, ToSModal } from "./components/legal";
-import { IntakeCurrencyInput, IntakeDoneModal, IntakeFieldLabel, IntakeFormBody, IntakeFormSection, IntakeSelectedServiceCard, IntakeStepRail, IntakeSubmissionEditor, IntakeSubmissionsPage, IntakeWelcomeStage, NewInviteModal, PublicIntake, isMobileViewport } from "./pages/intake";
+import { IntakeCurrencyInput, IntakeDoneModal, IntakeFieldLabel, IntakeFormBody, IntakeFormSection, IntakeSelectedServiceCard, IntakeStepRail, IntakeSubmissionEditor, IntakeSubmissionsPage, IntakeWelcomeStage, NewInviteModal, PublicIntake } from "./pages/intake";
 import { AVATAR_PRESETS, ArchivedClientsPage, AvatarImg, AvatarPickerModal, BackupPage, BillingPage, EmailSupportModal, FAQ_ENTRIES, HelpSupportPage, SecurityPage, SettingsCard, SettingsPage, WHATS_NEW_ENTRIES, WhatsNewPage } from "./pages/admin";
 import { PortalShareModal, PublicPortal, LinkInviteModal, LinkedOverview } from "./pages/portal";
 import { OnboardingWizard } from "./pages/onboarding";
 import { gaClientAIText } from "./utils/aiExport";
 import { gaAcceptLink, gaLinkedOverview } from "./services/supabase";
-import { PremiumCtx, usePremiumGate, hasPremium, planOf, planLabel, PremiumUpgrade, PremiumLockNote } from "./components/premium";
+import { PremiumCtx, usePremiumGate, hasPremium, PremiumUpgrade, PremiumLockNote } from "./components/premium";
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
 if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-27-v08351-remove-btn-aria-labels";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
-import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaLoadAllClientBlobs, gaSetArchived, gaLoadSettings, gaSaveSettings, gaLoadIntakeSubmissions, gaSubmitIntake, gaUpdateIntakeStatus, gaUpdateIntakeData, gaDeleteIntakeSubmission, gaDeleteIntakeSubmissionsByStatus, gaLoadIntakeInvites, gaDeleteIntakeInvite, gaDeleteAllIntakeInvites, gaSendIntakeInvite, gaSendSupportEmail, gaResolveIntakeInvite, gaMarkIntakeInviteSubmitted, genPortalToken, gaResolvePortal, gaListPortalLinks, gaCreatePortalLink, gaSendPortalLink, gaRevokePortalLink, gaEmailCompleteReport, gaDownloadCompleteReport, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
-import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mINP, mCARD, mTH, mTHR, mTD, mTDR, mIIN } from "./styles/theme";
-import { ThemeCtx, useTh, HideCtx, useHN, ChartConfigCtx, useChartConfig } from "./contexts/theme";
-import { ACCT_META, LOAN_META, ACCA, LOKA, CP, PC, SVCS, svcPayUrl, DEF_PORT_RATES, TICKER_META, PORTFOLIOS, ALT_PACKS, MAIN_PACKS, MS, MS_ES, ML_ES, mLabel, ML, CERTS, PHYS_CATS, ACCT_L_ES, LOAN_L_ES, PHYS_L_ES, _gaLang, acctL, loanL, physL, DEF_SETTINGS } from "./constants/meta";
-import { useTweenedData, useSvgId, useReducedMotion } from "./hooks/anim";
+import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaLoadAllClientBlobs, gaSetArchived, gaLoadSettings, gaSaveSettings, gaSendSupportEmail, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
+import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mCARD } from "./styles/theme";
+import { ThemeCtx, useTh, HideCtx, ChartConfigCtx } from "./contexts/theme";
+import { ACCT_META, LOAN_META, ACCA, LOKA, CP, PC, SVCS, DEF_PORT_RATES, TICKER_META, PORTFOLIOS, ALT_PACKS, MAIN_PACKS, MS, MS_ES, ML_ES, ML, CERTS, PHYS_CATS, ACCT_L_ES, LOAN_L_ES, PHYS_L_ES, _gaLang, DEF_SETTINGS } from "./constants/meta";
 import { Donut, Waterfall, PairedBars, LiveTrendCard, SmoothAreaLine, Sankey, Treemap, RadialGauge, RankedHBars, BulletChart, Sparkline, Radar5, NetWorthBridge, PayoffProgression, AmortizationArea, CompoundGrowthStack, StackedBars, HeatmapCalendar, GroupedYoY, ForecastCone, SlopeGraph, Sunburst, Dumbbell } from "./components/charts";
-import { RATIOS_META, ratFmt, ratColor, ratStatus, fmtDate, setLocale, gid, mkAcct, mkLoan, mk, migrateCard, migrateAccounts, migrateLoans, migrateAcctTypes, extractAcctsToProps, mig, SEED, FREQ, toM, fmt, fmtD, fmtS, bE, vEmail, fmtPh, fmtSSN, actB, sumB, sumN, sumG, effectiveMin, sumMin, cardMoInt, totalMoInt, payM, payL, mthPmt, availCredit, syncAssetLoans, getProperties, totalA, totalL, liquidA, esc, pLine, genCSV, dlCSV, expCSV, expAllCSV, parseCSV, isAlertDismissed, getClientRem, getAdvRem } from "./utils/finance";
-import { expBackup, validateBackup, findDuplicate, smartMerge, parseCRMCsv, parseWorkbook } from "./utils/import";
+import { RATIOS_META, setLocale, gid, mig, SEED, FREQ, fmt, sumB, sumN, sumMin, totalA, totalL, liquidA, expCSV, parseCSV } from "./utils/finance";
+import { expBackup, findDuplicate, smartMerge } from "./utils/import";
 import { LayoutDashboard, Users, FileInput, Calculator, Tag, BookOpen, Anchor, Settings as SettingsIcon, Shield, Receipt, HardDriveDownload, Archive, Sparkles, Bell, HelpCircle, LogOut, ImageIcon, BarChart3, PiggyBank, TrendingUp, Home, Wallet, TrendingDown, Car, KeyRound, Percent, Gem, Globe, AtSign, Mail, Phone, Award, GraduationCap, HeartHandshake, Target, Languages, ShieldCheck, CalendarCheck } from "lucide-react";
 import { T } from "./translations";
-import { ENGAGEMENT_LETTER, ELT_DEFAULTS, fillTokens } from "./engagementLetterTemplate";
+import { ENGAGEMENT_LETTER, ELT_DEFAULTS } from "./engagementLetterTemplate";
 
-import { BSolid, BootstrapSkeleton, Btn, CCircle, CalcRow, FH, Field, GAIcon, IAdd, InfoTip, Kebab, KpiTile, MaskedNumInp, Modal, NumInp, PTag, Paginator, Pill, ProfileToggleField, Row2, SA, SBadge, SC, SHdr, SSNInput, SaveBar, Skel, Tog, YearInp, _GA_ICONS, useAnimatedDisplay, useSrt, useViewport } from "./components/primitives";
-import { AffordabilityCalc, AmortTablePaginated, CalculatorsPage, CarLoanCalc, DebtReductionCalc, EquityTablePaginated, HomeEquityCalc, IncomeCalc, InterestCalc, PortfolioStandaloneCalc, RetirementCalc, STD_DED, SavingsCalc, TAX_BRACKETS, calcFedTax, getBracket } from "./components/calculators";
+import { BSolid, BootstrapSkeleton, Btn, CCircle, CalcRow, FH, Field, GAIcon, IAdd, InfoTip, Kebab, KpiTile, MaskedNumInp, Modal, NumInp, PTag, Paginator, Pill, ProfileToggleField, Row2, SA, SBadge, SC, SHdr, SSNInput, SaveBar, Skel, Tog, YearInp, _GA_ICONS, useViewport } from "./components/primitives";
+import { AffordabilityCalc, AmortTablePaginated, CalculatorsPage, CarLoanCalc, DebtReductionCalc, EquityTablePaginated, HomeEquityCalc, IncomeCalc, InterestCalc, PortfolioStandaloneCalc, RetirementCalc, STD_DED, SavingsCalc, TAX_BRACKETS } from "./components/calculators";
 import { IncomeModal, CardModal, BillModal, AccountModal, LoanModal, AssetModal, SplitAssignModal, JoinModal } from "./components/clientModals";
 import { IncomeSection, BillsSection, DebtSection, CustomAssetsSection, SavingsSection, NotesSection } from "./components/clientSections";
 import { ClientCalculatorsTab } from "./components/clientCalcs";
