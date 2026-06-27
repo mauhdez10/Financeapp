@@ -2,6 +2,27 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.53 — 2026-06-27 (Patch) — programmatic label↔input association on the 3 ad-hoc edit-client fields (ISS-88 slice, a11y WCAG 1.3.1 / 4.1.2)
+
+**FIX (a11y — WCAG 2.1 SC 1.3.1 "Info and Relationships" + SC 4.1.2 "Name, Role, Value", Level A):**
+Wired `htmlFor`↔`id` on the **3 ad-hoc `<div><label>…</label><input></div>` blocks in `ClientForm`**
+(`components/clientEditor.jsx`) — firstName (`:26`), lastName (`:27`), and p1Email (`:41`). Each rendered
+its visible `<label>` as a bare sibling of the input with **no programmatic association**, so a screen
+reader announced the control as "edit text" with no field name. Added `const uid=useId();` and set
+`<label htmlFor={`${uid}-fn|ln|em`}>` + the matching `<input id={…}>` so each control now exposes its
+label as its accessible name. **WHY:** SC 1.3.1/4.1.2 (Level A) require the label↔control relationship to
+be programmatically determinable; these advisor edit-modal name/email fields are hand-rolled blocks (not
+routed through the shared `Field` primitive), so the autonomous-safe fix is a direct `htmlFor`/`id` pair
+on the raw `<input>` — id lands on the real DOM node, accessible-name resolution is deterministic per the
+HTML spec (no `cloneElement`/custom-component edge case). **SCOPE — this is the isolated slice of ISS-88.**
+The remaining ~150 inputs that route through the shared `Field` primitive (`primitives.jsx:190`, which
+renders its `<label>` as a sibling with no `htmlFor`) are a high-blast-radius shared-surface change and
+stay **🟡owner-gated / attended** (queued in CRUISE_QUESTIONS) — not fixed here. **CHANGED:**
+`components/clientEditor.jsx` (import `useId`; `uid` hook; 3 label/input pairs), build marker → v0.83.53.
+**No new translation keys** (`htmlFor`/`id` are HTML tokens, not visible strings; label text unchanged in
+both EN/ES). Same objective-a11y class + verification basis (build + lint, deterministic spec) as the
+shipped ISS-85/86 pushes. Found in the 2026-06-27 item-4 a11y follow-through on ISS-88.
+
 ## v0.83.52 — 2026-06-27 (Patch) — autocomplete on self-entry email/phone inputs (ISS-86, a11y WCAG 1.3.5)
 
 **FIX (a11y — WCAG 2.1 SC 1.3.5 "Identify Input Purpose", Level AA):** Added the missing
