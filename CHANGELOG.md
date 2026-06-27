@@ -2,6 +2,43 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.35 — 2026-06-27 — fix(i18n): hardcoded-English alert()/confirm() browser dialogs bilingual (ISS-68)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–67 class):** every remaining hardcoded-English native
+`alert()` / `confirm()` browser dialog rendered English regardless of language — a Spanish advisor
+got English confirmation/notification popups. Sibling dialogs were already localized
+(`profileModal` `confirmRemoveSvc`/`logoTooLarge`, `admin` `refConfirmRemove`, `portal` revoke,
+`clientReports` `tickerReqErr`), so the surface was inconsistent. Localized all of them:
+
+- **`components/clientReports.jsx`** — the "✓ Portfolio included in report." notice
+  (`portfolioInclReport`); the three Complete-Report clear confirms (`confirmRemovePortfolio` ×2,
+  `confirmRemoveCompare`, `confirmRemoveCalcs`); "Select at least one month." (`selectOneMonth`);
+  "Applied to {n} month(s)." (`appliedToMonths`); the two export-holdings notices
+  (`addedHoldingsProfile`/`addedHoldingsMonth`); `ExportHoldingsModal`'s "Select at least one
+  holding." (`selectOneHolding`).
+- **`components/clientCalcs.jsx`** — scenario "Name and Balance required." (reused `nameBalanceReq`);
+  the snapshot-saved notice (`snapshotSavedMsg` — distinct from the short `snapshotSaved` button
+  label); the two clear-snapshot confirms (`confirmClearSnap`/`confirmClearAllSnaps`).
+- **`pages/admin.jsx`** — "Delete this service?" (reused `confirmRemoveSvc`); the permanent
+  client-delete confirm (`confirmDeleteClient`).
+- **`pages/marketing.jsx`** — "Promotion name is required." (reused `promoNameReq`); "Delete this
+  promotion?" (`confirmDeletePromo`).
+- **`src/App.jsx`** (`ClientDetail`) — CSV import "Imported!"/"Invalid CSV." (`csvImported`/
+  `invalidCsv`); "Copy failed: " prefix on both AI-summary copy handlers (`copyFailed`).
+
+**+17 new EN/ES keys** + 3 reused (`nameBalanceReq`/`confirmRemoveSvc`/`promoNameReq`, present in
+both dictionaries). Full-phrase `.replace()` token interpolation (`{n}`/`{m}`/`{x}`/`{name}`).
+
+**WHY:** D-3 is hard-locked — every visible string must exist in both `T.en` and `T.es`. Native
+browser dialogs are visible strings; these were the last cluster still bypassing the dictionary.
+
+**Pure display — autonomous-safe push.** Each `confirm()` boolean gate, each mutation payload
+(`onUpdate`/`onDelete`/`onSettingsChange`/`parseCSV`), and each `alert()` trigger condition is
+**untouched**; only the displayed text changed, each with an English fallback. Not the save path
+(matches ISS-61/64 disposition). Gates: build clean; lint 427 (408 err/19 warn) = baseline, 0 new,
+0 `no-undef`; EN/ES 2031/2031 symmetric (0 asym); node interpolation harness clean (no leftover
+tokens, both languages). Found in the item-1 cross-surface `alert`/`confirm` i18n scan.
+
 ## v0.83.34 — 2026-06-27 — fix(i18n): interactive Financial Plan tab bilingual (ISS-67, ISS-66 sub-scope)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–66 class):** the **interactive** `FinancialPlanTab`

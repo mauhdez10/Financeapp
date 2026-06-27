@@ -106,7 +106,7 @@ export function ClientDebtCalc({client,scope,t}){
   const toggle=id=>setSelIds(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
   const markAll=()=>setSelIds(new Set(allCombined.map(d=>d.id)));
   const clearAll=()=>setSelIds(new Set());
-  const addScen=()=>{if(!newScen.name||!newScen.balance){alert("Name and Balance required.");return;}const s={id:"scen_"+Date.now(),name:newScen.name,balance:+newScen.balance||0,apr:+newScen.apr||0,min:+newScen.min||0,debtType:newScen.debtType,person:"scenario",isScenario:true};setScenarios(p=>[...p,s]);setSelIds(p=>new Set([...p,s.id]));setNewScen({name:"",balance:"",apr:"",min:"",debtType:"card"});setShowScen(false);};
+  const addScen=()=>{if(!newScen.name||!newScen.balance){alert(t.nameBalanceReq||"Name and Balance required.");return;}const s={id:"scen_"+Date.now(),name:newScen.name,balance:+newScen.balance||0,apr:+newScen.apr||0,min:+newScen.min||0,debtType:newScen.debtType,person:"scenario",isScenario:true};setScenarios(p=>[...p,s]);setSelIds(p=>new Set([...p,s.id]));setNewScen({name:"",balance:"",apr:"",min:"",debtType:"card"});setShowScen(false);};
   const delScen=id=>{setScenarios(p=>p.filter(s=>s.id!==id));setSelIds(p=>{const n=new Set(p);n.delete(id);return n;});};
   const sumBal=sel.reduce((s,d)=>s+(+d.balance||0),0);
   const weightedApr=sumBal>0?sel.reduce((s,d)=>s+((+d.balance||0)*(+d.apr||0)),0)/sumBal:0;
@@ -341,14 +341,14 @@ export function ClientCalculatorsTab({client,onUpdate,t}){
     const snap={calcId:tab,name:current.emoji+" "+current.label,scope:scopeLabel,savedAt:new Date().toISOString(),inputs:captured.inputs,outputs:captured.outputs};
     const newSaved=existingSnap?saved.map(s=>s.calcId===tab?snap:s):[...saved,snap];
     onUpdate({...client,savedCalcs:newSaved});
-    alert("✓ Snapshot saved. It will appear in the Complete Report.");
+    alert(t.snapshotSavedMsg||"✓ Snapshot saved. It will appear in the Complete Report.");
   };
   const clearSnapshot=()=>{
-    if(!confirm(`Clear the saved ${current.label} snapshot?`))return;
+    if(!confirm((t.confirmClearSnap||"Clear the saved {x} snapshot?").replace("{x}",current.label)))return;
     onUpdate({...client,savedCalcs:saved.filter(s=>s.calcId!==tab)});
   };
   const clearAllSnapshots=()=>{
-    if(!confirm(`Clear ALL ${saved.length} calculator snapshot(s)?`))return;
+    if(!confirm((t.confirmClearAllSnaps||"Clear ALL {n} calculator snapshot(s)?").replace("{n}",saved.length)))return;
     onUpdate({...client,savedCalcs:[]});
   };
 

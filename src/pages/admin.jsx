@@ -113,7 +113,7 @@ function BillingPage({settings,onSettingsChange,t}){
   const INP={padding:"8px 10px",background:th.inp,border:"1px solid "+th.inpBorder,color:th.text,borderRadius:6,fontSize:12,outline:"none",boxSizing:"border-box",width:"100%"};
   const set=(i,k,v)=>onSettingsChange({...settings,services:services.map((s,idx)=>idx===i?{...s,[k]:v}:s)});
   const addSvc=()=>{onSettingsChange({...settings,services:[...services,{id:"svc-"+Date.now(),name:"New Service",price:"$0",stripeUrl:""}]});setSecOpen(p=>({...p,other:true}));};
-  const delSvc=i=>{if(!confirm("Delete this service?"))return;onSettingsChange({...settings,services:services.filter((_,idx)=>idx!==i)});};
+  const delSvc=i=>{if(!confirm(t?.confirmRemoveSvc||"Remove this service?"))return;onSettingsChange({...settings,services:services.filter((_,idx)=>idx!==i)});};
   const GROUPS=[
     {id:"memberships",label:t?.svcGroupMemberships||"Memberships",ids:["monthly-lite","monthly-lite-plus","annual-bundle"]},
     {id:"onetime",label:t?.svcGroupOneTime||"One-time services",ids:["initial-checkup","quarterly-review","strategy-session"]},
@@ -240,7 +240,7 @@ function ArchivedClientsPage({clients,onRestore,onDelete,t}){
             <div style={{fontSize:11,color:th.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email||"—"}</div>
           </div>
           <button onClick={()=>onRestore(c.id)} title={t?.restore||"Restore"} style={{padding:"6px 12px",borderRadius:8,background:th.pos+"22",color:th.pos,fontWeight:700,fontSize:11,border:`1px solid ${th.pos}44`,cursor:"pointer"}}>↩ {t?.restoreLbl||"Restore"}</button>
-          <button onClick={()=>{if(confirm(`Permanently delete ${c.firstName} ${c.lastName}? This cannot be undone.`))onDelete(c.id);}} title={t?.deletePermanent||"Delete permanently"} style={{padding:"6px 12px",borderRadius:8,background:"transparent",color:th.neg,fontWeight:700,fontSize:11,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>🗑 {t?.delete||"Delete"}</button>
+          <button onClick={()=>{if(confirm((t?.confirmDeleteClient||"Permanently delete {name}? This cannot be undone.").replace("{name}",`${c.firstName} ${c.lastName}`)))onDelete(c.id);}} title={t?.deletePermanent||"Delete permanently"} style={{padding:"6px 12px",borderRadius:8,background:"transparent",color:th.neg,fontWeight:700,fontSize:11,border:`1px solid ${th.neg}44`,cursor:"pointer"}}>🗑 {t?.delete||"Delete"}</button>
         </div>)}
       </div>}
   </div>;

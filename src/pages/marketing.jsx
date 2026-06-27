@@ -23,9 +23,9 @@ function PromotionsPage({settings,onSettingsChange,t}){
   const newPromo=()=>({id:gid(),name:"",type:"percent",value:25,appliesTo:"initial",startDate:"",endDate:"",code:"",clientFilter:"all",active:true,createdAt:new Date().toISOString()});
   const startEdit=p=>{setDraft({...p});setEditing(p.id);};
   const startNew=()=>{const p=newPromo();setDraft(p);setEditing(p.id);};
-  const save=()=>{if(!draft.name.trim()){alert("Promotion name is required.");return;}const exists=promos.find(p=>p.id===draft.id);const updated=exists?promos.map(p=>p.id===draft.id?draft:p):[...promos,draft];onSettingsChange({...settings,promotions:updated});setEditing(null);setDraft(null);};
+  const save=()=>{if(!draft.name.trim()){alert(t.promoNameReq||"Promotion name is required.");return;}const exists=promos.find(p=>p.id===draft.id);const updated=exists?promos.map(p=>p.id===draft.id?draft:p):[...promos,draft];onSettingsChange({...settings,promotions:updated});setEditing(null);setDraft(null);};
   const cancel=()=>{setEditing(null);setDraft(null);};
-  const del=id=>{if(!confirm("Delete this promotion?"))return;onSettingsChange({...settings,promotions:promos.filter(p=>p.id!==id)});};
+  const del=id=>{if(!confirm(t.confirmDeletePromo||"Delete this promotion?"))return;onSettingsChange({...settings,promotions:promos.filter(p=>p.id!==id)});};
   const toggleActive=id=>onSettingsChange({...settings,promotions:promos.map(p=>p.id===id?{...p,active:!p.active}:p)});
   const describe=p=>{const val=p.type==="percent"?`${p.value}% off`:p.type==="flat"?`$${p.value} off`:`$${p.value} bundle price`;const when=p.startDate&&p.endDate?`${p.startDate} → ${p.endDate}`:p.startDate?`from ${p.startDate}`:p.endDate?`until ${p.endDate}`:"always active";return`${val} · ${when}`;};
   const isActive=p=>{if(!p.active)return false;const today=new Date().toISOString().slice(0,10);if(p.startDate&&today<p.startDate)return false;if(p.endDate&&today>p.endDate)return false;return true;};

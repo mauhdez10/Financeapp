@@ -83,3 +83,5 @@ finance-cron · 2026-06-26T23:36:14Z · starting: ordered-map scan (bugs first; 
 finance-cron · 2026-06-26T23:51:14Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)
 
 finance-cron · 2026-06-27T00:05:52Z · starting: ISS-66 sub-scope — interactive PlanContent i18n (clientReports.jsx), reuses v0.83.33 keys
+
+finance-cron · 2026-06-27T00:33:35Z · shipped ISS-68 (v0.83.35) — hardcoded alert()/confirm() dialogs bilingual across 5 files
