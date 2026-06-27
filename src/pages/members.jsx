@@ -18,7 +18,7 @@ function MembersAdminPage({t,lang}){
   const load=async()=>{
     setState(s=>({...s,loading:true,error:""}));
     const r=await gaAdminMembers({action:"list"});
-    if(!r.ok){setState(s=>({...s,loading:false,error:r.error||"load failed"}));return;}
+    if(!r.ok){setState(s=>({...s,loading:false,error:r.error||(document.documentElement.lang==="es"?"Carga fallida":"Load failed")}));return;}
     setState({loading:false,error:"",counts:r.counts,income:r.income,members:r.members||[],stripeConfigured:!!r.stripeConfigured});
   };
   useEffect(()=>{load();},[]);
@@ -34,7 +34,7 @@ function MembersAdminPage({t,lang}){
     <div style={{display:"flex",alignItems:"center",gap:8,fontSize:9.5,color:th.dim,fontWeight:500,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8}}>{Icon&&<Icon size={13} strokeWidth={1.8}/>}{label}</div>
     <div style={{fontSize:23,fontWeight:600,color:color||th.text,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"-0.5px",fontVariantNumeric:"tabular-nums"}}>{value}</div>
   </div>;
-  const planChip=(m)=><span style={{fontSize:10,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",padding:"3px 9px",borderRadius:99,background:(m.plan==="free"?th.dim:th.accent)+"1A",color:m.plan==="free"?th.muted:th.accent,border:"1px solid "+((m.plan==="free"?th.dim:th.accent)+"33")}}>{m.plan}{m.comped?" · comp":""}</span>;
+  const planChip=(m)=><span style={{fontSize:10,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",padding:"3px 9px",borderRadius:99,background:(m.plan==="free"?th.dim:th.accent)+"1A",color:m.plan==="free"?th.muted:th.accent,border:"1px solid "+((m.plan==="free"?th.dim:th.accent)+"33")}}>{m.plan}{m.comped?(es?" · cortesía":" · comp"):""}</span>;
   return <div className="ga-np" style={{padding:24,maxWidth:1100,margin:"0 auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap"}}>
       <div style={{fontSize:12,color:th.muted}}>{es?"Cuentas de clientes, planes e ingresos — y Premium de cortesía.":"Client accounts, plans and income — and complimentary Premium."}</div>

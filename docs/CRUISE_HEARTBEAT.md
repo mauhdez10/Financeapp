@@ -107,3 +107,5 @@ finance-cron · 2026-06-27T02:06:30Z · starting ordered-map scan (item-1 correc
 finance-cron · 2026-06-27T02:11:00Z · shipped ISS-75 (v0.83.42) — Useful-Links search input aria-label (a11y/i18n)
 
 finance-cron · 2026-06-27T02:24:36Z · verify tick — prod healthy: live bundle == v0.83.42 (useful-links-search-aria), Playwright landing load 0 console errors, full render confirmed; item-1 autonomous queue drained, items 2/3 freshly done today
+
+finance-cron · 2026-06-27T02:36:40Z · starting item-1 deepening — members.jsx admin-page i18n investigation (obs 9712)

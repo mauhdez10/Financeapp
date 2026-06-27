@@ -2,6 +2,33 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.43 — 2026-06-27 — fix(i18n): Members-admin page two hardcoded-English strings bilingual (ISS-76)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–75 i18n class):** the **Members admin page**
+(`src/pages/members.jsx`, the owner's master view — every client account, plan counts, Stripe MRR,
+complimentary-Premium grant/revoke; nav-visible only for admin advisor accounts) localizes via the
+inline `es?"…":"…"` ternary idiom (like `landing.jsx`/`links.jsx`), and **almost every** string was
+already bilingual — but **two** rendered hardcoded English regardless of language:
+
+- **`src/pages/members.jsx:21`** — the load-error fallback `r.error||"load failed"` (shown in
+  `state.error`, line 43, when the `list` call returns `!ok` with no server `.error`) → now
+  `r.error||(document.documentElement.lang==="es"?"Carga fallida":"Load failed")`.
+- **`src/pages/members.jsx:37`** — the plan-chip comp suffix `{m.comped?" · comp":""}` (shown on every
+  complimentary-Premium row) → now `{m.comped?(es?" · cortesía":" · comp"):""}`, matching the page's
+  ES "Cortesía"/"Premium de cortesía" wording (lines 49/54).
+- **Footgun (ISS-41/65/72):** the line-21 fix reads `document.documentElement.lang` (the established
+  `<html lang>` pattern, kept in sync since v0.83.12) rather than closing the `load` callback over the
+  reactive `es` prop — closing over `es` made `react-hooks/exhaustive-deps` flag `useEffect(…,[])` for a
+  missing `load` dep (+1 lint warning). The DOM read keeps `load` free of reactive deps → 0 new lint.
+  `planChip` (line 37) is not in a dep array, so `es?` stays clean there.
+- **Zero new translation keys** — inline-ternary idiom, so EN/ES symmetry is unchanged by construction
+  (no `translations.js` edit). Same approach as ISS-72/75.
+- **Pure display — `gaAdminMembers`/`load`/`act` calls, the `state`/`grantEmail` payloads, and the
+  grant/revoke logic untouched → not save path → autonomous-safe push (matches ISS-72/75).**
+- **Gates:** build clean; lint 427/408 = baseline (0 new errors, 0 new warnings); EN/ES symmetry
+  unchanged. Found in the item-1 deepening scan of the admin-page surface (the last `es?`-idiom page not
+  yet i18n-swept).
+
 ## v0.83.42 — 2026-06-27 — fix(a11y/i18n): Useful-Links directory search input accessible name (ISS-75)
 
 **FIX (WCAG 4.1.2 / 3.3.2 — ISS-41/65/72/73 a11y-name class):** the **Useful-Links directory search
