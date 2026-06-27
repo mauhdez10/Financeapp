@@ -123,6 +123,14 @@ mismatches ISS-40/42.
    relabel the slot "Card Debt vs Savings" and switch the live point to a card-only figure for
    consistency the other way.)*
 
+> **Addendum (2026-06-27, finance-cron item-1):** this card-only-vs-total-debt decision also governs three
+> **save-path** sites that currently disagree on `monthSnapshots[].debt` — `NMModal` (`clientReports.jsx:116`)
+> and Excel-import (`import.js:159`) store **card-only** debt, while `saveHistoricalUpdate` (`clientReports.jsx:18`)
+> stores **cards + loans**. So editing an existing month inflates that month's stored debt (loans added) vs how it
+> was created/imported. Whatever you answer above, the same convention must be applied to all three sites so an
+> edited month's debt doesn't diverge from a created one. Captured under **ISS-48** (now also covers the `debt`
+> field; the cashFlow half of ISS-48 is independent and uses `effectiveMin` regardless of the ISS-80 answer).
+
 ## 2026-06-26 — ISS-60: `monthlyRows.spending` uses raw `c.min` (save path) · queued (appended by finance-cron, ordered-map item 1)
 
 While fixing the **display** raw-`c.min` divergences (ISS-59, shipped v0.83.27), I traced the same
