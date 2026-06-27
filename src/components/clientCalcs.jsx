@@ -113,8 +113,11 @@ export function ClientDebtCalc({client,scope,t}){
   const sumMinPay=sel.reduce((s,d)=>s+(d.debtType==="card"?(d.isScenario?(+d.min||Math.max(25,(+d.balance||0)*0.02)):effectiveMin(d)):Math.max(+d.min||0,Math.max(25,Math.round((+d.balance||0)*0.01)))),0);
   const totalMonthly=sumMinPay+extraPay;
   const r=weightedApr/100/12;
-  const months=totalMonthly>0&&sumBal>0?(r>0?Math.log(totalMonthly/(totalMonthly-sumBal*r))/Math.log(1+r):sumBal/totalMonthly):0;
-  const totalInt=totalMonthly*months-sumBal;
+  // payoff months — guard like canonical payM (finance.js): a blended min that can't outrun
+  // interest (totalMonthly<=sumBal*r) makes Math.log() of a non-positive number → NaN. Return
+  // null instead so the result renders "N/A" rather than literal "NaN mo (NaN yr)".
+  const months=totalMonthly>0&&sumBal>0?(r>0?(()=>{const n=Math.log(totalMonthly/(totalMonthly-sumBal*r))/Math.log(1+r);return isFinite(n)&&n>0?n:null;})():sumBal/totalMonthly):0;
+  const totalInt=months!=null&&isFinite(months)?totalMonthly*months-sumBal:null;
   // CC vs Loan breakdown
   const ccSel=sel.filter(d=>d.debtType==="card");const loanSel=sel.filter(d=>d.debtType==="loan");
   const ccBal=ccSel.reduce((s,d)=>s+(+d.balance||0),0);const loanBal=loanSel.reduce((s,d)=>s+(+d.balance||0),0);
@@ -220,9 +223,9 @@ export function ClientDebtCalc({client,scope,t}){
   <Row2><Field label={t?.extraMonthly||"Extra Monthly Payment ($)"}><MaskedNumInp style={INP} value={extraPay} onChange={e=>setExtraPay(+e.target.value||0)}/></Field><Field label={t?.strategyLbl||"Strategy"}><select style={INP} value={strat} onChange={e=>setStrat(e.target.value)}><option value="avalanche">{t?.avalancheOpt||"Avalanche (highest APR first)"}</option><option value="snowball">{t?.snowballOpt||"Snowball (smallest balance first)"}</option></select></Field></Row2>
   <div style={{...mCARD(th),padding:14,marginTop:10,background:th.pos+"08",border:`1px solid ${th.pos}33`}}>
     <CalcRow label={t?.monthlyPmtMinExtra||"Monthly Payment (min + extra)"} value={fmt(totalMonthly)} color={th.accent}/>
-    <CalcRow label={t.payoffTimeLbl||"Payoff Time"} value={sumBal>0&&totalMonthly>0?Math.ceil(months)+" mo ("+(months/12).toFixed(1)+" yr)":"N/A"} color={th.pos} big/>
-    <CalcRow label={t.totalInterest||"Total Interest"} value={fmt(totalInt)} color={th.neg}/>
-    <CalcRow label={t.totalPaidLbl||"Total Paid"} value={fmt(sumBal+totalInt)} color={th.muted}/>
+    <CalcRow label={t.payoffTimeLbl||"Payoff Time"} value={sumBal>0&&totalMonthly>0&&months!=null?Math.ceil(months)+" mo ("+(months/12).toFixed(1)+" yr)":"N/A"} color={th.pos} big/>
+    <CalcRow label={t.totalInterest||"Total Interest"} value={totalInt!=null?fmt(totalInt):"N/A"} color={th.neg}/>
+    <CalcRow label={t.totalPaidLbl||"Total Paid"} value={totalInt!=null?fmt(sumBal+totalInt):"N/A"} color={th.muted}/>
   </div>
   <div style={{...mCARD(th),padding:12,marginTop:10,fontSize:11,color:th.dim,lineHeight:1.6}}>ℹ️ Payoff uses blended weighted APR across selected debts. {strat==="avalanche"?"Avalanche prioritizes high-APR debts first (saves more interest).":"Snowball prioritizes smallest balances first (faster psychological wins)."}</div>
   {/* v0.38.0 — Charts: Ranked H Bars (sort + APR colors) + Payoff Progression timeline */}

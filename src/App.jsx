@@ -14,7 +14,7 @@ import { PremiumCtx, usePremiumGate, hasPremium, PremiumUpgrade, PremiumLockNote
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-27-v08353-clienteditor-label-htmlfor";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-06-27-v08354-clientdebt-payoff-nan-guard";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaLoadAllClientBlobs, gaSetArchived, gaLoadSettings, gaSaveSettings, gaSendSupportEmail, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mCARD } from "./styles/theme";

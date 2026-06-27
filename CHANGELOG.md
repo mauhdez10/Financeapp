@@ -2,6 +2,30 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.54 — 2026-06-27 (Patch) — guard the Client Debt-Reduction payoff against "NaN mo (NaN yr)" when min < interest (ISS-91, correctness)
+
+**FIX (money/display — correctness):** `ClientDebtCalc` (`components/clientCalcs.jsx`) reimplements the
+payoff-months formula inline (`:116`) instead of using the canonical `payM` (`utils/finance.js:53`), and
+unlike `payM` it **did not guard the non-payoff case**: when the selected debts' blended minimum payment
+can't outrun the interest (`totalMonthly ≤ sumBal·r`), `totalMonthly − sumBal*r` is ≤ 0 → `Math.log()` of
+a non-positive number → **NaN**. The result card then rendered the headline **"NaN mo (NaN yr)"** for
+Payoff Time, and Total Interest / Total Paid showed **"$0"** (because `fmt(NaN)` → `NaN||0` → `$0`).
+Reachable with ordinary data — a single real card with a low stated minimum, e.g. **$5,000 @ 29.99% with a
+$35 min** (a very common real-world card minimum): `effectiveMin=$35`, monthly interest ≈ $125, so the min
+alone can't outrun interest. **WHY:** the inline math omitted the `isFinite(n)&&n>0` guard that the
+canonical `payM` (and therefore the sibling standalone `DebtReductionCalc`) already applies. **FIX:** match
+`payM` — when the log result isn't finite-and-positive, set `months=null` and `totalInt=null`, and render
+**"N/A"** (the calc's existing not-computable literal, already used for the no-debt / zero-payment case —
+**no new visible string, EN/ES symmetry preserved**) for Payoff Time, Total Interest, and Total Paid.
+**Verified** with a node harness replicating `:111–117,223–225`: the two degenerate cases ($5k@29.99%/$35,
+$30k@28%/$50) go "NaN mo"/"$0" → "N/A"; two normal cases ($5k@20% no-min; $5k@29.99%/$35 +$200 extra) are
+**byte-identical** before vs after — the fix narrows only the degenerate path. Pure read/display surface
+(no save-path mutation; the `savedCalcs` snapshot captures whatever the DOM shows, now correct).
+**CHANGED:** `components/clientCalcs.jsx` (`ClientDebtCalc` `months`/`totalInt` guard + 3 result rows),
+`src/App.jsx` build marker → `v08354-clientdebt-payoff-nan-guard`. Found in the 2026-06-27 item-1 fresh
+correctness trace of `clientCalcs.jsx` (a never-money-traced surface). Same canonical-formula-vs-inline
+class as ISS-48/59, but here the divergence is a missing **payoff guard**, not raw `.min`.
+
 ## v0.83.53 — 2026-06-27 (Patch) — programmatic label↔input association on the 3 ad-hoc edit-client fields (ISS-88 slice, a11y WCAG 1.3.1 / 4.1.2)
 
 **FIX (a11y — WCAG 2.1 SC 1.3.1 "Info and Relationships" + SC 4.1.2 "Name, Role, Value", Level A):**
