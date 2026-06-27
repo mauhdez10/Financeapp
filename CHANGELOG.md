@@ -2,6 +2,35 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.37 — 2026-06-27 — fix(i18n): ClientDetail archive/restore modal bilingual (ISS-70)
+
+**FIX (D-3 bilingual — ISS-30–33/55/57/58/61–69 class):** the `ClientDetail` archive/restore
+**confirmation modal** (`src/App.jsx` — opened from the client-detail kebab → 📦 Archive / ↩ Unarchive)
+rendered fully hardcoded English regardless of language — the last named sub-scope ISS-68/69 left
+queued ("ClientDetail archive/restore modal body text in App.jsx — a separate sweep"). A Spanish
+advisor archiving/restoring a client saw an English title, body prose, and buttons. Localized:
+
+- the modal **title** — `↩ Restore Client` / `📦 Archive Client` (emoji kept inline; text via
+  `archiveModalRestoreTitle` / `archiveModalArchiveTitle`);
+- the **restore body** "Restore **{name}** to your active client list?" — split
+  `archiveModalRestoreA` + `<b>{name}</b>` + `archiveModalRestoreB` to preserve the mid-sentence bold
+  (ES wraps the bold inside the `¿…?` question: "¿Restaurar a **{name}** a tu lista de clientes activos?");
+- the **archive body** "Archive **{name}**? Data is preserved and can be restored." — same A/B split
+  ("¿Archivar a **{name}**? Los datos se conservan y se pueden restaurar.");
+- the **Cancel** button (reused `cancel`);
+- the dynamic action button — **Restore** (`restoreBtn`) / **Archive** (reused `kebabArchive`).
+
+**+7 new EN/ES keys** (`archiveModalArchiveTitle`, `archiveModalRestoreTitle`, `archiveModalArchiveA/B`,
+`archiveModalRestoreA/B`, `restoreBtn`) + 2 reused (`cancel`, `kebabArchive`). Every string carries an
+English fallback (`t.key||"…"`).
+
+**Pure display — not the save path.** The `onArchive(client.id)` mutation callback, the `client.archived`
+boolean gate driving which branch renders, and all stored payloads are untouched; only displayed text
+changed. → autonomous-safe push (matches ISS-61/64/68/69). Build clean; lint 427 (408 err) = baseline
+(0 new); EN/ES 2048/2048 (0 asymmetry). **Completes the ISS-68/69 out-of-scope queue** — the
+ClientDetail archive/restore modal was the last hardcoded confirmation surface in that batch. Found in
+the item-1/4 advisor-surface i18n sweep.
+
 ## v0.83.36 — 2026-06-27 — fix(i18n): ExportHoldingsModal body bilingual (ISS-69)
 
 **FIX (D-3 bilingual — ISS-30–33/55/57/58/61–68 class):** `ExportHoldingsModal`

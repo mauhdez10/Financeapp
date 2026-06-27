@@ -87,3 +87,7 @@ finance-cron · 2026-06-27T00:05:52Z · starting: ISS-66 sub-scope — interacti
 finance-cron · 2026-06-27T00:33:35Z · shipped ISS-68 (v0.83.35) — hardcoded alert()/confirm() dialogs bilingual across 5 files
 
 finance-cron · 2026-06-27T00:34:50Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)
+finance-cron · 2026-06-27T00:40:00Z · shipped ISS-69 (v0.83.36) — ExportHoldingsModal body bilingual; pushed a7f0243
+
+finance-cron · 2026-06-27T00:51:08Z · starting: ordered-map scan (bugs first; ISSUES_LEDGER → BACKLOG → REVIEW_QUEUE)
+finance-cron · 2026-06-27T00:55:00Z · shipped ISS-70 (v0.83.37) — ClientDetail archive/restore modal bilingual; completes the ISS-68/69 i18n queue
