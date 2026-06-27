@@ -2,6 +2,29 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.52 — 2026-06-27 (Patch) — autocomplete on self-entry email/phone inputs (ISS-86, a11y WCAG 1.3.5)
+
+**FIX (a11y — WCAG 2.1 SC 1.3.5 "Identify Input Purpose", Level AA):** Added the missing
+`autoComplete` attribute to three user-self-entry inputs that collect the user's own contact info:
+(1) the **landing hero email-capture** (`pages/landing.jsx:647` → `autoComplete="email"`) — the
+top-of-funnel field whose value is saved to `ga_signup_email` and carried into signup; (2/3) the
+**public intake form's own email + phone** (`pages/intake.jsx:456/457` → `email`/`tel`) — the line-450
+note confirms these are the submitter's *own* details ("your advisor pre-filled your name, email, and
+phone"). **WHY:** SC 1.3.5 (AA) requires the input purpose of fields collecting the user's own
+information to be programmatically identifiable; these three lacked it while every sibling field
+already had it — the landing **login** email (`:213`) carries `autoComplete="email"`, the login
+password is context-aware `current-password`/`new-password`, and the parallel prospect intake form
+(`:600/:618`) already uses `tel`. Beyond compliance it restores password-manager / browser autofill on
+the primary signup path. **SCOPE — deliberately NOT touched:** the advisor "Prospect"/"Partner" invite
+form emails (`intake.jsx:595/613`) collect data *about a prospect*, not the filling user, so autofilling
+the filler's own email would be semantically wrong (SC 1.3.5 scopes to the user's own info); left as-is.
+SSN inputs keep their intentional `autoComplete="off"`+`data-1p-ignore` (must never autofill). **GATE:**
+build clean (545ms, only the known ISS-07 chunk-size warning); lint **320 = baseline** (301 err/19 warn,
+**0 new**); no EN/ES change (`autoComplete` values are HTML tokens, not visible strings — symmetry
+unchanged). Pure additive DOM attribute, no behavior/logic/save-path change → autonomous-safe push
+(same a11y-attribute class as ISS-75/83/85). **CHANGED:** `src/pages/landing.jsx`, `src/pages/intake.jsx`,
+`src/App.jsx` (marker bump), `docs/ISSUES_LEDGER.md`.
+
 ## chore(lint) — 2026-06-27 — document 3 intentional empty catches on the account-link path (ISS-08)
 
 **CHORE (no version bump — comment-only, no app behavior change):** Added intent comments to the 3

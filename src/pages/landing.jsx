@@ -644,7 +644,7 @@ function LandingPage({lang,isDark,onToggle,onLangToggle,onSignIn,onPricing,onNav
           </p>
           <form onSubmit={e=>{e.preventDefault();try{sessionStorage.setItem("ga_signup_email",heroEmail.trim());}catch(_e){}onSignIn();}} style={{width:"100%",maxWidth:460}}>
             <div className="ga-liquid" style={{borderRadius:999,padding:"6px 6px 6px 22px",display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.01)"}}>
-              <input value={heroEmail} onChange={e=>setHeroEmail(e.target.value)} type="email" inputMode="email" placeholder={es?"Tu correo electrónico":"Enter your email"} style={{flex:1,minWidth:0,background:"transparent",border:"none",outline:"none",color:"#fff",fontSize:14.5,fontFamily:"inherit"}}/>
+              <input value={heroEmail} onChange={e=>setHeroEmail(e.target.value)} type="email" inputMode="email" autoComplete="email" placeholder={es?"Tu correo electrónico":"Enter your email"} style={{flex:1,minWidth:0,background:"transparent",border:"none",outline:"none",color:"#fff",fontSize:14.5,fontFamily:"inherit"}}/>
               <button type="submit" className="ga-press" style={{flexShrink:0,borderRadius:999,border:"none",cursor:"pointer",background:"linear-gradient(180deg,#EBD089 0%,#C9A84C 52%,#B58E1C 100%)",color:"#16120A",padding:"12px 24px",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.32)",fontSize:13,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap"}}>{es?"Empezar":"Get started"}</button>
             </div>
           </form>
