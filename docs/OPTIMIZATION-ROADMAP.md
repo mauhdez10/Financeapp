@@ -4,6 +4,33 @@
 > (multi-agent, 4 dimensions × ~7 recs → 28 → 22 deduped). Indexed in [LOGIC_MAP](LOGIC_MAP.md).
 > Ordered by (impact desc, effort asc). Cross-refs ISSUES_LEDGER where a rec fixes a known issue.
 
+## 🤖 AUTONOMOUS NEXT-5 (loop-safe, NO owner needed — do in this order)
+> Grounded in a 2026-07-01 Playwright verification of prod (v0.83.58 live, 0 console errors, lucide 22KB +
+> xlsx-lazy confirmed working; main `index` chunk still **1.32MB**, recharts **380KB** eager). Each item is
+> additive + headlessly/Playwright-verifiable, touches NO save path / role / RLS / owner decision.
+1. **Vitest suite for the money layer** *(arch·high·M)* — the ~15 cron-found money bugs (ISS-44…92: raw
+   `.min` vs `effectiveMin`, NaN payoffs, DSR/net-worth divergence, MI omissions) are pure-fn bugs a test
+   locks down. Pure additive (vitest devDep + `test/*` + CI script); self-verifying (`npm test`). **Biggest
+   safety ROI, zero app risk.** Port the scratchpad harnesses into named tests.
+2. **Route-split pages via `React.lazy` + Suspense** *(perf·high·M)* — the 1.32MB index ships marketing/
+   portal/intake/admin/members/onboarding the advisor hot path never touches. `lazy(()=>import('./pages/X'))`
+   behind one Suspense; **Playwright-verify EACH route renders** (navigate + snapshot + 0 console errors)
+   before push. Target index <900KB.
+3. **Lazy-load Recharts + memoize ClientDetail derivations** *(perf·med·M/S)* — recharts (380KB) falls out
+   of route-split; then IO-gate chart bodies + `useMemo` the per-render recomputes (debtForMode/liveSnap/
+   trendData). Playwright-verify charts still render.
+4. **Vendor-chunk split + `build.target:'es2022'`** *(perf·low·S)* — vite.config only; build-verifiable;
+   splits `@supabase` out of the catch-all vendor + drops legacy transpilation.
+5. **a11y remnants (ISS-88/89) + i18n key-integrity re-scan** *(ux·med·S)* — only if any remain after the
+   cron sweep; adding `htmlFor`/`aria-label` + converting `div`-onClick → `button` is additive + axe/
+   Playwright-verifiable.
+
+**Explicitly EXCLUDED (need owner or an attended session — the loop must NOT auto-do these):** reminder
+slices B/C (new client surface + getAdvRem gating), the atomic client-save RPC / ISS-12–18 (live save
+path), security ISS-19/20/21 (portal leak, admin gating), product calls (FG-1/2/4, restrict advisor
+signup, the 3 placeholder charts, Plaid), the 35 real react-hooks bugs (behavioral), PDF cold-start cost +
+Vercel Pro + JSONB-ceiling (infra/owner).
+
 ## 🥇 Top 3 — do first
 1. **Atomic client-save RPC** — one `ga_save_client` SECURITY DEFINER RPC (upsert ON CONFLICT + replace
    cms rows + RAISE on failure) **fixes ISS-12/13/15 as one root cause.** Highest risk in the app:
