@@ -23,10 +23,19 @@ lines. Scale data layer + crash fixes shipped; docs lifecycle + cruise infra in 
 
 ### CC "last-used / 0% APR + unused reminder" feature (2026-06-27, ROUND_01) — IN PROGRESS
 - ✅ **Slice A** — card `lastUsed` + `apr0End` fields + CardModal inputs + DebtSection badge + i18n. Shipped v0.83.55.
-- 🟢 **Slice B** — client-facing "card unused X months" reminder: `getClientRem` cardUnused logic +
-  client toggle/threshold setting (default 3mo, opt-in) + render on client Overview. EN/ES. Gate: golden-anchor-logic.
-- 🟢 **Slice C** — advisor "client's card unused" alert: `getAdvRem` + AlertsSettingsModal toggle +
-  server `ga_advisor_reminders` RPC parity (mind ISS-04 blob-only note). Gate: golden-anchor-logic.
+- ⛔ **Slice B (attended, needs a small spec)** — client-facing "card unused X months" reminder.
+  **Architecture note (2026-07-01):** `getClientRem(clients)` today feeds ONLY the advisor's "Client
+  Due" panel (dashboard.jsx:85) — **there is NO client-role reminder surface.** So Slice B = (1) a new
+  client-Overview reminders strip, (2) a client Settings toggle + `cardUnusedMonths` (default 3, opt-in),
+  (3) `getClientRem` gains a `settings` param + `cardUnused` logic (months-since `cc.lastUsed` >= N).
+  New surface → focused build, not autonomous.
+- ⛔ **Slice C (attended)** — advisor "client's card unused" alert. **Gating ambiguity to resolve first:**
+  `getAdvRem` gates on `settings.reminderAdvisor?.X` AND dashboard.jsx re-filters on `settings.alertTypes`
+  via a task-keyword `typeKeyMap` — two layers; confirm which is live before adding `cardUnused` (else it
+  silently never fires). Then add the `getAdvRem` branch + AlertsSettingsModal toggle + typeKeyMap entry.
+  **Scale caveat (ISS-04 class):** advisor holds summary rows, not blobs → `lastUsed` (blob-only) means
+  the alert only fires for loaded clients unless a `last_used`-derived summary column + backfill is added.
+  ✅ Data foundation (card `lastUsed`/`apr0End` fields) already shipped in Slice A (v0.83.55).
 
 ### Optimization roadmap — top items (2026-06-27 research; full doc: OPTIMIZATION-ROADMAP.md)
 - 🟢 **Deep-import lucide-react icons** (perf·high·S) — biggest bundle win, near-zero risk. **Loop-ok.**
