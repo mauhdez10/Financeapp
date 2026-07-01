@@ -36,7 +36,7 @@ function UsefulLinksPage({lang,client,onUpdateClient}){
       <input value={q} onChange={e=>setQ(e.target.value)} aria-label={es?"Buscar enlaces útiles":"Search useful links"} placeholder={es?"Buscar… (ej. casa, impuestos, tarjeta)":"Search… (e.g. house, taxes, card)"} style={{padding:"10px 13px",background:th.inp,border:"1px solid "+th.cardBorder,color:th.text,borderRadius:10,fontSize:13,outline:"none",width:260,fontFamily:"inherit"}}/>
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {cats.map(c=>{const on=!!open[c.id]||!!needle;const Icon=Lucide[c.icon]||Lucide.Link;const items=needle?c.hits:c.items;return<div key={c.id} style={{...mCARD(th),padding:0,overflow:"hidden"}}>
+      {cats.map(c=>{const on=!!open[c.id]||!!needle;const Icon=LICONS[c.icon]||Link;const items=needle?c.hits:c.items;return<div key={c.id} style={{...mCARD(th),padding:0,overflow:"hidden"}}>
         <button onClick={()=>setOpen(p=>({...p,[c.id]:!p[c.id]}))} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 17px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>
           <span style={{width:34,height:34,borderRadius:10,background:th.accent+"12",border:"1px solid "+th.accent+"26",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={16} strokeWidth={1.7} color={th.accent}/></span>
           <span style={{flex:1,minWidth:0}}>
@@ -44,7 +44,7 @@ function UsefulLinksPage({lang,client,onUpdateClient}){
             <span style={{display:"block",fontSize:11.5,color:th.muted,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{T(c.blurb)}</span>
           </span>
           <span style={{fontSize:10.5,color:th.dim,fontFamily:MONO,flexShrink:0}}>{items.length}</span>
-          <Lucide.ChevronDown size={15} strokeWidth={2} color={th.dim} style={{flexShrink:0,transform:on?"rotate(180deg)":"none",transition:"transform .2s cubic-bezier(.23,1,.32,1)"}}/>
+          <ChevronDown size={15} strokeWidth={2} color={th.dim} style={{flexShrink:0,transform:on?"rotate(180deg)":"none",transition:"transform .2s cubic-bezier(.23,1,.32,1)"}}/>
         </button>
         {on&&<div style={{padding:"0 17px 15px"}}>
           {(c.tips||[]).length>0&&<div style={{background:th.inp,border:"1px dashed "+th.cardBorder,borderRadius:10,padding:"10px 13px",marginBottom:11}}>
@@ -60,7 +60,7 @@ function UsefulLinksPage({lang,client,onUpdateClient}){
               <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
                 <span style={{fontSize:12.5,fontWeight:700,color:th.text}}>{it.name}</span>
                 <span style={{fontSize:10,color:th.dim,fontFamily:MONO}}>{it.free!==false?"$0":"💲"}{it.esSite?" · 🇪🇸":""}</span>
-                <Lucide.ExternalLink size={11} strokeWidth={1.8} color={th.dim}/>
+                <ExternalLink size={11} strokeWidth={1.8} color={th.dim}/>
               </div>
               <div style={{fontSize:12,color:th.muted,lineHeight:1.55,marginTop:3}}>{T(it.what)}</div>
               <div style={{fontSize:11,color:th.dim,lineHeight:1.5,marginTop:2,fontStyle:"italic"}}>{es?"Para: ":"For: "}{T(it.whoFor)}</div>
