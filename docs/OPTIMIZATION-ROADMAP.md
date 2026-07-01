@@ -8,10 +8,9 @@
 > Grounded in a 2026-07-01 Playwright verification of prod (v0.83.58 live, 0 console errors, lucide 22KB +
 > xlsx-lazy confirmed working; main `index` chunk still **1.32MB**, recharts **380KB** eager). Each item is
 > additive + headlessly/Playwright-verifiable, touches NO save path / role / RLS / owner decision.
-1. **Vitest suite for the money layer** *(arch·high·M)* — the ~15 cron-found money bugs (ISS-44…92: raw
-   `.min` vs `effectiveMin`, NaN payoffs, DSR/net-worth divergence, MI omissions) are pure-fn bugs a test
-   locks down. Pure additive (vitest devDep + `test/*` + CI script); self-verifying (`npm test`). **Biggest
-   safety ROI, zero app risk.** Port the scratchpad harnesses into named tests.
+1. ✅ **Vitest suite for the money layer** *(arch·high·M)* — **DONE 2026-07-01.** Added Vitest + scoped
+   `vitest.config.js` + `test/finance.test.js` (26 characterization tests locking §3 formulas); `npm test`
+   → 26/26 pass. Next: CI gate + expand to import.js smartMerge / monthlyRows.
 2. **Route-split pages via `React.lazy` + Suspense** *(perf·high·M)* — the 1.32MB index ships marketing/
    portal/intake/admin/members/onboarding the advisor hot path never touches. `lazy(()=>import('./pages/X'))`
    behind one Suspense; **Playwright-verify EACH route renders** (navigate + snapshot + 0 console errors)

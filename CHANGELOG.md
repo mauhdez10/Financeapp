@@ -2,6 +2,20 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## Tooling — 2026-07-01 (no app change, no marker bump) — Vitest money-layer test suite (`npm test`)
+
+The recurring bug class the autonomous cron kept finding (ISS-44…92: `effectiveMin` vs raw `.min`, `payM`
+NaN payoffs, net-worth/DSR divergence, market-investment omissions) is pure-function correctness — a unit
+test catches each in one line. Added **Vitest** (devDep; reuses the existing Vite 8), a scoped
+`vitest.config.js` (unit tests only — excludes the Playwright `tests/**` specs, which run via
+`npm run test:e2e`), and **`test/finance.test.js` — 26 characterization tests** locking `golden-anchor-logic`
+§3: `toM`/FREQ normalization, `effectiveMin` (floor $25, cap at balance, 0 at zero balance), `sumMin`,
+`payM` (0% ⇒ ceil, null-when-payment-can't-outrun-interest), `mthPmt`, `cardMoInt` (promo rates), `totalA`
+(includes market investments), `totalL`, net worth = totalA−totalL, `liquidA` (checking/savings only),
+`getProperties` (properties-over-customAssets), `availCredit`. `npm test` → **26/26 pass** (196ms). Pure
+additive test infra — no app/save-path change. Roadmap AUTONOMOUS-NEXT-5 item #1. **Next:** wire into a CI
+gate + expand to `import.js` smartMerge / monthlyRows.
+
 ## v0.83.58 — 2026-07-01 (Patch) — bundle optimization: lucide deep-import + xlsx lazy-load (~1.1MB off eager load)
 
 Two top items from `docs/OPTIMIZATION-ROADMAP.md`, in-chat loop:
