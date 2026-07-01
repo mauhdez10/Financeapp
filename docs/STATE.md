@@ -6,7 +6,7 @@
 > [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-07-01**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-07-01-v08356-promo-apr0-end-date-tz-utc` (v0.83.56). *(v0.83.55 = owner's CC-card `lastUsed`/`apr0End` fields; v0.83.56 = autonomous ISS-92 promo/APR-end date-TZ fix.)*
+- **Marker:** `__GA_BUILD__ = 2026-07-01-v08357-promo-apr0-end-date-i18n-months` (v0.83.57). *(v0.83.55 = owner's CC-card `lastUsed`/`apr0End` fields; v0.83.56 = autonomous ISS-92 promo/APR-end date-TZ fix; v0.83.57 = autonomous ISS-92 follow-up, D-3: localize those badges' month names for ES mode.)*
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).

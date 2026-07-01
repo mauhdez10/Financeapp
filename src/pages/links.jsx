@@ -3,7 +3,10 @@
 // src/constants/usefulLinks.js, researched 2026-06-11). Premium-gated per the
 // owner's gate list; in-app only (not downloadable). Advisors always see it.
 import { useState } from "react";
-import * as Lucide from "lucide-react";
+import { ChevronDown, ExternalLink, Link, Accessibility, Baby, Banknote, Car, CloudRainWind, CreditCard, FileText, Globe, GraduationCap, HeartPulse, Home, Landmark, LifeBuoy, Plane, ShieldCheck, Wallet } from "lucide-react";
+// Explicit map so category icons resolve WITHOUT a namespace import (namespace import
+// forced all ~1000 lucide icons into the bundle → 625KB chunk). Only these 16 ship now.
+const LICONS = { Accessibility, Baby, Banknote, Car, CloudRainWind, CreditCard, FileText, Globe, GraduationCap, HeartPulse, Home, Landmark, LifeBuoy, Plane, ShieldCheck, Wallet, Link };
 import { useTh } from "../contexts/theme";
 import { mCARD } from "../styles/theme";
 import { USEFUL_LINKS } from "../constants/usefulLinks";

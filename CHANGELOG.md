@@ -2,6 +2,30 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.57 — 2026-07-01 (Patch) — promo / 0%-APR-end date badges rendered English month names in Spanish mode (ISS-92 follow-up, D-3 bilingual)
+
+**FIX (display — D-3 bilingual):** the same four credit-card date badges the v0.83.56 TZ fix touched still
+formatted their month with a **hardcoded `"en-US"`** locale, so a client or advisor using the app in Spanish
+saw English month abbreviations — e.g. a promo/0%-APR-end date on `2026-08-01` showed **"Aug 26"** instead of
+**"ago 26"**, `2027-01-01` showed **"Jan 2027"** instead of **"ene 2027"**. D-3 (EN/ES bilingual) is
+launch-required, so month names must localize with the UI. **WHY:** `toLocaleDateString("en-US",…)` pins the
+locale to English regardless of `lang`. **FIX:** swap the hardcoded `"en-US"` for the app's established
+`_gaLang()==="es"?"es-ES":"en-US"` pattern (the same helper already used by `addDate` in
+`reportBlocks.jsx`/`clientReports.jsx`, by `legal.jsx`, and by the report as-of date) — `_gaLang()` reads
+`window.__GA_LANG` (kept in sync with `lang` in `App.jsx`). **No new translation key** — the Intl API produces
+the localized month name, so `translations.js` is untouched and EN/ES symmetry holds. The `timeZone:"UTC"` from
+ISS-92 is preserved on every call (harness re-verified TZ-safety alongside the locale switch). **CHANGED (all
+display-only, no save-path):** the v0.83.55 `apr0End` "0% ends MMM YY" badge + its sibling promo-end line
+(`components/clientSections.jsx` DebtSection — plus the `_gaLang` import added there), the CardModal promo list
+(`components/clientModals.jsx` — `_gaLang` import added), and the report promo-rates block
+(`components/clientReports.jsx`, already imported `_gaLang`). **Gates:** `npm run build` clean; `npx eslint src`
+= 312 problems (identical to the v0.83.56 baseline — zero new); node harness `scratchpad/i18nmonths.mjs` under
+`TZ=America/New_York` confirms ES → Spanish months (ago/ene/nov/mar) with year unchanged (no UTC rollback).
+Found in the 2026-07-01 item-1 continuation of the ISS-92 correctness trace (the deferred i18n nit noted in the
+ISS-92 ledger entry). **Remaining siblings (logged, not this patch):** `reportBlocks.jsx:85` saved-calc
+"Saved {date}" timestamp and `utils/finance.js:12` `fmtDate` also format with local/`en-US` accessors — separate
+future traces (different surfaces; `fmtDate` inputs not yet confirmed date-only).
+
 ## v0.83.56 — 2026-07-01 (Patch) — promo / 0%-APR-end date badges showed the WRONG MONTH in timezones west of UTC (ISS-92, correctness)
 
 **FIX (display — correctness):** every credit-card "promotional-rate ends" / "0% APR ends" date badge parsed
