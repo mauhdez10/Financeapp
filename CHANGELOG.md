@@ -8,13 +8,15 @@ The recurring bug class the autonomous cron kept finding (ISS-44…92: `effectiv
 NaN payoffs, net-worth/DSR divergence, market-investment omissions) is pure-function correctness — a unit
 test catches each in one line. Added **Vitest** (devDep; reuses the existing Vite 8), a scoped
 `vitest.config.js` (unit tests only — excludes the Playwright `tests/**` specs, which run via
-`npm run test:e2e`), and **`test/finance.test.js` — 26 characterization tests** locking `golden-anchor-logic`
+`npm run test:e2e`), and **`test/finance.test.js` — 36 characterization tests** locking `golden-anchor-logic`
 §3: `toM`/FREQ normalization, `effectiveMin` (floor $25, cap at balance, 0 at zero balance), `sumMin`,
 `payM` (0% ⇒ ceil, null-when-payment-can't-outrun-interest), `mthPmt`, `cardMoInt` (promo rates), `totalA`
 (includes market investments), `totalL`, net worth = totalA−totalL, `liquidA` (checking/savings only),
-`getProperties` (properties-over-customAssets), `availCredit`. `npm test` → **26/26 pass** (196ms). Pure
-additive test infra — no app/save-path change. Roadmap AUTONOMOUS-NEXT-5 item #1. **Next:** wire into a CI
-gate + expand to `import.js` smartMerge / monthlyRows.
+`getProperties`, `availCredit`, `actB` (regular/annual/temporary activity), `getClientRem` (card reminder uses
+`effectiveMin` — ISS-56), `getAdvRem` (No-Contact/High-DSR thresholds + the toggle gate), and `mig` (back-fills
+the CC `lastUsed`/`apr0End` fields — v0.83.55). `npm test` → **36/36 pass** (198ms). Pure additive test infra —
+no app/save-path change. Roadmap AUTONOMOUS-NEXT-5 item #1. **Next:** wire into a CI gate (+ tests for import.js
+`smartMerge` and, once ISS-18 is fixed, `monthlyRows`).
 
 ## v0.83.58 — 2026-07-01 (Patch) — bundle optimization: lucide deep-import + xlsx lazy-load (~1.1MB off eager load)
 

@@ -11,15 +11,18 @@
 1. ✅ **Vitest suite for the money layer** *(arch·high·M)* — **DONE 2026-07-01.** Added Vitest + scoped
    `vitest.config.js` + `test/finance.test.js` (26 characterization tests locking §3 formulas); `npm test`
    → 26/26 pass. Next: CI gate + expand to import.js smartMerge / monthlyRows.
-2. **Route-split pages via `React.lazy` + Suspense** *(perf·high·M)* — the 1.32MB index ships marketing/
-   portal/intake/admin/members/onboarding the advisor hot path never touches. `lazy(()=>import('./pages/X'))`
-   behind one Suspense; **Playwright-verify EACH route renders** (navigate + snapshot + 0 console errors)
-   before push. Target index <900KB.
+2. ⛔ **Route-split pages via `React.lazy`** *(perf·high·L — RE-SCOPED to attended 2026-07-01)* — **NOT
+   cleanly autonomous.** Investigated: the `src/pages/*.jsx` files are NOT single-component route modules —
+   they're grab-bags of named exports (marketing 10, admin 14, intake 12) mixing hot-path AND cold-path
+   components in ONE file, so `React.lazy` (per default export) doesn't map without **splitting those files
+   first** (a refactor touching many render sites — medium risk, not additive). Do this attended: split
+   e.g. `public-intake.jsx` off `intake.jsx`, then lazy the cold half; Playwright-verify each route.
 3. **Lazy-load Recharts + memoize ClientDetail derivations** *(perf·med·M/S)* — recharts (380KB) falls out
    of route-split; then IO-gate chart bodies + `useMemo` the per-render recomputes (debtForMode/liveSnap/
    trendData). Playwright-verify charts still render.
-4. **Vendor-chunk split + `build.target:'es2022'`** *(perf·low·S)* — vite.config only; build-verifiable;
-   splits `@supabase` out of the catch-all vendor + drops legacy transpilation.
+4. ⏸️ **Vendor-chunk split + `build.target:'es2022'`** *(perf·low·S — mostly moot 2026-07-01)* — `@supabase`
+   is ALREADY split in vite.config; and `build.target:'es2022'` measured a **0-byte delta** (rolldown/Vite 8
+   already emits modern JS). Not worth a change. (Kept for the record.)
 5. **a11y remnants (ISS-88/89) + i18n key-integrity re-scan** *(ux·med·S)* — only if any remain after the
    cron sweep; adding `htmlFor`/`aria-label` + converting `div`-onClick → `button` is additive + axe/
    Playwright-verifiable.

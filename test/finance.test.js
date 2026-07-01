@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   FREQ, toM, effectiveMin, sumMin, payM, mthPmt, cardMoInt,
   sumN, sumG, sumB, totalA, totalL, liquidA, getProperties, availCredit,
+  actB, getClientRem, getAdvRem, mig,
 } from "../src/utils/finance.js";
 
 describe("toM — frequency normalization to monthly (§3 FREQ)", () => {
@@ -113,4 +114,61 @@ describe("getProperties — properties-over-customAssets, counted once (§6)", (
 describe("availCredit — limit minus balance, never negative", () => {
   it("computes remaining credit", () =>
     expect(availCredit({ balance: 300, limit: 1000 })).toBe(700));
+});
+
+describe("actB — active bills (§3): regular always · annual only in dueMonth · temporary until maturity", () => {
+  const curMonth = new Date().getMonth() + 1;
+  const otherMonth = curMonth === 12 ? 1 : curMonth + 1;
+  const bills = [
+    { id: 1, name: "Rent", type: "regular", cost: 1000, freq: "monthly2", dueDay: 1 },
+    { id: 2, name: "AnnualElsewhere", type: "annual", cost: 600, dueMonth: otherMonth, freq: "annual" },
+    { id: 3, name: "MaturedTemp", type: "temporary", cost: 50, freq: "monthly2", maturity: "2020-01-01" },
+  ];
+  const active = actB(bills).map((b) => b.name);
+  it("keeps regular bills", () => expect(active).toContain("Rent"));
+  it("drops an annual bill outside its due month", () => expect(active).not.toContain("AnnualElsewhere"));
+  it("drops a temporary bill past its maturity", () => expect(active).not.toContain("MaturedTemp"));
+});
+
+describe("getClientRem — client due reminders use effectiveMin, not raw .min (ISS-56)", () => {
+  const rem = getClientRem([
+    { id: 1, firstName: "A", lastName: "B", bills: [], cards: [{ id: 9, name: "Visa", balance: 1000, apr: 24, min: 50, promos: [] }] },
+  ]);
+  const card = rem.find((r) => r.type === "card");
+  it("emits a card reminder for a card with a balance", () => expect(card).toBeTruthy());
+  it("the amount is effectiveMin (50), scoped to the client", () => {
+    expect(card.amount).toBeCloseTo(50, 2);
+    expect(card.clientId).toBe(1);
+    expect(card.name).toBe("Visa");
+  });
+});
+
+describe("getAdvRem — advisor alerts fire on §3 thresholds and respect the toggle", () => {
+  const on = { reminderAdvisor: { noContact: true, highDebt: true, promoExpiring: true, debtIncreasing: true }, noContactDays: 30 };
+  it("No-Contact fires for a client with no snapshots (days=999)", () => {
+    const rem = getAdvRem([{ id: 1, firstName: "No", lastName: "Contact", incomeStreams: [], cards: [], monthSnapshots: [] }], on);
+    expect(rem.some((r) => r.type === "noContact")).toBe(true);
+  });
+  it("High-DSR fires when card min / net income > 36%", () => {
+    const c = { id: 2, firstName: "High", lastName: "DSR", incomeStreams: [{ net: 1000, gross: 1300, freq: "monthly2" }], cards: [{ balance: 5000, apr: 24, min: 400, promos: [] }], monthSnapshots: [{ savedAt: new Date().toISOString(), debt: 5000 }] };
+    expect(getAdvRem([c], on).some((r) => r.type === "highDebt")).toBe(true);
+  });
+  it("the toggle gates it: No-Contact off ⇒ no No-Contact reminder", () => {
+    const rem = getAdvRem([{ id: 1, firstName: "No", lastName: "Contact", incomeStreams: [], cards: [], monthSnapshots: [] }], { reminderAdvisor: { noContact: false } });
+    expect(rem.some((r) => r.type === "noContact")).toBe(false);
+  });
+});
+
+describe("mig — card migration back-fills defaults incl. the CC feature fields (v0.83.55)", () => {
+  const card = mig({ cards: [{ id: 1, name: "Visa", balance: 100, apr: 20, min: 30 }] }).cards[0];
+  it("back-fills lastUsed + apr0End to '' (CC feature)", () => {
+    expect(card.lastUsed).toBe("");
+    expect(card.apr0End).toBe("");
+  });
+  it("defaults owedBy=joint + normalizes promos to an array; preserves given fields", () => {
+    expect(card.owedBy).toBe("joint");
+    expect(Array.isArray(card.promos)).toBe(true);
+    expect(card.name).toBe("Visa");
+    expect(card.balance).toBe(100);
+  });
 });
