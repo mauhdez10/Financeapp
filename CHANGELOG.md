@@ -2,6 +2,28 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.56 — 2026-07-01 (Patch) — promo / 0%-APR-end date badges showed the WRONG MONTH in timezones west of UTC (ISS-92, correctness)
+
+**FIX (display — correctness):** every credit-card "promotional-rate ends" / "0% APR ends" date badge parsed
+its stored date-only string (`YYYY-MM-DD`, produced by an `<input type="date">`) with `new Date(str)` — which
+JS interprets as **UTC midnight** — then formatted it with `toLocaleDateString(...)` in the **viewer's local
+timezone**. For any advisor west of UTC (the owner is in Miami, UTC−4/−5), a promo/APR-end date on a low
+day-of-month rolls back a day at format time, so a badge for e.g. `2026-08-01` rendered **"Aug ends Jul 26"**,
+and `2027-01-01` rendered **"Dec 26"** — wrong month, sometimes wrong year. **WHY:** date-only ISO strings are
+UTC-anchored but `toLocaleDateString` defaults to local TZ; the two disagree for the first ~day of each month
+in negative-offset zones. **FIX:** add `timeZone:"UTC"` to the four affected `{month,year}` format calls so the
+displayed calendar month/year matches the stored ISO date regardless of the viewer's zone — additive, no new
+visible string (**EN/ES symmetry preserved**), stored values untouched. **CHANGED (all display-only, no
+save-path):** the new v0.83.55 `apr0End` "0% ends MMM YY" badge (`components/clientSections.jsx` DebtSection) +
+its sibling per-card promo-end line, the CardModal promo list (`components/clientModals.jsx`), and the report
+promo-rates block (`components/clientReports.jsx`). **Verified** with a node harness (`scratchpad/apr0tz.mjs`)
+reproducing the exact format calls under `TZ=America/New_York` / `America/Los_Angeles` / `UTC`: pre-fix the 1st
+of a month drifts to the prior month/year, post-fix all cases render the stored month. Build clean; no new lint
+(only an option added to existing calls); marker → `2026-07-01-v08356-promo-apr0-end-date-tz-utc`. Found in the
+2026-07-01 item-1 correctness trace of the just-shipped v0.83.55 CC-card feature. **Not touched (deferred):**
+`fmtDate` (`utils/finance.js`) uses local date accessors too but its inputs weren't confirmed date-only — a
+separate future trace.
+
 ## v0.83.54 — 2026-06-27 (Patch) — guard the Client Debt-Reduction payoff against "NaN mo (NaN yr)" when min < interest (ISS-91, correctness)
 
 **FIX (money/display — correctness):** `ClientDebtCalc` (`components/clientCalcs.jsx`) reimplements the
