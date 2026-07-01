@@ -21,6 +21,21 @@ lines. Scale data layer + crash fixes shipped; docs lifecycle + cruise infra in 
 
 ## Queue (top = next)
 
+### CC "last-used / 0% APR + unused reminder" feature (2026-06-27, ROUND_01) — IN PROGRESS
+- ✅ **Slice A** — card `lastUsed` + `apr0End` fields + CardModal inputs + DebtSection badge + i18n. Shipped v0.83.55.
+- 🟢 **Slice B** — client-facing "card unused X months" reminder: `getClientRem` cardUnused logic +
+  client toggle/threshold setting (default 3mo, opt-in) + render on client Overview. EN/ES. Gate: golden-anchor-logic.
+- 🟢 **Slice C** — advisor "client's card unused" alert: `getAdvRem` + AlertsSettingsModal toggle +
+  server `ga_advisor_reminders` RPC parity (mind ISS-04 blob-only note). Gate: golden-anchor-logic.
+
+### Optimization roadmap — top items (2026-06-27 research; full doc: OPTIMIZATION-ROADMAP.md)
+- 🟢 **Deep-import lucide-react icons** (perf·high·S) — biggest bundle win, near-zero risk. **Loop-ok.**
+- 🟢 **Dynamic-import XLSX behind import wizard** (perf·high·S) — advisor-only 122KB. **Loop-ok.**
+- 🟢 **Route-split pages via React.lazy** (perf·high·M) — index chunk <800KB. **Loop-ok (verify each surface).**
+- 🟢 **Vitest for the money layer** (arch·high·M) — port harnesses; catches the ISS-44…91 class. **Loop-ok.**
+- ⛔ **Atomic client-save RPC** (fixes ISS-12/13/15) — the #1 priority but ⛔attended (live save path).
+- 🟡 **Confirm Vercel Pro plan** — owner dashboard check (launch blocker).
+
 ### Owner-approved features — 2026-06-26 (direction GREEN; each needs a spec/plan before code)
 > Approved from the feature-gap scan. These are **large new surfaces** — each gets brainstorm → spec
 > (`docs/superpowers/specs/`) → plan before implementation; build to spec, EN/ES (D-3), consult

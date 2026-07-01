@@ -36,6 +36,7 @@
 |---|---|---|---|
 | [../CHANGELOG.md](../CHANGELOG.md) | ① | The decision ledger — versioned history + the *why* | Knowing what shipped/why |
 | [ARCHITECTURE-PLAN.md](ARCHITECTURE-PLAN.md) | ① | D-37 modularization plan (Phase 2 in progress) | Before a structural refactor |
+| [OPTIMIZATION-ROADMAP.md](OPTIMIZATION-ROADMAP.md) | ① | Prioritized optimization roadmap (perf/arch/UX/cost) from the 2026-06-27 research | Planning what to optimize next |
 
 ## Current state & work queues (live, ephemeral)
 | Doc | Tag | What | Kill-condition |
