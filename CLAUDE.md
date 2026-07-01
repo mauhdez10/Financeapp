@@ -63,11 +63,17 @@
 
 ---
 
-## 🗓 Session handoff — last update 2026-06-11 (finish-the-project run COMPLETE)
+## 🗓 Session handoff — last update 2026-07-01 (autonomous cruise + optimization cycle)
+
+> **The narrative below this section is HISTORICAL (the 2026-06-11 v0.76.2 run).** For the live current
+> state, trust **[docs/STATE.md](docs/STATE.md)** + the `__GA_BUILD__` marker over this prose.
 
 ### Currently shipped (live on Vercel)
 
-**v0.76.2** — `2026-06-11-v0762-function-consolidation-linkr-verified`
+**v0.83.58** — `2026-07-01-v08358-xlsx-lazy-import-off-eager-path`. Since v0.76.2: Phase-2 modularization
+(App.jsx 8,502 → **926 lines**), the scalable data layer + client portal, the docs-lifecycle system +
+cruise mode, a day-long autonomous sweep (~ISS-27→92 bug/i18n/a11y/calc), the CC-card `lastUsed`/`apr0End`
+fields (v0.83.55), and lucide+xlsx bundle optimization (~1.1MB off eager load). Full history: CHANGELOG.md.
 
 **The 2026-06-11 master-directive run shipped ALL 12 workstreams** (v0.72.4 → v0.76.2):
 pricing realigned in live Stripe (GACLIENT50, real Lite+, Premium product), email

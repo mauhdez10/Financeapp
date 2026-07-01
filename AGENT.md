@@ -37,12 +37,16 @@ When working in a fresh session, **read App.jsx before proposing changes**. Don'
 
 ## 3. Current version
 
-**v0.80.7** — 2026-06-24. Phase 2 decomposition in progress (`App.jsx` down to ~3,023 lines from
-8,502). Since v0.69.8: the full 2026-06-11 master-directive run (pricing realign, email verify +
-onboarding, landing + public pages, Free/Premium ladder + choose-your-price, payment→activation
-webhook, Members admin, Link-R account linking, Useful-Links directory, referral network, AI export,
-DIME+Inflation calcs); landing hero iterations (v0.77 tides → v0.78 video → v0.79 cube → v0.80 smoke
-→ reverted to video, light-fade fix); and the Phase 2 extraction slices v0.80.3–v0.80.7.
+**v0.83.58** — 2026-07-01. `App.jsx` now **926 lines** (from 8,502 origin) — Phase 2 extraction largely
+complete. Since v0.80.7: the docs-lifecycle system was built (LOGIC_MAP/UNIVERSAL_RULES/STATE/
+ISSUES_LEDGER/DEPENDENCY-MAP + finance-review-mode/finance-feedback-intake skills, 2026-06-25/26); the
+9-commit scale + crash-fix stack shipped (v0.83.1–v0.83.7); a day-long autonomous cruise loop shipped
+~ISS-27 → ISS-92 (bug/i18n/a11y/calc fixes, v0.83.8–v0.83.54); the credit-card `lastUsed`/`apr0End`
+fields (v0.83.55, CC feature slice A); promo/0%-APR-end TZ + bilingual fixes (v0.83.56–v0.83.57); and
+lucide + xlsx bundle optimization (v0.83.57–v0.83.58, ~1.1MB off the eager load path).
+**Trust the live `__GA_BUILD__` marker + docs/STATE.md over this line if they disagree.**
+> ⚠️ Version note: v0.83.57 was briefly used twice (the cron's ISS-92 i18n fix AND the lucide fix); the
+> live marker resolved to v0.83.58 (xlsx). Both optimizations are documented under v0.83.58 in CHANGELOG.
 
 **Build marker check:** `grep -o '__GA_BUILD__="[^"]*"' src/App.jsx` — **trust the marker over any
 doc.** The full per-version history lives in `CHANGELOG.md` (newest on top).

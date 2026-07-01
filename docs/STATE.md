@@ -6,13 +6,13 @@
 > [ISSUES_LEDGER.md](ISSUES_LEDGER.md). Last updated: **2026-07-01**.
 
 ## Live now
-- **Marker:** `__GA_BUILD__ = 2026-07-01-v08357-promo-apr0-end-date-i18n-months` (v0.83.57). *(v0.83.55 = owner's CC-card `lastUsed`/`apr0End` fields; v0.83.56 = autonomous ISS-92 promo/APR-end date-TZ fix; v0.83.57 = autonomous ISS-92 follow-up, D-3: localize those badges' month names for ES mode.)*
+- **Marker:** `__GA_BUILD__ = 2026-07-01-v08358-xlsx-lazy-import-off-eager-path` (v0.83.58). *(v0.83.55 = owner's CC-card `lastUsed`/`apr0End` fields; v0.83.56–57 = autonomous ISS-92 promo/APR-end date TZ + ES-month i18n; v0.83.57–58 = lucide deep-import + xlsx lazy-load, ~1.1MB off eager load. Note: v0.83.57 was used twice — cron ISS-92 i18n + lucide — resolved at the v0.83.58 marker.)*
 - **Deployed:** https://finance.goldenanchor.life (Vercel auto-deploys `main`).
 - **origin/main == local HEAD** — clean base, **no held stack** (the v0.83.1→v0.83.7 stack was
   approved and pushed 2026-06-25; the v0.83.1 save-toast gate shipped, accepted in test-mode).
 
 ## Codebase shape
-- Single-file-origin React/Vite SPA. `src/App.jsx` ≈ 3,023 lines (down from 8,502) after the D-37
+- Single-file-origin React/Vite SPA. `src/App.jsx` = **926 lines** (down from 8,502) after the D-37
   Phase 0/1/2 extraction into `constants/ utils/ services/ components/ pages/ styles/ hooks/
   contexts/`. Plan + status: [ARCHITECTURE-PLAN.md](ARCHITECTURE-PLAN.md).
 - **Phase 2 remaining (deferred, attended-only):** the `ClientDetail` / `Dashboard` shell

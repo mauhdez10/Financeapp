@@ -229,7 +229,8 @@ project originated):
 
 ## Appendix: extraction map (exact line ranges)
 
-> Reference for execution. Ranges approximate as of 2026-06-09 (v0.69.8); re-grep before moving.
+> Reference for execution. Ranges approximate as of 2026-06-09 (v0.69.8) — **very stale** (App.jsx is now
+> 926 lines, not thousands); ALWAYS re-grep before moving.
 
 | Group | Approx lines | Class | Phase | Target |
 |---|---|---|---|---|

@@ -16,8 +16,10 @@
 > roles / portal / RLS / SSN / splits / visibility MUST consult `golden-anchor-logic` first.
 
 ## Cursor (where we are)
-Live marker **v0.83.7** (`2026-06-25-v0837-chartsettingsmodal-dashchartoptions-fix`). `App.jsx` ≈ 3,023
-lines. Scale data layer + crash fixes shipped; docs lifecycle + cruise infra in place; `npm audit` clean.
+Live marker **v0.83.58** (`2026-07-01-v08358-xlsx-lazy-import-off-eager-path`). `App.jsx` = **926 lines**.
+Shipped: scale layer + crash fixes (v0.83.1–7), docs-lifecycle + cruise infra, a day-long autonomous
+sweep (~ISS-27→92: bug/i18n/a11y/calc), CC feature slice A (v0.83.55), and lucide+xlsx optimization
+(~1.1MB off eager load). `npm audit` clean.
 
 ## Queue (top = next)
 

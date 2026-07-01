@@ -2,6 +2,23 @@
 
 All notable changes to App.jsx and the supporting docs. Newest entries on top. Follows AGENT.md §3 versioning.
 
+## v0.83.58 — 2026-07-01 (Patch) — bundle optimization: lucide deep-import + xlsx lazy-load (~1.1MB off eager load)
+
+Two top items from `docs/OPTIMIZATION-ROADMAP.md`, in-chat loop:
+- **lucide-react (−603KB):** `src/pages/links.jsx` used `import * as Lucide` + a dynamic `Lucide[c.icon]`
+  lookup, which pulled the ENTIRE ~1,000-icon library into a 625KB `icons` chunk and defeated tree-shaking
+  app-wide. Replaced with explicit named imports of the 16 category icons + a `LICONS` lookup map. Every
+  other file already used named imports, so the `icons` chunk collapsed **625KB → 22.6KB**. Render logic
+  unchanged (`LICONS[c.icon]||Link`).
+- **xlsx lazy-load (−493KB / −160KB gz off eager path):** `parseWorkbook` (already `async`, the only xlsx
+  user) now does `await import("xlsx")` with defensive interop; removed the static `import * as XLSX` from
+  `utils/import.js` AND a **dead** `import * as XLSX` from `App.jsx` that kept it eager. SheetJS now fetches
+  on-demand when the import wizard runs. Interop verified headlessly; xlsx no longer preloaded in index.html.
+
+Both display/loading-only — no logic or save-path change. Build + lint clean. Owner spot-check: run one Excel
+import + open the Useful-Links page (icons). **Version note:** the lucide fix briefly bumped the marker to
+`v08357` (colliding with the cron's ISS-92 v0.83.57); the xlsx fix resolved it to the live `v08358` marker.
+
 ## v0.83.57 — 2026-07-01 (Patch) — promo / 0%-APR-end date badges rendered English month names in Spanish mode (ISS-92 follow-up, D-3 bilingual)
 
 **FIX (display — D-3 bilingual):** the same four credit-card date badges the v0.83.56 TZ fix touched still
@@ -47,6 +64,18 @@ of a month drifts to the prior month/year, post-fix all cases render the stored 
 2026-07-01 item-1 correctness trace of the just-shipped v0.83.55 CC-card feature. **Not touched (deferred):**
 `fmtDate` (`utils/finance.js`) uses local date accessors too but its inputs weren't confirmed date-only — a
 separate future trace.
+
+## v0.83.55 — 2026-06-27 (Minor) — credit-card `lastUsed` + `0% APR ends` fields (CC feature slice A, owner request)
+
+Owner feature (ROUND_01): capture when a card was last used + its 0%-APR end date, to power a future
+"unused card" reminder. **Slice A (data + entry + display):**
+- `finance.js` `mig`: back-fill `lastUsed:""` + `apr0End:""` on every card (additive, save-logic unchanged).
+- `CardModal`: two date inputs (advisor + client editable via the shared modal).
+- `DebtSection`: a "0% ends MMM YY" badge (from `apr0End`, falls back to a 0%-rate promo's `end`).
+- `translations.js`: `lastUsedLbl` / `lastUsedInfo` / `apr0EndLbl` in BOTH T.en + T.es (D-3).
+Build + lint clean; no new strings-asymmetry. **Slices B (client-facing unused-card reminder + toggle) and
+C (advisor unused-card alert) are deferred/attended** — see BACKLOG (no client reminder surface yet;
+getAdvRem gating ambiguity; ISS-04 scale caveat).
 
 ## v0.83.54 — 2026-06-27 (Patch) — guard the Client Debt-Reduction payoff against "NaN mo (NaN yr)" when min < interest (ISS-91, correctness)
 
