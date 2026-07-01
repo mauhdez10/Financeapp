@@ -1,6 +1,7 @@
 // Import / CSV / backup / dedupe helpers — extracted from App.jsx in Phase 2 of
 // docs/ARCHITECTURE-PLAN.md (D-37). Pure data helpers (only finance utils + XLSX).
-import * as XLSX from "xlsx";
+// xlsx is dynamically imported inside parseWorkbook (the only user) so the 363KB
+// SheetJS chunk is fetched on-demand when the import wizard runs, not on app load.
 import { gid, sumB, toM } from "./finance";
 import { MS } from "../constants/meta";
 
@@ -134,6 +135,7 @@ export function buildStreams(pr,p1Name,p2Name){
 }
 
 export async function parseWorkbook(file){
+  const _xm=await import("xlsx");const XLSX=_xm.read?_xm:(_xm.default||_xm);
   return new Promise((res,rej)=>{
     const reader=new FileReader();
     reader.onload=e=>{

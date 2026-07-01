@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { Bar, XAxis, YAxis, Tooltip as ReTip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList, AreaChart, Area, CartesianGrid, ComposedChart, Line, Legend } from "recharts";
-import * as XLSX from "xlsx";
 import { AboutPage, LineField, PLAN_FEATURES, PlanComparison, PricingCarousel, PricingPage, PricingPlans, PromotionsPage, ResourcesPage, ServiceRequestModal } from "./pages/marketing";
 import { HeroVisual, LOTTIE_HERO_URL, Login, LandingPage } from "./pages/landing";
 import { EngagementLetter, LogoImg, SignaturePad, ToSModal } from "./components/legal";
@@ -14,7 +13,7 @@ import { PremiumCtx, usePremiumGate, hasPremium, PremiumUpgrade, PremiumLockNote
 import { MembersAdminPage, isGaAdmin } from "./pages/members";
 import { PublicShell, PublicFaqPage, PublicContactPage, PublicAboutPage } from "./pages/public";
 import { UsefulLinksPage } from "./pages/links";
-if(typeof window!=="undefined"){window.__GA_BUILD__="2026-07-01-v08357-lucide-icons-625kb-to-22kb";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
+if(typeof window!=="undefined"){window.__GA_BUILD__="2026-07-01-v08358-xlsx-lazy-import-off-eager-path";console.log("%c⚓ Golden Anchor build:","color:#D4A017;font-weight:bold",window.__GA_BUILD__);}
 // ── Phase 0 modules (D-37, 2026-06-10) — see docs/ARCHITECTURE-PLAN.md ──
 import { supabase, gaLoadClients, gaSaveClient, gaDeleteClient, gaLoadClientSummaries, gaLoadClient, gaLoadAllClientBlobs, gaSetArchived, gaLoadSettings, gaSaveSettings, gaSendSupportEmail, gaMigrateLocalStorage, gaClearLocalCache, gaDashboardAll } from "./services/supabase";
 import { GOLD, makeDark, makeLight, DARK_ACCENTS, LIGHT_ACCENTS, LIGHT_BG_PRESETS, LIGHT_CARD_PRESETS, DARK_BG_PRESETS, DARK_CARD_PRESETS, stripLeadEmoji, mCARD } from "./styles/theme";
